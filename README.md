@@ -1,123 +1,119 @@
 # Coreto Game Engine
 
-**Sistema de validação determinística de TTK (Time-to-Kill) para balanceamento de combate em RPG Maker MZ**
+**Sistema de validacao deterministica de TTK (Time-to-Kill) para balanceamento de combate em RPG Maker MZ**
 
-[![Status](https://img.shields.io/badge/status-pre--implementation-yellow)]()
+[![Status](https://img.shields.io/badge/status-in--development-blue)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)]()
-[![Node.js](https://img.shields.io/badge/Node.js-LTS-green)]()
+[![Node.js](https://img.shields.io/badge/Node.js-%3E=20-green)]()
+[![Tests](https://img.shields.io/badge/tests-501%20passing-brightgreen)]()
 
-## 📋 Visão Geral
+## Visao Geral
 
-O Coreto Game Engine é um wrapper read-only sobre projetos RPG Maker MZ que executa batalhas reais em modo headless para medir Time-to-Kill (TTK) e validar balanceamento de combate. Reduz o ciclo de validação de **2-3 dias** para **≤10 minutos**.
+O Coreto Game Engine e um wrapper read-only sobre projetos RPG Maker MZ que executa batalhas reais em modo headless para medir Time-to-Kill (TTK) e validar balanceamento de combate. Reduz o ciclo de validacao de **2-3 dias** para **<=10 minutos**.
 
-### Características Principais
+### Caracteristicas Principais
 
-- 🔒 **Read-Only**: Nunca modifica o projeto RPG Maker MZ (ADR-001)
-- ⚡ **Headless Execution**: Executa batalhas reais via engine em JSDOM
-- 🎯 **Deterministic**: Seed fixa garante reprodutibilidade (ADR-018)
-- 📊 **Detailed Reports**: Gera relatórios JSON com métricas e warnings
-- 🤖 **AI-Friendly**: Export de JSONs divididos para contexto de IA
-- 🧩 **VisuStella Support**: Compatível com plugins VisuStella em headless
+- **Read-Only**: Nunca modifica o projeto RPG Maker MZ (ADR-001)
+- **Headless Execution**: Executa batalhas reais via engine em JSDOM
+- **Deterministic**: Seed fixa garante reprodutibilidade (ADR-018)
+- **Detailed Reports**: Gera relatorios JSON com metricas e warnings
+- **Type-Safe**: TypeScript strict mode com Zod validation
 
-## 🚀 Status do Projeto
+## Status do Projeto
 
-**⚠️ PRE-IMPLEMENTATION PHASE**
+**FASE 4/9 CONCLUIDA - 17/37 tasks implementadas**
 
-Este projeto está atualmente em fase de design e planejamento. Toda a arquitetura foi documentada, mas a implementação ainda não começou.
+| Fase | Descricao | Status | Testes |
+|------|-----------|--------|--------|
+| FASE 1 | Foundation | Completa | 86+ |
+| FASE 2 | Core Domain | Completa | 324 |
+| FASE 3 | Config & CLI | Completa | 439 |
+| FASE 4 | Data Loading | Completa | 501 |
+| FASE 5 | Headless Runtime | Pendente | - |
+| FASE 6 | Simulation Core | Pendente | - |
+| FASE 7 | Reporter & Warnings | Pendente | - |
+| FASE 8 | CLI Commands | Pendente | - |
+| FASE 9 | Polish & Docs | Pendente | - |
 
-### O que está pronto
+### O que esta implementado
 
-- ✅ Product Requirements Document (PRD)
-- ✅ High-Level Design (HLD) completo
-- ✅ 28 Architecture Decision Records (ADRs)
-- ✅ Documentação técnica e de pesquisa
-- ✅ Serena MCP onboarding completo
+- **DI Container**: TSyringe com tokens tipados
+- **Clean Architecture**: Domain, Ports, Use Cases, Infrastructure
+- **CLI Base**: Oclif framework configurado
+- **Config Validation**: Zod schemas com path sanitization
+- **Data Loading**: Carregamento completo de DB do RPG Maker MZ
+- **Security**: PathSanitizer + ReadOnlyGuard (ADR-001)
+- **501 testes passando** com TypeScript strict mode
 
-### Próximos passos
+## Instalacao
 
-- ⬜ Setup inicial do projeto (package.json, tsconfig.json)
-- ⬜ Implementação das camadas base (Config, Loader)
-- ⬜ Headless runtime setup (JSDOM + mocks)
-- ⬜ Simulation engine
-- ⬜ Reporter e AI Exporter
+```bash
+# Clone o repositorio
+git clone <repo-url>
+cd game-engine
 
-## 📁 Estrutura do Projeto
+# Instale dependencias
+npm install
+
+# Verifique a instalacao
+npm test
+npm run type-check
+```
+
+## Comandos Disponiveis
+
+```bash
+# Desenvolvimento
+npm run dev          # Watch mode com tsx
+npm run build        # Compilar TypeScript
+npm run type-check   # Verificar tipos
+
+# Testes
+npm test             # Rodar todos os testes
+npm run test:watch   # Testes em watch mode
+npm run test:coverage # Testes com coverage
+
+# Qualidade
+npm run lint         # ESLint
+npm run format       # Prettier
+
+# CLI (apos build)
+npx coreto-engine hello --name=World
+```
+
+## Estrutura do Projeto
 
 ```
 game-engine/
-├── docs/                      # Documentação completa
-│   ├── adrs/                 # 28 ADRs organizadas por módulo
-│   ├── pesquisas/            # Documentos de pesquisa
-│   ├── PRD_*.md             # Product Requirements Document
-│   └── hld-*.md             # High-Level Design
-├── .serena/                   # Serena MCP configuration
-│   └── memories/             # Project knowledge base
-└── README.md                  # Este arquivo
+├── src/
+│   ├── cli/                    # Oclif CLI commands
+│   │   └── commands/           # hello.ts (implementado)
+│   ├── core/
+│   │   ├── domain/             # Entities e Value Objects
+│   │   ├── errors/             # Domain exceptions
+│   │   ├── ports/              # Interfaces (IDataLoader, IConfigLoader, etc)
+│   │   └── use-cases/          # ExecuteBattle, ValidateTrecho, GenerateReport
+│   ├── infrastructure/
+│   │   ├── adapters/
+│   │   │   ├── data/           # RmmzDataLoader, IntegrityValidator
+│   │   │   ├── filesystem/     # NodeFileSystem
+│   │   │   └── logger/         # ConsoleLogger
+│   │   ├── config/             # ZodConfigLoader, Zod schemas
+│   │   ├── di/                 # TSyringe container e tokens
+│   │   └── security/           # PathSanitizer, ReadOnlyGuard
+│   └── types/                  # rmmz-data.ts (tipos RPG Maker MZ)
+├── tests/
+│   ├── unit/                   # Testes unitarios
+│   ├── integration/            # Testes de integracao
+│   └── fixtures/               # Sample data RPG Maker MZ
+├── docs/
+│   ├── adrs/                   # 31 ADRs
+│   ├── hld-coreto-game-engine.md
+│   └── PRD_*.md
+└── planos/                     # Task tracking
 ```
 
-## 📚 Documentação
-
-### Documentos Essenciais
-
-| Documento | Descrição | Caminho |
-|-----------|-----------|---------|
-| **PRD** | Requisitos do produto | [`docs/PRD_Planilha_MestraSoftware_MVP_Balanceamento_v2.md`](docs/PRD_Planilha_MestraSoftware_MVP_Balanceamento_v2.md) |
-| **HLD** | Design de alto nível (1638 linhas) | [`docs/hld-coreto-game-engine.md`](docs/hld-coreto-game-engine.md) |
-| **ADRs** | 28 decisões arquiteturais | [`docs/adrs/INDEX.md`](docs/adrs/INDEX.md) |
-| **Research** | Pesquisas técnicas | [`docs/pesquisas/`](docs/pesquisas/) |
-
-### Arquitetura em Camadas (HLD Section 2)
-
-```
-CLI Layer           → Interface de linha de comando
-  ↓
-Config Layer        → Validação de configurações (Zod)
-  ↓
-Loader Layer        → Carregamento do banco RPG Maker MZ
-  ↓
-Headless Runtime    → JSDOM + Mocks (PIXI, Graphics, Effekseer)
-  ↓
-Simulation Layer    → Execução de batalhas e medição de TTK
-  ↓
-Reporter Layer      → Geração de report.json
-  ↓
-AI Exporter Layer   → Export de contexto para IA
-```
-
-## 🔧 Tech Stack (Planejado)
-
-| Categoria | Tecnologia | ADR |
-|-----------|-----------|-----|
-| **Language** | TypeScript 5.x | ADR-028 |
-| **Runtime** | Node.js LTS | - |
-| **CLI** | Oclif | ADR-007 |
-| **Testing** | Jest + JSDOM | ADR-014 |
-| **Validation** | Zod | ADR-008 |
-| **Mocking** | jest-canvas-mock | ADR-026 |
-
-## 🎯 Uso Planejado (CLI)
-
-```bash
-# Validar TTK para todos os trechos
-node cli.js run-ttk --config project.config.json
-
-# Validar com seed customizada
-node cli.js run-ttk --config project.config.json --seed 42
-
-# Validar trecho específico
-node cli.js run-ttk --config project.config.json --trecho ato1-nivel1-10
-
-# Modo verbose para debug
-node cli.js run-ttk --config project.config.json --verbose
-
-# Modo diagnóstico (headless troubleshooting)
-node cli.js run-ttk --config project.config.json --diagnostic
-
-# Export de contexto para IA
-node cli.js export-context --config project.config.json
-```
-
-## 📊 Exemplo de Configuração
+## Configuracao (project.config.json)
 
 ```json
 {
@@ -126,10 +122,10 @@ node cli.js export-context --config project.config.json
   "trechos": [
     {
       "id": "ato1-nivel1-10",
-      "name": "Prólogo e Mundo Comum",
+      "name": "Prologo e Mundo Comum",
       "anchorLevelRange": { "min": 1, "max": 10 },
       "ttkTarget": { "turns": 3, "actions": 4 },
-      "tolerance": { "turns": 1, "actions": 1 },
+      "tolerance": 0.15,
       "troopIds": [1, 2, 3],
       "party": {
         "members": [
@@ -142,66 +138,87 @@ node cli.js export-context --config project.config.json
 }
 ```
 
-## 📖 ADRs por Módulo
+## Arquitetura
 
-| Módulo | ADRs | Descrição |
-|--------|------|-----------|
-| **FOUNDATION** | 3 | Princípios arquiteturais (read-only, refs por ID, sem UI) |
-| **SIMULATION** | 7 | Mecânicas de batalha e TTK |
-| **RUNTIME** | 6 | Ambiente headless (JSDOM, mocks, diagnostics) |
-| **REPORTER** | 4 | Geração de relatórios e warnings |
-| **CONFIG** | 3 | Validação e configuração (Zod, JSON, TypeScript) |
-| **DOCS** | 4 | Padrões de documentação |
-| **CLI** | 1 | Framework Oclif |
+### Pipeline de Execucao (Top-Down)
 
-**Total: 28 ADRs** - [Ver INDEX completo](docs/adrs/INDEX.md)
-
-## 🔑 Decisões Arquiteturais Chave
-
-### ADR-001: Wrapper Read-Only
-
-O sistema **NUNCA** escreve no projeto RPG Maker MZ. Todas as alterações de fórmulas e dados continuam sendo feitas no editor do RPG Maker.
-
-### ADR-003: Fidelidade via Batalha Real
-
-Executa batalhas reais via `BattleManager` e engine do RPG Maker MZ (não simulação matemática) para máxima fidelidade ao jogo final.
-
-### ADR-018: Determinismo com Seed
-
-Seed fixa controla `Math.random` para garantir execuções reproduzíveis e determinísticas.
-
-### ADR-028: TypeScript
-
-Linguagem primária de implementação com strict mode e target ES2022.
-
-## 🤝 Contribuindo
-
-### Workflow de Desenvolvimento (Planejado)
-
-1. **Setup**: `npm install`
-2. **Development**: `npm run dev` (watch mode)
-3. **Testing**: `npm test` ou `npm run test:watch`
-4. **Quality**: `npm run lint` e `npm run type-check`
-5. **Build**: `npm run build`
-
-### Commit Convention
-
-Seguimos [Conventional Commits](https://www.conventionalcommits.org/):
-
-```bash
-feat(simulation): implement TTK measurement
-fix(loader): validate troopId existence
-docs(adr): add ADR-029 for parallel execution
-refactor(config): simplify schema validation
+```
+CLI Layer (Oclif)
+  |
+Config Layer (Zod validation)
+  |
+Loader Layer (fs.readFileSync + ID validation)
+  |
+Headless Runtime (JSDOM + mocks) [pendente]
+  |
+Simulation Layer (BattleManager + TTK) [pendente]
+  |
+Reporter Layer (report.json) [pendente]
 ```
 
-## 👥 Time
+### Decisoes Arquiteturais Chave
 
-- **Edney Antonio Reis Filho**
-- **Arquitetura**: Documentada via ADR management plugin
+| ADR | Decisao |
+|-----|---------|
+| ADR-001 | Wrapper Read-Only - nunca escreve no projeto MZ |
+| ADR-003 | Fidelidade via batalha real (BattleManager) |
+| ADR-008 | Zod para validacao de schemas |
+| ADR-013 | Warnings em vez de exceptions para validacao |
+| ADR-016 | Loading sincrono (fs.readFileSync) |
+| ADR-018 | Determinismo com seed fixa |
+| ADR-028 | TypeScript como linguagem primaria |
+
+[Ver todas as 31 ADRs](docs/adrs/INDEX.md)
+
+## Tech Stack
+
+| Categoria | Tecnologia |
+|-----------|------------|
+| Language | TypeScript 5.x (strict mode) |
+| Runtime | Node.js >= 20 |
+| CLI | Oclif v4 |
+| Validation | Zod 3.x |
+| DI | TSyringe |
+| Testing | Jest + ts-jest |
+| DOM | JSDOM (headless) |
+
+## Documentacao
+
+| Documento | Descricao |
+|-----------|-----------|
+| [PRD](docs/PRD_Planilha_MestraSoftware_MVP_Balanceamento_v2.md) | Requisitos do produto |
+| [HLD](docs/hld-coreto-game-engine.md) | Design de alto nivel |
+| [ADRs](docs/adrs/INDEX.md) | 31 decisoes arquiteturais |
+| [CLAUDE.md](CLAUDE.md) | Guia para Claude Code |
+| [Tasks](planos/002-implementacao-mvp/tasks/tasks.md) | Tracking de implementacao |
+
+## Proximos Passos
+
+**FASE 5: Headless Runtime**
+
+- JSDOM Setup + HeadlessRuntimeBootstrapper
+- PIXI/Graphics/Effekseer/AudioManager Mocks
+- Core Scripts Loader (rmmz_core.js)
+- SyncWarpLoop para execucao de alta velocidade
+
+## Contribuindo
+
+```bash
+# Workflow
+npm install          # Setup
+npm run dev          # Desenvolvimento
+npm test             # Validar mudancas
+npm run type-check   # Verificar tipos
+npm run lint         # Qualidade
+
+# Commits (Conventional Commits)
+feat(simulation): implement TTK measurement
+fix(loader): validate troopId existence
+docs(adr): add ADR-032 for new feature
+```
 
 ---
 
-**Última Atualização**: 2026-01-04
-**Fase Atual**: Pre-Implementation / Design Phase
-**Próximo Milestone**: MVP v1 Implementation
+**Ultima Atualizacao**: 2026-01-04
+**Fase Atual**: FASE 4 Concluida - Data Loading
+**Testes**: 501 passing + 6 skipped

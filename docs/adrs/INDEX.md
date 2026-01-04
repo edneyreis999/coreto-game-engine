@@ -1,11 +1,11 @@
 # ADR Index - Coreto Game Engine
 
-**Total ADRs:** 28
+**Total ADRs:** 31
 **Last Updated:** 2026-01-04
 
 ## Overview
 
-This index organizes all 28 Architecture Decision Records (ADRs) for the Coreto Game Engine project, organized by system module.
+This index organizes all 31 Architecture Decision Records (ADRs) for the Coreto Game Engine project, organized by system module.
 
 ---
 
@@ -34,13 +34,16 @@ This index organizes all 28 Architecture Decision Records (ADRs) for the Coreto 
 | [ADR-022](DOCS/ADR-022-documentation-before-implementation-greenfield-approach.md) | Documentation-Before-Implementation Greenfield Approach | Accepted |
 | [ADR-023](DOCS/ADR-023-madr-lightweight-adr-format.md) | MADR-Inspired Lightweight ADR Format | Accepted |
 
-### FOUNDATION Module (3 ADRs)
+### FOUNDATION Module (6 ADRs)
 
 | ID | Title | Status |
 |----|-------|--------|
 | [ADR-001](FOUNDATION/ADR-001-wrapper-read-only.md) | Wrapper Read-Only | Accepted |
 | [ADR-005](FOUNDATION/ADR-005-referencias-banco-mz-por-id.md) | Referências ao Banco MZ por ID | Accepted |
 | [ADR-006](FOUNDATION/ADR-006-sem-ui-sem-ci-mvp.md) | Sem UI e Sem CI no MVP | Accepted |
+| [ADR-029](FOUNDATION/ADR-029-tsyringe-di-container.md) | TSyringe DI Container | Accepted |
+| [ADR-030](FOUNDATION/ADR-030-tsx-esbuild-build-tooling.md) | tsx/esbuild Build Tooling | Accepted |
+| [ADR-031](FOUNDATION/ADR-031-jest-testing-framework.md) | Jest Testing Framework | Accepted |
 
 ### REPORTER Module (4 ADRs)
 
@@ -83,11 +86,11 @@ This index organizes all 28 Architecture Decision Records (ADRs) for the Coreto 
 | CLI | 1 | Command-line interface framework |
 | CONFIG | 3 | Configuration format, validation, type system |
 | DOCS | 4 | Documentation standards and processes |
-| FOUNDATION | 3 | Core architectural principles |
+| FOUNDATION | 6 | Core architectural principles, DI, build tooling, testing |
 | REPORTER | 4 | Report generation and output |
 | RUNTIME | 6 | Headless execution environment |
 | SIMULATION | 7 | Battle simulation mechanics |
-| **TOTAL** | **28** | **All architectural decisions** |
+| **TOTAL** | **31** | **All architectural decisions** |
 
 ---
 
@@ -96,8 +99,9 @@ This index organizes all 28 Architecture Decision Records (ADRs) for the Coreto 
 ### High-Impact Decision Chains
 
 1. **Technology Stack Foundation**:
-   - ADR-028 (TypeScript) → ADR-007 (Oclif CLI) → ADR-008 (Zod Validation)
-   - Rationale: TypeScript-first ecosystem enables type-safe CLI and schema inference
+   - ADR-028 (TypeScript) → ADR-029 (TSyringe DI) → ADR-007 (Oclif CLI) → ADR-008 (Zod Validation)
+   - ADR-030 (tsx/esbuild Tooling) → ADR-031 (Jest Testing)
+   - Rationale: TypeScript-first ecosystem enables type-safe CLI, DI, and schema inference
 
 2. **Headless Runtime Architecture**:
    - ADR-003 (Real Engine Headless) → ADR-014 (JSDOM) → ADR-015 (Graphics Mocking) → ADR-016 (Sync Loading)

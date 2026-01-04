@@ -1,0 +1,68 @@
+{
+  "projectPath": "/Users/edney/projects/rpg-maker-mz-project",
+  "seed": 42,
+  "trechos": [
+    {
+      "id": "ato1-nivel1-10",
+      "name": "Ato 1: Tutorial e Primeiros Combates",
+      "anchorLevelRange": {
+        "min": 1,
+        "max": 10
+      },
+      "ttkTarget": {
+        "turns": 8,
+        "actions": 32,
+        "tolerance": 0.2
+      },
+      "troopIds": [1, 2, 3, 4],
+      "party": {
+        "members": [
+          { "classId": 1, "level": 5 },
+          { "classId": 2, "level": 5 }
+        ]
+      }
+    },
+    {
+      "id": "ato2-nivel11-20",
+      "name": "Ato 2: Dungeon Principal",
+      "anchorLevelRange": {
+        "min": 11,
+        "max": 20
+      },
+      "ttkTarget": {
+        "turns": 12,
+        "actions": 48
+      },
+      "troopIds": [5, 6, 7, 8, 9],
+      "party": {
+        "members": [
+          { "classId": 1, "level": 15 },
+          { "classId": 2, "level": 15 },
+          { "classId": 3, "level": 15 }
+        ]
+      }
+    },
+    {
+      "id": "ato3-boss-final",
+      "name": "Ato 3: Boss Final",
+      "anchorLevelRange": {
+        "min": 30,
+        "max": 30
+      },
+      "ttkTarget": {
+        "turns": 25,
+        "actions": 100,
+        "tolerance": 0.1
+      },
+      "troopIds": [10],
+      "party": {
+        "members": [
+          { "classId": 1, "level": 30 },
+          { "classId": 2, "level": 30 },
+          { "classId": 3, "level": 30 },
+          { "classId": 4, "level": 30 }
+        ]
+      }
+    }
+  ]
+}
