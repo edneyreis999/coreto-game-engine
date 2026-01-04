@@ -1,16 +1,5 @@
 # Pesquisa — Softwares similares ao conceito “Planilha Mestra”
 
-Contexto interno do projeto:
-
-- Este repositório descreve um tool “source-of-truth” para balanceamento de combate do RPG Maker MZ (curvas determinísticas + presets/validação de fórmulas + simulação/TTK + `check/apply/export/diff` escrevendo diretamente em `frontend/data/*.json`).
-- Referência: `docs/planilhaMestraSoftware.md` e `docs/pesquisas/RPG-Maker-MZ_Design-Combate.md`.
-
-Este documento registra **o que foi encontrado via Perplexity** (busca na internet), com **links** e uma nota rápida de relevância.
-
-> Observação: muitos resultados da comunidade RPG Maker são fragmentados (fóruns/YouTube/itch) e podem ter escopo diferente (MV/VX/XP em vez de MZ). Mesmo assim, foram registrados porque apontam padrões e “subproblemas” (ex.: calculadora de fórmula, edição em massa, pipeline Git).
-
----
-
 ## O que aparece como “já existe”
 
 Síntese (alto nível):
@@ -117,4 +106,3 @@ Nota: hub/índice de plugins (nem todos são MZ; ainda assim, é uma fonte para 
 - Se o objetivo é acelerar o “Ato 1”, um caminho híbrido é:  
   - usar um **bulk editor CSV** (ou scripts) para “IO/edição em massa”, e  
   - focar seu software no que parece menos coberto por ferramentas prontas: **curvas determinísticas por âncoras + validação + simulação/TTK + snapshots/diffs**.
-
