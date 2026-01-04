@@ -2,3 +2,4 @@
 planos/
 .DS_Store
 setup-claude-symlink.sh
+node_modules/
