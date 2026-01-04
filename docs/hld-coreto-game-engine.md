@@ -19,6 +19,7 @@ O design de balanceamento de combate em RPGs de turno enfrenta um ciclo lento: d
 ### 1.3 Escopo
 
 **Incluso:**
+
 - Wrapper read-only sobre projeto RPG Maker MZ (sem escrita em `data/`)
 - Execução de batalhas reais via engine (BattleManager, loop de turnos) em modo headless
 - Medição de TTK em turnos e ações por troop
@@ -27,6 +28,7 @@ O design de balanceamento de combate em RPGs de turno enfrenta um ciclo lento: d
 - Export de contexto para IA (divisão de JSONs grandes)
 
 **Fora de Escopo (MVP v1):**
+
 - UI desktop (Electron) - planejado para pós MVP
 - Integração com CI - planejado para pós MVP
 - Escrita no banco do RPG Maker MZ
@@ -91,6 +93,7 @@ O sistema segue arquitetura em camadas com wrapper externo Node.js, operando em 
 ### 3.1 CLI Layer
 
 **Responsabilidades:**
+
 - Parser de argumentos CLI (`--config`, `--seed`, `--trecho`, `--verbose`, `--diagnostic`)
 - Orquestração do pipeline de execução
 - Exibição de progresso no terminal
@@ -105,6 +108,7 @@ O sistema segue arquitetura em camadas com wrapper externo Node.js, operando em 
 ### 3.2 Config Layer
 
 **Responsabilidades:**
+
 - Leitura de `project.config.json`
 - Validação de schema (tipos, ranges, obrigatoriedade)
 - Carregamento de definições de trechos (âncoras, alvos TTK, tolerâncias)
@@ -120,6 +124,7 @@ O sistema segue arquitetura em camadas com wrapper externo Node.js, operando em 
 ### 3.3 Loader Layer
 
 **Responsabilidades:**
+
 - Validar estrutura do projeto MZ (presença de `game.rmmzproject`, pasta `data/`)
 - Carregar JSONs do MZ (`Classes.json`, `Enemies.json`, `Troops.json`, `Skills.json`)
 - Validar existência de `troopIds` e `enemyIds` referenciados nas configurações
@@ -135,6 +140,7 @@ O sistema segue arquitetura em camadas com wrapper externo Node.js, operando em 
 ### 3.4 Headless Runtime
 
 **Responsabilidades:**
+
 - Setup do ambiente JSDOM (simulação de browser)
 - Mock de PIXI.js (Container, Sprite, etc.)
 - Mock de Graphics (initialize, render, frameCount)
@@ -154,6 +160,7 @@ O sistema segue arquitetura em camadas com wrapper externo Node.js, operando em 
 ### 3.5 Simulation Layer
 
 **Responsabilidades:**
+
 - Configurar batalhas via `BattleManager.setup(troopId, canEscape, canLose)`
 - Montar party com base em `PartyConfig` (classId + level → derivar skills liberadas)
 - Executar loop de turnos até vitória/derrota/timeout
@@ -172,6 +179,7 @@ O sistema segue arquitetura em camadas com wrapper externo Node.js, operando em 
 ### 3.6 Reporter Layer
 
 **Responsabilidades:**
+
 - Coletar resultados de todas as simulações
 - Calcular agregados por trecho (média, p50, p95, max de TTK)
 - Gerar warnings (TTK fora da tolerância, troops inexistentes, enemies inválidos)
@@ -191,6 +199,7 @@ O sistema segue arquitetura em camadas com wrapper externo Node.js, operando em 
 ### 3.7 AI Exporter Layer
 
 **Responsabilidades:**
+
 - Dividir JSONs grandes (`Troops.json`, `Enemies.json`, `Skills.json`, `Classes.json`) em arquivos menores por entidade
 - Salvar em `report/context/skills/`, `report/context/enemies/`, etc.
 - Filtrar apenas IDs usados nos trechos configurados (opcional)
@@ -300,6 +309,7 @@ CLI Layer
 ### 5.1 Domínio 1: Configurações (Fonte de Verdade: Repositório do wrapper)
 
 #### ProjectConfig
+
 ```json
 {
   "projectPath": "/path/to/rpg-maker-mz/project",
@@ -309,6 +319,7 @@ CLI Layer
 ```
 
 **Atributos:**
+
 - `projectPath`: string (caminho absoluto para projeto MZ)
 - `seed`: number (seed padrão para determinismo)
 
@@ -317,6 +328,7 @@ CLI Layer
 ---
 
 #### Trecho
+
 ```json
 {
   "id": "ato1-nivel1-10",
@@ -330,6 +342,7 @@ CLI Layer
 ```
 
 **Atributos:**
+
 - `id`: string (identificador único)
 - `name`: string (nome descritivo)
 - `anchorLevelRange`: { min: number, max: number } (range de níveis do trecho)
@@ -345,6 +358,7 @@ CLI Layer
 #### PartyConfig
 
 **MVP v1 (Skills Automáticas por Nível):**
+
 ```json
 {
   "members": [
@@ -355,6 +369,7 @@ CLI Layer
 ```
 
 **Futuro (Skills Explícitas - Compra em Lojas):**
+
 ```json
 {
   "members": [
@@ -368,9 +383,11 @@ CLI Layer
 ```
 
 **Atributos (MVP v1):**
+
 - `members`: Array<{ classId: number, level: number }>
 
 **Atributos (Futuro):**
+
 - `members`: Array<{ classId: number, level: number, skillIds?: number[] }>
 
 **Derivação:** No MVP v1, skills liberadas são calculadas em runtime via `Classes.json → learnings` (skills cujo `level ≤ partyMember.level`). No futuro, `skillIds` explícitos permitirão validar diferentes builds de personagens quando skills forem compradas em lojas.
@@ -382,6 +399,7 @@ CLI Layer
 #### Class (de Classes.json)
 
 **Estrutura Real:**
+
 ```json
 {
   "id": 1,
@@ -407,6 +425,7 @@ CLI Layer
 ```
 
 **Atributos Principais:**
+
 - `id`: number
 - `name`: string
 - `note`: string (notetags)
@@ -420,6 +439,7 @@ CLI Layer
 #### Skill (de Skills.json)
 
 **Estrutura Real:**
+
 ```json
 {
   "id": 1,
@@ -449,6 +469,7 @@ CLI Layer
 ```
 
 **Atributos Principais:**
+
 - `id`: number
 - `name`: string
 - `description`: string
@@ -465,6 +486,7 @@ CLI Layer
 #### Enemy (de Enemies.json)
 
 **Estrutura Real:**
+
 ```json
 {
   "id": 1,
@@ -487,6 +509,7 @@ CLI Layer
 ```
 
 **Atributos Principais:**
+
 - `id`: number
 - `name`: string
 - `note`: string
@@ -504,6 +527,7 @@ CLI Layer
 #### Troop (de Troops.json)
 
 **Estrutura Real:**
+
 ```json
 {
   "id": 1,
@@ -523,6 +547,7 @@ CLI Layer
 ```
 
 **Atributos Principais:**
+
 - `id`: number
 - `name`: string
 - `members`: Array<{ enemyId: number, x: number, y: number, hidden: boolean }>
@@ -541,6 +566,7 @@ CLI Layer
 ### 5.3 Domínio 3: Execução e Resultados (Fonte de Verdade: Gerado em runtime)
 
 #### BattleSimulation
+
 ```typescript
 {
   trecho: Trecho,
@@ -553,6 +579,7 @@ CLI Layer
 ```
 
 #### Turn
+
 ```typescript
 {
   turnNumber: number,
@@ -561,6 +588,7 @@ CLI Layer
 ```
 
 #### Action
+
 ```typescript
 {
   actor: { type: 'player' | 'enemy', index: number },
@@ -572,6 +600,7 @@ CLI Layer
 ```
 
 #### TrechoReport
+
 ```typescript
 {
   trechoId: string,
@@ -587,6 +616,7 @@ CLI Layer
 ```
 
 #### Warning
+
 ```typescript
 {
   type: 'troop_not_found' | 'enemy_not_found' | 'ttk_out_of_tolerance' | 'skill_formula_error' | 'battle_timeout',
@@ -597,6 +627,7 @@ CLI Layer
 ```
 
 #### FinalReport (report.json)
+
 ```typescript
 {
   timestamp: string,
@@ -641,6 +672,7 @@ Saída:
 ```
 
 **Exemplos:**
+
 ```bash
 node cli.js run-ttk --config project.config.json --seed 42
 node cli.js run-ttk --config project.config.json --trecho ato1-nivel1-10
@@ -669,6 +701,7 @@ Saída:
 ```
 
 **Exemplos:**
+
 ```bash
 node cli.js export-context --config project.config.json
 node cli.js export-context --config project.config.json --filter-trechos
@@ -682,6 +715,7 @@ node cli.js export-context --config project.config.json --filter-trechos
 **Exposição:** Local (filesystem)
 
 **Estrutura:**
+
 ```json
 {
   "projectPath": "/Users/edney/projects/coreto/projectX/frontend",
@@ -727,6 +761,7 @@ node cli.js export-context --config project.config.json --filter-trechos
 **Exposição:** Local (filesystem)
 
 **Estrutura (simplificada):**
+
 ```json
 {
   "timestamp": "2026-01-04T12:00:00Z",
@@ -796,14 +831,17 @@ node cli.js export-context --config project.config.json --filter-trechos
 #### Escalabilidade de Dados
 
 **Database MZ:**
+
 - Read-only, tamanho típico < 50MB (JSONs)
 - Carregado uma única vez no início da execução
 
 **Relatórios:**
+
 - `report.json` pode crescer com histórico
 - Estratégia de rotação opcional (manter últimas N execuções)
 
 **Export IA:**
+
 - Arquivos divididos podem chegar a centenas
 - Organização por diretórios (skills/, enemies/, troops/)
 
@@ -824,15 +862,18 @@ node cli.js export-context --config project.config.json --filter-trechos
 **Características:**
 
 **Execução Local:**
+
 - Sem dependência de rede ou serviços externos
 - Roda offline em máquina do designer
 
 **Resiliência:**
+
 - Falha em uma troop não interrompe execução das demais
 - Warnings/erros registrados no relatório sem parar o pipeline
 - Modo degradado: gerar relatório parcial mesmo com falhas
 
 **Confiabilidade:**
+
 - Execuções determinísticas quando seed fixa (reprodutibilidade 100%)
 - Validação de configurações antes de iniciar simulações (fail-fast para erros de config)
 
@@ -877,16 +918,19 @@ node cli.js export-context --config project.config.json --filter-trechos
 **Práticas:**
 
 **Validação de Paths:**
+
 - Validar que `projectPath` aponta para diretório válido com estrutura MZ
 - Rejeitar paths absolutos que apontem para fora do workspace esperado
 - Sanitizar paths para prevenir path traversal (ex: `../../etc/passwd`)
 
 **Read-Only File Operations:**
+
 - Usar apenas `fs.readFileSync()` para arquivos do projeto MZ
 - Usar `fs.existsSync()` e `fs.statSync()` para validações
 - NUNCA usar `fs.writeFileSync()`, `fs.appendFileSync()`, `fs.unlinkSync()` em `projectPath/data/`
 
 **Write Isolation:**
+
 - Permitir escrita APENAS em `report/` (relatórios e exports)
 - Criar `report/` se não existir, mas NUNCA dentro do `projectPath`
 
@@ -899,17 +943,20 @@ node cli.js export-context --config project.config.json --filter-trechos
 **Práticas:**
 
 **project.config.json:**
+
 - Validar schema JSON (usando biblioteca como Joi ou Zod)
 - Validar ranges numéricos (seed > 0, levels entre 1-99, troopIds > 0)
 - Validar tipos de dados (strings, numbers, arrays)
 - Rejeitar configurações com campos desconhecidos (strict mode)
 
 **CLI Arguments:**
+
 - Sanitizar argumentos antes de usar
 - Validar que `--seed` é número válido
 - Validar que `--trecho` existe nas configurações
 
 **Database MZ:**
+
 - Validar estrutura de JSONs antes de carregar (não assumir formato correto)
 - Detectar JSONs corrompidos e reportar erro claro
 - Validar ranges de IDs (classId, skillId, enemyId, troopId devem existir)
@@ -923,12 +970,14 @@ node cli.js export-context --config project.config.json --filter-trechos
 **Práticas:**
 
 **Fórmulas de Dano (eval de JavaScript):**
+
 - Executar fórmulas usando contexto limitado (VM2 ou similar para sandbox)
 - **MVP v1:** Confiar nas fórmulas do projeto MZ (são do próprio designer)
 - **Futuro:** Implementar whitelist de funções permitidas (Math, variáveis `a`, `b`, `v`, `$gameVariables`)
 - Detectar timeout em fórmulas que entram em loop infinito (timeout de 100ms por fórmula)
 
 **Plugins VisuStella:**
+
 - Plugins são carregados como-is (confiança no publisher oficial VisuStella)
 - Isolar mocks para prevenir que plugins acessem filesystem Node.js
 - Plugins não terão acesso a `require()` ou `process` do Node.js
@@ -942,16 +991,19 @@ node cli.js export-context --config project.config.json --filter-trechos
 **Práticas:**
 
 **Auditoria de Dependências:**
+
 - Executar `npm audit` regularmente
 - Usar `npm audit fix` para correções automáticas
 - Revisar manualmente vulnerabilidades críticas
 
 **Dependências Mínimas:**
+
 - Usar apenas dependências necessárias
 - Evitar pacotes abandonados ou sem manutenção
 - Preferir bibliotecas nativas do Node.js quando possível
 
 **Lock de Versões:**
+
 - Usar `package-lock.json` para garantir builds determinísticos
 - Versionar dependências com ranges conservadores (ex: `^1.2.3` ao invés de `*`)
 
@@ -964,10 +1016,12 @@ node cli.js export-context --config project.config.json --filter-trechos
 **Práticas:**
 
 **Checksum/Validação (opcional futuro):**
+
 - Calcular hash (SHA-256) dos arquivos JSON do MZ antes de processar
 - Detectar modificações inesperadas durante execução
 
 **Estrutura de Dados:**
+
 - Validar que arrays params em Classes.json têm exatamente 8 elementos
 - Validar que learnings contém apenas {level, skillId}
 - Reportar warnings para dados mal-formados ao invés de crashar
@@ -981,10 +1035,12 @@ node cli.js export-context --config project.config.json --filter-trechos
 **Práticas:**
 
 **Isolamento de Globals:**
+
 - Não poluir `global` do Node.js com objetos do RPG Maker
 - Usar contextos isolados (JSDOM com sandbox)
 
 **Prevenção de Acesso ao Sistema:**
+
 - Mocks (PIXI, Graphics, Effekseer) não devem permitir acesso a `fs`, `child_process`, `net`
 - Plugins carregados não devem ter acesso a APIs sensíveis do Node.js
 
@@ -1092,6 +1148,7 @@ Exemplos:
 ```
 
 **Logs de Trace Points:**
+
 ```
 [INFO] [CLI] [1] Pipeline iniciado
 [INFO] [Config] [2] Configuração carregada: 6 trechos
@@ -1113,30 +1170,35 @@ Exemplos:
 #### Tipos de Warnings
 
 **1. ttk_out_of_tolerance:**
+
 - **Quando:** TTK medido fora do range (target ± tolerance)
 - **Severidade:** WARNING
 - **Ação:** Registrar no relatório, não bloquear execução
 - **Exemplo:** `Troop 2 (Gnomo*2): TTK 5 turnos (esperado: 3±1)`
 
 **2. troop_not_found:**
+
 - **Quando:** troopId configurado não existe em Troops.json
 - **Severidade:** CRITICAL
 - **Ação:** Registrar no relatório, pular troop
 - **Exemplo:** `TroopId 999 não encontrado em Troops.json`
 
 **3. enemy_not_found:**
+
 - **Quando:** enemyId de uma troop não existe em Enemies.json
 - **Severidade:** CRITICAL
 - **Ação:** Registrar no relatório, pular troop
 - **Exemplo:** `Troop 5 referencia EnemyId 88 (não encontrado)`
 
 **4. skill_formula_error:**
+
 - **Quando:** Fórmula de dano causa exceção ou timeout
 - **Severidade:** ERROR
 - **Ação:** Registrar no relatório, usar dano fallback (0 ou valor fixo)
 - **Exemplo:** `Skill 99: Fórmula inválida (ReferenceError: x is not defined)`
 
 **5. battle_timeout:**
+
 - **Quando:** Batalha ultrapassa limite de turnos (ex: 100 turnos)
 - **Severidade:** ERROR
 - **Ação:** Registrar no relatório, considerar derrota
@@ -1183,6 +1245,7 @@ Exemplos:
 **Objetivo:** Debug de inicialização headless e carregamento de plugins
 
 **Logs adicionais:**
+
 ```
 [DEBUG] [Runtime] Scripts carregados:
   - rmmz_core.js (v1.8.0)
@@ -1233,6 +1296,7 @@ Exemplos:
    - Detectar quebras antes de afetar validação de TTK
 
 **Plano de Contingência:**
+
 - **Curto Prazo:** Rodar em modo limitado detectando apenas falhas de carregamento e gerar relatório parcial
 - **Médio Prazo:** Criar versão "sandbox" que roda engine real em modo headless via Electron (sem UI, mas com runtime completo)
 - **Longo Prazo:** Isolar simulação de batalha em módulo independente que não depende de renderização
@@ -1266,6 +1330,7 @@ Exemplos:
    - Futuro: Adicionar restrições de cooldown, TP, AP, custos múltiplos
 
 **Plano de Contingência:**
+
 - **Curto Prazo:** Reduzir escopo para validação de dano por ação (usando engine) sem simular batalha completa
 - **Médio Prazo:** Aumentar cobertura gradualmente, adicionando mecânicas conforme validadas
 - **Longo Prazo:** Criar modo "playtest assistido" onde designer joga batalhas críticas e wrapper compara com simulação
@@ -1299,6 +1364,7 @@ Exemplos:
    - Permitir rodar trechos críticos em CI, full suite localmente
 
 **Plano de Contingência:**
+
 - **Curto Prazo:** Reduzir número de simulações por troop (ex: 1 simulação ao invés de Monte Carlo com N repetições)
 - **Médio Prazo:** Priorizar trechos críticos, executar trechos menos críticos sob demanda
 - **Longo Prazo:** Implementar cache de resultados por (troopId + partyConfig + seed) para evitar re-simulação
@@ -1331,6 +1397,7 @@ Exemplos:
    - Permitir que designer aceite divergências conhecidas
 
 **Plano de Contingência:**
+
 - **Curto Prazo:** Documentar limitações conhecidas (quais plugins não são suportados)
 - **Médio Prazo:** Adicionar suporte incremental aos plugins mais críticos (ex: Break Shields)
 - **Longo Prazo:** Criar framework de "adapters" para plugins customizados
@@ -1359,6 +1426,7 @@ Exemplos:
    - CI detecta quebras antes de afetar designers
 
 **Plano de Contingência:**
+
 - **Curto Prazo:** Aceitar custo de manutenção como investimento no ciclo de desenvolvimento
 - **Médio Prazo:** Avaliar adoção de soluções alternativas (Puppeteer com RPG Maker MZ em browser headless)
 - **Longo Prazo:** Contribuir com comunidade RPG Maker para criar API oficial de testes headless
@@ -1377,144 +1445,12 @@ Exemplos:
 
 ---
 
-## 11. ADRs Associados e Próximos Passos
-
-### 11.1 ADRs (Architecture Decision Records)
-
-#### ADR-001: Wrapper Read-Only e Alterações no Editor RPG Maker
-
-**Status:** Decidido
-**Contexto:** Reduzir risco de corrupção de dados e manter o editor RPG Maker MZ como fonte final de alteração de dados
-
-**Decisão:** O sistema MVP v1 funciona como wrapper read-only, sem escrever em `data/` do projeto MZ. Todas as alterações de fórmulas, stats e dados continuam sendo feitas diretamente no editor RPG Maker MZ.
-
-**Consequências:**
-- ✅ Zero risco de corrupção do projeto MZ
-- ✅ Disciplina clara: editor é fonte de verdade para game data
-- ❌ Não acelera edição em massa de dados
-- ❌ Depende de workflow disciplinado (designer atualiza MZ → roda validação)
-
-**Alternativas Consideradas:** Wrapper read-write que gera dados automaticamente (rejeitado por risco de divergência)
-
----
-
-#### ADR-002: Progressão de Skills - Automática vs Manual
-
-**Status:** Decidido para MVP v1, Evolução Planejada
-
-**Contexto:** No MVP, skills são aprendidas por nível (via `Classes.json → learnings`). No futuro, o jogo implementará sistema de compra de skills em lojas, exigindo configuração manual de skills por trecho.
-
-**Decisão MVP v1:** Skills derivadas automaticamente do nível da classe. Sistema calcula quais skills estão liberadas baseado em `learnings[].level ≤ partyMember.level`.
-
-**Decisão Futura:** Permitir configuração explícita de `skillIds` por membro da party no config de trecho.
-
-**Consequências:**
-- ✅ MVP v1: Configuração simples e rápida (apenas classId + level)
-- ✅ Futuro: Flexibilidade para validar diferentes builds de personagens
-- ⚠️ Mudança no modelo de dados: adicionar campo opcional `skillIds` em `PartyConfig.members`
-
-**Evolução Planejada:**
-```json
-// MVP v1 (atual)
-"party": {
-  "members": [
-    { "classId": 1, "level": 5 }  // Skills automáticas
-  ]
-}
-
-// Futuro (compra de skills)
-"party": {
-  "members": [
-    {
-      "classId": 1,
-      "level": 5,
-      "skillIds": [1, 99, 75, 103]  // Skills explícitas
-    }
-  ]
-}
-```
-
----
-
-#### ADR-003: Fidelidade via Batalha Real na Engine em Headless
-
-**Status:** Decidido
-
-**Contexto:** Validar balanceamento de forma mais próxima possível ao jogo final, especialmente com plugins VisuStella
-
-**Decisão:** Executar batalhas reais via `BattleManager` e loop de turnos do RPG Maker MZ em ambiente headless (JSDOM + mocks), ao invés de criar simulador matemático independente.
-
-**Consequências:**
-- ✅ Resultados fidedignos ao jogo final (incluindo comportamento de plugins)
-- ✅ Captura efeitos colaterais de estados, buffs e mecânicas avançadas
-- ❌ Maior fragilidade e custo de manutenção do harness headless
-- ❌ Dependência de mocks (PIXI, Effekseer, Graphics) sincronizados com engine
-
-**Alternativas Consideradas:** Simulador matemático puro (rejeitado por divergência com plugins)
-
----
-
-#### ADR-004: Considerar Apenas HP e MP na Escolha de Skills (MVP v1)
-
-**Status:** Decidido para MVP v1, Expansão Futura
-
-**Contexto:** Reduzir complexidade inicial e ainda capturar principal impacto em rotações básicas
-
-**Decisão MVP v1:** Algoritmo de escolha de skill filtra apenas por HP e MP disponível. Ignora cooldowns, TP, AP, custos múltiplos, e outras restrições.
-
-**Decisão Futura:** Expandir para considerar TP, cooldowns e custos múltiplos quando mecânicas forem críticas.
-
-**Consequências:**
-- ✅ Simplicidade de implementação no MVP
-- ✅ Captura 80% dos casos de uso (rotações básicas)
-- ❌ Pode divergir do jogo em cenários com cooldowns/TP/AP
-- ⚠️ Deve ser documentado como limitação conhecida nos relatórios
-
-**Alternativas Consideradas:** Modelar todas restrições desde MVP (rejeitado por complexidade vs valor)
-
----
-
-#### ADR-005: Referências ao Banco MZ por ID Numérico
-
-**Status:** Decidido
-
-**Contexto:** Reduzir ambiguidade e simplificar validação automática contra `data/*.json`
-
-**Decisão:** Configurações e relatórios usam sempre IDs numéricos (`classId`, `skillId`, `enemyId`, `troopId`) ao invés de nomes.
-
-**Consequências:**
-- ✅ Validação automática simples (verificar existência de ID em JSON)
-- ✅ Sem ambiguidade (nomes podem duplicar, IDs não)
-- ❌ Configs e relatórios menos legíveis sem resolução de nomes
-- ⚠️ Pode requerer passo extra de "resolver IDs → nomes" para UI futura
-
-**Alternativas Consideradas:** Usar nomes + fallback para ID (rejeitado por ambiguidade)
-
----
-
-#### ADR-006: Sem UI e Sem CI no MVP v1
-
-**Status:** Decidido para MVP v1
-
-**Contexto:** Reduzir escopo e focar na execução determinística e nos relatórios
-
-**Decisão:** MVP v1 é CLI puro (Node.js), sem interface gráfica e sem integração com CI.
-
-**Decisão Futura:** Adicionar UI Electron e integração com CI após validação do core.
-
-**Consequências:**
-- ✅ Desenvolvimento mais rápido (menor superfície de código)
-- ✅ Foco em core value (validação determinística)
-- ❌ Exige configuração manual via arquivos
-- ❌ Execução manual dos testes
-
-**Próximos Passos:** UI Electron e CI integration são prioridades pós MVP v1
-
----
+## 11. Próximos Passos
 
 ### 11.2 Próximos Passos (Roadmap de Implementação)
 
 #### Fase 1: Foundation (MVP v1 - Core)
+
 **Prioridade:** Crítica
 **Estimativa:** 4-6 semanas
 
@@ -1544,17 +1480,18 @@ Exemplos:
 ---
 
 #### Fase 2: Simulation Engine
+
 **Prioridade:** Crítica
 **Estimativa:** 3-4 semanas
 
-5. **Simulation Layer:**
+1. **Simulation Layer:**
    - Implementar escolha de skill por melhor dano esperado (HP/MP apenas)
    - Orquestrar execução de batalha via `BattleManager.setup` e loop de turnos
    - Aplicar seed para determinismo
    - Medir TTK em turnos e ações
    - Testes unitários de simulação
 
-6. **Reporter Layer:**
+2. **Reporter Layer:**
    - Coletar resultados por troop e por trecho
    - Calcular agregados (média, p95 de TTK)
    - Comparar TTK vs alvo e tolerância
@@ -1565,16 +1502,17 @@ Exemplos:
 ---
 
 #### Fase 3: CLI e Export IA
+
 **Prioridade:** Alta
 **Estimativa:** 1-2 semanas
 
-7. **CLI Layer:**
+1. **CLI Layer:**
    - Comandos: `run-ttk`, `export-context`
    - Flags: `--config`, `--seed`, `--trecho`, `--verbose`, `--diagnostic`
    - Logs estruturados no terminal
    - Exit codes (0 sucesso, 1 erro)
 
-8. **AI Exporter Layer:**
+2. **AI Exporter Layer:**
    - Dividir JSONs grandes em arquivos menores por entidade
    - Organização em `report/context/skills/`, `report/context/enemies/`, etc.
    - Filtro opcional por IDs usados nos trechos
@@ -1582,15 +1520,16 @@ Exemplos:
 ---
 
 #### Fase 4: Validação e Calibração
+
 **Prioridade:** Alta
 **Estimativa:** 2-3 semanas
 
-9. **Testes de Integração End-to-End:**
+1. **Testes de Integração End-to-End:**
    - Cenários de referência (batalhas jogadas manualmente)
    - Comparação TTK manual vs TTK headless
    - Ajustes de algoritmo de escolha de skill
 
-10. **Documentação:**
+2. **Documentação:**
     - README: Como instalar e executar
     - Guia de configuração de trechos
     - Troubleshooting de erros comuns
@@ -1599,24 +1538,25 @@ Exemplos:
 ---
 
 #### Fase 5: Pós MVP v1 (Futuro)
+
 **Prioridade:** Média/Baixa
 
-11. **Interface Electron:**
+1. **Interface Electron:**
     - Editor visual de configurações
     - Visualização gráfica de relatórios
     - Histórico de execuções
 
-12. **CI Integration:**
+2. **CI Integration:**
     - GitHub Actions workflow
     - Execução automática em PRs
     - Bloquear merge se TTK regredir
 
-13. **Expansão de Mecânicas:**
+3. **Expansão de Mecânicas:**
     - Suporte a TP, cooldowns, custos múltiplos
     - Configuração explícita de `skillIds` (compra de skills em lojas)
     - Simulação de uso de potions e itens de cura
 
-14. **Performance:**
+4. **Performance:**
     - Paralelização com Worker Threads
     - Cache de resultados por (troopId + partyConfig + seed)
     - Execução incremental (apenas trechos modificados)
