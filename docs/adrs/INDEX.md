@@ -1,6 +1,6 @@
 # ADR Index - Coreto Game Engine
 
-**Total ADRs:** 27
+**Total ADRs:** 28
 **Last Updated:** 2026-01-04
 
 ## Overview
@@ -112,18 +112,30 @@ These ADRs document important but less critical architectural decisions identifi
 
 ---
 
+## Generated ADRs - Additional (1)
+
+These ADRs were identified and generated after the initial systematic analysis.
+
+### CONFIG Module (1)
+
+| ID | Title | Status |
+|----|-------|--------|
+| [ADR-028](generated/CONFIG/ADR-028-typescript-as-implementation-language.md) | TypeScript as Primary Implementation Language | Accepted |
+
+---
+
 ## Summary by Module
 
-| Module | Documented | High Priority | Medium Priority | Total |
-|--------|-----------|---------------|-----------------|-------|
-| CLI | 0 | 1 | 0 | 1 |
-| CONFIG | 0 | 1 | 1 | 2 |
-| DOCS | 0 | 2 | 2 | 4 |
-| FOUNDATION | 3 | 0 | 0 | 3 |
-| REPORTER | 0 | 3 | 1 | 4 |
-| RUNTIME | 1 | 3 | 2 | 6 |
-| SIMULATION | 2 | 4 | 1 | 7 |
-| **TOTAL** | **6** | **14** | **7** | **27** |
+| Module | Documented | High Priority | Medium Priority | Additional | Total |
+|--------|-----------|---------------|-----------------|------------|-------|
+| CLI | 0 | 1 | 0 | 0 | 1 |
+| CONFIG | 0 | 1 | 1 | 1 | 3 |
+| DOCS | 0 | 2 | 2 | 0 | 4 |
+| FOUNDATION | 3 | 0 | 0 | 0 | 3 |
+| REPORTER | 0 | 3 | 1 | 0 | 4 |
+| RUNTIME | 1 | 3 | 2 | 0 | 6 |
+| SIMULATION | 2 | 4 | 1 | 0 | 7 |
+| **TOTAL** | **6** | **14** | **7** | **1** | **28** |
 
 ---
 
@@ -131,23 +143,27 @@ These ADRs document important but less critical architectural decisions identifi
 
 ### High-Impact Decision Chains
 
-1. **Headless Runtime Architecture**:
+1. **Technology Stack Foundation**:
+   - ADR-028 (TypeScript) → ADR-007 (Oclif CLI) → ADR-008 (Zod Validation)
+   - Rationale: TypeScript-first ecosystem enables type-safe CLI and schema inference
+
+2. **Headless Runtime Architecture**:
    - ADR-003 (Real Engine Headless) → ADR-014 (JSDOM) → ADR-015 (Graphics Mocking) → ADR-016 (Sync Loading)
    - Supporting: ADR-025 (Diagnostic Mode), ADR-026 (Canvas Mock)
 
-2. **Battle Simulation Fidelity**:
+3. **Battle Simulation Fidelity**:
    - ADR-018 (Deterministic RNG) → ADR-017 (Termination Conditions) → ADR-020 (TTK Measurement)
 
-3. **Skill System Design**:
+4. **Skill System Design**:
    - ADR-002 (Auto Progression) → ADR-027 (Learnings Derivation) → ADR-004 (HP/MP Filtering) → ADR-019 (Selection Algorithm)
 
-4. **Configuration & Validation**:
-   - ADR-005 (ID References) → ADR-021 (JSON Format) → ADR-008 (Zod Validation)
+5. **Configuration & Validation**:
+   - ADR-005 (ID References) → ADR-021 (JSON Format) → ADR-008 (Zod Validation) → ADR-028 (TypeScript Types)
 
-5. **Reporting Pipeline**:
+6. **Reporting Pipeline**:
    - ADR-011 (JSON Output) → ADR-012 (Aggregation) → ADR-013 (Warnings) → ADR-024 (Sync Write)
 
-6. **Documentation Standards**:
+7. **Documentation Standards**:
    - ADR-022 (Docs-First) → ADR-010 (Three Layers) → ADR-009 (Markdown) → ADR-023 (MADR Format)
 
 ---
