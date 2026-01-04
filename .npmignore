@@ -1,0 +1,55 @@
+# Source Files (keep only dist/ in package)
+src/
+tests/
+*.test.ts
+*.spec.ts
+
+# Documentation
+docs/
+README.md
+CLAUDE.md
+
+# Configuration
+tsconfig.json
+jest.config.js
+.eslintrc.*
+.prettierrc.*
+
+# Development Files
+.github/
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test and Coverage
+coverage/
+.nyc_output/
+
+# Logs
+*.log
+logs/
+
+# Reports
+reports/
+
+# CI/CD
+.travis.yml
+.gitlab-ci.yml
+.circleci/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Environment
+.env
+.env.*
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+*.tsbuildinfo
