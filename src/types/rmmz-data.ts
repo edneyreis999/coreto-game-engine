@@ -205,7 +205,7 @@ export interface TroopEventCommand {
   /** Indentation level for conditional branches */
   indent: number;
   /** Command parameters (vary by command code) */
-  parameters: any[];
+  parameters: unknown[];
 }
 
 /**
@@ -462,15 +462,15 @@ export interface ItemData {
  */
 export interface SystemData {
   /** Advanced settings object */
-  advanced: Record<string, any>;
+  advanced: Record<string, unknown>;
   /** Airship vehicle configuration */
-  airship: Record<string, any>;
+  airship: Record<string, unknown>;
   /** Armor type names array (index 0 is empty string) */
   armorTypes: string[];
   /** Attack motion definitions */
-  attackMotions: any[];
+  attackMotions: unknown[];
   /** Battle BGM configuration */
-  battleBgm: Record<string, any>;
+  battleBgm: Record<string, unknown>;
   /** Battle background 1 filename */
   battleback1Name: string;
   /** Battle background 2 filename */
@@ -486,11 +486,11 @@ export interface SystemData {
    */
   battleSystem: number;
   /** Boat vehicle configuration */
-  boat: Record<string, any>;
+  boat: Record<string, unknown>;
   /** Currency unit name (e.g., "G", "Gold") */
   currencyUnit: string;
   /** Defeat ME (music effect) configuration */
-  defeatMe: Record<string, any>;
+  defeatMe: Record<string, unknown>;
   /** Map ID used in editor */
   editMapId: number;
   /**
@@ -503,15 +503,15 @@ export interface SystemData {
   /** Game title */
   gameTitle: string;
   /** Game over ME configuration */
-  gameoverMe: Record<string, any>;
+  gameoverMe: Record<string, unknown>;
   /** Item category definitions */
-  itemCategories: any[];
+  itemCategories: unknown[];
   /** Game locale/language */
   locale: string;
   /** Magic skill IDs array */
   magicSkills: number[];
   /** Menu command configurations */
-  menuCommands: any[];
+  menuCommands: unknown[];
   /** Auto-save option enabled */
   optAutosave: boolean;
   /** Display TP in battle option */
@@ -535,14 +535,14 @@ export interface SystemData {
   /** Initial party member IDs */
   partyMembers: number[];
   /** Ship vehicle configuration */
-  ship: Record<string, any>;
+  ship: Record<string, unknown>;
   /**
    * Skill type names array (index 0 is empty string)
    * Example: ["", "Mágica", "Especial"]
    */
   skillTypes: string[];
   /** System sound effects */
-  sounds: any[];
+  sounds: unknown[];
   /** Starting map ID */
   startMapId: number;
   /** Starting X coordinate */
@@ -552,9 +552,9 @@ export interface SystemData {
   /** Switch names array */
   switches: string[];
   /** Game terminology definitions */
-  terms: Record<string, any>;
+  terms: Record<string, unknown>;
   /** Test battle party configuration */
-  testBattlers: any[];
+  testBattlers: unknown[];
   /** Test battle troop ID */
   testTroopId: number;
   /** Title screen graphic 1 filename */
@@ -562,15 +562,15 @@ export interface SystemData {
   /** Title screen graphic 2 filename */
   title2Name: string;
   /** Title screen BGM configuration */
-  titleBgm: Record<string, any>;
+  titleBgm: Record<string, unknown>;
   /** Title command window configuration */
-  titleCommandWindow: Record<string, any>;
+  titleCommandWindow: Record<string, unknown>;
   /** Variable names array */
   variables: string[];
   /** RPG Maker MZ version ID */
   versionId: number;
   /** Victory ME configuration */
-  victoryMe: Record<string, any>;
+  victoryMe: Record<string, unknown>;
   /**
    * Weapon type names array (index 0 is empty string)
    * Example: ["", "Adaga", "Espada", "Malho", "Machado"]
@@ -585,7 +585,7 @@ export interface SystemData {
   /** Tile size configuration */
   tileSize?: number;
   /** Editor configuration */
-  editor?: Record<string, any>;
+  editor?: Record<string, unknown>;
   /** Face graphic size */
   faceSize?: number;
   /** Icon size */
