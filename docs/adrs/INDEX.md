@@ -5,137 +5,89 @@
 
 ## Overview
 
-This index organizes all Architecture Decision Records (ADRs) for the Coreto Game Engine project. ADRs are categorized by source (documented vs generated) and organized by system module.
+This index organizes all 28 Architecture Decision Records (ADRs) for the Coreto Game Engine project, organized by system module.
 
 ---
 
-## Documented ADRs (6)
+## ADRs by Module
 
-These ADRs were extracted from existing design documentation (PRD and HLD).
-
-| ID | Title | Module | Status |
-|----|-------|--------|--------|
-| [ADR-001](documented/ADR-001-wrapper-read-only.md) | Wrapper Read-Only | FOUNDATION | Accepted |
-| [ADR-002](documented/ADR-002-progressao-skills-automatica-vs-manual.md) | Progressão de Skills - Automática vs Manual | SIMULATION | Accepted |
-| [ADR-003](documented/ADR-003-fidelidade-batalha-real-engine-headless.md) | Fidelidade Batalha Real Engine Headless | RUNTIME | Accepted |
-| [ADR-004](documented/ADR-004-escolha-skills-hp-mp-mvp.md) | Escolha de Skills - HP/MP MVP | SIMULATION | Accepted |
-| [ADR-005](documented/ADR-005-referencias-banco-mz-por-id.md) | Referências ao Banco MZ por ID | FOUNDATION | Accepted |
-| [ADR-006](documented/ADR-006-sem-ui-sem-ci-mvp.md) | Sem UI e Sem CI no MVP | FOUNDATION | Accepted |
-
----
-
-## Generated ADRs - High Priority (14)
-
-These ADRs were identified and generated through systematic codebase analysis for critical architectural decisions.
-
-### CLI Module (1)
+### CLI Module (1 ADR)
 
 | ID | Title | Status |
 |----|-------|--------|
-| [ADR-007](generated/CLI/ADR-007-oclif-cli-framework.md) | Oclif CLI Framework | Accepted |
+| [ADR-007](CLI/ADR-007-oclif-cli-framework.md) | Oclif CLI Framework | Accepted |
 
-### CONFIG Module (1)
-
-| ID | Title | Status |
-|----|-------|--------|
-| [ADR-008](generated/CONFIG/ADR-008-schema-validation-library-zod.md) | Schema Validation Library - Zod | Accepted |
-
-### DOCS Module (2)
+### CONFIG Module (3 ADRs)
 
 | ID | Title | Status |
 |----|-------|--------|
-| [ADR-009](generated/DOCS/ADR-009-markdown-as-primary-documentation-format.md) | Markdown as Primary Documentation Format | Accepted |
-| [ADR-010](generated/DOCS/ADR-010-three-layer-documentation-architecture.md) | Three-Layer Documentation Architecture | Accepted |
+| [ADR-008](CONFIG/ADR-008-schema-validation-library-zod.md) | Schema Validation Library - Zod | Accepted |
+| [ADR-021](CONFIG/ADR-021-json-based-configuration-format.md) | JSON-Based Configuration Format | Accepted |
+| [ADR-028](CONFIG/ADR-028-typescript-as-implementation-language.md) | TypeScript as Primary Implementation Language | Accepted |
 
-### REPORTER Module (3)
-
-| ID | Title | Status |
-|----|-------|--------|
-| [ADR-011](generated/REPORTER/ADR-011-json-file-based-report-output-format.md) | JSON File-Based Report Output Format | Accepted |
-| [ADR-012](generated/REPORTER/ADR-012-statistical-aggregation-metrics.md) | Statistical Aggregation Metrics | Accepted |
-| [ADR-013](generated/REPORTER/ADR-013-typed-warning-system-with-severity-levels.md) | Typed Warning System with Severity Levels | Accepted |
-
-### RUNTIME Module (3)
+### DOCS Module (4 ADRs)
 
 | ID | Title | Status |
 |----|-------|--------|
-| [ADR-014](generated/RUNTIME/ADR-014-jsdom-browser-emulation-headless-runtime.md) | JSDOM Browser Emulation for Headless Runtime | Accepted |
-| [ADR-015](generated/RUNTIME/ADR-015-graphics-mocking-strategy-headless-runtime.md) | Graphics Mocking Strategy for Headless Runtime | Accepted |
-| [ADR-016](generated/RUNTIME/ADR-016-synchronous-database-loading-override.md) | Synchronous Database Loading Override | Accepted |
+| [ADR-009](DOCS/ADR-009-markdown-as-primary-documentation-format.md) | Markdown as Primary Documentation Format | Accepted |
+| [ADR-010](DOCS/ADR-010-three-layer-documentation-architecture.md) | Three-Layer Documentation Architecture | Accepted |
+| [ADR-022](DOCS/ADR-022-documentation-before-implementation-greenfield-approach.md) | Documentation-Before-Implementation Greenfield Approach | Accepted |
+| [ADR-023](DOCS/ADR-023-madr-lightweight-adr-format.md) | MADR-Inspired Lightweight ADR Format | Accepted |
 
-### SIMULATION Module (4)
-
-| ID | Title | Status |
-|----|-------|--------|
-| [ADR-017](generated/SIMULATION/ADR-017-battle-termination-conditions-with-timeout-safety.md) | Battle Termination Conditions with Timeout Safety | Accepted |
-| [ADR-018](generated/SIMULATION/ADR-018-seed-controlled-determinism-rng.md) | Seed-Controlled Determinism for RNG | Accepted |
-| [ADR-019](generated/SIMULATION/ADR-019-damage-per-action-maximization-skill-selection.md) | Damage-Per-Action Maximization for Skill Selection | Accepted |
-| [ADR-020](generated/SIMULATION/ADR-020-dual-metric-ttk-measurement-turns-and-actions.md) | Dual-Metric TTK Measurement (Turns and Actions) | Accepted |
-
----
-
-## Generated ADRs - Medium Priority (7)
-
-These ADRs document important but less critical architectural decisions identified during analysis.
-
-### CONFIG Module (1)
+### FOUNDATION Module (3 ADRs)
 
 | ID | Title | Status |
 |----|-------|--------|
-| [ADR-021](generated/CONFIG/ADR-021-json-based-configuration-format.md) | JSON-Based Configuration Format | Accepted |
+| [ADR-001](FOUNDATION/ADR-001-wrapper-read-only.md) | Wrapper Read-Only | Accepted |
+| [ADR-005](FOUNDATION/ADR-005-referencias-banco-mz-por-id.md) | Referências ao Banco MZ por ID | Accepted |
+| [ADR-006](FOUNDATION/ADR-006-sem-ui-sem-ci-mvp.md) | Sem UI e Sem CI no MVP | Accepted |
 
-### DOCS Module (2)
-
-| ID | Title | Status |
-|----|-------|--------|
-| [ADR-022](generated/DOCS/ADR-022-documentation-before-implementation-greenfield-approach.md) | Documentation-Before-Implementation Greenfield Approach | Accepted |
-| [ADR-023](generated/DOCS/ADR-023-madr-lightweight-adr-format.md) | MADR-Inspired Lightweight ADR Format | Accepted |
-
-### REPORTER Module (1)
+### REPORTER Module (4 ADRs)
 
 | ID | Title | Status |
 |----|-------|--------|
-| [ADR-024](generated/REPORTER/ADR-024-synchronous-file-write-strategy.md) | Synchronous File Write Strategy for Report Output | Accepted |
+| [ADR-011](REPORTER/ADR-011-json-file-based-report-output-format.md) | JSON File-Based Report Output Format | Accepted |
+| [ADR-012](REPORTER/ADR-012-statistical-aggregation-metrics.md) | Statistical Aggregation Metrics | Accepted |
+| [ADR-013](REPORTER/ADR-013-typed-warning-system-with-severity-levels.md) | Typed Warning System with Severity Levels | Accepted |
+| [ADR-024](REPORTER/ADR-024-synchronous-file-write-strategy.md) | Synchronous File Write Strategy for Report Output | Accepted |
 
-### RUNTIME Module (2)
-
-| ID | Title | Status |
-|----|-------|--------|
-| [ADR-025](generated/RUNTIME/ADR-025-diagnostic-mode-for-headless-initialization-troubleshooting.md) | Diagnostic Mode for Headless Initialization Troubleshooting | Accepted |
-| [ADR-026](generated/RUNTIME/ADR-026-jest-canvas-mock-library-for-canvas-api-stubbing.md) | jest-canvas-mock Library for Canvas API Stubbing | Accepted |
-
-### SIMULATION Module (1)
+### RUNTIME Module (6 ADRs)
 
 | ID | Title | Status |
 |----|-------|--------|
-| [ADR-027](generated/SIMULATION/ADR-027-level-based-skill-derivation-from-learnings.md) | Level-Based Skill Derivation from Class Learnings | Accepted |
+| [ADR-003](RUNTIME/ADR-003-fidelidade-batalha-real-engine-headless.md) | Fidelidade Batalha Real Engine Headless | Accepted |
+| [ADR-014](RUNTIME/ADR-014-jsdom-browser-emulation-headless-runtime.md) | JSDOM Browser Emulation for Headless Runtime | Accepted |
+| [ADR-015](RUNTIME/ADR-015-graphics-mocking-strategy-headless-runtime.md) | Graphics Mocking Strategy for Headless Runtime | Accepted |
+| [ADR-016](RUNTIME/ADR-016-synchronous-database-loading-override.md) | Synchronous Database Loading Override | Accepted |
+| [ADR-025](RUNTIME/ADR-025-diagnostic-mode-for-headless-initialization-troubleshooting.md) | Diagnostic Mode for Headless Initialization Troubleshooting | Accepted |
+| [ADR-026](RUNTIME/ADR-026-jest-canvas-mock-library-for-canvas-api-stubbing.md) | jest-canvas-mock Library for Canvas API Stubbing | Accepted |
 
----
-
-## Generated ADRs - Additional (1)
-
-These ADRs were identified and generated after the initial systematic analysis.
-
-### CONFIG Module (1)
+### SIMULATION Module (7 ADRs)
 
 | ID | Title | Status |
 |----|-------|--------|
-| [ADR-028](generated/CONFIG/ADR-028-typescript-as-implementation-language.md) | TypeScript as Primary Implementation Language | Accepted |
+| [ADR-002](SIMULATION/ADR-002-progressao-skills-automatica-vs-manual.md) | Progressão de Skills - Automática vs Manual | Accepted |
+| [ADR-004](SIMULATION/ADR-004-escolha-skills-hp-mp-mvp.md) | Escolha de Skills - HP/MP MVP | Accepted |
+| [ADR-017](SIMULATION/ADR-017-battle-termination-conditions-with-timeout-safety.md) | Battle Termination Conditions with Timeout Safety | Accepted |
+| [ADR-018](SIMULATION/ADR-018-seed-controlled-determinism-rng.md) | Seed-Controlled Determinism for RNG | Accepted |
+| [ADR-019](SIMULATION/ADR-019-damage-per-action-maximization-skill-selection.md) | Damage-Per-Action Maximization for Skill Selection | Accepted |
+| [ADR-020](SIMULATION/ADR-020-dual-metric-ttk-measurement-turns-and-actions.md) | Dual-Metric TTK Measurement (Turns and Actions) | Accepted |
+| [ADR-027](SIMULATION/ADR-027-level-based-skill-derivation-from-learnings.md) | Level-Based Skill Derivation from Class Learnings | Accepted |
 
 ---
 
 ## Summary by Module
 
-| Module | Documented | High Priority | Medium Priority | Additional | Total |
-|--------|-----------|---------------|-----------------|------------|-------|
-| CLI | 0 | 1 | 0 | 0 | 1 |
-| CONFIG | 0 | 1 | 1 | 1 | 3 |
-| DOCS | 0 | 2 | 2 | 0 | 4 |
-| FOUNDATION | 3 | 0 | 0 | 0 | 3 |
-| REPORTER | 0 | 3 | 1 | 0 | 4 |
-| RUNTIME | 1 | 3 | 2 | 0 | 6 |
-| SIMULATION | 2 | 4 | 1 | 0 | 7 |
-| **TOTAL** | **6** | **14** | **7** | **1** | **28** |
+| Module | Total ADRs | Key Focus Areas |
+|--------|-----------|-----------------|
+| CLI | 1 | Command-line interface framework |
+| CONFIG | 3 | Configuration format, validation, type system |
+| DOCS | 4 | Documentation standards and processes |
+| FOUNDATION | 3 | Core architectural principles |
+| REPORTER | 4 | Report generation and output |
+| RUNTIME | 6 | Headless execution environment |
+| SIMULATION | 7 | Battle simulation mechanics |
+| **TOTAL** | **28** | **All architectural decisions** |
 
 ---
 
