@@ -145,10 +145,12 @@ export const TurnSchema = z.object({
  * Fields:
  * - trechoId: Reference to trecho configuration
  * - troopId: ID of troop from Troops.json
+ * - troopName: Human-readable troop name (from Troops.json)
  * - seed: RNG seed used for deterministic execution
  * - ttkTurns: Time-to-Kill measured in battle turns (ADR-020)
  * - ttkActions: Time-to-Kill measured in party actions (ADR-020)
  * - victory: Whether party defeated all enemies
+ * - expGained: Total EXP gained from this battle (victory only; 0 otherwise)
  * - turns: Complete battle log with all actions
  */
 export const BattleResultSchema = z.object({
@@ -163,6 +165,10 @@ export const BattleResultSchema = z.object({
     })
     .int('battleResult.troopId must be an integer')
     .positive('battleResult.troopId must be a positive number'),
+  troopName: z.string({
+    required_error: 'battleResult.troopName is required',
+    invalid_type_error: 'battleResult.troopName must be a string',
+  }),
   seed: z
     .number({
       required_error: 'battleResult.seed is required',
@@ -187,6 +193,13 @@ export const BattleResultSchema = z.object({
     required_error: 'battleResult.victory is required',
     invalid_type_error: 'battleResult.victory must be a boolean',
   }),
+  expGained: z
+    .number({
+      required_error: 'battleResult.expGained is required',
+      invalid_type_error: 'battleResult.expGained must be a number',
+    })
+    .int('battleResult.expGained must be an integer')
+    .nonnegative('battleResult.expGained must be non-negative'),
   turns: z.array(TurnSchema, {
     required_error: 'battleResult.turns is required',
     invalid_type_error: 'battleResult.turns must be an array',

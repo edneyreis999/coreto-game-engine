@@ -32,7 +32,7 @@
   ],
   "scripts": {
     "dev": "tsx watch src/cli/index.ts",
-    "build": "tsc",
+    "build": "tsc && tsc-alias",
     "type-check": "tsc --noEmit",
     "lint": "eslint src/**/*.ts",
     "format": "prettier --write \"src/**/*.ts\"",
@@ -63,6 +63,7 @@
     "jest-canvas-mock": "^2.5.2",
     "prettier": "^3.4.2",
     "ts-jest": "^29.2.5",
+    "tsc-alias": "^1.8.16",
     "tsx": "^4.19.2",
     "typescript": "^5.9.3"
   }

@@ -211,10 +211,12 @@ export class JsonReporter implements IReporter {
         results: t.battles.map((b) => ({
           trechoId: t.trechoId,
           troopId: b.troopId,
+          troopName: b.troopName,
           seed: b.seed,
           ttkTurns: b.ttkTurns,
           ttkActions: b.ttkActions,
           victory: b.outcome === 'victory',
+          expGained: b.expGained,
           turns: [], // MVP doesn't track turn-level detail
         })),
         aggregates: t.aggregates,

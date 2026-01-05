@@ -282,10 +282,12 @@ describe('Report Schema Validation', () => {
       const validResult: BattleResult = {
         trechoId: 'ato1-nivel1-10',
         troopId: 5,
+        troopName: 'Slimes',
         seed: 12345,
         ttkTurns: 3,
         ttkActions: 8,
         victory: true,
+        expGained: 12,
         turns: [
           {
             turnNumber: 1,
@@ -309,10 +311,12 @@ describe('Report Schema Validation', () => {
       const result: BattleResult = {
         trechoId: 'test',
         troopId: 1,
+        troopName: 'Test Troop',
         seed: -999,
         ttkTurns: 0,
         ttkActions: 0,
         victory: false,
+        expGained: 0,
         turns: [],
       };
 
@@ -324,10 +328,12 @@ describe('Report Schema Validation', () => {
         BattleResultSchema.parse({
           trechoId: 'test',
           troopId: 1,
+          troopName: 'Test Troop',
           seed: 12345,
           ttkTurns: -1,
           ttkActions: 5,
           victory: true,
+          expGained: 10,
           turns: [],
         })
       ).toThrow(/must be non-negative/);
@@ -338,10 +344,12 @@ describe('Report Schema Validation', () => {
         BattleResultSchema.parse({
           trechoId: 'test',
           troopId: 0,
+          troopName: 'Test Troop',
           seed: 12345,
           ttkTurns: 3,
           ttkActions: 5,
           victory: true,
+          expGained: 10,
           turns: [],
         })
       ).toThrow(/must be a positive number/);
@@ -405,10 +413,12 @@ describe('Report Schema Validation', () => {
           {
             trechoId: 'ato1-nivel1-10',
             troopId: 5,
+            troopName: 'Slimes',
             seed: 12345,
             ttkTurns: 3,
             ttkActions: 8,
             victory: true,
+            expGained: 12,
             turns: [],
           },
         ],
@@ -601,10 +611,12 @@ describe('Report Schema Validation', () => {
               {
                 trechoId: 'ato1-nivel1-10',
                 troopId: 5,
+                troopName: 'Slimes',
                 seed: 12345,
                 ttkTurns: 3,
                 ttkActions: 8,
                 victory: true,
+                expGained: 12,
                 turns: [
                   {
                     turnNumber: 1,
@@ -765,10 +777,12 @@ describe('Report Schema Validation', () => {
       const battleResult: BattleResult = {
         trechoId: 'test',
         troopId: 1,
+        troopName: 'Test Troop',
         seed: 12345,
         ttkTurns: 3,
         ttkActions: 8,
         victory: true,
+        expGained: 10,
         turns: [turn],
       };
 

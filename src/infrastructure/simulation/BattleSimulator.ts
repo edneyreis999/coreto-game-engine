@@ -150,6 +150,9 @@ export class HeadlessBattleSimulator implements IBattleSimulator {
     // Determine battle outcome
     const outcome = this.determineBattleOutcome();
 
+    // Capture EXP gained (best-effort; depends on RMMZ internals being available)
+    const expGained = this.getBattleExpGained(outcome);
+
     // Get troop name
     const troopData = this.database.$dataTroops[setup.troopId];
     if (!troopData) {
@@ -167,6 +170,7 @@ export class HeadlessBattleSimulator implements IBattleSimulator {
       ttkActions: metrics.actions,
       durationMs,
       seed: setup.seed,
+      expGained,
     });
   }
 
@@ -408,6 +412,40 @@ export class HeadlessBattleSimulator implements IBattleSimulator {
 
     // Timeout: battle did not end naturally
     return 'timeout';
+  }
+
+  /**
+   * Best-effort capture of total EXP gained from the current battle.
+   *
+   * In RPG Maker MZ, rewards are usually tracked by BattleManager._rewards (exp/gold/items)
+   * and can also be derived from $gameTroop.expTotal().
+   *
+   * This method intentionally returns 0 for non-victory outcomes.
+   */
+  private getBattleExpGained(outcome: 'victory' | 'defeat' | 'timeout'): number {
+    if (outcome !== 'victory') return 0;
+
+    try {
+      const BattleManager = globalScope.BattleManager;
+      const rewardsExp = BattleManager?._rewards?.exp;
+      if (typeof rewardsExp === 'number' && Number.isFinite(rewardsExp) && rewardsExp >= 0) {
+        return Math.floor(rewardsExp);
+      }
+    } catch {
+      // ignore
+    }
+
+    try {
+      const $gameTroop = globalScope.$gameTroop;
+      const expTotal = $gameTroop?.expTotal?.();
+      if (typeof expTotal === 'number' && Number.isFinite(expTotal) && expTotal >= 0) {
+        return Math.floor(expTotal);
+      }
+    } catch {
+      // ignore
+    }
+
+    return 0;
   }
 
   /**

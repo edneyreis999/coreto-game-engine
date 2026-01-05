@@ -45,6 +45,12 @@ export interface BattleResultData {
    * RNG seed used for this battle (for determinism).
    */
   seed: number;
+
+  /**
+   * Total EXP gained from this battle (usually the troop reward on victory).
+   * For defeat/timeout this should be 0.
+   */
+  expGained?: number;
 }
 
 /**
@@ -75,6 +81,7 @@ export class BattleResult {
   readonly ttkActions: number;
   readonly durationMs: number;
   readonly seed: number;
+  readonly expGained: number;
 
   /**
    * Creates a new BattleResult.
@@ -89,6 +96,7 @@ export class BattleResult {
     this.ttkActions = data.ttkActions;
     this.durationMs = data.durationMs;
     this.seed = data.seed;
+    this.expGained = data.expGained ?? 0;
 
     // Freeze to ensure immutability
     Object.freeze(this);
