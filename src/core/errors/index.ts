@@ -17,3 +17,6 @@ export * from './BattleTimeoutError.js';
 
 // Skill errors
 export * from './SkillFormulaError.js';
+
+// File system errors
+export * from './FileSystemError.js';

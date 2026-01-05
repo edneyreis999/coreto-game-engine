@@ -80,13 +80,38 @@ export class GenerateReportUseCase {
       trechoId: result.trechoId,
       trechoName: result.trechoName,
       battles: result.battles,
-      avgTtkTurns: result.avgTtkTurns,
-      avgTtkActions: result.avgTtkActions,
+      aggregates: {
+        avgTtkTurns: result.avgTtkTurns,
+        p95TtkTurns: result.avgTtkTurns, // TODO: Calculate actual p95
+        avgTtkActions: result.avgTtkActions,
+        p95TtkActions: result.avgTtkActions, // TODO: Calculate actual p95
+      },
+      warnings: [], // Warnings are now collected at trecho level by reporter
       passed: result.passed,
     }));
 
+    // Calculate summary
+    const totalBattles = trechos.reduce((sum, t) => sum + t.battles.length, 0);
+    const totalWarnings = input.warnings.length;
+    const warningsByType: Record<string, number> = {};
+    for (const warning of input.warnings) {
+      warningsByType[warning.type] = (warningsByType[warning.type] || 0) + 1;
+    }
+    const successRate =
+      totalBattles > 0 ? trechos.filter((t) => t.passed).length / trechos.length : 0;
+    const memoryUsage = process.memoryUsage();
+
     return new Report({
       metadata: input.metadata,
+      summary: {
+        executionTimeMs: 0, // Set by orchestrator
+        totalTrechos: trechos.length,
+        totalBattles,
+        totalWarnings,
+        warningsByType,
+        successRate,
+        peakMemoryMB: memoryUsage.heapUsed / (1024 * 1024),
+      },
       trechos,
       warnings: input.warnings,
     });

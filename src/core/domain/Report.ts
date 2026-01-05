@@ -28,6 +28,32 @@ export interface ReportMetadata {
 }
 
 /**
+ * Aggregated metrics for a trecho.
+ * Contains statistical aggregates (ADR-012).
+ */
+export interface TrechoAggregates {
+  /**
+   * Average TTK in turns across all battles.
+   */
+  avgTtkTurns: number;
+
+  /**
+   * 95th percentile TTK in turns (worst-case scenarios).
+   */
+  p95TtkTurns: number;
+
+  /**
+   * Average TTK in actions across all battles.
+   */
+  avgTtkActions: number;
+
+  /**
+   * 95th percentile TTK in actions (worst-case scenarios).
+   */
+  p95TtkActions: number;
+}
+
+/**
  * Trecho summary in report.
  * Aggregates battle results for a single trecho with validation status.
  */
@@ -48,19 +74,60 @@ export interface TrechoSummary {
   battles: BattleResult[];
 
   /**
-   * Average TTK in turns across all battles.
+   * Aggregated metrics for this trecho.
    */
-  avgTtkTurns: number;
+  aggregates: TrechoAggregates;
 
   /**
-   * Average TTK in actions across all battles.
+   * Warnings collected for this trecho.
    */
-  avgTtkActions: number;
+  warnings: Warning[];
 
   /**
    * Validation status: true if all battles within tolerance.
    */
   passed: boolean;
+}
+
+/**
+ * Report summary metrics.
+ * Contains high-level aggregated statistics across all trechos.
+ */
+export interface ReportSummary {
+  /**
+   * Total execution time in milliseconds.
+   */
+  executionTimeMs: number;
+
+  /**
+   * Total number of trechos validated.
+   */
+  totalTrechos: number;
+
+  /**
+   * Total number of battles executed.
+   */
+  totalBattles: number;
+
+  /**
+   * Total number of warnings across all severities.
+   */
+  totalWarnings: number;
+
+  /**
+   * Warning counts grouped by type.
+   */
+  warningsByType: Record<string, number>;
+
+  /**
+   * Success rate (0.0-1.0): percentage of battles without critical warnings.
+   */
+  successRate: number;
+
+  /**
+   * Peak memory usage in megabytes.
+   */
+  peakMemoryMB: number;
 }
 
 /**
@@ -72,6 +139,11 @@ export interface ReportData {
    * Report metadata.
    */
   metadata: ReportMetadata;
+
+  /**
+   * Report summary metrics.
+   */
+  summary: ReportSummary;
 
   /**
    * Trecho summaries with battle results.
@@ -124,6 +196,7 @@ export interface ReportData {
  */
 export class Report {
   readonly metadata: ReportMetadata;
+  readonly summary: ReportSummary;
   readonly trechos: readonly TrechoSummary[];
   readonly warnings: readonly Warning[];
   readonly overallPassed: boolean;
@@ -136,6 +209,9 @@ export class Report {
   constructor(data: ReportData) {
     // Deep freeze metadata
     this.metadata = Object.freeze({ ...data.metadata });
+
+    // Deep freeze summary
+    this.summary = Object.freeze({ ...data.summary });
 
     // Deep freeze trechos array and each summary
     this.trechos = Object.freeze(data.trechos.map((t) => Object.freeze({ ...t })));

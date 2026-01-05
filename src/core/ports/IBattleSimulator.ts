@@ -27,9 +27,10 @@ export interface IBattleSimulator {
    * Initialize the battle simulator with loaded RPG Maker MZ database.
    * Must be called before executeBattle().
    * @param database - Loaded RPG Maker MZ database with all required data
+   * @param projectPath - Absolute path to RPG Maker MZ project root
    * @throws {BattleError} If database is invalid or incomplete
    */
-  initialize(database: RmmzDatabase): Promise<void>;
+  initialize(database: RmmzDatabase, projectPath: string): Promise<void>;
 
   /**
    * Execute a single battle simulation for a specific troop.

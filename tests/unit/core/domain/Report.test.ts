@@ -2,7 +2,9 @@ import {
   Report,
   ReportData,
   ReportMetadata,
+  ReportSummary,
   TrechoSummary,
+  TrechoAggregates,
 } from '@/core/domain/Report.js';
 import { BattleResult } from '@/core/domain/BattleResult.js';
 import type { Warning } from '@/core/ports/IReporter.js';
@@ -13,6 +15,23 @@ describe('Report', () => {
     generatedAt: new Date('2025-01-04T12:00:00.000Z'),
     seed: 12345,
     projectPath: '/path/to/project',
+  });
+
+  const createValidSummary = (): ReportSummary => ({
+    executionTimeMs: 1500,
+    totalTrechos: 1,
+    totalBattles: 1,
+    totalWarnings: 0,
+    warningsByType: {},
+    successRate: 1.0,
+    peakMemoryMB: 128.5,
+  });
+
+  const createValidAggregates = (): TrechoAggregates => ({
+    avgTtkTurns: 3.2,
+    p95TtkTurns: 4.0,
+    avgTtkActions: 8.5,
+    p95TtkActions: 10.0,
   });
 
   const createValidBattleResult = (): BattleResult =>
@@ -30,8 +49,8 @@ describe('Report', () => {
     trechoId: 'ato1-nivel1-10',
     trechoName: 'Ato 1 - Níveis 1-10',
     battles: [createValidBattleResult()],
-    avgTtkTurns: 3.2,
-    avgTtkActions: 8.5,
+    aggregates: createValidAggregates(),
+    warnings: [],
     passed,
   });
 
@@ -46,6 +65,7 @@ describe('Report', () => {
     it('should create report with valid data', () => {
       const data: ReportData = {
         metadata: createValidMetadata(),
+        summary: createValidSummary(),
         trechos: [createValidTrechoSummary()],
         warnings: [createValidWarning()],
       };
@@ -61,6 +81,7 @@ describe('Report', () => {
     it('should create report with empty trechos', () => {
       const data: ReportData = {
         metadata: createValidMetadata(),
+        summary: createValidSummary(),
         trechos: [],
         warnings: [],
       };
@@ -73,6 +94,7 @@ describe('Report', () => {
     it('should create report with empty warnings', () => {
       const data: ReportData = {
         metadata: createValidMetadata(),
+        summary: createValidSummary(),
         trechos: [createValidTrechoSummary()],
         warnings: [],
       };
@@ -85,14 +107,20 @@ describe('Report', () => {
     it('should create report with multiple trechos', () => {
       const data: ReportData = {
         metadata: createValidMetadata(),
+        summary: createValidSummary(),
         trechos: [
           createValidTrechoSummary(),
           {
             trechoId: 'ato2-nivel11-20',
             trechoName: 'Ato 2 - Níveis 11-20',
             battles: [createValidBattleResult()],
-            avgTtkTurns: 4.5,
-            avgTtkActions: 12.0,
+            aggregates: {
+              avgTtkTurns: 4.5,
+              p95TtkTurns: 5.5,
+              avgTtkActions: 12.0,
+              p95TtkActions: 14.0,
+            },
+            warnings: [],
             passed: false,
           },
         ],
@@ -124,6 +152,7 @@ describe('Report', () => {
 
       const data: ReportData = {
         metadata: createValidMetadata(),
+        summary: createValidSummary(),
         trechos: [createValidTrechoSummary()],
         warnings,
       };
@@ -140,6 +169,7 @@ describe('Report', () => {
     it('should be true when all trechos passed', () => {
       const data: ReportData = {
         metadata: createValidMetadata(),
+        summary: createValidSummary(),
         trechos: [
           createValidTrechoSummary(true),
           createValidTrechoSummary(true),
@@ -155,6 +185,7 @@ describe('Report', () => {
     it('should be false when any trecho failed', () => {
       const data: ReportData = {
         metadata: createValidMetadata(),
+        summary: createValidSummary(),
         trechos: [
           createValidTrechoSummary(true),
           createValidTrechoSummary(false),
@@ -170,6 +201,7 @@ describe('Report', () => {
     it('should be false when all trechos failed', () => {
       const data: ReportData = {
         metadata: createValidMetadata(),
+        summary: createValidSummary(),
         trechos: [
           createValidTrechoSummary(false),
           createValidTrechoSummary(false),
@@ -185,6 +217,7 @@ describe('Report', () => {
     it('should be true when no trechos (empty report)', () => {
       const data: ReportData = {
         metadata: createValidMetadata(),
+        summary: createValidSummary(),
         trechos: [],
         warnings: [],
       };
@@ -198,6 +231,7 @@ describe('Report', () => {
     it('should calculate overallPassed independently of warnings', () => {
       const data: ReportData = {
         metadata: createValidMetadata(),
+        summary: createValidSummary(),
         trechos: [createValidTrechoSummary(true)],
         warnings: [createValidWarning(), createValidWarning()],
       };
@@ -214,6 +248,7 @@ describe('Report', () => {
     it('should be frozen', () => {
       const data: ReportData = {
         metadata: createValidMetadata(),
+        summary: createValidSummary(),
         trechos: [createValidTrechoSummary()],
         warnings: [],
       };
@@ -226,6 +261,7 @@ describe('Report', () => {
     it('should have frozen metadata', () => {
       const data: ReportData = {
         metadata: createValidMetadata(),
+        summary: createValidSummary(),
         trechos: [createValidTrechoSummary()],
         warnings: [],
       };
@@ -238,6 +274,7 @@ describe('Report', () => {
     it('should have frozen trechos array', () => {
       const data: ReportData = {
         metadata: createValidMetadata(),
+        summary: createValidSummary(),
         trechos: [createValidTrechoSummary()],
         warnings: [],
       };
@@ -250,6 +287,7 @@ describe('Report', () => {
     it('should have frozen each trecho summary', () => {
       const data: ReportData = {
         metadata: createValidMetadata(),
+        summary: createValidSummary(),
         trechos: [createValidTrechoSummary()],
         warnings: [],
       };
@@ -264,6 +302,7 @@ describe('Report', () => {
     it('should have frozen warnings array', () => {
       const data: ReportData = {
         metadata: createValidMetadata(),
+        summary: createValidSummary(),
         trechos: [createValidTrechoSummary()],
         warnings: [createValidWarning()],
       };
@@ -276,6 +315,7 @@ describe('Report', () => {
     it('should not allow modification of trechos array', () => {
       const data: ReportData = {
         metadata: createValidMetadata(),
+        summary: createValidSummary(),
         trechos: [createValidTrechoSummary()],
         warnings: [],
       };
@@ -290,6 +330,7 @@ describe('Report', () => {
     it('should not allow modification of warnings array', () => {
       const data: ReportData = {
         metadata: createValidMetadata(),
+        summary: createValidSummary(),
         trechos: [createValidTrechoSummary()],
         warnings: [],
       };
@@ -305,6 +346,7 @@ describe('Report', () => {
       const metadata = createValidMetadata();
       const data: ReportData = {
         metadata,
+        summary: createValidSummary(),
         trechos: [createValidTrechoSummary()],
         warnings: [],
       };
@@ -322,6 +364,7 @@ describe('Report', () => {
       const trechos = [createValidTrechoSummary()];
       const data: ReportData = {
         metadata: createValidMetadata(),
+        summary: createValidSummary(),
         trechos,
         warnings: [],
       };
@@ -339,6 +382,7 @@ describe('Report', () => {
       const warnings = [createValidWarning()];
       const data: ReportData = {
         metadata: createValidMetadata(),
+        summary: createValidSummary(),
         trechos: [createValidTrechoSummary()],
         warnings,
       };
@@ -363,6 +407,7 @@ describe('Report', () => {
           seed: 12345,
           projectPath: '/path/to/project',
         },
+        summary: createValidSummary(),
         trechos: [],
         warnings: [],
       };
@@ -378,13 +423,19 @@ describe('Report', () => {
         trechoId: 'test-id',
         trechoName: 'Test Name',
         battles: [createValidBattleResult()],
-        avgTtkTurns: 5.5,
-        avgTtkActions: 15.25,
+        aggregates: {
+          avgTtkTurns: 5.5,
+          p95TtkTurns: 6.5,
+          avgTtkActions: 15.25,
+          p95TtkActions: 18.0,
+        },
+        warnings: [],
         passed: true,
       };
 
       const data: ReportData = {
         metadata: createValidMetadata(),
+        summary: createValidSummary(),
         trechos: [summary],
         warnings: [],
       };
@@ -394,8 +445,10 @@ describe('Report', () => {
       expect(report.trechos[0]).toMatchObject({
         trechoId: 'test-id',
         trechoName: 'Test Name',
-        avgTtkTurns: 5.5,
-        avgTtkActions: 15.25,
+        aggregates: {
+          avgTtkTurns: 5.5,
+          avgTtkActions: 15.25,
+        },
         passed: true,
       });
       expect(report.trechos[0]?.battles).toHaveLength(1);

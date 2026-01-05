@@ -114,8 +114,13 @@ describe('GenerateReportUseCase', () => {
         trechoId: 'ato1-nivel1-10',
         trechoName: 'Ato 1 - Níveis 1-10',
         battles,
-        avgTtkTurns: 3.5,
-        avgTtkActions: 9,
+        aggregates: {
+          avgTtkTurns: 3.5,
+          p95TtkTurns: 3.5,
+          avgTtkActions: 9,
+          p95TtkActions: 9,
+        },
+        warnings: [],
         passed: true,
       });
     });
