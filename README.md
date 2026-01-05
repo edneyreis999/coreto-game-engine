@@ -5,7 +5,7 @@
 [![Status](https://img.shields.io/badge/status-in--development-blue)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)]()
 [![Node.js](https://img.shields.io/badge/Node.js-%3E=20-green)]()
-[![Tests](https://img.shields.io/badge/tests-523%20passing-brightgreen)]()
+[![Tests](https://img.shields.io/badge/tests-767%20passing-brightgreen)]()
 
 ## Visao Geral
 
@@ -15,12 +15,12 @@ O Coreto Game Engine e um wrapper read-only sobre projetos RPG Maker MZ que exec
 
 - **Read-Only**: Nunca modifica o projeto RPG Maker MZ (ADR-001)
 - **Headless Execution**: Executa batalhas reais via engine em JSDOM
-- **Deterministic**: Seed fixa garante reprodutibilidade (ADR-018)
+- **Deterministic RNG**: Linear Congruential Generator garante reprodutibilidade (ADR-018)
 - **Type-Safe**: TypeScript strict mode com Zod validation
 
 ## Status do Projeto
 
-**FASE 4/9 CONCLUIDA - 523 testes passando**
+**FASE 5 EM ANDAMENTO - 767 testes passando**
 
 | Fase | Descricao | Status |
 |------|-----------|--------|
@@ -69,6 +69,7 @@ npm run validate -- /Users/edney/projects/coreto/projectX/frontend
 ```
 
 Saida esperada:
+
 ```
 🎮 CORETO GAME ENGINE - Validacao de Projeto
 
@@ -178,6 +179,7 @@ Reporter Layer [pendente]
 ## Proximos Passos
 
 **FASE 5: Headless Runtime**
+
 - JSDOM + PIXI/Graphics mocks
 - Core Scripts Loader
 - BattleManager execution
