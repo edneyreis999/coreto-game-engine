@@ -214,6 +214,7 @@ describe('HeadlessBattleSimulator', () => {
         mockMembers.push({ actorId });
       }),
       members: jest.fn(() => mockMembers),
+      isAllDead: jest.fn(() => false), // Default: party alive
     };
 
     // Mock Game_Actors
@@ -245,6 +246,8 @@ describe('HeadlessBattleSimulator', () => {
       members: jest.fn(() => [
         { enemyId: 1, hp: 0 }, // Dead enemy for victory condition
       ]),
+      _turnCount: 5, // TTK measurement reads from $gameTroop._turnCount
+      isAllDead: jest.fn(() => true), // Default: enemies dead (victory)
     };
 
     // SyncWarpLoop is mocked at module level, no need for scene/graphics mocks
@@ -444,9 +447,9 @@ describe('HeadlessBattleSimulator', () => {
       await simulator.initialize(mockDatabase, '/fake/project/path');
     });
 
-    it('should return victory outcome when BattleManager.isVictory() is true', async () => {
-      mockGlobal.BattleManager.isVictory = jest.fn(() => true);
-      mockGlobal.BattleManager.isDefeat = jest.fn(() => false);
+    it('should return victory outcome when all enemies are dead', async () => {
+      mockGlobal.$gameTroop.isAllDead = jest.fn(() => true);
+      mockGlobal.$gameParty.isAllDead = jest.fn(() => false);
 
       const setup = {
         troopId: 1,
@@ -458,9 +461,9 @@ describe('HeadlessBattleSimulator', () => {
       expect(result.outcome).toBe('victory');
     });
 
-    it('should return defeat outcome when BattleManager.isDefeat() is true', async () => {
-      mockGlobal.BattleManager.isVictory = jest.fn(() => false);
-      mockGlobal.BattleManager.isDefeat = jest.fn(() => true);
+    it('should return defeat outcome when entire party is dead', async () => {
+      mockGlobal.$gameTroop.isAllDead = jest.fn(() => false);
+      mockGlobal.$gameParty.isAllDead = jest.fn(() => true);
 
       const setup = {
         troopId: 1,
@@ -473,8 +476,8 @@ describe('HeadlessBattleSimulator', () => {
     });
 
     it('should return timeout outcome when neither victory nor defeat', async () => {
-      mockGlobal.BattleManager.isVictory = jest.fn(() => false);
-      mockGlobal.BattleManager.isDefeat = jest.fn(() => false);
+      mockGlobal.$gameTroop.isAllDead = jest.fn(() => false);
+      mockGlobal.$gameParty.isAllDead = jest.fn(() => false);
 
       const setup = {
         troopId: 1,

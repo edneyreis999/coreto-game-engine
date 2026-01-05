@@ -352,17 +352,25 @@ export class HeadlessOverrides {
     // 2. Espera Instantânea (pesquisa linhas 291-300)
     // Window_BattleLog usa _waitCount para pausar entre ações (ex: aguardar animação)
     // Forçamos _waitCount = 0 a cada frame para pular todas as esperas
-    const _Window_BattleLog_update = Window_BattleLog.prototype.update;
+    //
+    // BUGFIX: _methods[] não estava sendo consumida, causando isBusy() = true indefinidamente
+    // Solução: forçar processamento de todos os métodos pendentes via callNextMethod()
     Window_BattleLog.prototype.update = function (this: any) {
-      // Força contagem de espera para 0 a cada frame (pula delays)
+      // Força contagem de espera para 0 (pula delays)
       this._waitCount = 0;
 
       // Se o log está esperando um efeito (áudio/tremor), limpa o modo
       // _waitMode pode ser 'effect', 'movement', etc. - forçamos para '' (sem espera)
       this._waitMode = '';
 
-      // Chama o update original para processar a fila de mensagens
-      _Window_BattleLog_update.call(this);
+      // Força processamento de todos os métodos pendentes na fila
+      // Isso consome _methods[] e evita que isBusy() fique true indefinidamente
+      // Verifica se _methods existe (pode ser undefined em testes unitários)
+      if (this._methods && this._methods.length > 0) {
+        while (this._methods.length > 0) {
+          this.callNextMethod();
+        }
+      }
     };
 
     // 3. Verificação de Busy do Spriteset (pesquisa linhas 304-307)
@@ -814,6 +822,34 @@ export class HeadlessOverrides {
     };
 
     console.log('[HeadlessOverrides] Input neutralized');
+
+    // TTK Action Counter: Track party actions for TTK measurement
+    // Initialize action counter for each actor
+    const $gameParty = (global as any).$gameParty;
+    if ($gameParty && $gameParty.members) {
+      for (const actor of $gameParty.members()) {
+        actor._actionCount = 0;
+      }
+    }
+
+    // Override Game_Battler.performActionStart to increment action counter
+    const Game_Battler = (global as any).Game_Battler;
+    if (Game_Battler) {
+      const _Game_Battler_performActionStart = Game_Battler.prototype.performActionStart;
+      Game_Battler.prototype.performActionStart = function (this: any, action: any) {
+        // Call original
+        if (_Game_Battler_performActionStart) {
+          _Game_Battler_performActionStart.call(this, action);
+        }
+
+        // Increment action count only for party members (not enemies)
+        if (this.isActor && this.isActor()) {
+          this._actionCount = (this._actionCount || 0) + 1;
+        }
+      };
+
+      console.log('[HeadlessOverrides] TTK action counter initialized');
+    }
   }
 
   /**

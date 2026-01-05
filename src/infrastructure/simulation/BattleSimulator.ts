@@ -125,6 +125,9 @@ export class HeadlessBattleSimulator implements IBattleSimulator {
     // Setup party with configured members
     this.setupParty(setup.party);
 
+    // Reset action counters to prevent accumulation between battles
+    this.resetActionCounters();
+
     // Setup battle in BattleManager
     this.setupBattle(setup.troopId);
 
@@ -349,14 +352,15 @@ export class HeadlessBattleSimulator implements IBattleSimulator {
    * @private
    */
   private measureTtkMetrics(): TtkMetrics {
-    const BattleManager = globalScope.BattleManager;
+    const gameTroop = globalScope.$gameTroop;
 
-    // Get turn count from BattleManager._turnCount
-    const turns = BattleManager._turnCount || 0;
+    // Get turn count from $gameTroop._turnCount (not BattleManager)
+    // $gameTroop increments _turnCount in its onTurnEnd() method
+    const turns = gameTroop._turnCount || 0;
 
     // Get action count from BattleManager._actionCount (if available)
     // If not tracked by default, we count from action log
-    const actions = BattleManager._actionCount || this.countActionsFromLog();
+    const actions = this.countActionsFromLog();
 
     return new TtkMetrics(turns, actions);
   }
@@ -389,19 +393,38 @@ export class HeadlessBattleSimulator implements IBattleSimulator {
    * @private
    */
   private determineBattleOutcome(): 'victory' | 'defeat' | 'timeout' {
-    const BattleManager = globalScope.BattleManager;
+    const $gameTroop = (global as any).$gameTroop;
+    const $gameParty = (global as any).$gameParty;
 
-    // Check if battle ended in victory
-    if (BattleManager.isVictory && BattleManager.isVictory()) {
+    // Victory: all enemies dead
+    if ($gameTroop && $gameTroop.isAllDead && $gameTroop.isAllDead()) {
       return 'victory';
     }
 
-    // Check if battle ended in defeat
-    if (BattleManager.isDefeat && BattleManager.isDefeat()) {
+    // Defeat: entire party dead
+    if ($gameParty && $gameParty.isAllDead && $gameParty.isAllDead()) {
       return 'defeat';
     }
 
-    // Default to timeout if unclear
+    // Timeout: battle did not end naturally
     return 'timeout';
+  }
+
+  /**
+   * Reset action counters for all party members.
+   * Prevents accumulation of ttkActions between battles.
+   *
+   * Each actor tracks actions in member._actionCount, which must be
+   * reset to 0 before each battle to ensure accurate TTK measurement.
+   *
+   * @private
+   */
+  private resetActionCounters(): void {
+    const gameParty = globalScope.$gameParty;
+    if (gameParty && gameParty.members) {
+      for (const member of gameParty.members()) {
+        member._actionCount = 0;
+      }
+    }
   }
 }
