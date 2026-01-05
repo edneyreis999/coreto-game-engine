@@ -8,14 +8,30 @@
 import 'reflect-metadata';
 import { container as tsyringeContainer } from 'tsyringe';
 
-import type { ILogger, IFileSystem, IConfigLoader, IDataLoader } from '@/core/ports/index.js';
+import type {
+  ILogger,
+  IFileSystem,
+  IConfigLoader,
+  IDataLoader,
+  IBattleSimulator,
+  IReporter,
+} from '@/core/ports/index.js';
 
-import { ILoggerToken, IFileSystemToken, IConfigLoaderToken, IDataLoaderToken } from './tokens.js';
+import {
+  ILoggerToken,
+  IFileSystemToken,
+  IConfigLoaderToken,
+  IDataLoaderToken,
+  IBattleSimulatorToken,
+  IReporterToken,
+} from './tokens.js';
 
 import { ConsoleLogger } from '../adapters/logger/ConsoleLogger.js';
 import { NodeFileSystem } from '../adapters/filesystem/NodeFileSystem.js';
 import { ZodConfigLoader } from '../config/ZodConfigLoader.js';
 import { RmmzDataLoader, RmmzProjectValidator } from '../adapters/data/index.js';
+import { HeadlessBattleSimulator } from '../simulation/BattleSimulator.js';
+import { JsonReporter } from '../adapters/reporter/JsonReporter.js';
 
 // Re-export all tokens for external use
 export {
@@ -37,11 +53,11 @@ export {
  * - NodeFileSystem (IFileSystem implementation)
  * - ZodConfigLoader (IConfigLoader implementation)
  * - RmmzDataLoader (IDataLoader implementation)
+ * - HeadlessBattleSimulator (IBattleSimulator implementation)
+ * - JsonReporter (IReporter implementation)
  * - RmmzProjectValidator (helper for data loading)
  *
  * To be implemented:
- * - BattleSimulator (IBattleSimulator)
- * - Reporter (IReporter)
  * - HeadlessRuntime (IHeadlessRuntime)
  */
 export function registerDependencies(): void {
@@ -56,6 +72,15 @@ export function registerDependencies(): void {
 
   // DataLoader: RmmzDataLoader implementation registered as singleton
   tsyringeContainer.registerSingleton<IDataLoader>(IDataLoaderToken, RmmzDataLoader);
+
+  // BattleSimulator: HeadlessBattleSimulator implementation registered as singleton
+  tsyringeContainer.registerSingleton<IBattleSimulator>(
+    IBattleSimulatorToken,
+    HeadlessBattleSimulator
+  );
+
+  // Reporter: JsonReporter implementation registered as singleton
+  tsyringeContainer.registerSingleton<IReporter>(IReporterToken, JsonReporter);
 
   // RmmzProjectValidator: Helper for data loading validation (singleton)
   tsyringeContainer.registerSingleton(RmmzProjectValidator);

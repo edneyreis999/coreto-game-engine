@@ -422,6 +422,7 @@ describe('TrechoSchema', () => {
 describe('ProjectConfigSchema', () => {
   const validProjectBase = {
     projectPath: '/Users/edney/projects/mz-game',
+    reportOutputPath: '/Users/edney/projects/mz-game/reports',
     trechos: [
       {
         id: 'ato1-nivel1-10',
@@ -531,6 +532,7 @@ describe('Integration: Full Configuration Validation', () => {
   it('should validate complete realistic configuration', () => {
     const fullConfig = {
       projectPath: '/Users/edney/projects/rpg-maker-mz-project',
+      reportOutputPath: '/Users/edney/projects/rpg-maker-mz-project/reports',
       seed: 42,
       trechos: [
         {

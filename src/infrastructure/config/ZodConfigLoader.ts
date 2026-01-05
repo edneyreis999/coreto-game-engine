@@ -64,6 +64,12 @@ const ProjectConfigLoaderSchema = z.object({
  */
 @injectable()
 export class ZodConfigLoader implements IConfigLoader {
+  /**
+   * Cache for raw config to preserve trechos array.
+   * Maps config path to raw config object.
+   */
+  private rawConfigCache: Map<string, unknown> = new Map();
+
   constructor(@inject(IFileSystemToken) private readonly fileSystem: IFileSystem) {}
 
   /**
@@ -100,7 +106,10 @@ export class ZodConfigLoader implements IConfigLoader {
       throw new ConfigParseError(configPath, error as Error);
     }
 
-    // 4. Validate with Zod schema
+    // 4. Cache raw config for trecho loading
+    this.rawConfigCache.set(configPath, rawConfig);
+
+    // 5. Validate with Zod schema
     return this.validate(rawConfig);
   }
 
@@ -118,7 +127,15 @@ export class ZodConfigLoader implements IConfigLoader {
    * @throws {ConfigError} If trechos file not found
    */
   async loadTrechos(config: ProjectConfig): Promise<Trecho[]> {
-    // Try to load from embedded trechos first (if config was loaded with trechos)
+    // Try to load from cached raw config first
+    for (const [_path, rawConfig] of this.rawConfigCache.entries()) {
+      const rawConfigObj = rawConfig as { trechos?: unknown[] };
+      if (rawConfigObj.trechos && Array.isArray(rawConfigObj.trechos)) {
+        return this.validateTrechos(rawConfigObj.trechos);
+      }
+    }
+
+    // Fallback: Try to cast config (for unit tests that pass objects directly)
     const configWithTrechos = config as ProjectConfig & { trechos?: unknown[] };
     if (configWithTrechos.trechos && Array.isArray(configWithTrechos.trechos)) {
       return this.validateTrechos(configWithTrechos.trechos);

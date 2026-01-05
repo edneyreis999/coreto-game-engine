@@ -39,7 +39,7 @@ export class RmmzDataLoader implements IDataLoader {
 
   constructor(
     @inject(IFileSystemToken) private readonly fileSystem: IFileSystem,
-    private readonly validator: RmmzProjectValidator
+    @inject(RmmzProjectValidator) private readonly validator: RmmzProjectValidator
   ) {
     this.integrityValidator = new IntegrityValidator();
   }
@@ -105,11 +105,9 @@ export class RmmzDataLoader implements IDataLoader {
         );
       }
 
-      throw new DataLoadError(
-        'Failed to load database from project: unknown error',
-        'critical',
-        { projectPath }
-      );
+      throw new DataLoadError('Failed to load database from project: unknown error', 'critical', {
+        projectPath,
+      });
     }
   }
 
@@ -151,11 +149,11 @@ export class RmmzDataLoader implements IDataLoader {
 
     // Check if file exists
     if (!this.fileSystem.exists(filePath)) {
-      throw new DataLoadError(
-        `Data file not found: ${fileName}`,
-        'critical',
-        { projectPath, fileName, filePath }
-      );
+      throw new DataLoadError(`Data file not found: ${fileName}`, 'critical', {
+        projectPath,
+        fileName,
+        filePath,
+      });
     }
 
     try {
@@ -175,11 +173,11 @@ export class RmmzDataLoader implements IDataLoader {
         );
       }
 
-      throw new DataLoadError(
-        `Failed to parse data file ${fileName}: unknown error`,
-        'critical',
-        { projectPath, fileName, filePath }
-      );
+      throw new DataLoadError(`Failed to parse data file ${fileName}: unknown error`, 'critical', {
+        projectPath,
+        fileName,
+        filePath,
+      });
     }
   }
 }

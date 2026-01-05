@@ -161,7 +161,9 @@ export const TrechoSchema = z.object({
  *
  * Constraints:
  * - projectPath: non-empty string, no path traversal (..)
+ * - reportOutputPath: non-empty string, directory for report output
  * - seed: integer RNG seed, default 12345 (ADR-018)
+ * - maxBattleTurns: optional maximum battle turns before timeout
  * - trechos: at least one trecho configuration
  */
 export const ProjectConfigSchema = z.object({
@@ -175,12 +177,25 @@ export const ProjectConfigSchema = z.object({
       (path) => !path.includes('..'),
       'projectPath must not contain path traversal sequences (..)'
     ),
+  reportOutputPath: z
+    .string({
+      required_error: 'reportOutputPath is required',
+      invalid_type_error: 'reportOutputPath must be a string',
+    })
+    .min(1, 'reportOutputPath cannot be empty'),
   seed: z
     .number({
       invalid_type_error: 'seed must be a number',
     })
     .int('seed must be an integer')
     .default(12345),
+  maxBattleTurns: z
+    .number({
+      invalid_type_error: 'maxBattleTurns must be a number',
+    })
+    .int('maxBattleTurns must be an integer')
+    .positive('maxBattleTurns must be positive')
+    .optional(),
   trechos: z
     .array(TrechoSchema, {
       required_error: 'trechos is required',
