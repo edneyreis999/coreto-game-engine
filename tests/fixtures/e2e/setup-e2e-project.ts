@@ -84,6 +84,16 @@ export function setupE2EProject(configFileName: string): E2EProjectSetup {
     fs.writeFileSync(destPath, content, 'utf-8');
   }
 
+  // Copy minimal RMMZ core scripts into js/ so HeadlessRuntimeBootstrapper can run
+  // (fixtures/rmmz-mini-project contains a headless-friendly subset).
+  const miniJsPath = path.join(__dirname, '..', 'rmmz-mini-project', 'js');
+  if (fs.existsSync(miniJsPath)) {
+    for (const file of fs.readdirSync(miniJsPath)) {
+      if (!file.endsWith('.js')) continue;
+      fs.copyFileSync(path.join(miniJsPath, file), path.join(projectPath, 'js', file));
+    }
+  }
+
   // Load config template and replace placeholders
   const configTemplatePath = path.join(__dirname, configFileName);
   const configContent = fs

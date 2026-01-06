@@ -272,6 +272,27 @@ describe('HeadlessBattleSimulator', () => {
       await expect(simulator.initialize(invalidDb, '/fake/project/path')).rejects.toThrow(ValidationError);
     });
 
+    it('should throw if $gameParty is not initialized after bootstrap', async () => {
+      delete mockGlobal.$gameParty;
+      await expect(simulator.initialize(mockDatabase, '/fake/project/path')).rejects.toThrow(
+        /\$gameParty not initialized/
+      );
+    });
+
+    it('should throw if $gameActors is not initialized after bootstrap', async () => {
+      delete mockGlobal.$gameActors;
+      await expect(simulator.initialize(mockDatabase, '/fake/project/path')).rejects.toThrow(
+        /\$gameActors not initialized/
+      );
+    });
+
+    it('should throw if BattleManager is not initialized after bootstrap', async () => {
+      delete mockGlobal.BattleManager;
+      await expect(simulator.initialize(mockDatabase, '/fake/project/path')).rejects.toThrow(
+        /BattleManager not initialized/
+      );
+    });
+
     it('should call HeadlessRuntimeBootstrapper.bootstrap with projectPath', async () => {
       await simulator.initialize(mockDatabase, '/fake/project/path');
 
@@ -379,17 +400,13 @@ describe('HeadlessBattleSimulator', () => {
       expect(mockGlobal.BattleManager.setup).toHaveBeenCalledWith(1, false, false);
     });
 
-    it.skip('should throw BattleTimeoutError if battle exceeds MAX_FRAMES', async () => {
-      // SKIP: Mock de SyncWarpLoop não funciona corretamente em tempo de execução
-      // porque a classe já foi instanciada. Este comportamento é testado em E2E
-      // onde um projeto real pode ter batalhas que excedem MAX_FRAMES.
-
-      // Mock SyncWarpLoop to return more than MAX_FRAMES (1000)
+    it('should throw BattleTimeoutError if battle exceeds MAX_FRAMES', async () => {
+      // Mock SyncWarpLoop to return more than MAX_FRAMES (10000)
       const { SyncWarpLoop } = jest.requireMock('@/infrastructure/runtime/simulation/SyncWarpLoop.js');
       SyncWarpLoop.mockImplementationOnce(() => {
         return {
           start: jest.fn(),
-          getSimulatedFrames: jest.fn().mockReturnValue(1500), // More than MAX_FRAMES (1000)
+          getSimulatedFrames: jest.fn().mockReturnValue(15000), // More than MAX_FRAMES (10000)
           stop: jest.fn(),
         };
       });
@@ -401,6 +418,100 @@ describe('HeadlessBattleSimulator', () => {
       };
 
       await expect(simulator.executeBattle(setup)).rejects.toThrow(BattleTimeoutError);
+    });
+
+    it('should warn (but not crash) when Math.seedrandom is not available', async () => {
+      const originalSeedRandom = (Math as any).seedrandom;
+      delete (Math as any).seedrandom;
+
+      const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const setup = {
+        troopId: 1,
+        party: new PartyConfig([{ classId: 1, level: 5 }]),
+        seed: 12345,
+      };
+
+      await expect(simulator.executeBattle(setup)).resolves.toBeDefined();
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('Math.seedrandom not available')
+      );
+
+      warn.mockRestore();
+      (Math as any).seedrandom = originalSeedRandom;
+    });
+
+    it('should support manual party clearing when clearMembers/removeAllMembers are not available', async () => {
+      // Provide a party that must be cleared via removeActor loop
+      const members: any[] = [{ actorId: () => 999 }];
+      mockGlobal.$gameParty = {
+        members: jest.fn(() => members),
+        removeActor: jest.fn((_id: number) => {
+          members.shift();
+        }),
+        addActor: jest.fn((actorId: number) => {
+          members.push({ actorId: () => actorId });
+        }),
+        isAllDead: jest.fn(() => false),
+      };
+
+      const setup = {
+        troopId: 1,
+        party: new PartyConfig([{ classId: 1, level: 5 }]),
+        seed: 12345,
+      };
+
+      const result = await simulator.executeBattle(setup);
+      expect(result.troopId).toBe(1);
+      expect(mockGlobal.$gameParty.removeActor).toHaveBeenCalled();
+    });
+
+    it('should throw ValidationError when party member count mismatch occurs', async () => {
+      // addActor does NOT actually add to members -> mismatch
+      mockGlobal.$gameParty = {
+        clearMembers: jest.fn(),
+        members: jest.fn(() => []),
+        addActor: jest.fn(),
+        isAllDead: jest.fn(() => false),
+      };
+
+      const setup = {
+        troopId: 1,
+        party: new PartyConfig([{ classId: 1, level: 5 }]),
+        seed: 12345,
+      };
+
+      await expect(simulator.executeBattle(setup)).rejects.toThrow(/Party member count mismatch/);
+    });
+
+    it('should capture exp gained from BattleManager rewards when available', async () => {
+      mockGlobal.BattleManager._rewards = { exp: 123.9 };
+      mockGlobal.$gameTroop.isAllDead = jest.fn(() => true);
+      mockGlobal.$gameParty.isAllDead = jest.fn(() => false);
+
+      const setup = {
+        troopId: 1,
+        party: new PartyConfig([{ classId: 1, level: 5 }]),
+        seed: 12345,
+      };
+
+      const result = await simulator.executeBattle(setup);
+      expect(result.expGained).toBe(123);
+    });
+
+    it('should return timeout outcome when neither side is dead', async () => {
+      mockGlobal.$gameTroop.isAllDead = jest.fn(() => false);
+      mockGlobal.$gameParty.isAllDead = jest.fn(() => false);
+
+      const setup = {
+        troopId: 1,
+        party: new PartyConfig([{ classId: 1, level: 5 }]),
+        seed: 12345,
+      };
+
+      const result = await simulator.executeBattle(setup);
+      expect(result.outcome).toBe('timeout');
+      expect(result.expGained).toBe(0);
     });
   });
 

@@ -28,10 +28,14 @@ export function setupRuntimeMocks(): void {
     (Math as any).seedrandom = (seed: string) => {
       // Simple LCG implementation for testing
       let value = parseInt(seed) || 12345;
-      return () => {
+      globalScope.__CORETO_E2E_CURRENT_SEED = value;
+      const rng = () => {
         value = (value * 1664525 + 1013904223) % 4294967296;
         return value / 4294967296;
       };
+      // Make the seeded RNG affect Math.random like the real seedrandom library does in "global" mode
+      Math.random = rng;
+      return rng;
     };
   }
 
@@ -124,9 +128,15 @@ export function setupRuntimeMocks(): void {
       // Minimal troop setup
       mockEnemies.length = 1;
       mockEnemies[0] = { _enemyId: 1 };
+      globalScope.$gameTroop._turnCount = 0;
     },
     members: () => mockEnemies,
-    isAllDead: () => true, // For victory condition
+    isAllDead: () => {
+      // When running the E2E timeout config, force timeout outcome
+      if (globalScope.__CORETO_E2E_FORCE_TIMEOUT) return false;
+      return true;
+    },
+    _turnCount: 0,
   };
 
   // Mock BattleManager
@@ -137,6 +147,25 @@ export function setupRuntimeMocks(): void {
     setup: () => {
       battleFrameCount = 0;
       battleEnded = false;
+      // Make metrics depend on the seed so different seeds produce different results,
+      // while still being deterministic for the same seed.
+      const seed = Number(globalScope.__CORETO_E2E_CURRENT_SEED ?? 12345);
+      const baseTurns = 3 + (seed % 3); // 3..5
+      const baseActions = 5 + (seed % 5); // 5..9
+      globalScope.BattleManager._turnCount = baseTurns;
+      globalScope.BattleManager._actionCount = baseActions;
+
+      // Sync with the fields that HeadlessBattleSimulator reads
+      if (globalScope.$gameTroop) {
+        globalScope.$gameTroop._turnCount = baseTurns;
+      }
+      if (globalScope.$gameParty && typeof globalScope.$gameParty.members === 'function') {
+        const members = globalScope.$gameParty.members();
+        const perMember = members.length > 0 ? Math.max(1, Math.floor(baseActions / members.length)) : baseActions;
+        for (const m of members) {
+          m._actionCount = perMember;
+        }
+      }
     },
     isBattleTest: () => true,
     isVictory: () => battleEnded,
@@ -226,6 +255,11 @@ export function setupRuntimeMocks(): void {
       isPressed: () => false,
     };
   }
+
+  // Ensure $gameParty can also participate in timeout outcome when forced
+  if (globalScope.$gameParty && typeof globalScope.$gameParty.isAllDead !== 'function') {
+    globalScope.$gameParty.isAllDead = () => false;
+  }
 }
 
 /**
@@ -239,4 +273,6 @@ export function cleanupRuntimeMocks(): void {
   delete globalScope.$gameTroop;
   delete globalScope.BattleManager;
   delete (Math as any).seedrandom;
+  delete globalScope.__CORETO_E2E_FORCE_TIMEOUT;
+  delete globalScope.__CORETO_E2E_CURRENT_SEED;
 }

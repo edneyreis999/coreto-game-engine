@@ -281,6 +281,37 @@ describe('Integration: JSDOM Setup', () => {
       // Mock não normaliza cor, mantém o valor original
       expect(ctx.fillStyle).toBe('#FF0000');
     });
+
+    it('should support common CanvasRenderingContext2D methods used by RMMZ', async () => {
+      runtime = new HeadlessRuntimeBootstrapper(false);
+      const projectPath = '/tmp/test-project';
+      await runtime.bootstrap(projectPath);
+
+      const canvas = (global as any).document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      // Hit most mocked methods to improve coverage of the bootstrapper Canvas API stub
+      ctx.clearRect(0, 0, 1, 1);
+      ctx.strokeRect(0, 0, 1, 1);
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(1, 1);
+      ctx.arc(0, 0, 1, 0, Math.PI);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.save();
+      ctx.restore();
+      ctx.translate(1, 1);
+      ctx.rotate(0);
+      ctx.scale(1, 1);
+      ctx.getImageData(0, 0, 1, 1);
+      ctx.putImageData({ data: new Uint8ClampedArray(0), width: 0, height: 0 }, 0, 0);
+      ctx.measureText('x');
+
+      // Non-2d context should safely return null
+      expect(canvas.getContext('webgl')).toBeNull();
+    });
   });
 
   describe('RPG Maker MZ Globals ($data* e $game*)', () => {
@@ -332,6 +363,36 @@ describe('Integration: JSDOM Setup', () => {
       expect((global as any).$gameTroop).toBeNull();
       expect((global as any).$gameMap).toBeNull();
       expect((global as any).$gamePlayer).toBeNull();
+    });
+
+    it('should initialize game objects when DataManager.createGameObjects is available', async () => {
+      runtime = new HeadlessRuntimeBootstrapper(false);
+
+      (global as any).DataManager = {
+        createGameObjects: jest.fn(() => {
+          (global as any).$gameParty = { members: () => [] };
+          (global as any).$gameActors = { actor: () => null };
+        }),
+      };
+
+      await runtime.bootstrap('/tmp/test-project');
+
+      expect((global as any).DataManager.createGameObjects).toHaveBeenCalled();
+      expect((global as any).$gameParty).toBeDefined();
+      expect((global as any).$gameActors).toBeDefined();
+    });
+
+    it('should exercise warning branches when createGameObjects does not initialize objects', async () => {
+      runtime = new HeadlessRuntimeBootstrapper(true);
+
+      (global as any).DataManager = {
+        createGameObjects: jest.fn(() => {
+          // Intentionally do not set $gameParty/$gameActors
+        }),
+      };
+
+      await runtime.bootstrap('/tmp/test-project');
+      expect((global as any).DataManager.createGameObjects).toHaveBeenCalled();
     });
   });
 

@@ -257,6 +257,40 @@ describe('PIXI Shim', () => {
       });
     });
 
+    describe('clone() and pad()', () => {
+      it('should clone rectangle with identical dimensions', () => {
+        const rect = new (Rectangle as any)(10, 20, 30, 40);
+        const cloned = rect.clone();
+
+        expect(cloned).toBeInstanceOf(Rectangle);
+        expect(cloned).not.toBe(rect);
+        expect(cloned.x).toBe(10);
+        expect(cloned.y).toBe(20);
+        expect(cloned.width).toBe(30);
+        expect(cloned.height).toBe(40);
+      });
+
+      it('should pad rectangle symmetrically when paddingY omitted', () => {
+        const rect = new (Rectangle as any)(10, 10, 10, 10);
+        rect.pad(2);
+
+        expect(rect.x).toBe(8);
+        expect(rect.y).toBe(8);
+        expect(rect.width).toBe(14);
+        expect(rect.height).toBe(14);
+      });
+
+      it('should pad rectangle with different X/Y paddings', () => {
+        const rect = new (Rectangle as any)(10, 10, 10, 10);
+        rect.pad(2, 1);
+
+        expect(rect.x).toBe(8);
+        expect(rect.y).toBe(9);
+        expect(rect.width).toBe(14);
+        expect(rect.height).toBe(12);
+      });
+    });
+
     describe('contains() - Basic Cases', () => {
       it('should return true for point inside rectangle', () => {
         const rect = new (Rectangle as any)(0, 0, 20, 20);
@@ -401,6 +435,28 @@ describe('PIXI Shim', () => {
       const style = new PIXI.TextStyle();
 
       expect(style).toBeDefined();
+    });
+  });
+
+  describe('BaseTexture / Texture / TilingSprite', () => {
+    it('should set BaseTexture size', () => {
+      const base = new (PIXI.BaseTexture as any)();
+      base.setSize(320, 240);
+      expect(base.width).toBe(320);
+      expect(base.height).toBe(240);
+    });
+
+    it('should create Texture with default baseTexture and frame', () => {
+      const tex = new (PIXI.Texture as any)();
+      expect(tex.baseTexture).toBeDefined();
+      expect(tex.frame).toBeInstanceOf(PIXI.Rectangle);
+    });
+
+    it('should create TilingSprite as Sprite subclass', () => {
+      const tiling = new (PIXI.TilingSprite as any)();
+      expect(tiling).toBeDefined();
+      // Inherit Sprite's child container API
+      expect(typeof tiling.addChild).toBe('function');
     });
   });
 

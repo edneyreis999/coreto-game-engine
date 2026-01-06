@@ -47,6 +47,13 @@ describe('Audio Shim', () => {
       const ctx = new AudioContext();
       expect(ctx.state).toBe('running');
     });
+
+    test('should support close/suspend/resume (promises)', async () => {
+      const ctx = new AudioContext();
+      await expect(ctx.close()).resolves.toBeUndefined();
+      await expect(ctx.suspend()).resolves.toBeUndefined();
+      await expect(ctx.resume()).resolves.toBeUndefined();
+    });
   });
 
   describe('createGain()', () => {
@@ -65,6 +72,12 @@ describe('Audio Shim', () => {
 
       expect(typeof gainNode.connect).toBe('function');
       expect(() => gainNode.connect()).not.toThrow();
+    });
+
+    test('should support disconnect()', () => {
+      const ctx = new AudioContext();
+      const gainNode = ctx.createGain();
+      expect(() => gainNode.disconnect()).not.toThrow();
     });
   });
 
@@ -95,6 +108,12 @@ describe('Audio Shim', () => {
       expect(typeof sourceNode.connect).toBe('function');
       const result = sourceNode.connect();
       expect(result).toBe(sourceNode); // Should return self for chaining
+    });
+
+    test('should support disconnect()', () => {
+      const ctx = new AudioContext();
+      const sourceNode = ctx.createBufferSource();
+      expect(() => sourceNode.disconnect()).not.toThrow();
     });
   });
 

@@ -15,17 +15,21 @@
 
 import * as path from 'path';
 import * as os from 'os';
+import * as fs from 'fs';
 import { ReadOnlyGuard } from '@/infrastructure/security/ReadOnlyGuard.js';
 
 describe('ReadOnlyGuard', () => {
   let guard: ReadOnlyGuard;
   let testPath1: string;
   let testPath2: string;
+  const fsCjs = require('fs') as typeof import('fs');
+  let originalWriteFileSync: typeof fsCjs.writeFileSync;
 
   beforeEach(() => {
     guard = new ReadOnlyGuard();
     testPath1 = path.join(os.tmpdir(), 'protected1');
     testPath2 = path.join(os.tmpdir(), 'protected2');
+    originalWriteFileSync = fsCjs.writeFileSync;
   });
 
   afterEach(() => {
@@ -33,6 +37,8 @@ describe('ReadOnlyGuard', () => {
     if (guard.isEnabled()) {
       guard.disable();
     }
+    // Ensure fs.writeFileSync is restored even if a test corrupts guard internals
+    (fsCjs as any).writeFileSync = originalWriteFileSync;
   });
 
   describe('protect/unprotect', () => {
@@ -85,22 +91,20 @@ describe('ReadOnlyGuard', () => {
       expect(guard.isEnabled()).toBe(false);
     });
 
-    // NOTE: These tests are skipped in Jest/ESM environment because fs.writeFileSync
-    // cannot be redefined. The guard works in production runtime.
-    it.skip('should enable guard successfully', () => {
+    it('should enable guard successfully', () => {
       expect(guard.isEnabled()).toBe(false);
       guard.enable();
       expect(guard.isEnabled()).toBe(true);
     });
 
-    it.skip('should disable guard successfully', () => {
+    it('should disable guard successfully', () => {
       guard.enable();
       expect(guard.isEnabled()).toBe(true);
       guard.disable();
       expect(guard.isEnabled()).toBe(false);
     });
 
-    it.skip('should be idempotent when enabling multiple times', () => {
+    it('should be idempotent when enabling multiple times', () => {
       guard.enable();
       guard.enable();
       guard.enable();
@@ -111,7 +115,7 @@ describe('ReadOnlyGuard', () => {
       expect(guard.isEnabled()).toBe(false);
     });
 
-    it.skip('should be idempotent when disabling multiple times', () => {
+    it('should be idempotent when disabling multiple times', () => {
       guard.enable();
       guard.disable();
       guard.disable();
@@ -119,12 +123,128 @@ describe('ReadOnlyGuard', () => {
       expect(guard.isEnabled()).toBe(false);
     });
 
-    it.skip('should handle enable-disable cycles', () => {
+    it('should handle enable-disable cycles', () => {
       guard.enable();
       guard.disable();
       guard.enable();
       guard.disable();
       expect(guard.isEnabled()).toBe(false);
+    });
+
+    it('should block writes to protected paths and allow writes elsewhere', () => {
+      const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'roguard-'));
+      const protectedDir = path.join(tmp, 'protected');
+      const safeDir = path.join(tmp, 'safe');
+      fs.mkdirSync(protectedDir, { recursive: true });
+      fs.mkdirSync(safeDir, { recursive: true });
+
+      guard.protect(protectedDir);
+      guard.enable();
+
+      expect(() => {
+        fs.writeFileSync(path.join(protectedDir, 'data.json'), '{}', 'utf-8');
+      }).toThrow(/Attempted write to protected path/);
+
+      const safeFile = path.join(safeDir, 'ok.txt');
+      expect(() => {
+        fs.writeFileSync(safeFile, 'ok', 'utf-8');
+      }).not.toThrow();
+      expect(fs.readFileSync(safeFile, 'utf-8')).toBe('ok');
+
+      // Cleanup
+      guard.disable();
+      fs.rmSync(tmp, { recursive: true, force: true });
+    });
+
+    it('should not apply path checks for file descriptors (non-string paths)', () => {
+      const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'roguard-fd-'));
+      const protectedDir = path.join(tmp, 'protected');
+      fs.mkdirSync(protectedDir, { recursive: true });
+
+      guard.protect(protectedDir);
+      guard.enable();
+
+      const file = path.join(protectedDir, 'fd-write.txt');
+      const fd = fs.openSync(file, 'w');
+
+      expect(() => {
+        fs.writeFileSync(fd, 'via-fd');
+      }).not.toThrow();
+
+      fs.closeSync(fd);
+      guard.disable();
+      expect(fs.readFileSync(file, 'utf-8')).toBe('via-fd');
+      fs.rmSync(tmp, { recursive: true, force: true });
+    });
+
+    it('should throw internal error if originalWriteFileSync is missing while enabled', () => {
+      guard.enable();
+      // Simulate corruption of internal state (defense-in-depth)
+      (guard as any).originalWriteFileSync = null;
+
+      expect(() => {
+        fs.writeFileSync(path.join(os.tmpdir(), 'roguard-internal.txt'), 'x', 'utf-8');
+      }).toThrow(/originalWriteFileSync not stored/);
+
+      // Cleanup: restore by disabling guard state manually
+      (guard as any).enabled = false;
+    });
+
+    it('should throw internal error if disabling without originalWriteFileSync', () => {
+      guard.enable();
+      (guard as any).originalWriteFileSync = null;
+      expect(() => guard.disable()).toThrow(/originalWriteFileSync not stored/);
+      (guard as any).enabled = false;
+    });
+
+    it('should follow descriptor branches when overriding/restoring fs.writeFileSync', () => {
+      const originalGetDesc = Object.getOwnPropertyDescriptor;
+
+      // Force enable() into assignment branch (configurable=false, writable=true)
+      jest.spyOn(Object, 'getOwnPropertyDescriptor').mockImplementation((obj: any, prop: any) => {
+        if (obj === (require('fs') as any) && prop === 'writeFileSync') {
+          return { configurable: false, writable: true, enumerable: true, value: (require('fs') as any).writeFileSync } as any;
+        }
+        return originalGetDesc(obj, prop);
+      });
+
+      expect(() => guard.enable()).not.toThrow();
+      expect(guard.isEnabled()).toBe(true);
+
+      // Restore descriptor implementation and cleanup
+      (Object.getOwnPropertyDescriptor as any).mockRestore?.();
+      guard.disable();
+    });
+
+    it('should throw if fs.writeFileSync is neither configurable nor writable', () => {
+      const originalGetDesc = Object.getOwnPropertyDescriptor;
+      jest.spyOn(Object, 'getOwnPropertyDescriptor').mockImplementation((obj: any, prop: any) => {
+        if (obj === (require('fs') as any) && prop === 'writeFileSync') {
+          return { configurable: false, writable: false, enumerable: true, value: (require('fs') as any).writeFileSync } as any;
+        }
+        return originalGetDesc(obj, prop);
+      });
+
+      expect(() => guard.enable()).toThrow(/cannot be overridden/);
+
+      (Object.getOwnPropertyDescriptor as any).mockRestore?.();
+    });
+
+    it('should throw internal error if fs.writeFileSync cannot be restored', () => {
+      guard.enable();
+
+      const originalGetDesc = Object.getOwnPropertyDescriptor;
+      jest.spyOn(Object, 'getOwnPropertyDescriptor').mockImplementation((obj: any, prop: any) => {
+        if (obj === (require('fs') as any) && prop === 'writeFileSync') {
+          return { configurable: false, writable: false, enumerable: true, value: (require('fs') as any).writeFileSync } as any;
+        }
+        return originalGetDesc(obj, prop);
+      });
+
+      expect(() => guard.disable()).toThrow(/cannot be restored/);
+
+      (Object.getOwnPropertyDescriptor as any).mockRestore?.();
+      expect(() => guard.disable()).not.toThrow();
     });
   });
 
@@ -178,7 +298,7 @@ describe('ReadOnlyGuard', () => {
       expect(guard.getProtectedPaths()).toHaveLength(0);
     });
 
-    it.skip('should throw if trying to clear while enabled', () => {
+    it('should throw if trying to clear while enabled', () => {
       guard.protect(testPath1);
       guard.enable();
 

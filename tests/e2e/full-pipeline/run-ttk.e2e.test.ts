@@ -11,6 +11,32 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { describe, it, expect, afterEach, beforeAll, afterAll } from '@jest/globals';
+
+// Keep E2E tests fast/stable: we validate the pipeline orchestration and report semantics,
+// not the internal implementation details of bootstrap/warp-loop.
+jest.mock('@/infrastructure/runtime/HeadlessRuntimeBootstrapper.js', () => {
+  return {
+    HeadlessRuntimeBootstrapper: jest.fn().mockImplementation(() => {
+      return {
+        bootstrap: jest.fn().mockResolvedValue(undefined),
+        cleanup: jest.fn(),
+        getDOM: jest.fn().mockReturnValue(null),
+      };
+    }),
+  };
+});
+
+jest.mock('@/infrastructure/runtime/simulation/SyncWarpLoop.js', () => {
+  return {
+    SyncWarpLoop: jest.fn().mockImplementation((_maxFrames: number) => {
+      return {
+        start: jest.fn(),
+        getSimulatedFrames: jest.fn().mockReturnValue(10),
+        stop: jest.fn(),
+      };
+    }),
+  };
+});
 import {
   setupE2EProject,
   snapshotProjectFiles,
@@ -161,7 +187,7 @@ async function executePipeline(configPath: string, seed?: number) {
  * 2. Use manual QA with real RMMZ projects (tests/qa/MANUAL_QA_GUIDE.md)
  * 3. Run `npm run cli run-ttk -- --config <path>` with real project
  */
-describe.skip('E2E: Full Pipeline - run-ttk command', () => {
+describe('E2E: Full Pipeline - run-ttk command', () => {
   let setup: E2EProjectSetup;
   let initialSnapshot: Map<string, number>;
 
@@ -319,6 +345,7 @@ describe.skip('E2E: Full Pipeline - run-ttk command', () => {
     it('should handle battle timeout gracefully', async () => {
       // Arrange
       setup = setupE2EProject('timeout-config.json');
+      (global as any).__CORETO_E2E_FORCE_TIMEOUT = true;
 
       // Act
       const { report } = await executePipeline(setup.configPath);
@@ -340,6 +367,7 @@ describe.skip('E2E: Full Pipeline - run-ttk command', () => {
     it('should generate timeout warning', async () => {
       // Arrange
       setup = setupE2EProject('timeout-config.json');
+      (global as any).__CORETO_E2E_FORCE_TIMEOUT = true;
 
       // Act
       const { report } = await executePipeline(setup.configPath);
@@ -439,7 +467,7 @@ describe.skip('E2E: Full Pipeline - run-ttk command', () => {
     // TODO: Re-enable when mocks use RNG for battle calculations
     // Currently, the E2E mocks produce deterministic results regardless of seed
     // because BattleManager mock doesn't use Math.random() in its simplified logic
-    it.skip('should produce different results with different seeds', async () => {
+    it('should produce different results with different seeds', async () => {
       // Arrange
       setup = setupE2EProject('project.config.json');
 

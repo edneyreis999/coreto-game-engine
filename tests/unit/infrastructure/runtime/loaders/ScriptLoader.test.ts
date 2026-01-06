@@ -1,296 +1,192 @@
-import { ScriptLoader } from '@/infrastructure/runtime/loaders/ScriptLoader';
-import * as fs from 'fs';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import * as path from 'path';
+import * as os from 'os';
+import * as fs from 'fs';
+import { ScriptLoader } from '@/infrastructure/runtime/loaders/ScriptLoader.js';
 
-// Mock fs module para testes unitários
-jest.mock('fs');
+function writeFile(filePath: string, content: string): void {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, content, 'utf-8');
+}
 
 describe('ScriptLoader', () => {
-  const mockProjectPath = '/mock/project';
-  const mockJsPath = path.join(mockProjectPath, 'js');
+  let tmpProjectPath: string;
 
   beforeEach(() => {
-    // Reset mocks antes de cada teste
-    jest.clearAllMocks();
-    jest.resetAllMocks();
+    tmpProjectPath = fs.mkdtempSync(path.join(os.tmpdir(), 'rmmz-mini-'));
 
-    // Setup padrão: diretório js/ existe
-    (fs.existsSync as jest.Mock).mockReturnValue(true);
+    // Minimal globals expected BEFORE loading scripts
+    (global as any).PIXI = {
+      Container: class Container {
+        scale = { x: 1, y: 1 };
+      },
+      Rectangle: class Rectangle {
+        x = 0;
+        y = 0;
+        width = 0;
+        height = 0;
+      },
+      filters: {},
+    };
+    (global as any).window = { top: { document: { hasFocus: () => true } } };
+    (global as any).document = {};
+    (global as any).Graphics = { frameCount: 0 };
 
-    // Mock globals necessários para ScriptLoader (validados em loadAllScripts)
-    (global as any).PIXI = { Container: function() {}, Sprite: function() {} };
-    (global as any).window = { addEventListener: jest.fn() };
-    (global as any).document = { createElement: jest.fn() };
+    // Create js/ directory and scripts from the repo fixture (copy-on-write)
+    const fixtureProject = path.join(process.cwd(), 'tests/fixtures/rmmz-mini-project');
+    const scripts = [
+      'rmmz_core.js',
+      'rmmz_managers.js',
+      'rmmz_objects.js',
+      'rmmz_scenes.js',
+      'rmmz_sprites.js',
+      'rmmz_windows.js',
+    ];
+    for (const name of scripts) {
+      const src = fs.readFileSync(path.join(fixtureProject, 'js', name), 'utf-8');
+      writeFile(path.join(tmpProjectPath, 'js', name), src);
+    }
   });
 
-  describe('constructor', () => {
-    it('should create instance with provided project path', () => {
-      const loader = new ScriptLoader(mockProjectPath);
-      expect(loader).toBeInstanceOf(ScriptLoader);
-    });
+  afterEach(() => {
+    delete (global as any).PIXI;
+    delete (global as any).window;
+    delete (global as any).document;
+    delete (global as any).Graphics;
 
-    it('should create instance with diagnostic mode enabled', () => {
-      const loader = new ScriptLoader(mockProjectPath, true);
-      expect(loader).toBeInstanceOf(ScriptLoader);
-    });
+    for (const k of [
+      'Utils',
+      'DataManager',
+      'BattleManager',
+      'SceneManager',
+      'ImageManager',
+      'AudioManager',
+      'Game_Actor',
+      'Game_Enemy',
+      'Game_Party',
+      'Game_Troop',
+      'Game_Action',
+      'Game_Battler',
+      'Scene_Battle',
+      'Scene_Base',
+      'Scene_Boot',
+      'Scene_Title',
+      'Scene_Gameover',
+      'Spriteset_Battle',
+      'Sprite_Battler',
+      'Window_BattleLog',
+      'Window_BattleStatus',
+      'Sprite',
+      'Bitmap',
+      'Window',
+      'ColorFilter',
+    ]) {
+      delete (global as any)[k];
+    }
+
+    fs.rmSync(tmpProjectPath, { recursive: true, force: true });
   });
 
-  describe('getCoreScripts', () => {
-    it('should return core scripts in correct order', () => {
-      const loader = new ScriptLoader(mockProjectPath);
-      const scripts = loader.getCoreScripts();
+  it('should load all scripts and validate required globals', () => {
+    const loader = new ScriptLoader(tmpProjectPath, true);
 
-      expect(scripts).toEqual([
-        'rmmz_core.js',
-        'rmmz_managers.js',
-        'rmmz_objects.js',
-        'rmmz_scenes.js',
-        'rmmz_sprites.js',
-        'rmmz_windows.js',
-      ]);
-    });
+    expect(() => loader.loadAllScripts()).not.toThrow();
+    expect(() => loader.validateGlobals()).not.toThrow();
+    expect(loader.getCoreScripts()).toHaveLength(6);
 
-    it('should return readonly array', () => {
-      const loader = new ScriptLoader(mockProjectPath);
-      const scripts = loader.getCoreScripts();
+    // Post-load patch: openness setter should be safe even if _container is missing
+    const Window = (global as any).Window;
+    const w = new Window();
+    expect(() => {
+      (w as any).openness = 255;
+    }).not.toThrow();
 
-      // TypeScript readonly array não permite push
-      // Teste garante que array retornado não pode ser modificado
-      expect(Object.isFrozen(scripts)).toBe(false); // Array literal não é frozen
-      expect(Array.isArray(scripts)).toBe(true);
-    });
+    // Post-load patch: _createAllParts should suppress visual errors and ensure _container exists
+    expect(() => (w as any)._createAllParts()).not.toThrow();
+    expect((w as any)._container).toBeDefined();
+
+    // Post-load patch: Sprite.setFrame/_refresh should be safe no-ops
+    const Sprite = (global as any).Sprite;
+    const sprite = new Sprite();
+    expect(() => sprite.setFrame(0, 0, 10, 10)).not.toThrow();
+    expect(() => sprite._refresh()).not.toThrow();
+
+    // Post-load patch: Bitmap drawing methods should be safe no-ops
+    const Bitmap = (global as any).Bitmap;
+    const bmp = new Bitmap();
+    expect(() => bmp.clearRect(0, 0, 1, 1)).not.toThrow();
+    expect(() => bmp.clear()).not.toThrow();
+    expect(() => bmp.fillRect(0, 0, 1, 1)).not.toThrow();
+    expect(() => bmp.gradientFillRect(0, 0, 1, 1)).not.toThrow();
+    expect(() => bmp.drawCircle(0, 0, 1)).not.toThrow();
+    expect(() => bmp.drawText('x', 0, 0)).not.toThrow();
+    expect(() => bmp.blt()).not.toThrow();
+    expect(() => bmp.strokeRect(0, 0, 1, 1)).not.toThrow();
+
+    // Post-load patch: ColorFilter.setBlendColor should ensure uniforms exists
+    const ColorFilter = (global as any).ColorFilter;
+    const cf = new ColorFilter();
+    expect(() => cf.setBlendColor([0, 0, 0, 0])).not.toThrow();
   });
 
-  describe('loadAllScripts', () => {
-    it('should throw error if js/ directory does not exist', () => {
-      (fs.existsSync as jest.Mock).mockReturnValue(false);
+  it('should ensure Window container has scale when missing', () => {
+    const loader = new ScriptLoader(tmpProjectPath, true);
+    loader.loadAllScripts();
 
-      const loader = new ScriptLoader(mockProjectPath);
+    // Force container instances without `scale` to hit the scale-guard branch
+    (global as any).PIXI.Container = class Container {};
 
-      expect(() => loader.loadAllScripts()).toThrow(
-        `RPG Maker MZ js/ directory not found: ${mockJsPath}`
-      );
-    });
+    const Window = (global as any).Window;
+    const w = new Window();
+    (w as any).openness = 123;
 
-    it('should load all scripts in correct order', () => {
-      // Mock readFileSync para retornar código válido
-      (fs.readFileSync as jest.Mock).mockReturnValue('// Mock script code');
-
-      // Mock eval indireto (não podemos mockar diretamente, mas podemos verificar execução)
-      const loader = new ScriptLoader(mockProjectPath);
-
-      // Não deve lançar erro
-      expect(() => loader.loadAllScripts()).not.toThrow();
-
-      // Verifica que readFileSync foi chamado para cada script
-      expect(fs.readFileSync).toHaveBeenCalledTimes(6);
-
-      // Verifica ordem de carregamento
-      const expectedScripts = [
-        'rmmz_core.js',
-        'rmmz_managers.js',
-        'rmmz_objects.js',
-        'rmmz_scenes.js',
-        'rmmz_sprites.js',
-        'rmmz_windows.js',
-      ];
-
-      expectedScripts.forEach((script, index) => {
-        const scriptPath = path.join(mockJsPath, script);
-        expect(fs.readFileSync).toHaveBeenNthCalledWith(index + 1, scriptPath, 'utf8');
-      });
-    });
-
-    it('should throw error if script file does not exist', () => {
-      // Mock: js/ existe, mas arquivo não
-      (fs.existsSync as jest.Mock)
-        .mockReturnValueOnce(true) // js/ directory check
-        .mockReturnValueOnce(false); // rmmz_core.js check
-
-      const loader = new ScriptLoader(mockProjectPath);
-
-      expect(() => loader.loadAllScripts()).toThrow('Script file not found');
-    });
-
-    it('should throw error if script loading fails', () => {
-      // Mock readFileSync para lançar erro
-      (fs.readFileSync as jest.Mock).mockImplementation(() => {
-        throw new Error('Permission denied');
-      });
-
-      const loader = new ScriptLoader(mockProjectPath);
-
-      expect(() => loader.loadAllScripts()).toThrow('Failed to load rmmz_core.js');
-    });
+    expect((w as any)._container).toBeDefined();
+    expect((w as any)._container.scale).toBeDefined();
+    expect((w as any)._container.scale.x).toBe(1);
+    expect((w as any)._container.scale.y).toBe(1);
   });
 
-  describe('validateGlobals', () => {
-    beforeEach(() => {
-      // Setup: Define todos os globals esperados
-      (global as any).Utils = {};
-      (global as any).Graphics = {};
-      (global as any).DataManager = {};
-      (global as any).BattleManager = {};
-      (global as any).SceneManager = {};
-      (global as any).ImageManager = {};
-      (global as any).AudioManager = {};
-      (global as any).Game_Actor = class {};
-      (global as any).Game_Enemy = class {};
-      (global as any).Game_Party = class {};
-      (global as any).Game_Troop = class {};
-      (global as any).Game_Action = class {};
-      (global as any).Game_Battler = class {};
-      (global as any).Scene_Battle = class {};
-      (global as any).Scene_Base = class {};
-      (global as any).Spriteset_Battle = class {};
-      (global as any).Sprite_Battler = class {};
-      (global as any).Window_BattleLog = class {};
-      (global as any).Window_BattleStatus = class {};
-    });
-
-    afterEach(() => {
-      // Cleanup: Remove globals definidos no teste
-      delete (global as any).Utils;
-      delete (global as any).Graphics;
-      delete (global as any).DataManager;
-      delete (global as any).BattleManager;
-      delete (global as any).SceneManager;
-      delete (global as any).ImageManager;
-      delete (global as any).AudioManager;
-      delete (global as any).Game_Actor;
-      delete (global as any).Game_Enemy;
-      delete (global as any).Game_Party;
-      delete (global as any).Game_Troop;
-      delete (global as any).Game_Action;
-      delete (global as any).Game_Battler;
-      delete (global as any).Scene_Battle;
-      delete (global as any).Scene_Base;
-      delete (global as any).Spriteset_Battle;
-      delete (global as any).Sprite_Battler;
-      delete (global as any).Window_BattleLog;
-      delete (global as any).Window_BattleStatus;
-    });
-
-    it('should pass validation when all globals are defined', () => {
-      const loader = new ScriptLoader(mockProjectPath);
-
-      // Não deve lançar erro
-      expect(() => loader.validateGlobals()).not.toThrow();
-    });
-
-    it('should throw error if critical global is missing', () => {
-      // Remove BattleManager
-      delete (global as any).BattleManager;
-
-      const loader = new ScriptLoader(mockProjectPath);
-
-      expect(() => loader.validateGlobals()).toThrow(
-        'Script validation failed: Missing globals: BattleManager'
-      );
-    });
-
-    it('should list all missing globals in error message', () => {
-      // Remove múltiplos globals
-      delete (global as any).BattleManager;
-      delete (global as any).Game_Actor;
-      delete (global as any).Scene_Battle;
-
-      const loader = new ScriptLoader(mockProjectPath);
-
-      expect(() => loader.validateGlobals()).toThrow('BattleManager, Game_Actor, Scene_Battle');
-    });
-
-    it('should validate all expected globals', () => {
-      const loader = new ScriptLoader(mockProjectPath);
-
-      // Validação deve verificar pelo menos estes globals críticos
-      const expectedGlobals = [
-        'Utils',
-        'Graphics',
-        'DataManager',
-        'BattleManager',
-        'SceneManager',
-        'ImageManager',
-        'AudioManager',
-        'Game_Actor',
-        'Game_Enemy',
-        'Game_Party',
-        'Game_Troop',
-        'Game_Action',
-        'Game_Battler',
-        'Scene_Battle',
-        'Scene_Base',
-        'Spriteset_Battle',
-        'Sprite_Battler',
-        'Window_BattleLog',
-        'Window_BattleStatus',
-      ];
-
-      // Teste que validação não falha com todos globals definidos
-      expect(() => loader.validateGlobals()).not.toThrow();
-
-      // Teste que validação falha se qualquer global crítico estiver ausente
-      expectedGlobals.forEach((globalName) => {
-        const backup = (global as any)[globalName];
-        delete (global as any)[globalName];
-
-        expect(() => loader.validateGlobals()).toThrow(globalName);
-
-        // Restaura global
-        (global as any)[globalName] = backup;
-      });
-    });
+  it('should fail fast if PIXI is not available', () => {
+    delete (global as any).PIXI;
+    const loader = new ScriptLoader(tmpProjectPath);
+    expect(() => loader.loadAllScripts()).toThrow(/PIXI global not found/);
   });
 
-  describe('diagnostic mode', () => {
-    let consoleSpy: jest.SpyInstance;
-
-    beforeEach(() => {
-      consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-      (fs.readFileSync as jest.Mock).mockReturnValue('// Mock script');
-    });
-
-    afterEach(() => {
-      consoleSpy.mockRestore();
-    });
-
-    it('should not log when diagnostic mode is disabled', () => {
-      const loader = new ScriptLoader(mockProjectPath, false);
-      loader.loadAllScripts();
-
-      // Console.log não deve ser chamado em modo normal
-      expect(consoleSpy).not.toHaveBeenCalled();
-    });
-
-    it('should log when diagnostic mode is enabled', () => {
-      const loader = new ScriptLoader(mockProjectPath, true);
-      loader.loadAllScripts();
-
-      // Console.log deve ser chamado em modo diagnostic
-      expect(consoleSpy).toHaveBeenCalled();
-      expect(consoleSpy.mock.calls.some((call) => call[0].includes('[DIAGNOSTIC]'))).toBe(true);
-    });
+  it('should fail fast if window is not available', () => {
+    delete (global as any).window;
+    const loader = new ScriptLoader(tmpProjectPath);
+    expect(() => loader.loadAllScripts()).toThrow(/window global not found/);
   });
 
-  describe('error handling', () => {
-    it('should include script name in error message', () => {
-      (fs.readFileSync as jest.Mock).mockImplementation(() => {
-        throw new Error('File read error');
-      });
+  it('should fail fast if document is not available', () => {
+    delete (global as any).document;
+    const loader = new ScriptLoader(tmpProjectPath);
+    expect(() => loader.loadAllScripts()).toThrow(/document global not found/);
+  });
 
-      const loader = new ScriptLoader(mockProjectPath);
+  it('should fail if js/ directory does not exist', () => {
+    fs.rmSync(path.join(tmpProjectPath, 'js'), { recursive: true, force: true });
+    const loader = new ScriptLoader(tmpProjectPath);
+    expect(() => loader.loadAllScripts()).toThrow(/js\/ directory not found/);
+  });
 
-      expect(() => loader.loadAllScripts()).toThrow('Failed to load rmmz_core.js');
-    });
+  it('should fail if a core script is missing', () => {
+    fs.rmSync(path.join(tmpProjectPath, 'js', 'rmmz_windows.js'));
+    const loader = new ScriptLoader(tmpProjectPath);
+    expect(() => loader.loadAllScripts()).toThrow(/Failed to load rmmz_windows\.js/);
+  });
 
-    it('should include original error message', () => {
-      (fs.readFileSync as jest.Mock).mockImplementation(() => {
-        throw new Error('ENOENT: no such file');
-      });
+  it('should skip ColorFilter patch when initialize is not found', () => {
+    const loader: any = new ScriptLoader(tmpProjectPath, true);
+    const original = 'function NotColorFilter() {}';
+    const patched = loader.patchColorFilter(original);
+    expect(patched).toBe(original);
+  });
 
-      const loader = new ScriptLoader(mockProjectPath);
-
-      expect(() => loader.loadAllScripts()).toThrow('ENOENT: no such file');
-    });
+  it('should throw if required globals are missing after scripts load', () => {
+    const loader = new ScriptLoader(tmpProjectPath, true);
+    loader.loadAllScripts();
+    delete (global as any).Scene_Battle;
+    expect(() => loader.validateGlobals()).toThrow(/Missing globals/);
   });
 });

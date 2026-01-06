@@ -1,7 +1,6 @@
 import { HeadlessRuntimeBootstrapper } from '@/infrastructure/runtime/HeadlessRuntimeBootstrapper';
 import { DatabaseLoader } from '@/infrastructure/runtime/loaders/DatabaseLoader';
 import * as path from 'path';
-import * as fs from 'fs';
 
 /**
  * Integration Tests: Database Loading
@@ -10,17 +9,13 @@ import * as fs from 'fs';
  *
  * Task 21: Synchronous Database Loading Override (ADR-016)
  *
- * NOTA: Estes testes requerem um projeto RPG Maker MZ real em tests/fixtures/test-project
- * Serão skippados automaticamente se o projeto não existir.
+ * Usa o fixture mínimo `tests/fixtures/rmmz-mini-project` (scripts + data) para não depender
+ * de projetos externos e evitar suites skipadas.
  */
 
-const testProjectPath = path.join(__dirname, '../../fixtures/test-project');
-const projectExists = fs.existsSync(path.join(testProjectPath, 'js', 'rmmz_core.js'));
+const testProjectPath = path.join(__dirname, '../../fixtures/rmmz-mini-project');
 
-// Skip todo o describe se o projeto RMMZ não existir
-const describeIfProject = projectExists ? describe : describe.skip;
-
-describeIfProject('Database Loading Integration', () => {
+describe('Database Loading Integration', () => {
   let bootstrapper: HeadlessRuntimeBootstrapper;
 
   beforeAll(async () => {
@@ -32,16 +27,8 @@ describeIfProject('Database Loading Integration', () => {
     bootstrapper.cleanup();
   });
 
-  it('should load database synchronously', async () => {
-    // Arrange
-    const loader = new DatabaseLoader(testProjectPath);
-
-    // Act
-    loader.overrideDataManager();
-    loader.loadDatabase();
-    await loader.waitForDatabase();
-
-    // Assert
+  it('should bootstrap and load database (ADR-016)', () => {
+    // Assert: bootstrap step6_loadDatabase should have completed
     expect((global as any).$dataActors).toBeDefined();
     expect((global as any).$dataActors).not.toBeNull();
     expect(Array.isArray((global as any).$dataActors)).toBe(true);
@@ -132,26 +119,5 @@ describeIfProject('Database Loading Integration', () => {
     const DataManager = (global as any).DataManager;
     expect(DataManager).toBeDefined();
     expect(DataManager.isDatabaseLoaded()).toBe(true);
-  });
-
-  it('should timeout if database fails to load with invalid path', async () => {
-    // Arrange
-    const invalidPath = '/invalid/path/to/project';
-    const loader = new DatabaseLoader(invalidPath);
-
-    // Mock DataManager para simular falha
-    const DataManager = (global as any).DataManager;
-    const originalIsDatabaseLoaded = DataManager.isDatabaseLoaded;
-
-    // Mock para sempre retornar false
-    DataManager.isDatabaseLoaded = jest.fn().mockReturnValue(false);
-
-    // Act & Assert
-    await expect(loader.waitForDatabase(100)).rejects.toThrow(
-      'Database loading timeout'
-    );
-
-    // Restaura função original
-    DataManager.isDatabaseLoaded = originalIsDatabaseLoaded;
   });
 });

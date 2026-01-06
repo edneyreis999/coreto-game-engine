@@ -19,8 +19,15 @@
  * ```
  */
 
-import * as fs from 'fs';
+import { createRequire } from 'module';
+import type { PathOrFileDescriptor, WriteFileOptions } from 'fs';
 import * as path from 'path';
+
+const nodeRequire = createRequire(process.cwd() + '/');
+// Use CommonJS `require('fs')` to obtain a mutable module object.
+// In Node ESM, `import * as fs from 'fs'` yields a read-only module namespace object,
+// which cannot be monkey-patched (required for ADR-001 runtime guard).
+const fs = nodeRequire('fs') as typeof import('fs');
 
 /**
  * ReadOnlyGuard class.
@@ -88,10 +95,10 @@ export class ReadOnlyGuard {
 
     // Create wrapper function
     const guardedWriteFileSync = function (
-      filePath: fs.PathOrFileDescriptor,
+      filePath: PathOrFileDescriptor,
       data: string | NodeJS.ArrayBufferView,
       options?:
-        | fs.WriteFileOptions
+        | WriteFileOptions
         | BufferEncoding
         | { encoding?: BufferEncoding | null; mode?: number | string; flag?: string }
     ): void {
@@ -123,13 +130,23 @@ export class ReadOnlyGuard {
       return guard.originalWriteFileSync.call(fs, filePath, data, options as any);
     };
 
-    // Override fs.writeFileSync using Object.defineProperty
-    Object.defineProperty(fs, 'writeFileSync', {
-      value: guardedWriteFileSync,
-      writable: true,
-      configurable: true,
-      enumerable: true,
-    });
+    // Override fs.writeFileSync.
+    // Some Node.js environments mark fs.writeFileSync as non-configurable, which makes
+    // Object.defineProperty throw. Prefer assignment when possible.
+    const desc = Object.getOwnPropertyDescriptor(fs, 'writeFileSync');
+    if (desc?.configurable) {
+      Object.defineProperty(fs, 'writeFileSync', {
+        value: guardedWriteFileSync,
+        writable: true,
+        configurable: true,
+        enumerable: true,
+      });
+    } else if (desc?.writable !== false) {
+      // Either writable:true or descriptor is missing (fallback to assignment)
+      (fs as any).writeFileSync = guardedWriteFileSync;
+    } else {
+      throw new Error('INTERNAL ERROR: fs.writeFileSync cannot be overridden in this environment');
+    }
 
     this.enabled = true;
   }
@@ -155,13 +172,20 @@ export class ReadOnlyGuard {
       throw new Error('INTERNAL ERROR: Cannot disable guard - originalWriteFileSync not stored');
     }
 
-    // Restore original function using Object.defineProperty
-    Object.defineProperty(fs, 'writeFileSync', {
-      value: this.originalWriteFileSync,
-      writable: true,
-      configurable: true,
-      enumerable: true,
-    });
+    // Restore original function (same constraints as enable()).
+    const desc = Object.getOwnPropertyDescriptor(fs, 'writeFileSync');
+    if (desc?.configurable) {
+      Object.defineProperty(fs, 'writeFileSync', {
+        value: this.originalWriteFileSync,
+        writable: true,
+        configurable: true,
+        enumerable: true,
+      });
+    } else if (desc?.writable !== false) {
+      (fs as any).writeFileSync = this.originalWriteFileSync;
+    } else {
+      throw new Error('INTERNAL ERROR: fs.writeFileSync cannot be restored in this environment');
+    }
 
     this.originalWriteFileSync = null;
     this.enabled = false;

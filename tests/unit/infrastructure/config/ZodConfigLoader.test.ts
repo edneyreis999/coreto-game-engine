@@ -96,6 +96,15 @@ describe('ZodConfigLoader', () => {
       );
     });
 
+    it('should throw ConfigError when file cannot be read', async () => {
+      mockFileSystem.exists.mockReturnValue(true);
+      mockFileSystem.readFileSync.mockImplementation(() => {
+        throw new Error('EACCES');
+      });
+
+      await expect(configLoader.loadConfig(validConfigPath)).rejects.toThrow(/Failed to read config file/);
+    });
+
     it('should throw ValidationError when schema validation fails', async () => {
       // Arrange
       const invalidConfig = {
@@ -311,6 +320,32 @@ describe('ZodConfigLoader', () => {
         id: 'trecho-1',
         name: 'Trecho Test 1',
       });
+    });
+
+    it('should load trechos from cached raw config (after loadConfig)', async () => {
+      const configPath = '/path/to/project.config.json';
+      const rawWithTrechos = {
+        projectPath: '/absolute/path/to/rpg-maker-project',
+        reportOutputPath: '/absolute/path/to/report',
+        trechos: [
+          {
+            id: 'cached-trecho',
+            anchorLevelRange: { min: 1, max: 10 },
+            ttkTarget: { turns: 3, actions: 8, tolerance: 0.15 },
+            troopIds: [1],
+            party: { members: [{ classId: 1, level: 5 }] },
+          },
+        ],
+      };
+
+      mockFileSystem.exists.mockReturnValue(true);
+      mockFileSystem.readFileSync.mockReturnValue(JSON.stringify(rawWithTrechos));
+
+      const validatedConfig = await configLoader.loadConfig(configPath);
+      const trechos = await configLoader.loadTrechos(validatedConfig);
+
+      expect(trechos).toHaveLength(1);
+      expect(trechos[0]!.id).toBe('cached-trecho');
     });
 
     it('should validate trecho schema and throw on invalid data', async () => {
