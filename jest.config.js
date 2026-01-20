@@ -19,7 +19,8 @@ export default {
   },
   // Module name mapping for workspace imports
   moduleNameMapper: {
-    // Workspace package imports
+    // Workspace package imports - map to built dist files
+    '^@coreto/core$': '<rootDir>/packages/core/src/index.ts',
     '^@coreto/core/(.*)$': '<rootDir>/packages/core/src/$1',
     '^@coreto/cli/(.*)$': '<rootDir>/packages/cli/src/$1',
     '^@coreto/electron/(.*)$': '<rootDir>/packages/electron/src/$1',

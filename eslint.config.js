@@ -5,27 +5,42 @@ import tsparser from '@typescript-eslint/parser';
 export default [
   eslint.configs.recommended,
   {
-    files: ['src/**/*.ts', 'packages/*/src/**/*.ts'],
+    files: ['src/**/*.ts', 'src/**/*.tsx', 'packages/*/src/**/*.ts', 'packages/*/src/**/*.tsx'],
     languageOptions: {
       parser: tsparser,
       parserOptions: {
         ecmaVersion: 2022,
         sourceType: 'module',
-        project: './tsconfig.json',
+        project: [
+          './tsconfig.json',
+          './packages/*/tsconfig.json',
+          './packages/*/tsconfig.node.json',
+          './packages/*/tsconfig.web.json',
+        ],
+        tsconfigRootDir: import.meta.dirname,
       },
       globals: {
+        // Node.js globals (for main/preload processes)
         console: 'readonly',
         process: 'readonly',
         __dirname: 'readonly',
         __filename: 'readonly',
         Buffer: 'readonly',
         NodeJS: 'readonly',
+        // Browser globals (for renderer process)
+        window: 'readonly',
+        document: 'readonly',
+        navigator: 'readonly',
+        localStorage: 'readonly',
+        sessionStorage: 'readonly',
       },
     },
     plugins: {
       '@typescript-eslint': tseslint,
     },
     rules: {
+      // Disable base no-unused-vars in favor of TypeScript version
+      'no-unused-vars': 'off',
       // TypeScript-specific rules
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': [
