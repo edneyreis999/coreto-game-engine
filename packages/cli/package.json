@@ -1,0 +1,42 @@
+{
+  "name": "@coreto/cli",
+  "version": "0.1.0",
+  "description": "Oclif-based CLI for Coreto Game Engine TTK validation",
+  "author": "Coreto Team",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "bin": {
+    "coreto-engine": "./bin/run.js"
+  },
+  "oclif": {
+    "bin": "coreto-engine",
+    "dirname": "coreto-engine",
+    "commands": "./dist/cli/commands",
+    "topicSeparator": " ",
+    "topics": {
+      "hello": {
+        "description": "Example hello world command"
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsc && tsc-alias",
+    "dev": "tsx watch src/cli/index.ts",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@oclif/core": "^4.0.0",
+    "cli-progress": "^3.12.0",
+    "@coreto/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/cli-progress": "^3.11.6",
+    "@types/node": "^22.10.5",
+    "tsc-alias": "^1.8.16",
+    "tsx": "^4.19.2",
+    "typescript": "^5.9.3"
+  }
+}

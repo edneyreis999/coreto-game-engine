@@ -1,0 +1,4 @@
+# pnpm workspace configuration for Coreto Game Engine monorepo
+# Defines the packages pattern for workspace discovery
+packages:
+  - 'packages/*'

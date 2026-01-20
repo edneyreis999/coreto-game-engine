@@ -1,0 +1,25 @@
+{
+  "name": "@coreto/electron",
+  "version": "0.1.0",
+  "description": "Electron Dev Portal for Coreto Game Engine",
+  "author": "Coreto Team",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist out"
+  },
+  "dependencies": {
+    "@coreto/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "electron": "^33.0.0",
+    "electron-vite": "^2.0.0",
+    "typescript": "^5.9.3",
+    "vite": "^5.0.0"
+  }
+}

@@ -6,6 +6,9 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
 
+    // Composite project mode for monorepo references
+    "composite": true,
+
     // Strict Type-Checking Options (ADR-028)
     "strict": true,
     "noImplicitAny": true,
@@ -39,7 +42,7 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
 
-    // Path Aliases
+    // Path Aliases (maintained for backward compatibility during migration)
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
@@ -58,7 +61,13 @@
     "node_modules",
     "dist",
     "tests",
+    "packages",
     "**/*.spec.ts",
     "**/*.test.ts"
+  ],
+  "references": [
+    { "path": "./packages/core" },
+    { "path": "./packages/cli" },
+    { "path": "./packages/electron" }
   ]
 }

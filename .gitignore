@@ -8,10 +8,19 @@ setup-claude-symlink.sh
 
 # Dependencies
 node_modules/
+# Monorepo: pnpm store and workspace node_modules
+.pnpm-store/
+packages/*/node_modules/
+
+# Lock files (pnpm will use pnpm-lock.yaml)
+package-lock.json
+yarn.lock
 
 # Build Output
 dist/
 *.tsbuildinfo
+# Monorepo: Electron build output
+out/
 
 # Reports and Outputs
 reports/
