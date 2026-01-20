@@ -1,5 +1,5 @@
-import React from 'react'
-import { ProjectSelectionPanel } from '@/components'
+import React, { useState } from 'react'
+import { ProjectSelectionPanel, ConfigurationPanel } from '@/components'
 
 /**
  * Root App Component
@@ -7,17 +7,24 @@ import { ProjectSelectionPanel } from '@/components'
  * This is the main React component for the Coreto Dev Portal.
  * Currently contains:
  * - Project selection panel (task #6)
+ * - Configuration panel (task #7)
  *
  * In future tasks, it will contain:
- * - Configuration panel (task #7)
  * - Execution panel with progress tracking (task #8)
  * - Results panel with color-coded cards (task #9)
  */
 
 export default function App(): React.ReactElement {
+  const [selectedProjectPath, setSelectedProjectPath] = useState<string | null>(null)
+
   const handleProjectSelected = (projectPath: string): void => {
     console.log('Project selected:', projectPath)
-    // TODO: Store project path in state for use in other panels
+    setSelectedProjectPath(projectPath)
+  }
+
+  const handleConfigSaved = (config: unknown): void => {
+    console.log('Configuration saved:', config)
+    // TODO: Persist configuration via IPC
     // TODO: Enable navigation to next panels
   }
 
@@ -28,7 +35,15 @@ export default function App(): React.ReactElement {
         <p>Time-to-Kill (TTK) Validation System for RPG Maker MZ</p>
       </header>
       <main className="app-main">
-        <ProjectSelectionPanel onProjectSelected={handleProjectSelected} />
+        <div className="flex flex-col gap-6">
+          <ProjectSelectionPanel onProjectSelected={handleProjectSelected} />
+          {selectedProjectPath && (
+            <ConfigurationPanel
+              projectPath={selectedProjectPath}
+              onConfigSaved={handleConfigSaved}
+            />
+          )}
+        </div>
       </main>
     </div>
   )

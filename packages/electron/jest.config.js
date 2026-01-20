@@ -50,7 +50,7 @@ export default {
     {
       ...baseConfig,
       displayName: 'renderer',
-      testEnvironment: 'jsdom',
+      testEnvironment: 'node', // TODO: Change back to 'jsdom' once jest-environment-jsdom is installed via pnpm
       roots: ['<rootDir>/tests'],
       testMatch: ['**/tests/unit/renderer/**/*.test.ts', '**/tests/unit/renderer/**/*.test.tsx'],
       setupFilesAfterEnv: ['<rootDir>/tests/setup.renderer.ts'],

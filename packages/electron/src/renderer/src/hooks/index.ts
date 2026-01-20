@@ -14,3 +14,4 @@ export {
   isIdleStatus,
   getValidationMessage,
 } from './useProject';
+export { useConfig } from './useConfig';

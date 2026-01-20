@@ -263,6 +263,50 @@ const coretoAPI = {
     ipcRenderer.invoke('config:getTrechos'),
 
   /**
+   * Adds or updates a trecho configuration.
+   * @param projectPath - Absolute path to the project directory
+   * @param trecho - Trecho configuration to add or update
+   * @returns The added or updated trecho
+   */
+  updateTrecho: (
+    projectPath: string,
+    trecho: TrechoData
+  ): Promise<IPCResult<{ trecho: TrechoData }>> =>
+    ipcRenderer.invoke('config:updateTrecho', { projectPath, trecho }),
+
+  /**
+   * Deletes a trecho from the configuration.
+   * @param projectPath - Absolute path to the project directory
+   * @param trechoId - ID of the trecho to delete
+   * @returns The deleted trecho ID
+   */
+  deleteTrecho: (
+    projectPath: string,
+    trechoId: string
+  ): Promise<IPCResult<{ deletedTrechoId: string }>> =>
+    ipcRenderer.invoke('config:deleteTrecho', { projectPath, trechoId }),
+
+  /**
+   * Updates global configuration settings.
+   * @param projectPath - Absolute path to the project directory
+   * @param settings - Global settings to update
+   * @returns The updated global settings
+   */
+  updateGlobalSettings: (
+    projectPath: string,
+    settings: {
+      seed?: number;
+      maxBattleTurns?: number;
+    }
+  ): Promise<
+    IPCResult<{
+      seed: number;
+      maxBattleTurns?: number;
+    }>
+  > =>
+    ipcRenderer.invoke('config:updateGlobalSettings', { projectPath, ...settings }),
+
+  /**
    * Data Handlers
    */
 

@@ -8,9 +8,6 @@
 // Set NODE_ENV to test for all tests
 process.env.NODE_ENV = 'test'
 
-// Mock CSS imports
-jest.mock('identity-obj-proxy', () => ({}))
-
 // Mock window.coreto API
 global.window = global.window || {}
 

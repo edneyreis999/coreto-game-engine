@@ -59,6 +59,9 @@ import type {
   PreferencesGetResponse,
   PreferencesSetResponse,
   OpenDirectoryResponse,
+  ConfigUpdateTrechoResponse,
+  ConfigDeleteTrechoResponse,
+  ConfigUpdateGlobalSettingsResponse,
 } from './types.js';
 import {
   ProjectOpenPayloadSchema,
@@ -71,6 +74,9 @@ import {
   RecentListPayloadSchema,
   RecentAddPayloadSchema,
   PreferencesSetPayloadSchema,
+  ConfigUpdateTrechoPayloadSchema,
+  ConfigDeleteTrechoPayloadSchema,
+  ConfigUpdateGlobalSettingsPayloadSchema,
 } from './types.js';
 import { getDatabase } from '../database/index.js';
 import { listRecentProjects, addRecentProject } from '../database/index.js';
@@ -621,6 +627,133 @@ async function handleConfigGetTrechos(
   });
 }
 
+/**
+ * Handler: config:updateTrecho
+ *
+ * Adds or updates a trecho configuration.
+ * For MVP, validates and returns the trecho - will persist to database later.
+ */
+async function handleConfigUpdateTrecho(
+  _event: IpcMainInvokeEvent,
+  payload: unknown
+): Promise<IPCResult<ConfigUpdateTrechoResponse>> {
+  return withErrorHandling(async () => {
+    validatePayload('config:updateTrecho', payload, ConfigUpdateTrechoPayloadSchema);
+
+    const { trecho } = payload;
+    const logger = resolve<ILogger>(ILoggerToken);
+
+    logger.info(`[IPC] Updating trecho: ${trecho.id}`);
+
+    // For MVP, validate using the Trecho domain entity
+    // This ensures the trecho data is valid before accepting it
+    try {
+      // Import Trecho from core package for validation
+      const { Trecho, PartyConfig } = await import('@coreto/core');
+
+      // Convert form data to domain entities
+      const party = new PartyConfig(trecho.party.members);
+
+      // Validate trecho (will throw if invalid)
+      // eslint-disable-next-line no-new
+      new Trecho({
+        id: trecho.id,
+        name: trecho.name ?? trecho.id,
+        anchorLevelMin: trecho.anchorLevelMin,
+        anchorLevelMax: trecho.anchorLevelMax,
+        targetTtkTurns: trecho.targetTtkTurns,
+        targetTtkActions: trecho.targetTtkActions,
+        tolerancePercent: trecho.tolerancePercent,
+        troopIds: trecho.troopIds,
+        party,
+      });
+
+      // TODO: Persist to database in future iteration
+      // For MVP, just return the validated trecho
+      return {
+        trecho: {
+          id: trecho.id,
+          name: trecho.name ?? trecho.id,
+          anchorLevelMin: trecho.anchorLevelMin,
+          anchorLevelMax: trecho.anchorLevelMax,
+          targetTtkTurns: trecho.targetTtkTurns,
+          targetTtkActions: trecho.targetTtkActions,
+          tolerancePercent: trecho.tolerancePercent,
+          troopIds: trecho.troopIds,
+          party: trecho.party,
+        },
+      };
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(`Trecho validation failed: ${error.message}`);
+      }
+      throw error;
+    }
+  });
+}
+
+/**
+ * Handler: config:deleteTrecho
+ *
+ * Removes a trecho from the configuration.
+ * For MVP, validates and returns the deleted ID - will update database later.
+ */
+async function handleConfigDeleteTrecho(
+  _event: IpcMainInvokeEvent,
+  payload: unknown
+): Promise<IPCResult<ConfigDeleteTrechoResponse>> {
+  return withErrorHandling(async () => {
+    validatePayload('config:deleteTrecho', payload, ConfigDeleteTrechoPayloadSchema);
+
+    const { trechoId } = payload;
+    const logger = resolve<ILogger>(ILoggerToken);
+
+    logger.info(`[IPC] Deleting trecho: ${trechoId}`);
+
+    // TODO: Remove from database in future iteration
+    // For MVP, just return the deleted ID
+    return {
+      deletedTrechoId: trechoId,
+    };
+  });
+}
+
+/**
+ * Handler: config:updateGlobalSettings
+ *
+ * Updates global configuration settings.
+ * For MVP, validates and returns the settings - will persist to database later.
+ */
+async function handleConfigUpdateGlobalSettings(
+  _event: IpcMainInvokeEvent,
+  payload: unknown
+): Promise<IPCResult<ConfigUpdateGlobalSettingsResponse>> {
+  return withErrorHandling(async () => {
+    validatePayload(
+      'config:updateGlobalSettings',
+      payload,
+      ConfigUpdateGlobalSettingsPayloadSchema
+    );
+
+    const { seed, maxBattleTurns } = payload;
+    const logger = resolve<ILogger>(ILoggerToken);
+
+    logger.info(`[IPC] Updating global settings: seed=${seed}`);
+
+    // TODO: Persist to database in future iteration
+    // For MVP, just return the validated settings
+    const response: ConfigUpdateGlobalSettingsResponse = {
+      seed: seed ?? 12345,
+    };
+
+    if (maxBattleTurns !== undefined) {
+      response.maxBattleTurns = maxBattleTurns;
+    }
+
+    return response;
+  });
+}
+
 // ============================================================================
 // Data Handlers
 // ============================================================================
@@ -893,6 +1026,9 @@ export const IPC_HANDLERS: Record<
   'simulation:cancel': handleSimulationCancel,
   'config:load': handleConfigLoad,
   'config:getTrechos': handleConfigGetTrechos,
+  'config:updateTrecho': handleConfigUpdateTrecho,
+  'config:deleteTrecho': handleConfigDeleteTrecho,
+  'config:updateGlobalSettings': handleConfigUpdateGlobalSettings,
   'data:getTroops': handleDataGetTroops,
   'data:getClasses': handleDataGetClasses,
   'data:getEnemies': handleDataGetEnemies,

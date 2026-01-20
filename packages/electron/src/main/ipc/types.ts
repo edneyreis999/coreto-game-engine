@@ -99,6 +99,9 @@ export type IPCChannel =
   | 'simulation:cancel'
   | 'config:load'
   | 'config:getTrechos'
+  | 'config:updateTrecho'
+  | 'config:deleteTrecho'
+  | 'config:updateGlobalSettings'
   | 'data:getTroops'
   | 'data:getClasses'
   | 'data:getEnemies'
@@ -238,6 +241,91 @@ export interface ProjectConfigResponse {
 }
 
 // No payload for config:getTrechos (takes no parameters)
+
+/**
+ * Zod schema for config:updateTrecho payload.
+ */
+export const ConfigUpdateTrechoPayloadSchema = z.object({
+  projectPath: z
+    .string()
+    .min(1, 'Project path cannot be empty')
+    .refine((p) => !p.includes('..'), 'Path traversal not allowed'),
+  trecho: z.object({
+    id: z.string().min(1, 'Trecho ID cannot be empty'),
+    name: z.string().optional(),
+    anchorLevelMin: z.number().int().min(1).max(99),
+    anchorLevelMax: z.number().int().min(1).max(99),
+    targetTtkTurns: z.number().int().positive(),
+    targetTtkActions: z.number().int().positive(),
+    tolerancePercent: z.number().min(0).max(100),
+    troopIds: z.array(z.number().int().positive()).min(1),
+    party: z.object({
+      members: z.array(
+        z.object({
+          classId: z.number().int().positive(),
+          level: z.number().int().min(1).max(99),
+        })
+      ).min(1).max(4),
+    }),
+  }),
+});
+
+export type ConfigUpdateTrechoPayload = z.infer<
+  typeof ConfigUpdateTrechoPayloadSchema
+>;
+
+/**
+ * Response format for config:updateTrecho handler.
+ */
+export interface ConfigUpdateTrechoResponse {
+  trecho: TrechoData;
+}
+
+/**
+ * Zod schema for config:deleteTrecho payload.
+ */
+export const ConfigDeleteTrechoPayloadSchema = z.object({
+  projectPath: z
+    .string()
+    .min(1, 'Project path cannot be empty')
+    .refine((p) => !p.includes('..'), 'Path traversal not allowed'),
+  trechoId: z.string().min(1, 'Trecho ID cannot be empty'),
+});
+
+export type ConfigDeleteTrechoPayload = z.infer<
+  typeof ConfigDeleteTrechoPayloadSchema
+>;
+
+/**
+ * Response format for config:deleteTrecho handler.
+ */
+export interface ConfigDeleteTrechoResponse {
+  deletedTrechoId: string;
+}
+
+/**
+ * Zod schema for config:updateGlobalSettings payload.
+ */
+export const ConfigUpdateGlobalSettingsPayloadSchema = z.object({
+  projectPath: z
+    .string()
+    .min(1, 'Project path cannot be empty')
+    .refine((p) => !p.includes('..'), 'Path traversal not allowed'),
+  seed: z.number().int().positive().optional(),
+  maxBattleTurns: z.number().int().positive().optional(),
+});
+
+export type ConfigUpdateGlobalSettingsPayload = z.infer<
+  typeof ConfigUpdateGlobalSettingsPayloadSchema
+>;
+
+/**
+ * Response format for config:updateGlobalSettings handler.
+ */
+export interface ConfigUpdateGlobalSettingsResponse {
+  seed: number;
+  maxBattleTurns?: number;
+}
 
 // ============================================================================
 // Data Handlers
@@ -421,6 +509,9 @@ export type IPCResponse =
   | void // For simulation:cancel
   | ProjectConfigResponse
   | TrechoData[]
+  | ConfigUpdateTrechoResponse
+  | ConfigDeleteTrechoResponse
+  | ConfigUpdateGlobalSettingsResponse
   | TroopData[]
   | ClassData[]
   | EnemyData[]
@@ -466,6 +557,9 @@ export const IPCPayloadSchemas = {
   'simulation:cancel': z.void(), // No payload
   'config:load': ConfigLoadPayloadSchema,
   'config:getTrechos': z.void(), // No payload
+  'config:updateTrecho': ConfigUpdateTrechoPayloadSchema,
+  'config:deleteTrecho': ConfigDeleteTrechoPayloadSchema,
+  'config:updateGlobalSettings': ConfigUpdateGlobalSettingsPayloadSchema,
   'data:getTroops': DataGetTroopsPayloadSchema,
   'data:getClasses': DataGetClassesPayloadSchema,
   'data:getEnemies': DataGetEnemiesPayloadSchema,
