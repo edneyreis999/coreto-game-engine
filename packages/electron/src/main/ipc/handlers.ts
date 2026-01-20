@@ -17,7 +17,7 @@
  * @see packages/electron/src/main/ipc/index.ts
  */
 
-import { ipcMain, IpcMainInvokeEvent } from 'electron';
+import { ipcMain, IpcMainInvokeEvent, dialog, BrowserWindow } from 'electron';
 import { z } from 'zod';
 import * as path from 'path';
 
@@ -54,6 +54,11 @@ import type {
   ClassData,
   EnemyData,
   TrechoData,
+  RecentListResponse,
+  RecentAddResponse,
+  PreferencesGetResponse,
+  PreferencesSetResponse,
+  OpenDirectoryResponse,
 } from './types.js';
 import {
   ProjectOpenPayloadSchema,
@@ -63,7 +68,13 @@ import {
   DataGetTroopsPayloadSchema,
   DataGetClassesPayloadSchema,
   DataGetEnemiesPayloadSchema,
+  RecentListPayloadSchema,
+  RecentAddPayloadSchema,
+  PreferencesSetPayloadSchema,
 } from './types.js';
+import { getDatabase } from '../database/index.js';
+import { listRecentProjects, addRecentProject } from '../database/index.js';
+import { getUserPreferences, updateUserPreferences } from '../database/index.js';
 
 // ============================================================================
 // Progress State Management
@@ -724,6 +735,147 @@ async function handleDataGetEnemies(
 }
 
 // ============================================================================
+// Recent Projects Handlers
+// ============================================================================
+
+/**
+ * Handler: recent:list
+ *
+ * Lists recent projects from the database.
+ */
+async function handleRecentList(
+  _event: IpcMainInvokeEvent,
+  payload: unknown
+): Promise<IPCResult<RecentListResponse>> {
+  return withErrorHandling(async () => {
+    validatePayload('recent:list', payload, RecentListPayloadSchema);
+
+    const limit = payload?.limit ?? 10;
+    const db = getDatabase();
+    const recentProjectsDb = listRecentProjects(db, limit);
+
+    // Convert database format to IPC response format
+    return recentProjectsDb.map((rp) => ({
+      path: rp.path,
+      name: rp.name,
+      lastOpened: new Date(rp.last_opened_at).toISOString(),
+    }));
+  });
+}
+
+/**
+ * Handler: recent:add
+ *
+ * Adds or updates a recent project in the database.
+ */
+async function handleRecentAdd(
+  _event: IpcMainInvokeEvent,
+  payload: unknown
+): Promise<IPCResult<RecentAddResponse>> {
+  return withErrorHandling(async () => {
+    validatePayload('recent:add', payload, RecentAddPayloadSchema);
+
+    const { path, name } = payload;
+    const db = getDatabase();
+    const recentProjectDb = addRecentProject(db, path, name);
+
+    return {
+      path: recentProjectDb.path,
+      name: recentProjectDb.name,
+      lastOpened: new Date(recentProjectDb.last_opened_at).toISOString(),
+    };
+  });
+}
+
+// ============================================================================
+// Preferences Handlers
+// ============================================================================
+
+/**
+ * Handler: preferences:get
+ *
+ * Gets user preferences from the database.
+ */
+async function handlePreferencesGet(
+  _event: IpcMainInvokeEvent,
+  _payload: unknown
+): Promise<IPCResult<PreferencesGetResponse>> {
+  return withErrorHandling(async () => {
+    const db = getDatabase();
+    const userPrefs = getUserPreferences(db);
+
+    return {
+      theme: userPrefs.theme,
+      lastProjectPath: userPrefs.last_project_path ?? null,
+    };
+  });
+}
+
+/**
+ * Handler: preferences:set
+ *
+ * Updates user preferences in the database.
+ */
+async function handlePreferencesSet(
+  _event: IpcMainInvokeEvent,
+  payload: unknown
+): Promise<IPCResult<PreferencesSetResponse>> {
+  return withErrorHandling(async () => {
+    validatePayload('preferences:set', payload, PreferencesSetPayloadSchema);
+
+    const db = getDatabase();
+    const _currentPrefs = getUserPreferences(db);
+
+    const updates: Partial<typeof _currentPrefs> = {};
+    if (payload.theme !== undefined) {
+      updates.theme = payload.theme;
+    }
+    if (payload.lastProjectPath !== undefined) {
+      updates.last_project_path = payload.lastProjectPath;
+    }
+
+    const updatedPrefs = updateUserPreferences(db, updates);
+
+    return {
+      theme: updatedPrefs.theme,
+      lastProjectPath: updatedPrefs.last_project_path ?? null,
+    };
+  });
+}
+
+// ============================================================================
+// Dialog Handlers
+// ============================================================================
+
+/**
+ * Handler: dialog:openDirectory
+ *
+ * Opens a native directory selection dialog.
+ * Returns the selected directory path or cancellation status.
+ */
+async function handleDialogOpenDirectory(
+  _event: IpcMainInvokeEvent,
+  _payload: unknown
+): Promise<IPCResult<OpenDirectoryResponse>> {
+  return withErrorHandling(async () => {
+    // Get the focused window or the main window
+    const focusedWindow = BrowserWindow.getAllWindows().find(
+      (w) => w.focused
+    );
+
+    const result = await dialog.showOpenDialog(focusedWindow ?? undefined, {
+      properties: ['openDirectory'],
+      title: 'Select RPG Maker MZ Project Folder',
+    });
+
+    return {
+      canceled: result.canceled,
+      filePaths: result.filePaths,
+    };
+  });
+}
+
+// ============================================================================
 // Handler Registry
 // ============================================================================
 
@@ -744,6 +896,11 @@ export const IPC_HANDLERS: Record<
   'data:getTroops': handleDataGetTroops,
   'data:getClasses': handleDataGetClasses,
   'data:getEnemies': handleDataGetEnemies,
+  'recent:list': handleRecentList,
+  'recent:add': handleRecentAdd,
+  'preferences:get': handlePreferencesGet,
+  'preferences:set': handlePreferencesSet,
+  'dialog:openDirectory': handleDialogOpenDirectory,
 };
 
 /**

@@ -101,7 +101,12 @@ export type IPCChannel =
   | 'config:getTrechos'
   | 'data:getTroops'
   | 'data:getClasses'
-  | 'data:getEnemies';
+  | 'data:getEnemies'
+  | 'recent:list'
+  | 'recent:add'
+  | 'preferences:get'
+  | 'preferences:set'
+  | 'dialog:openDirectory';
 
 // ============================================================================
 // Project Handlers
@@ -298,6 +303,109 @@ export const DataGetEnemiesPayloadSchema = DataGetTroopsPayloadSchema;
 export type DataGetEnemiesPayload = z.infer<typeof DataGetEnemiesPayloadSchema>;
 
 // ============================================================================
+// Recent Projects Handlers
+// ============================================================================
+
+/**
+ * Recent project response format.
+ */
+export interface RecentProject {
+  path: string;
+  name: string;
+  lastOpened: string;
+}
+
+/**
+ * Zod schema for recent:list payload.
+ */
+export const RecentListPayloadSchema = z
+  .object({
+    limit: z.number().int().positive().optional(),
+  })
+  .optional();
+
+export type RecentListPayload = z.infer<typeof RecentListPayloadSchema>;
+
+/**
+ * Zod schema for recent:add payload.
+ */
+export const RecentAddPayloadSchema = z.object({
+  path: z
+    .string()
+    .min(1, 'Project path cannot be empty')
+    .refine((p) => !p.includes('..'), 'Path traversal not allowed'),
+  name: z.string().min(1, 'Project name cannot be empty'),
+});
+
+export type RecentAddPayload = z.infer<typeof RecentAddPayloadSchema>;
+
+/**
+ * Response format for recent:list handler.
+ */
+export type RecentListResponse = RecentProject[];
+
+/**
+ * Response format for recent:add handler.
+ */
+export type RecentAddResponse = RecentProject;
+
+// ============================================================================
+// Preferences Handlers
+// ============================================================================
+
+/**
+ * User preferences format.
+ */
+export interface UserPreferences {
+  theme: 'light' | 'dark' | 'system';
+  lastProjectPath: string | null;
+}
+
+/**
+ * Zod schema for preferences:set payload.
+ */
+export const PreferencesSetPayloadSchema = z.object({
+  theme: z.enum(['light', 'dark', 'system']).optional(),
+  lastProjectPath: z.string().nullable().optional(),
+});
+
+export type PreferencesSetPayload = z.infer<typeof PreferencesSetPayloadSchema>;
+
+/**
+ * Response format for preferences:get handler.
+ */
+export type PreferencesGetResponse = UserPreferences;
+
+/**
+ * Response format for preferences:set handler.
+ */
+export type PreferencesSetResponse = UserPreferences;
+
+// ============================================================================
+// Dialog Handlers
+// ============================================================================
+
+/**
+ * Response format for dialog:openDirectory handler.
+ */
+export interface OpenDirectoryResult {
+  canceled: boolean;
+  filePaths: string[];
+}
+
+/**
+ * Zod schema for dialog:openDirectory payload.
+ */
+export const OpenDirectoryPayloadSchema = z.void();
+
+export type OpenDirectoryPayload = z.infer<typeof OpenDirectoryPayloadSchema>;
+
+/**
+ * Response format for dialog:openDirectory handler.
+ */
+export type OpenDirectoryResponse = OpenDirectoryResult;
+
+// ============================================================================
 // Handler Response Types
 // ============================================================================
 
@@ -315,7 +423,12 @@ export type IPCResponse =
   | TrechoData[]
   | TroopData[]
   | ClassData[]
-  | EnemyData[];
+  | EnemyData[]
+  | RecentListResponse
+  | RecentAddResponse
+  | PreferencesGetResponse
+  | PreferencesSetResponse
+  | OpenDirectoryResponse;
 
 /**
  * Error response format for all IPC handlers.
@@ -356,6 +469,11 @@ export const IPCPayloadSchemas = {
   'data:getTroops': DataGetTroopsPayloadSchema,
   'data:getClasses': DataGetClassesPayloadSchema,
   'data:getEnemies': DataGetEnemiesPayloadSchema,
+  'recent:list': RecentListPayloadSchema,
+  'recent:add': RecentAddPayloadSchema,
+  'preferences:get': z.void(), // No payload
+  'preferences:set': PreferencesSetPayloadSchema,
+  'dialog:openDirectory': OpenDirectoryPayloadSchema,
 } as const satisfies Record<IPCChannel, z.ZodTypeAny>;
 
 /**

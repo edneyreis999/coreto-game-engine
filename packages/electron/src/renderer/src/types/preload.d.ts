@@ -135,6 +135,23 @@ interface EnemyData {
 }
 
 /**
+ * Recent project data structure.
+ */
+interface RecentProject {
+  path: string;
+  name: string;
+  lastOpened: string;
+}
+
+/**
+ * User preferences data structure.
+ */
+interface UserPreferences {
+  theme: 'light' | 'dark' | 'system';
+  lastProjectPath: string | null;
+}
+
+/**
  * IPC error structure.
  */
 interface IPCError {
@@ -328,6 +345,69 @@ interface CoretoAPI {
    * }
    */
   getEnemies(projectPath: string): Promise<IPCResult<EnemyData[]>>;
+
+  /**
+   * Recent Projects Handlers
+   */
+
+  /**
+   * Lists recent projects from the database.
+   * @param limit - Maximum number of projects to return (default: 10)
+   * @returns Promise with array of recent projects
+   *
+   * @example
+   * const result = await window.coreto.listRecent(5);
+   * if (result.success) {
+   *   result.data.forEach(p => console.log(p.name));
+   * }
+   */
+  listRecent(limit?: number): Promise<IPCResult<RecentProject[]>>;
+
+  /**
+   * Adds or updates a recent project in the database.
+   * @param path - Absolute path to the project directory
+   * @param name - Project name
+   * @returns Promise with the added or updated recent project
+   *
+   * @example
+   * const result = await window.coreto.addRecent('/path/to/project', 'My Game');
+   * if (result.success) {
+   *   console.log('Added to recent:', result.data.name);
+   * }
+   */
+  addRecent(path: string, name: string): Promise<IPCResult<RecentProject>>;
+
+  /**
+   * Preferences Handlers
+   */
+
+  /**
+   * Gets user preferences from the database.
+   * @returns Promise with user preferences
+   *
+   * @example
+   * const result = await window.coreto.getPreferences();
+   * if (result.success) {
+   *   console.log('Theme:', result.data.theme);
+   * }
+   */
+  getPreferences(): Promise<IPCResult<UserPreferences>>;
+
+  /**
+   * Updates user preferences in the database.
+   * @param preferences - Preferences to update
+   * @returns Promise with the updated preferences
+   *
+   * @example
+   * const result = await window.coreto.setPreferences({ lastProjectPath: '/path/to/project' });
+   * if (result.success) {
+   *   console.log('Preferences updated');
+   * }
+   */
+  setPreferences(preferences: {
+    theme?: 'light' | 'dark' | 'system';
+    lastProjectPath?: string | null;
+  }): Promise<IPCResult<UserPreferences>>;
 }
 
 // ============================================================================
@@ -375,6 +455,8 @@ export type {
   TroopData,
   ClassData,
   EnemyData,
+  RecentProject,
+  UserPreferences,
   IPCError,
   IPCSuccessResponse,
   IPCErrorResponse,

@@ -130,6 +130,23 @@ interface EnemyData {
 }
 
 /**
+ * Recent project data structure.
+ */
+interface RecentProject {
+  path: string;
+  name: string;
+  lastOpened: string;
+}
+
+/**
+ * User preferences data structure.
+ */
+interface UserPreferences {
+  theme: 'light' | 'dark' | 'system';
+  lastProjectPath: string | null;
+}
+
+/**
  * IPC error structure.
  */
 interface IPCError {
@@ -272,6 +289,49 @@ const coretoAPI = {
    */
   getEnemies: (projectPath: string): Promise<IPCResult<EnemyData[]>> =>
     ipcRenderer.invoke('data:getEnemies', { projectPath }),
+
+  /**
+   * Recent Projects Handlers
+   */
+
+  /**
+   * Lists recent projects from the database.
+   * @param limit - Maximum number of projects to return (default: 10)
+   * @returns Array of recent projects
+   */
+  listRecent: (limit?: number): Promise<IPCResult<RecentProject[]>> =>
+    ipcRenderer.invoke('recent:list', limit ? { limit } : undefined),
+
+  /**
+   * Adds or updates a recent project in the database.
+   * @param path - Absolute path to the project directory
+   * @param name - Project name
+   * @returns The added or updated recent project
+   */
+  addRecent: (path: string, name: string): Promise<IPCResult<RecentProject>> =>
+    ipcRenderer.invoke('recent:add', { path, name }),
+
+  /**
+   * Preferences Handlers
+   */
+
+  /**
+   * Gets user preferences from the database.
+   * @returns User preferences
+   */
+  getPreferences: (): Promise<IPCResult<UserPreferences>> =>
+    ipcRenderer.invoke('preferences:get'),
+
+  /**
+   * Updates user preferences in the database.
+   * @param preferences - Preferences to update
+   * @returns The updated preferences
+   */
+  setPreferences: (preferences: {
+    theme?: 'light' | 'dark' | 'system';
+    lastProjectPath?: string | null;
+  }): Promise<IPCResult<UserPreferences>> =>
+    ipcRenderer.invoke('preferences:set', preferences),
 };
 
 // ============================================================================
@@ -311,6 +371,8 @@ export type {
   TroopData,
   ClassData,
   EnemyData,
+  RecentProject,
+  UserPreferences,
   IPCError,
   IPCSuccessResponse,
   IPCErrorResponse,
