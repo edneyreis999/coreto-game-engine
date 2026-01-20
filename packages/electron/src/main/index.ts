@@ -1,6 +1,8 @@
+import 'reflect-metadata'
 import { app, BrowserWindow, shell } from 'electron'
 import path from 'node:path'
 import { setupIpcHandlers } from './ipc/index.js'
+import { initDatabase, closeDatabase, setDatabasePath } from './database/index.js'
 
 /**
  * Main Process Entry Point
@@ -97,7 +99,7 @@ export function registerAppLifecycleHandlers(): void {
    */
   app.on('before-quit', () => {
     // TODO: Save window bounds for persistence (task #6)
-    // TODO: Close database connection (task #5)
+    closeDatabase()
   })
 }
 
@@ -106,14 +108,18 @@ export function registerAppLifecycleHandlers(): void {
  *
  * This function:
  * 1. Waits for Electron to be ready
- * 2. Sets up IPC handlers for main-renderer communication
- * 3. Creates the main window
- * 4. Registers app lifecycle handlers
+ * 2. Sets database path and initializes the SQLite database
+ * 3. Sets up IPC handlers for main-renderer communication
+ * 4. Creates the main window
+ * 5. Registers app lifecycle handlers
  *
  * @returns Promise that resolves when the app is ready
  */
 export async function startApp(): Promise<void> {
   await app.whenReady()
+  const dbPath = path.join(app.getPath('userData'), 'coreto.db')
+  setDatabasePath(dbPath)
+  initDatabase()
   setupIpcHandlers()
   createWindow()
   registerAppLifecycleHandlers()
