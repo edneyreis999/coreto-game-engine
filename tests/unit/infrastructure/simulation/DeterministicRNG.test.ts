@@ -9,7 +9,7 @@
  * - Validação de seeds inválidos
  */
 
-import { DeterministicRNG } from '@/infrastructure/simulation/DeterministicRNG';
+import { DeterministicRNG } from '../../../../packages/core/src/infrastructure/simulation/DeterministicRNG';
 
 describe('DeterministicRNG', () => {
   // Store original Math.random for restoration

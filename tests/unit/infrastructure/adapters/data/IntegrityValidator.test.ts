@@ -6,9 +6,9 @@
  */
 
 import { describe, it, expect, beforeEach } from '@jest/globals';
-import { IntegrityValidator } from '@/infrastructure/adapters/data/IntegrityValidator.js';
-import type { RmmzDatabase } from '@/core/ports/index.js';
-import type { EnemyData, TroopData, ClassData, SkillData, SystemData } from '@/types/rmmz-data.js';
+import { IntegrityValidator } from '../../../../packages/core/src/infrastructure/adapters/data/index.js'IntegrityValidator.js';
+import type { RmmzDatabase } from '../../../../packages/core/src/core/ports/index.js';
+import type { EnemyData, TroopData, ClassData, SkillData, SystemData } from '../../../../packages/core/src/types/rmmz-data.js';
 
 describe('IntegrityValidator', () => {
   let validator: IntegrityValidator;

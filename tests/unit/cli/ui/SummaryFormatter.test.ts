@@ -4,8 +4,8 @@
  * Tests terminal output formatting for battle summaries
  */
 
-import { SummaryFormatter } from '@/cli/ui/SummaryFormatter';
-import type { BattleSummary } from '@/cli/ui/types';
+import { SummaryFormatter } from '../../../../packages/cli/src/cli/ui/SummaryFormatter';
+import type { BattleSummary } from '../../../../packages/cli/src/cli/ui/types';
 
 describe('SummaryFormatter', () => {
   describe('format', () => {

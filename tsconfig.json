@@ -34,18 +34,19 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "outDir": "./dist",
-    "rootDir": "./src",
     "removeComments": false,
 
     // TypeScript Decorators (for tsyringe DI)
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
 
-    // Path Aliases (maintained for backward compatibility during migration)
+    // Path Aliases for workspace packages
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@coreto/core": ["./packages/core/src"],
+      "@coreto/core/*": ["./packages/core/src/*"],
+      "@coreto/cli": ["./packages/cli/src"],
+      "@coreto/cli/*": ["./packages/cli/src/*"]
     },
 
     // Advanced Options
@@ -54,9 +55,7 @@
     "allowUnreachableCode": false,
     "exactOptionalPropertyTypes": true
   },
-  "include": [
-    "src/**/*"
-  ],
+  "include": [],
   "exclude": [
     "node_modules",
     "dist",

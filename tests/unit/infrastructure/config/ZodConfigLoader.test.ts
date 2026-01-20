@@ -5,13 +5,13 @@
  */
 
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import { ZodConfigLoader } from '@/infrastructure/config/ZodConfigLoader.js';
+import { ZodConfigLoader } from '../../../../packages/core/src/infrastructure/config/ZodConfigLoader.js';
 import {
   ConfigFileNotFoundError,
   ConfigParseError,
-} from '@/core/errors/ConfigError.js';
-import { ValidationError } from '@/core/errors/ValidationError.js';
-import type { IFileSystem } from '@/core/ports/index.js';
+} from '../../../../packages/core/src/core/errors/index.js'ConfigError.js';
+import { ValidationError } from '../../../../packages/core/src/core/errors/index.js'ValidationError.js';
+import type { IFileSystem } from '../../../../packages/core/src/core/ports/index.js';
 
 describe('ZodConfigLoader', () => {
   let configLoader: ZodConfigLoader;

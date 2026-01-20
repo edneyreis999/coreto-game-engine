@@ -1,5 +1,5 @@
-import { ValidationError } from '@/core/errors/ValidationError';
-import { DomainError } from '@/core/errors/DomainError';
+import { ValidationError } from '../../../../packages/core/src/core/errors/index.js'ValidationError';
+import { DomainError } from '../../../../packages/core/src/core/errors/index.js'DomainError';
 import { z, ZodError } from 'zod';
 
 describe('ValidationError', () => {

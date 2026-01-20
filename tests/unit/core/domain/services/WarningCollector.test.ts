@@ -1,5 +1,5 @@
-import { WarningCollector } from '@/core/domain/services/WarningCollector';
-import { Warning, type WarningData } from '@/core/domain/Warning';
+import { WarningCollector } from '../../../../packages/core/src/core/domain/services/WarningCollector';
+import { Warning, type WarningData } from '../../../../packages/core/src/core/domain/Warning';
 
 describe('WarningCollector', () => {
   let collector: WarningCollector;

@@ -1,5 +1,5 @@
-import { SkillSelector } from '@/infrastructure/simulation/SkillSelector.js';
-import type { SkillData } from '@/types/rmmz-data.js';
+import { SkillSelector } from '../../../../packages/core/src/infrastructure/simulation/SkillSelector.js';
+import type { SkillData } from '../../../../packages/core/src/types/rmmz-data.js';
 
 /**
  * Create a minimal valid SkillData mock

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import { HeadlessOverrides } from '@/infrastructure/runtime/overrides/HeadlessOverrides.js';
+import { HeadlessOverrides } from '../../../../packages/core/src/infrastructure/runtime/overrides/HeadlessOverrides.js';
 
 describe('HeadlessOverrides', () => {
   beforeEach(() => {

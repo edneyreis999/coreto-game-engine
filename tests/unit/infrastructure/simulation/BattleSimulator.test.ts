@@ -1,12 +1,12 @@
-import { HeadlessBattleSimulator } from '@/infrastructure/simulation/BattleSimulator.js';
-import { PartyConfig } from '@/core/domain/PartyConfig.js';
-import { BattleTimeoutError } from '@/core/errors/BattleTimeoutError.js';
-import { ValidationError } from '@/core/errors/ValidationError.js';
-import type { RmmzDatabase } from '@/core/ports/IDataLoader.js';
-import type { ClassData, SkillData, EnemyData, TroopData, ItemData } from '@/types/rmmz-data.js';
+import { HeadlessBattleSimulator } from '../../../../packages/core/src/infrastructure/simulation/BattleSimulator.js';
+import { PartyConfig } from '../../../../packages/core/src/core/domain/PartyConfig.js';
+import { BattleTimeoutError } from '../../../../packages/core/src/core/errors/index.js'BattleTimeoutError.js';
+import { ValidationError } from '../../../../packages/core/src/core/errors/index.js'ValidationError.js';
+import type { RmmzDatabase } from '../../../../packages/core/src/core/ports/IDataLoader.js';
+import type { ClassData, SkillData, EnemyData, TroopData, ItemData } from '../../../../packages/core/src/types/rmmz-data.js';
 
 // Mock the SyncWarpLoop module to prevent actual loop execution
-jest.mock('@/infrastructure/runtime/simulation/SyncWarpLoop.js', () => {
+jest.mock('../../../../packages/core/src/infrastructure/runtime/simulation/SyncWarpLoop.js', () => {
   return {
     SyncWarpLoop: jest.fn().mockImplementation(() => {
       return {
@@ -19,7 +19,7 @@ jest.mock('@/infrastructure/runtime/simulation/SyncWarpLoop.js', () => {
 });
 
 // Mock HeadlessRuntimeBootstrapper to prevent loading real RMMZ scripts
-jest.mock('@/infrastructure/runtime/HeadlessRuntimeBootstrapper.js', () => {
+jest.mock('../../../../packages/core/src/infrastructure/runtime/HeadlessRuntimeBootstrapper.js', () => {
   return {
     HeadlessRuntimeBootstrapper: jest.fn().mockImplementation(() => {
       return {

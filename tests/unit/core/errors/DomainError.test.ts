@@ -1,4 +1,4 @@
-import { DomainError, ErrorSeverity } from '@/core/errors/DomainError';
+import { DomainError, ErrorSeverity } from '../../../../packages/core/src/core/errors/index.js'DomainError';
 
 // Concrete implementation for testing the abstract class
 class TestDomainError extends DomainError {

@@ -6,11 +6,11 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { JsonReporter } from '@/infrastructure/adapters/reporter/JsonReporter.js';
-import { BattleResult } from '@/core/domain/BattleResult.js';
-import { Warning } from '@/core/domain/Warning.js';
-import { FileSystemError } from '@/core/errors/index.js';
-import type { ReportMetadata } from '@/core/domain/Report.js';
+import { JsonReporter } from '../../../../packages/core/src/infrastructure/adapters/reporter/JsonReporter.js';
+import { BattleResult } from '../../../../packages/core/src/core/domain/BattleResult.js';
+import { Warning } from '../../../../packages/core/src/core/domain/Warning.js';
+import { FileSystemError } from '../../../../packages/core/src/core/errors/index.js'index.js';
+import type { ReportMetadata } from '../../../../packages/core/src/core/domain/Report.js';
 
 describe('JsonReporter', () => {
   let reporter: JsonReporter;

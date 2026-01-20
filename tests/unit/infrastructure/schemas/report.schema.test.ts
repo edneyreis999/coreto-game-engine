@@ -31,7 +31,7 @@ import {
   type ReportMetadata,
   type ReportSummary,
   type Report,
-} from '@/infrastructure/schemas/report.schema';
+} from '../../../../packages/core/src/infrastructure/schemas/report.schema';
 
 describe('Report Schema Validation', () => {
   describe('WarningTypeSchema', () => {

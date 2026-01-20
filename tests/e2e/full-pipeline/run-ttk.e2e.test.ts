@@ -14,7 +14,7 @@ import { describe, it, expect, afterEach, beforeAll, afterAll } from '@jest/glob
 
 // Keep E2E tests fast/stable: we validate the pipeline orchestration and report semantics,
 // not the internal implementation details of bootstrap/warp-loop.
-jest.mock('@/infrastructure/runtime/HeadlessRuntimeBootstrapper.js', () => {
+jest.mock('../../../../packages/core/src/infrastructure/runtime/HeadlessRuntimeBootstrapper.js', () => {
   return {
     HeadlessRuntimeBootstrapper: jest.fn().mockImplementation(() => {
       return {
@@ -26,7 +26,7 @@ jest.mock('@/infrastructure/runtime/HeadlessRuntimeBootstrapper.js', () => {
   };
 });
 
-jest.mock('@/infrastructure/runtime/simulation/SyncWarpLoop.js', () => {
+jest.mock('../../../../packages/core/src/infrastructure/runtime/simulation/SyncWarpLoop.js', () => {
   return {
     SyncWarpLoop: jest.fn().mockImplementation((_maxFrames: number) => {
       return {
@@ -44,19 +44,19 @@ import {
   type E2EProjectSetup,
 } from '../../fixtures/e2e/setup-e2e-project.js';
 import { setupRuntimeMocks, cleanupRuntimeMocks } from '../../fixtures/e2e/setup-runtime-mocks.js';
-import { registerDependencies, resolve, clearContainer } from '@/infrastructure/di/container.js';
+import { registerDependencies, resolve, clearContainer } from '../../../../packages/core/src/infrastructure/di/container.js';
 import {
   IConfigLoaderToken,
   IDataLoaderToken,
   IBattleSimulatorToken,
   IReporterToken,
-} from '@/infrastructure/di/tokens.js';
+} from '../../../../packages/core/src/infrastructure/di/tokens.js';
 import type {
   IConfigLoader,
   IDataLoader,
   IBattleSimulator,
   IReporter,
-} from '@/core/ports/index.js';
+} from '../../../../packages/core/src/core/ports/index.js';
 
 /**
  * Execute the full TTK validation pipeline.

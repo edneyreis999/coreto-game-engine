@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import { SyncWarpLoop } from '@/infrastructure/runtime/simulation/SyncWarpLoop.js';
+import { SyncWarpLoop } from '../../../../packages/core/src/infrastructure/runtime/simulation/SyncWarpLoop.js';
 
 describe('SyncWarpLoop', () => {
   beforeEach(() => {

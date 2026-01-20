@@ -2,8 +2,8 @@ import { describe, it, expect } from '@jest/globals';
 import * as os from 'os';
 import * as path from 'path';
 import * as fs from 'fs';
-import { NodeFileSystem } from '@/infrastructure/adapters/filesystem/NodeFileSystem.js';
-import { ConfigError } from '@/core/errors/ConfigError.js';
+import { NodeFileSystem } from '../../../../packages/core/src/infrastructure/adapters/filesystem/index.js'NodeFileSystem.js';
+import { ConfigError } from '../../../../packages/core/src/core/errors/index.js'ConfigError.js';
 
 describe('NodeFileSystem', () => {
   it('should read/write files using Node fs', () => {

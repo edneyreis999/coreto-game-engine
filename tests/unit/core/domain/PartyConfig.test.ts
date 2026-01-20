@@ -1,5 +1,5 @@
-import { PartyConfig, PartyMemberData } from '@/core/domain/PartyConfig.js';
-import { ValidationError } from '@/core/errors/index.js';
+import { PartyConfig, PartyMemberData } from '../../../../packages/core/src/core/domain/PartyConfig.js';
+import { ValidationError } from '../../../../packages/core/src/core/errors/index.js'index.js';
 
 describe('PartyConfig', () => {
   describe('constructor', () => {

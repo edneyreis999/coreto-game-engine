@@ -1,5 +1,5 @@
-import { Warning, type WarningData } from '@/core/domain/Warning';
-import { ValidationError } from '@/core/errors/ValidationError';
+import { Warning, type WarningData } from '../../../../packages/core/src/core/domain/Warning';
+import { ValidationError } from '../../../../packages/core/src/core/errors/index.js'ValidationError';
 
 describe('Warning', () => {
   describe('constructor', () => {

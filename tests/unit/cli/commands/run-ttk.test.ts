@@ -6,15 +6,15 @@
  */
 
 import { describe, it, expect, beforeAll, beforeEach } from '@jest/globals';
-import { ValidationError } from '@/core/errors/ValidationError.js';
-import { DataLoadError } from '@/core/errors/DataLoadError.js';
-import { ConfigError } from '@/core/errors/ConfigError.js';
-import { FileSystemError } from '@/core/errors/FileSystemError.js';
-import { BattleResult } from '@/core/domain/BattleResult.js';
-import type { IConfigLoader } from '@/core/ports/IConfigLoader.js';
-import type { IDataLoader, RmmzDatabase } from '@/core/ports/IDataLoader.js';
-import type { IBattleSimulator } from '@/core/ports/IBattleSimulator.js';
-import type { IReporter } from '@/core/ports/IReporter.js';
+import { ValidationError } from '../../../../packages/core/src/core/errors/index.js'ValidationError.js';
+import { DataLoadError } from '../../../../packages/core/src/core/errors/index.js'DataLoadError.js';
+import { ConfigError } from '../../../../packages/core/src/core/errors/index.js'ConfigError.js';
+import { FileSystemError } from '../../../../packages/core/src/core/errors/index.js'FileSystemError.js';
+import { BattleResult } from '../../../../packages/core/src/core/domain/BattleResult.js';
+import type { IConfigLoader } from '../../../../packages/core/src/core/ports/IConfigLoader.js';
+import type { IDataLoader, RmmzDatabase } from '../../../../packages/core/src/core/ports/IDataLoader.js';
+import type { IBattleSimulator } from '../../../../packages/core/src/core/ports/IBattleSimulator.js';
+import type { IReporter } from '../../../../packages/core/src/core/ports/IReporter.js';
 
 describe('RunTtk Command', () => {
   let RunTtkCommand: any;

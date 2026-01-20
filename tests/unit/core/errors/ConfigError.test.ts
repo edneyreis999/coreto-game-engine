@@ -1,5 +1,5 @@
-import { ConfigError, ConfigFileNotFoundError, ConfigParseError } from '@/core/errors/ConfigError';
-import { DomainError } from '@/core/errors/DomainError';
+import { ConfigError, ConfigFileNotFoundError, ConfigParseError } from '../../../../packages/core/src/core/errors/index.js'ConfigError';
+import { DomainError } from '../../../../packages/core/src/core/errors/index.js'DomainError';
 
 describe('ConfigError', () => {
   describe('constructor', () => {

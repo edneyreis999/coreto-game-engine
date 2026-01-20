@@ -1,5 +1,5 @@
-import { BattleTimeoutError } from '@/core/errors/BattleTimeoutError';
-import { DomainError } from '@/core/errors/DomainError';
+import { BattleTimeoutError } from '../../../../packages/core/src/core/errors/index.js'BattleTimeoutError';
+import { DomainError } from '../../../../packages/core/src/core/errors/index.js'DomainError';
 
 describe('BattleTimeoutError', () => {
   describe('constructor', () => {

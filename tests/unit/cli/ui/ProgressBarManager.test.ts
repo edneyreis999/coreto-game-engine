@@ -4,7 +4,7 @@
  * Tests progress bar lifecycle, updates, and thread safety
  */
 
-import { ProgressBarManager } from '@/cli/ui/ProgressBarManager';
+import { ProgressBarManager } from '../../../../packages/cli/src/cli/ui/ProgressBarManager';
 
 describe('ProgressBarManager', () => {
   let progressBar: ProgressBarManager;

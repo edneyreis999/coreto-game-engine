@@ -1,0 +1,178 @@
+[
+  {
+    "id": 1,
+    "animationId": -1,
+    "damage": {
+      "critical": true,
+      "elementId": -1,
+      "formula": "a.atk * 4 - b.def * 2",
+      "type": 1,
+      "variance": 20
+    },
+    "description": "",
+    "effects": [
+      {
+        "code": 21,
+        "dataId": 0,
+        "value1": 1,
+        "value2": 0
+      }
+    ],
+    "hitType": 1,
+    "iconIndex": 76,
+    "message1": "%1 ataca!",
+    "message2": "",
+    "mpCost": 0,
+    "name": "Ataque",
+    "note": "A habilidade n.º 1 corresponde ao comando de Ataque.",
+    "occasion": 1,
+    "repeats": 1,
+    "requiredWtypeId1": 0,
+    "requiredWtypeId2": 0,
+    "scope": 1,
+    "speed": 0,
+    "stypeId": 0,
+    "successRate": 100,
+    "tpCost": 0,
+    "tpGain": 5,
+    "messageType": 1
+  },
+  {
+    "id": 172,
+    "animationId": -1,
+    "damage": {
+      "critical": true,
+      "elementId": -1,
+      "formula": "a.atk * 5 - b.def * 2",
+      "type": 1,
+      "variance": 20
+    },
+    "description": "Realiza um ataque poderoso em um inimigo.",
+    "effects": [
+      {
+        "code": 21,
+        "dataId": 0,
+        "value1": 1,
+        "value2": 0
+      }
+    ],
+    "hitType": 1,
+    "iconIndex": 77,
+    "message1": "%1 faz %2!",
+    "message2": "",
+    "mpCost": 0,
+    "name": "Ataque Forte",
+    "note": "<Skill Shop Require Class: 1>\n<Skill Shop Cost: 0>\n<Item 41 Cost: 1>\n<Item 41 Forget Reward: 1>",
+    "occasion": 1,
+    "repeats": 1,
+    "requiredWtypeId1": 0,
+    "requiredWtypeId2": 0,
+    "scope": 1,
+    "speed": 0,
+    "stypeId": 2,
+    "successRate": 100,
+    "tpCost": 10,
+    "tpGain": 0,
+    "messageType": 1
+  },
+  {
+    "id": 173,
+    "animationId": -1,
+    "damage": {
+      "critical": true,
+      "elementId": -1,
+      "formula": "30 + a.atk",
+      "type": 1,
+      "variance": 20
+    },
+    "description": "Ataca todos os inimigos.",
+    "effects": [],
+    "hitType": 1,
+    "iconIndex": 76,
+    "message1": "%1 derruba o inimigo!",
+    "message2": "",
+    "mpCost": 0,
+    "name": "Corte",
+    "note": "<Skill Shop Require Class: 1>\n<Skill Shop Cost: 0>\n<Item 41 Cost: 1>\n<Item 41 Forget Reward: 1>",
+    "occasion": 1,
+    "repeats": 1,
+    "requiredWtypeId1": 0,
+    "requiredWtypeId2": 0,
+    "scope": 2,
+    "speed": 0,
+    "stypeId": 2,
+    "successRate": 100,
+    "tpCost": 20,
+    "tpGain": 0,
+    "messageType": 1
+  },
+  {
+    "id": 18,
+    "animationId": 41,
+    "damage": {
+      "critical": false,
+      "elementId": 0,
+      "formula": "b.mhp / 4",
+      "type": 3,
+      "variance": 20
+    },
+    "description": "Recupera o PV do usuário.",
+    "effects": [],
+    "hitType": 0,
+    "iconIndex": 72,
+    "message1": "%1 medita!",
+    "message2": "",
+    "mpCost": 0,
+    "name": "Meditação",
+    "note": "",
+    "occasion": 1,
+    "repeats": 1,
+    "requiredWtypeId1": 0,
+    "requiredWtypeId2": 0,
+    "scope": 11,
+    "speed": 0,
+    "stypeId": 2,
+    "successRate": 100,
+    "tpCost": 5,
+    "tpGain": 0,
+    "messageType": 1
+  },
+  {
+    "id": 22,
+    "animationId": 54,
+    "damage": {
+      "critical": false,
+      "elementId": 0,
+      "formula": "0",
+      "type": 0,
+      "variance": 20
+    },
+    "description": "Cobre um inimigo com gosma e abaixa sua agilidade.",
+    "effects": [
+      {
+        "code": 32,
+        "dataId": 6,
+        "value1": 5,
+        "value2": 0
+      }
+    ],
+    "hitType": 0,
+    "iconIndex": 9,
+    "message1": "%1 dispara gosma!",
+    "message2": "",
+    "mpCost": 0,
+    "name": "Gosma",
+    "note": "",
+    "occasion": 1,
+    "repeats": 1,
+    "requiredWtypeId1": 0,
+    "requiredWtypeId2": 0,
+    "scope": 1,
+    "speed": 0,
+    "stypeId": 2,
+    "successRate": 100,
+    "tpCost": 5,
+    "tpGain": 0,
+    "messageType": 1
+  }
+]

@@ -18,7 +18,7 @@ import {
   Graphics,
   Rectangle,
   Point,
-} from '@/infrastructure/runtime/shims/pixi_shim';
+} from '../../../../packages/core/src/infrastructure/runtime/shims/pixi_shim';
 
 describe('PIXI Shim', () => {
   describe('DisplayObject', () => {

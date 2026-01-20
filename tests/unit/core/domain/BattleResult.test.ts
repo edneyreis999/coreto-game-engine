@@ -2,7 +2,7 @@ import {
   BattleResult,
   BattleResultData,
   BattleOutcome,
-} from '@/core/domain/BattleResult.js';
+} from '../../../../packages/core/src/core/domain/BattleResult.js';
 
 describe('BattleResult', () => {
   describe('constructor', () => {

@@ -1,9 +1,9 @@
 import 'reflect-metadata';
-import { GenerateReportUseCase, GenerateReportInput } from '@/core/use-cases/GenerateReportUseCase.js';
-import { IReporter, Warning } from '@/core/ports/IReporter.js';
-import { Report, ReportMetadata } from '@/core/domain/Report.js';
-import { TrechoValidationResult } from '@/core/use-cases/ValidateTrechoUseCase.js';
-import { BattleResult } from '@/core/domain/BattleResult.js';
+import { GenerateReportUseCase, GenerateReportInput } from '../../../../packages/core/src/core/use-cases/GenerateReportUseCase.js';
+import { IReporter, Warning } from '../../../../packages/core/src/core/ports/IReporter.js';
+import { Report, ReportMetadata } from '../../../../packages/core/src/core/domain/Report.js';
+import { TrechoValidationResult } from '../../../../packages/core/src/core/use-cases/ValidateTrechoUseCase.js';
+import { BattleResult } from '../../../../packages/core/src/core/domain/BattleResult.js';
 
 describe('GenerateReportUseCase', () => {
   let useCase: GenerateReportUseCase;

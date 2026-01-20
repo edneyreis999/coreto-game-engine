@@ -2,9 +2,8 @@
 export default {
   preset: 'ts-jest/presets/default-esm',
   testEnvironment: 'node',
-  // Test discovery in both root tests/ and src/ directories
-  // After migration, tests will move to packages/*/tests/
-  roots: ['<rootDir>/tests', '<rootDir>/src', '<rootDir>/packages'],
+  // Test discovery in packages/tests/ directory
+  roots: ['<rootDir>/tests', '<rootDir>/packages'],
   testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
   transform: {
     '^.+\\.ts$': [
@@ -18,26 +17,22 @@ export default {
       },
     ],
   },
-  // Module name mapping for workspace imports and path aliases
+  // Module name mapping for workspace imports
   moduleNameMapper: {
-    // Workspace package imports (for future use after migration)
+    // Workspace package imports
     '^@coreto/core/(.*)$': '<rootDir>/packages/core/src/$1',
     '^@coreto/cli/(.*)$': '<rootDir>/packages/cli/src/$1',
     '^@coreto/electron/(.*)$': '<rootDir>/packages/electron/src/$1',
-    // Root path aliases (maintained for backward compatibility during migration)
-    '^@/(.*)\\.js$': '<rootDir>/src/$1',
-    '^@/(.*)$': '<rootDir>/src/$1',
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },
-  setupFilesAfterEnv: ['jest-canvas-mock', '<rootDir>/tests/setup.ts'],
-  // Coverage collection from all packages and src/
+  setupFilesAfterEnv: ['jest-canvas-mock', '<rootDir>/packages/core/tests/setup.ts'],
+  // Coverage collection from packages
   collectCoverageFrom: [
-    'src/**/*.ts',
     'packages/*/src/**/*.ts',
     '!**/*.d.ts',
     '!**/*.test.ts',
     '!**/*.spec.ts',
-    '!src/cli/index.ts', // Entry point, covered by E2E
+    '!packages/cli/src/index.ts', // Entry point, covered by E2E
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],

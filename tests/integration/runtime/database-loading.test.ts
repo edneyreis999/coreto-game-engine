@@ -1,5 +1,5 @@
-import { HeadlessRuntimeBootstrapper } from '@/infrastructure/runtime/HeadlessRuntimeBootstrapper';
-import { DatabaseLoader } from '@/infrastructure/runtime/loaders/DatabaseLoader';
+import { HeadlessRuntimeBootstrapper } from '../../../../packages/core/src/infrastructure/runtime/HeadlessRuntimeBootstrapper';
+import { DatabaseLoader } from '../../../../packages/core/src/infrastructure/runtime/loaders/DatabaseLoader';
 import * as path from 'path';
 
 /**

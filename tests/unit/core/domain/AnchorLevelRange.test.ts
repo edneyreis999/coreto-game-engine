@@ -1,5 +1,5 @@
-import { AnchorLevelRange } from '@/core/domain/AnchorLevelRange';
-import { ValidationError } from '@/core/errors/ValidationError';
+import { AnchorLevelRange } from '../../../../packages/core/src/core/domain/AnchorLevelRange';
+import { ValidationError } from '../../../../packages/core/src/core/errors/index.js'ValidationError';
 
 describe('AnchorLevelRange', () => {
   describe('constructor', () => {

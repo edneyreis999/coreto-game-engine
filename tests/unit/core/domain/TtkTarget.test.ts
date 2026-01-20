@@ -1,5 +1,5 @@
-import { TtkTarget } from '@/core/domain/TtkTarget';
-import { ValidationError } from '@/core/errors/ValidationError';
+import { TtkTarget } from '../../../../packages/core/src/core/domain/TtkTarget';
+import { ValidationError } from '../../../../packages/core/src/core/errors/index.js'ValidationError';
 
 describe('TtkTarget', () => {
   describe('constructor', () => {
