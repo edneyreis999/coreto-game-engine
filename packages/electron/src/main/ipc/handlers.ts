@@ -49,6 +49,7 @@ import type {
   ValidationResult,
   SimulationResult,
   SimulationProgress,
+  ReportData,
   ProjectConfigResponse,
   TroopData,
   ClassData,
@@ -554,6 +555,44 @@ async function handleSimulationCancel(
   });
 }
 
+/**
+ * In-memory storage for the last simulation results.
+ * Stores results from the most recent simulation run.
+ */
+let lastSimulationResults: ReportData | null = null;
+
+/**
+ * Sets the simulation results from a completed simulation.
+ * Called by simulation:run handler when simulation completes.
+ */
+export function setSimulationResults(results: ReportData): void {
+  lastSimulationResults = results;
+}
+
+/**
+ * Clears the stored simulation results.
+ */
+export function clearSimulationResults(): void {
+  lastSimulationResults = null;
+}
+
+/**
+ * Handler: simulation:getResults
+ *
+ * Returns the simulation results Report from the most recent simulation.
+ */
+async function handleSimulationGetResults(
+  _event: IpcMainInvokeEvent,
+  _payload: unknown
+): Promise<IPCResult<ReportData>> {
+  return withErrorHandling(async () => {
+    if (!lastSimulationResults) {
+      throw new Error('No simulation results available. Run a simulation first.');
+    }
+    return lastSimulationResults;
+  });
+}
+
 // ============================================================================
 // Configuration Handlers
 // ============================================================================
@@ -1024,6 +1063,7 @@ export const IPC_HANDLERS: Record<
   'simulation:run': handleSimulationRun,
   'simulation:getProgress': handleSimulationGetProgress,
   'simulation:cancel': handleSimulationCancel,
+  'simulation:getResults': handleSimulationGetResults,
   'config:load': handleConfigLoad,
   'config:getTrechos': handleConfigGetTrechos,
   'config:updateTrecho': handleConfigUpdateTrecho,

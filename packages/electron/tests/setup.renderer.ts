@@ -5,6 +5,9 @@
  * Mocks window.coreto API and Electron APIs.
  */
 
+// Import jest-dom matchers
+import '@testing-library/jest-dom'
+
 // Set NODE_ENV to test for all tests
 process.env.NODE_ENV = 'test'
 
@@ -29,6 +32,7 @@ const mockCoretoAPI = {
   runSimulation: jest.fn(),
   getSimulationProgress: jest.fn(),
   cancelSimulation: jest.fn(),
+  getSimulationResults: jest.fn(),
   loadConfig: jest.fn(),
   getTrechos: jest.fn(),
   getTroops: jest.fn(),

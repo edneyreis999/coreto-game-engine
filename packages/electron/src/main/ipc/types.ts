@@ -97,6 +97,7 @@ export type IPCChannel =
   | 'simulation:run'
   | 'simulation:getProgress'
   | 'simulation:cancel'
+  | 'simulation:getResults'
   | 'config:load'
   | 'config:getTrechos'
   | 'config:updateTrecho'
@@ -210,6 +211,56 @@ export interface SimulationProgress {
   isRunning: boolean;
   currentTrecho?: string;
   currentTroop?: number;
+}
+
+/**
+ * Warning data structure for Report.
+ */
+export interface WarningData {
+  type: string;
+  severity: 'critical' | 'warning' | 'info';
+  message: string;
+  context: Record<string, unknown>;
+}
+
+/**
+ * Battle result data in Report format.
+ */
+export interface ReportBattleResult {
+  troopId: number;
+  troopName: string;
+  outcome: BattleOutcome;
+  ttkTurns: number;
+  ttkActions: number;
+  durationMs: number;
+  seed: number;
+  expGained: number;
+}
+
+/**
+ * Trecho summary data in Report format.
+ */
+export interface TrechoSummaryData {
+  id: string;
+  name: string;
+  passed: boolean;
+  battleCount: number;
+  avgTtkTurns: number;
+  avgTtkActions: number;
+  p95TtkTurns: number;
+  p95TtkActions: number;
+  successRate: number;
+  battles: ReportBattleResult[];
+  warnings: WarningData[];
+}
+
+/**
+ * Report data structure returned by simulation:getResults handler.
+ */
+export interface ReportData {
+  trechos: TrechoSummaryData[];
+  totalBattles: number;
+  timestamp: string;
 }
 
 // ============================================================================
@@ -507,6 +558,7 @@ export type IPCResponse =
   | SimulationResult
   | number // For simulation:getProgress
   | void // For simulation:cancel
+  | ReportData // For simulation:getResults
   | ProjectConfigResponse
   | TrechoData[]
   | ConfigUpdateTrechoResponse
@@ -555,6 +607,7 @@ export const IPCPayloadSchemas = {
   'simulation:run': SimulationRunPayloadSchema,
   'simulation:getProgress': z.void(), // No payload
   'simulation:cancel': z.void(), // No payload
+  'simulation:getResults': z.void(), // No payload
   'config:load': ConfigLoadPayloadSchema,
   'config:getTrechos': z.void(), // No payload
   'config:updateTrecho': ConfigUpdateTrechoPayloadSchema,

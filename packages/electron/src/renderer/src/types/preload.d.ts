@@ -74,6 +74,56 @@ interface SimulationResult {
 }
 
 /**
+ * Warning data structure.
+ */
+interface WarningData {
+  type: string;
+  severity: 'critical' | 'warning' | 'info';
+  message: string;
+  context: Record<string, unknown>;
+}
+
+/**
+ * Battle result data in Report format.
+ */
+interface ReportBattleResult {
+  troopId: number;
+  troopName: string;
+  outcome: 'victory' | 'defeat' | 'timeout';
+  ttkTurns: number;
+  ttkActions: number;
+  durationMs: number;
+  seed: number;
+  expGained: number;
+}
+
+/**
+ * Trecho summary data in Report format.
+ */
+interface TrechoSummaryData {
+  id: string;
+  name: string;
+  passed: boolean;
+  battleCount: number;
+  avgTtkTurns: number;
+  avgTtkActions: number;
+  p95TtkTurns: number;
+  p95TtkActions: number;
+  successRate: number;
+  battles: ReportBattleResult[];
+  warnings: WarningData[];
+}
+
+/**
+ * Report data structure returned by simulation:getResults handler.
+ */
+interface ReportData {
+  trechos: TrechoSummaryData[];
+  totalBattles: number;
+  timestamp: string;
+}
+
+/**
  * Project config response returned by config:load handler.
  */
 interface ProjectConfigResponse {
@@ -275,6 +325,18 @@ interface CoretoAPI {
   cancelSimulation(): Promise<IPCResult<void>>;
 
   /**
+   * Gets the simulation results Report.
+   * @returns Promise with Report data containing all trecho summaries
+   *
+   * @example
+   * const result = await window.coreto.getSimulationResults();
+   * if (result.success) {
+   *   console.log('Trechos:', result.data.trechos.length);
+   * }
+   */
+  getSimulationResults(): Promise<IPCResult<ReportData>>;
+
+  /**
    * Configuration Handlers
    */
 
@@ -450,6 +512,10 @@ export type {
   ValidationResult,
   BattleResultData,
   SimulationResult,
+  WarningData,
+  ReportBattleResult,
+  TrechoSummaryData,
+  ReportData,
   ProjectConfigResponse,
   TrechoData,
   TroopData,

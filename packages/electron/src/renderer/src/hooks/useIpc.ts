@@ -134,6 +134,8 @@ export function useIpc<T>(
 
   /**
    * Invokes the IPC call and updates state.
+   * Note: ipcFn is excluded from deps to prevent infinite loop.
+   * The function should be stable (defined outside component or wrapped in useCallback).
    */
   const invoke = useCallback(async () => {
     // Cancel any pending request
@@ -178,7 +180,8 @@ export function useIpc<T>(
     } finally {
       abortControllerRef.current = null;
     }
-  }, [ipcFn]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Invoke on mount if requested
   useEffect(() => {

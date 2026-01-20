@@ -1,31 +1,41 @@
 import React, { useState } from 'react'
-import { ProjectSelectionPanel, ConfigurationPanel } from '@/components'
+import { ProjectSelectionPanel, ConfigurationPanel, ExecutionPanel, ResultsPanel } from '@/components'
+import type { SimulationConfigData } from '@/components'
 
 /**
  * Root App Component
  *
  * This is the main React component for the Coreto Dev Portal.
- * Currently contains:
+ * Contains:
  * - Project selection panel (task #6)
  * - Configuration panel (task #7)
- *
- * In future tasks, it will contain:
  * - Execution panel with progress tracking (task #8)
  * - Results panel with color-coded cards (task #9)
  */
 
 export default function App(): React.ReactElement {
   const [selectedProjectPath, setSelectedProjectPath] = useState<string | null>(null)
+  const [simulationConfig, setSimulationConfig] = useState<SimulationConfigData | null>(null)
+  const [simulationCompleted, setSimulationCompleted] = useState<boolean>(false)
 
   const handleProjectSelected = (projectPath: string): void => {
     console.log('Project selected:', projectPath)
     setSelectedProjectPath(projectPath)
+    // Reset simulation config when project changes
+    setSimulationConfig(null)
+    setSimulationCompleted(false)
   }
 
-  const handleConfigSaved = (config: unknown): void => {
+  const handleConfigSaved = (config: SimulationConfigData): void => {
     console.log('Configuration saved:', config)
-    // TODO: Persist configuration via IPC
-    // TODO: Enable navigation to next panels
+    // Store config for Execution Panel
+    setSimulationConfig(config)
+  }
+
+  const handleSimulationComplete = (result: unknown): void => {
+    console.log('Simulation complete:', result)
+    // Show Results Panel after simulation completes
+    setSimulationCompleted(true)
   }
 
   return (
@@ -42,6 +52,15 @@ export default function App(): React.ReactElement {
               projectPath={selectedProjectPath}
               onConfigSaved={handleConfigSaved}
             />
+          )}
+          {simulationConfig && (
+            <ExecutionPanel
+              config={simulationConfig}
+              onSimulationComplete={handleSimulationComplete}
+            />
+          )}
+          {simulationCompleted && (
+            <ResultsPanel isVisible={true} />
           )}
         </div>
       </main>

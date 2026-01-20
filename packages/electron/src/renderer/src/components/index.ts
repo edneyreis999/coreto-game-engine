@@ -12,3 +12,6 @@ export type { ConfigurationPanelProps } from './ConfigurationPanel';
 
 export { ExecutionPanel } from './ExecutionPanel';
 export type { ExecutionPanelProps, SimulationConfigData } from './ExecutionPanel';
+
+export { ResultsPanel } from './ResultsPanel';
+export type { ResultsPanelProps } from './ResultsPanel';
