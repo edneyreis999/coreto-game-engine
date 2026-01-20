@@ -15,3 +15,4 @@ export {
   getValidationMessage,
 } from './useProject';
 export { useConfig } from './useConfig';
+export { useSimulationProgress } from './useSimulationProgress';
