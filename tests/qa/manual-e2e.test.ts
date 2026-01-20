@@ -6,10 +6,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { RmmzProjectValidator } from '../../../../packages/core/src/infrastructure/adapters/data/index.js'RmmzProjectValidator';
-import { RmmzDataLoader } from '../../../../packages/core/src/infrastructure/adapters/data/index.js'RmmzDataLoader';
-import { IntegrityValidator } from '../../../../packages/core/src/infrastructure/adapters/data/index.js'IntegrityValidator';
-import { NodeFileSystem } from '../../../../packages/core/src/infrastructure/adapters/filesystem/index.js'NodeFileSystem';
+import { RmmzProjectValidator } from '../../packages/core/src/infrastructure/adapters/data/index.js';
+import { RmmzDataLoader } from '../../packages/core/src/infrastructure/adapters/data/index.js';
+import { IntegrityValidator } from '../../packages/core/src/infrastructure/adapters/data/index.js';
+import { NodeFileSystem } from '../../packages/core/src/infrastructure/adapters/filesystem/index.js';
 
 const PROJECT_PATH = path.join(os.tmpdir(), 'e2e-qa-project');
 

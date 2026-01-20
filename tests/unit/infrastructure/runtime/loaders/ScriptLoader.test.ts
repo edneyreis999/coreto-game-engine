@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import * as path from 'path';
 import * as os from 'os';
 import * as fs from 'fs';
-import { ScriptLoader } from '../../../../packages/core/src/infrastructure/runtime/loaders/ScriptLoader.js';
+import { ScriptLoader } from '../../../packages/core/src/infrastructure/runtime/loaders/ScriptLoader.js';
 
 function writeFile(filePath: string, content: string): void {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });

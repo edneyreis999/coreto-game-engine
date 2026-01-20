@@ -22,7 +22,7 @@ import {
   type PartyConfig,
   type TrechoConfig,
   type ProjectConfig,
-} from '../../../../packages/core/src/infrastructure/config/schemas.js';
+} from '../../../packages/core/src/infrastructure/config/schemas.js';
 
 describe('AnchorLevelRangeSchema', () => {
   describe('valid inputs', () => {

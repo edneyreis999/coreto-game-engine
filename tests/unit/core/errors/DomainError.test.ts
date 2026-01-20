@@ -1,4 +1,4 @@
-import { DomainError, ErrorSeverity } from '../../../../packages/core/src/core/errors/index.js'DomainError';
+import { DomainError, ErrorSeverity } from '@coreto/core';
 
 // Concrete implementation for testing the abstract class
 class TestDomainError extends DomainError {

@@ -6,11 +6,11 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { JsonReporter } from '../../../../packages/core/src/infrastructure/adapters/reporter/JsonReporter.js';
-import { BattleResult } from '../../../../packages/core/src/core/domain/BattleResult.js';
-import { Warning } from '../../../../packages/core/src/core/domain/Warning.js';
-import type { ReportMetadata } from '../../../../packages/core/src/core/domain/Report.js';
-import { ReportSchema } from '../../../../packages/core/src/infrastructure/schemas/report.schema.js';
+import { JsonReporter } from '../../../packages/core/src/infrastructure/adapters/reporter/JsonReporter.js';
+import { BattleResult } from '@coreto/core';
+import { Warning } from '@coreto/core';
+import type { ReportMetadata } from '@coreto/core';
+import { ReportSchema } from '../../../packages/core/src/infrastructure/schemas/report.schema.js';
 
 describe('Report Generation Integration Tests', () => {
   let reporter: JsonReporter;

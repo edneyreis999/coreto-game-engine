@@ -6,11 +6,11 @@
  */
 
 import { describe, it, expect, beforeEach } from '@jest/globals';
-import { RmmzDataLoader } from '../../../../packages/core/src/infrastructure/adapters/data/index.js'RmmzDataLoader.js';
-import { RmmzProjectValidator } from '../../../../packages/core/src/infrastructure/adapters/data/index.js'RmmzProjectValidator.js';
+import { RmmzDataLoader } from '../../../packages/core/src/infrastructure/adapters/data/index.js'RmmzDataLoader.js';
+import { RmmzProjectValidator } from '../../../packages/core/src/infrastructure/adapters/data/index.js'RmmzProjectValidator.js';
 import type { IFileSystem, RmmzDatabase } from '../../../../packages/core/src/core/ports/index.js';
-import { DataLoadError } from '../../../../packages/core/src/core/errors/index.js'DataLoadError.js';
-import type { EnemyData, TroopData, ClassData, SkillData, ItemData, SystemData } from '../../../../packages/core/src/types/rmmz-data.js';
+import { DataLoadError } from '@coreto/core';
+import type { EnemyData, TroopData, ClassData, SkillData, ItemData, SystemData } from '@coreto/core';
 
 describe('RmmzDataLoader', () => {
   let loader: RmmzDataLoader;

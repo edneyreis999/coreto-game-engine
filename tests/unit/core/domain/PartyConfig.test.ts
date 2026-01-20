@@ -1,5 +1,5 @@
-import { PartyConfig, PartyMemberData } from '../../../../packages/core/src/core/domain/PartyConfig.js';
-import { ValidationError } from '../../../../packages/core/src/core/errors/index.js'index.js';
+import { PartyConfig, PartyMemberData } from '@coreto/core';
+import { ValidationError } from '@coreto/core';
 
 describe('PartyConfig', () => {
   describe('constructor', () => {

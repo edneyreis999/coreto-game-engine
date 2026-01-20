@@ -13,7 +13,7 @@
  * - Cleanup libera recursos (dom.window.close())
  */
 
-import { HeadlessRuntimeBootstrapper } from '../../../../packages/core/src/infrastructure/runtime/HeadlessRuntimeBootstrapper.js';
+import { HeadlessRuntimeBootstrapper } from '../../../packages/core/src/infrastructure/runtime/HeadlessRuntimeBootstrapper.js';
 
 // Mock ScriptLoader para testes de integração (Task 22)
 // Estes testes focam em JSDOM setup, não em carregamento de scripts

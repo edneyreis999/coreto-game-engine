@@ -1,8 +1,8 @@
-import { contextBridge } from 'electron'
-import { electronAPI } from '@electron-toolkit/preload'
+import { contextBridge, ipcRenderer } from 'electron';
+import { electronAPI } from '@electron-toolkit/preload';
 
 /**
- * Preload Script - IPC Bridge Foundation
+ * Preload Script - IPC Bridge
  *
  * This script runs in an isolated context (sandboxed) and provides
  * a secure bridge between the renderer process and main process via
@@ -17,59 +17,302 @@ import { electronAPI } from '@electron-toolkit/preload'
  * that exposes common Electron APIs to the renderer process.
  */
 
+// ============================================================================
+// Type Definitions (for internal reference)
+// ============================================================================
+
 /**
- * Custom API for Coreto-specific IPC communication.
+ * Project info returned by project:open handler.
+ */
+interface ProjectInfo {
+  path: string;
+  name: string;
+  isValid: boolean;
+  troopsCount?: number;
+  classesCount?: number;
+  enemiesCount?: number;
+}
+
+/**
+ * Validation result returned by project:validate handler.
+ */
+interface ValidationResult {
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
+}
+
+/**
+ * Battle result data structure.
+ */
+interface BattleResultData {
+  troopId: number;
+  troopName: string;
+  outcome: 'victory' | 'defeat' | 'timeout';
+  ttkTurns: number;
+  ttkActions: number;
+  durationMs: number;
+  seed: number;
+  expGained: number;
+}
+
+/**
+ * Simulation result returned by simulation:run handler.
+ */
+interface SimulationResult {
+  trechoId: string;
+  troopId: number;
+  troopName: string;
+  battleResult: BattleResultData;
+  passed: boolean;
+  warnings: string[];
+}
+
+/**
+ * Project config response returned by config:load handler.
+ */
+interface ProjectConfigResponse {
+  projectPath: string;
+  reportOutputPath: string;
+  seed: number;
+  maxBattleTurns?: number;
+  trechos: TrechoData[];
+}
+
+/**
+ * Trecho data structure.
+ */
+interface TrechoData {
+  id: string;
+  name: string;
+  anchorLevelMin: number;
+  anchorLevelMax: number;
+  targetTtkTurns: number;
+  targetTtkActions: number;
+  tolerancePercent: number;
+  troopIds: number[];
+  party: {
+    members: Array<{ classId: number; level: number }>;
+  };
+}
+
+/**
+ * Troop data structure.
+ */
+interface TroopData {
+  id: number;
+  name: string;
+  members: Array<{
+    enemyId: number;
+    x: number;
+    y: number;
+    hidden: boolean;
+  }>;
+}
+
+/**
+ * Class data structure.
+ */
+interface ClassData {
+  id: number;
+  name: string;
+  expTable: number[];
+}
+
+/**
+ * Enemy data structure.
+ */
+interface EnemyData {
+  id: number;
+  name: string;
+  params: number[];
+  dropItems: Array<{ kind: number; dataId: number; denominator: number }>;
+}
+
+/**
+ * IPC error structure.
+ */
+interface IPCError {
+  name: string;
+  message: string;
+  severity: 'critical' | 'warning' | 'info';
+  context: Record<string, unknown>;
+  timestamp: string;
+}
+
+/**
+ * Success response wrapper.
+ */
+interface IPCSuccessResponse<T> {
+  success: true;
+  data: T;
+}
+
+/**
+ * Error response wrapper.
+ */
+interface IPCErrorResponse {
+  success: false;
+  error: IPCError;
+}
+
+/**
+ * Union type for all IPC responses.
+ */
+type IPCResult<T> = IPCSuccessResponse<T> | IPCErrorResponse;
+
+// ============================================================================
+// Coreto API - Exposed to Renderer
+// ============================================================================
+
+/**
+ * Coreto-specific IPC API exposed to the renderer process.
  *
- * This API will be extended in task #5 when IPC handlers are implemented.
- * For now, it provides a foundation for type-safe IPC communication.
- *
- * Expected channels:
- * - project:open, project:validate
- * - simulation:run, simulation:getProgress
- * - preferences:get, preferences:set
- * - history:list
+ * All methods use ipcRenderer.invoke() for request-response communication.
+ * Errors from the main process are re-thrown for proper error handling in React.
  */
 const coretoAPI = {
-  // Placeholder for future IPC handlers
-  // These will be implemented in task #5
-}
+  /**
+   * Project Handlers
+   */
+
+  /**
+   * Opens an RPG Maker MZ project and returns basic project info.
+   * @param path - Absolute path to the project directory
+   * @returns Project information including validation status
+   */
+  openProject: (path: string): Promise<IPCResult<ProjectInfo>> =>
+    ipcRenderer.invoke('project:open', { path }),
+
+  /**
+   * Validates an RPG Maker MZ project structure and data integrity.
+   * @param path - Absolute path to the project directory
+   * @returns Validation result with errors and warnings
+   */
+  validateProject: (path: string): Promise<IPCResult<ValidationResult>> =>
+    ipcRenderer.invoke('project:validate', { path }),
+
+  /**
+   * Simulation Handlers
+   */
+
+  /**
+   * Executes a TTK battle simulation.
+   * @param config - Simulation configuration
+   * @returns Simulation result with battle metrics
+   */
+  runSimulation: (
+    config: {
+      projectPath: string;
+      configPath?: string;
+      trechoId?: string;
+      troopId?: number;
+      seed?: number;
+      maxTurns?: number;
+    }
+  ): Promise<IPCResult<SimulationResult>> =>
+    ipcRenderer.invoke('simulation:run', config),
+
+  /**
+   * Gets the current simulation progress (0-100).
+   * @returns Progress percentage
+   */
+  getSimulationProgress: (): Promise<IPCResult<number>> =>
+    ipcRenderer.invoke('simulation:getProgress'),
+
+  /**
+   * Cancels the currently running simulation.
+   */
+  cancelSimulation: (): Promise<IPCResult<void>> =>
+    ipcRenderer.invoke('simulation:cancel'),
+
+  /**
+   * Configuration Handlers
+   */
+
+  /**
+   * Loads a project configuration file.
+   * @param configPath - Absolute path to the config file
+   * @returns Project configuration with all trechos
+   */
+  loadConfig: (configPath: string): Promise<IPCResult<ProjectConfigResponse>> =>
+    ipcRenderer.invoke('config:load', { configPath }),
+
+  /**
+   * Gets all trechos from the currently loaded config.
+   * @returns Array of trecho configurations
+   */
+  getTrechos: (): Promise<IPCResult<TrechoData[]>> =>
+    ipcRenderer.invoke('config:getTrechos'),
+
+  /**
+   * Data Handlers
+   */
+
+  /**
+   * Gets all troops from the RPG Maker MZ project.
+   * @param projectPath - Absolute path to the project directory
+   * @returns Array of troop data
+   */
+  getTroops: (projectPath: string): Promise<IPCResult<TroopData[]>> =>
+    ipcRenderer.invoke('data:getTroops', { projectPath }),
+
+  /**
+   * Gets all classes from the RPG Maker MZ project.
+   * @param projectPath - Absolute path to the project directory
+   * @returns Array of class data
+   */
+  getClasses: (projectPath: string): Promise<IPCResult<ClassData[]>> =>
+    ipcRenderer.invoke('data:getClasses', { projectPath }),
+
+  /**
+   * Gets all enemies from the RPG Maker MZ project.
+   * @param projectPath - Absolute path to the project directory
+   * @returns Array of enemy data
+   */
+  getEnemies: (projectPath: string): Promise<IPCResult<EnemyData[]>> =>
+    ipcRenderer.invoke('data:getEnemies', { projectPath }),
+};
+
+// ============================================================================
+// Context Bridge Exposure
+// ============================================================================
 
 /**
  * Expose APIs to renderer process via contextBridge.
  *
  * The renderer process can access:
  * - window.electron: Standard Electron APIs (via @electron-toolkit/preload)
- * - window.coreto: Coreto-specific IPC APIs (to be implemented)
+ * - window.coreto: Coreto-specific IPC APIs
  */
 if (process.contextIsolated) {
   try {
-    contextBridge.exposeInMainWorld('electron', electronAPI)
-    contextBridge.exposeInMainWorld('coreto', coretoAPI)
+    contextBridge.exposeInMainWorld('electron', electronAPI);
+    contextBridge.exposeInMainWorld('coreto', coretoAPI);
   } catch (error) {
-    console.error('Failed to expose context bridge APIs:', error)
+    console.error('Failed to expose context bridge APIs:', error);
   }
 } else {
   // Fallback for non-isolated context (should not happen with proper config)
-  console.warn('Context isolation is not enabled. This is a security risk.')
+  console.warn('Context isolation is not enabled. This is a security risk.');
 }
 
 /**
- * Type definitions for the exposed APIs (for TypeScript in renderer)
- *
- * Add to src/renderer/src/types/preload.d.ts or similar:
- *
- * interface ElectronAPI {
- *   // Types from @electron-toolkit/preload
- * }
- *
- * interface CoretoAPI {
- *   // Coreto-specific IPC methods (to be defined in task #5)
- * }
- *
- * declare global {
- *   interface Window {
- *     electron: ElectronAPI
- *     coreto: CoretoAPI
- *   }
- * }
+ * Export types for TypeScript definitions.
+ * These will be referenced in src/renderer/src/types/preload.d.ts
  */
+export type {
+  ProjectInfo,
+  ValidationResult,
+  BattleResultData,
+  SimulationResult,
+  ProjectConfigResponse,
+  TrechoData,
+  TroopData,
+  ClassData,
+  EnemyData,
+  IPCError,
+  IPCSuccessResponse,
+  IPCErrorResponse,
+  IPCResult,
+};

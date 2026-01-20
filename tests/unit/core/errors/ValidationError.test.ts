@@ -1,5 +1,5 @@
-import { ValidationError } from '../../../../packages/core/src/core/errors/index.js'ValidationError';
-import { DomainError } from '../../../../packages/core/src/core/errors/index.js'DomainError';
+import { ValidationError } from '@coreto/core';
+import { DomainError } from '@coreto/core';
 import { z, ZodError } from 'zod';
 
 describe('ValidationError', () => {

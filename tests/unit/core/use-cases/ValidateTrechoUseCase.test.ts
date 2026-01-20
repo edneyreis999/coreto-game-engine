@@ -1,8 +1,8 @@
 import 'reflect-metadata';
 import { ValidateTrechoUseCase } from '../../../../packages/core/src/core/use-cases/ValidateTrechoUseCase.js';
-import { Trecho } from '../../../../packages/core/src/core/domain/Trecho.js';
-import { BattleResult } from '../../../../packages/core/src/core/domain/BattleResult.js';
-import { PartyConfig } from '../../../../packages/core/src/core/domain/PartyConfig.js';
+import { Trecho } from '@coreto/core';
+import { BattleResult } from '@coreto/core';
+import { PartyConfig } from '@coreto/core';
 
 describe('ValidateTrechoUseCase', () => {
   let useCase: ValidateTrechoUseCase;

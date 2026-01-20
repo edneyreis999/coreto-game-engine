@@ -6,9 +6,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { PathSanitizer } from '../../../../packages/core/src/infrastructure/security/PathSanitizer';
-import { ValidationError } from '../../../../packages/core/src/core/errors/index.js'ValidationError';
-import { ReadOnlyGuard } from '../../../../packages/core/src/infrastructure/security/ReadOnlyGuard';
+import { PathSanitizer } from '../../packages/core/src/infrastructure/security/PathSanitizer.js';
+import { ValidationError } from '@coreto/core';
+import { ReadOnlyGuard } from '../../packages/core/src/infrastructure/security/ReadOnlyGuard.js';
 
 describe('Manual QA - Section 5: Segurança', () => {
   let tempDir: string;

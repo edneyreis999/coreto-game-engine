@@ -1,6 +1,6 @@
 import { TtkMetrics } from '../../../../packages/core/src/core/domain/TtkMetrics';
 import { TtkTarget } from '../../../../packages/core/src/core/domain/TtkTarget';
-import { ValidationError } from '../../../../packages/core/src/core/errors/index.js'ValidationError';
+import { ValidationError } from '@coreto/core';
 
 describe('TtkMetrics', () => {
   describe('constructor', () => {

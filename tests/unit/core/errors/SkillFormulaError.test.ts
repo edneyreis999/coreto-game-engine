@@ -1,5 +1,5 @@
-import { SkillFormulaError } from '../../../../packages/core/src/core/errors/index.js'SkillFormulaError';
-import { DomainError } from '../../../../packages/core/src/core/errors/index.js'DomainError';
+import { SkillFormulaError } from '@coreto/core';
+import { DomainError } from '@coreto/core';
 
 describe('SkillFormulaError', () => {
   describe('constructor', () => {

@@ -3,10 +3,10 @@
  * These tests validate the manual QA scenarios from MANUAL_QA_GUIDE.md
  */
 
-import { DataLoadError } from '../../../../packages/core/src/core/errors/index.js'DataLoadError';
-import { RmmzDataLoader } from '../../../../packages/core/src/infrastructure/adapters/data/index.js'RmmzDataLoader';
-import { RmmzProjectValidator } from '../../../../packages/core/src/infrastructure/adapters/data/index.js'RmmzProjectValidator';
-import { NodeFileSystem } from '../../../../packages/core/src/infrastructure/adapters/filesystem/index.js'NodeFileSystem';
+import { DataLoadError } from '@coreto/core';
+import { RmmzDataLoader } from '../../packages/core/src/infrastructure/adapters/data/index.js';
+import { RmmzProjectValidator } from '../../packages/core/src/infrastructure/adapters/data/index.js';
+import { NodeFileSystem } from '../../packages/core/src/infrastructure/adapters/filesystem/index.js';
 import * as fs from 'fs';
 import * as path from 'path';
 

@@ -7,8 +7,8 @@
 
 import { describe, it, expect, beforeEach } from '@jest/globals';
 import * as path from 'path';
-import { NodeFileSystem } from '../../../../packages/core/src/infrastructure/adapters/filesystem/index.js'NodeFileSystem.js';
-import type { EnemyData, TroopData, ClassData, SkillData, ItemData, SystemData } from '../../../../packages/core/src/types/rmmz-data.js';
+import { NodeFileSystem } from '../../../packages/core/src/infrastructure/adapters/filesystem/index.js';
+import type { EnemyData, TroopData, ClassData, SkillData, ItemData, SystemData } from '@coreto/core';
 
 describe('RmmzDataLoader Integration Tests', () => {
   let fileSystem: NodeFileSystem;

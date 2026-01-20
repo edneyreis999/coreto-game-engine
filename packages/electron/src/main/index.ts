@@ -1,5 +1,6 @@
 import { app, BrowserWindow, shell } from 'electron'
 import path from 'node:path'
+import { setupIpcHandlers } from './ipc/index.js'
 
 /**
  * Main Process Entry Point
@@ -105,13 +106,15 @@ export function registerAppLifecycleHandlers(): void {
  *
  * This function:
  * 1. Waits for Electron to be ready
- * 2. Creates the main window
- * 3. Registers app lifecycle handlers
+ * 2. Sets up IPC handlers for main-renderer communication
+ * 3. Creates the main window
+ * 4. Registers app lifecycle handlers
  *
  * @returns Promise that resolves when the app is ready
  */
 export async function startApp(): Promise<void> {
   await app.whenReady()
+  setupIpcHandlers()
   createWindow()
   registerAppLifecycleHandlers()
 }

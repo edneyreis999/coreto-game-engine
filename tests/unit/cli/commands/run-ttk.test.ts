@@ -6,11 +6,11 @@
  */
 
 import { describe, it, expect, beforeAll, beforeEach } from '@jest/globals';
-import { ValidationError } from '../../../../packages/core/src/core/errors/index.js'ValidationError.js';
-import { DataLoadError } from '../../../../packages/core/src/core/errors/index.js'DataLoadError.js';
-import { ConfigError } from '../../../../packages/core/src/core/errors/index.js'ConfigError.js';
-import { FileSystemError } from '../../../../packages/core/src/core/errors/index.js'FileSystemError.js';
-import { BattleResult } from '../../../../packages/core/src/core/domain/BattleResult.js';
+import { ValidationError } from '@coreto/core';
+import { DataLoadError } from '@coreto/core';
+import { ConfigError } from '@coreto/core';
+import { FileSystemError } from '@coreto/core';
+import { BattleResult } from '@coreto/core';
 import type { IConfigLoader } from '../../../../packages/core/src/core/ports/IConfigLoader.js';
 import type { IDataLoader, RmmzDatabase } from '../../../../packages/core/src/core/ports/IDataLoader.js';
 import type { IBattleSimulator } from '../../../../packages/core/src/core/ports/IBattleSimulator.js';

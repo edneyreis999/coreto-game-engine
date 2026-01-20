@@ -2,7 +2,7 @@ import {
   BattleResult,
   BattleResultData,
   BattleOutcome,
-} from '../../../../packages/core/src/core/domain/BattleResult.js';
+} from '@coreto/core';
 
 describe('BattleResult', () => {
   describe('constructor', () => {

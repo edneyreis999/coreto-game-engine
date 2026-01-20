@@ -7,9 +7,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { RmmzProjectValidator } from '../../../../packages/core/src/infrastructure/adapters/data/index.js'RmmzProjectValidator.js';
-import { NodeFileSystem } from '../../../../packages/core/src/infrastructure/adapters/filesystem/index.js'NodeFileSystem.js';
-import { DataLoadError } from '../../../../packages/core/src/core/errors/index.js'DataLoadError.js';
+import { RmmzProjectValidator } from '../../../packages/core/src/infrastructure/adapters/data/index.js'RmmzProjectValidator.js';
+import { NodeFileSystem } from '../../../packages/core/src/infrastructure/adapters/filesystem/index.js'NodeFileSystem.js';
+import { DataLoadError } from '@coreto/core';
 
 describe('RmmzProjectValidator', () => {
   let validator: RmmzProjectValidator;

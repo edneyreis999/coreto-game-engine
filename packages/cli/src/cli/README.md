@@ -29,8 +29,18 @@ cli/
 **Example**:
 ```typescript
 import { Command, Flags } from '@oclif/core';
-import { Container } from '@/infrastructure/di';
-import { ExecuteBattleSimulation } from '@/core/use-cases';
+import {
+  registerDependencies,
+  resolve,
+  IConfigLoaderToken,
+  IDataLoaderToken,
+  IBattleSimulatorToken,
+  IReporterToken,
+  type IConfigLoader,
+  type IDataLoader,
+  type IBattleSimulator,
+  type IReporter,
+} from '@coreto/core';
 
 export default class RunTTK extends Command {
   static description = 'Execute TTK validation for RPG Maker MZ project';
@@ -44,15 +54,25 @@ export default class RunTTK extends Command {
   async run(): Promise<void> {
     const { flags } = await this.parse(RunTTK);
 
-    // Resolve dependencies from DI container
-    const container = new Container();
-    const useCase = container.resolve<ExecuteBattleSimulation>('ExecuteBattleSimulation');
+    // Register dependencies from @coreto/core
+    registerDependencies();
 
-    // Execute use case
-    const result = await useCase.execute(flags.config, flags.seed);
+    // Resolve dependencies from DI container
+    const configLoader = resolve<IConfigLoader>(IConfigLoaderToken);
+    const dataLoader = resolve<IDataLoader>(IDataLoaderToken);
+    const battleSimulator = resolve<IBattleSimulator>(IBattleSimulatorToken);
+    const reporter = resolve<IReporter>(IReporterToken);
+
+    // Execute pipeline
+    const config = await configLoader.loadConfig(flags.config);
+    const database = await dataLoader.loadDatabase(config.projectPath);
+    await battleSimulator.initialize(database, config.projectPath);
+
+    // Execute battles and generate report
+    // ... (see run-ttk.ts for complete implementation)
 
     // Present results
-    this.log(`TTK: ${result.ttkTurns} turns, ${result.ttkActions} actions`);
+    this.log(`TTK validation completed`);
   }
 }
 ```
@@ -140,14 +160,21 @@ Each command does **one thing**:
 ### Error Handling
 
 ```typescript
+import {
+  ConfigError,
+  ValidationError,
+  FileSystemError,
+  DataLoadError,
+} from '@coreto/core';
+
 try {
   const result = await useCase.execute(config);
   this.log(formatResult(result));
 } catch (error) {
-  if (error instanceof ConfigLoadError) {
+  if (error instanceof ConfigError || error instanceof ValidationError) {
     this.error('Invalid configuration', { exit: 1 });
-  } else if (error instanceof BattleExecutionError) {
-    this.error('Battle execution failed', { exit: 2 });
+  } else if (error instanceof FileSystemError || error instanceof DataLoadError) {
+    this.error('Data loading failed', { exit: 2 });
   } else {
     throw error; // Unexpected error, let Oclif handle it
   }
@@ -163,8 +190,21 @@ Use Oclif's test helpers:
 
 ```typescript
 import { runCommand } from '@oclif/test';
+import {
+  registerDependencies,
+  clearContainer,
+  type IConfigLoader,
+} from '@coreto/core';
 
 describe('run-ttk command', () => {
+  beforeEach(() => {
+    registerDependencies();
+  });
+
+  afterEach(() => {
+    clearContainer();
+  });
+
   it('executes TTK validation', async () => {
     const { stdout } = await runCommand(['run-ttk', '--config', 'test.json']);
     expect(stdout).toContain('TTK:');
@@ -175,17 +215,17 @@ describe('run-ttk command', () => {
 ## Dependency Direction
 
 ```
-CLI Layer → Infrastructure Layer → Core Layer
+@coreto/cli → @coreto/core
      ↓
-  (uses DI container to resolve use cases)
+  (uses DI container to resolve dependencies)
 ```
 
-**Critical Rule**: CLI commands orchestrate use cases. They do NOT implement business logic.
+**Critical Rule**: CLI commands orchestrate dependencies from `@coreto/core`. They do NOT implement business logic.
 
 ## CLI Workflow
 
 ```
-User → CLI Command → DI Container → Use Case → Ports → Adapters → External Systems
+User → CLI Command → DI Container (from @coreto/core) → Ports → Adapters → External Systems
                                         ↓
                                    Domain Entities
 ```

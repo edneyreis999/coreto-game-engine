@@ -5,8 +5,8 @@ import {
   ReportSummary,
   TrechoSummary,
   TrechoAggregates,
-} from '../../../../packages/core/src/core/domain/Report.js';
-import { BattleResult } from '../../../../packages/core/src/core/domain/BattleResult.js';
+} from '@coreto/core';
+import { BattleResult } from '@coreto/core';
 import type { Warning } from '../../../../packages/core/src/core/ports/IReporter.js';
 
 describe('Report', () => {
