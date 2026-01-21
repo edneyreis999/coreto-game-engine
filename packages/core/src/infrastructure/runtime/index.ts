@@ -6,6 +6,7 @@
  *
  * Componentes principais:
  * - HeadlessRuntimeBootstrapper: Orquestração da sequência de inicialização
+ * - JsdomHeadlessRuntime: Adapter for IHeadlessRuntime port
  * - ScriptLoader: Carregamento de core scripts do RPG Maker MZ
  * - SyncWarpLoop: Loop síncrono de alta velocidade para simulação
  *
@@ -18,5 +19,6 @@
  */
 
 export { HeadlessRuntimeBootstrapper } from './HeadlessRuntimeBootstrapper.js';
+export { JsdomHeadlessRuntime } from './JsdomHeadlessRuntime.js';
 export { ScriptLoader } from './loaders/index.js';
 export { SyncWarpLoop } from './simulation/index.js';

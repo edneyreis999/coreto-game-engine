@@ -20,3 +20,6 @@ export * from './SkillFormulaError.js';
 
 // File system errors
 export * from './FileSystemError.js';
+
+// Runtime errors
+export * from './RuntimeError.js';
