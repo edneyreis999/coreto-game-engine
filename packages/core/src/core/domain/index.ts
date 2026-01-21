@@ -11,6 +11,8 @@ export * from './Trecho.js';
 export * from './PartyConfig.js';
 export * from './BattleResult.js';
 export * from './Report.js';
+export * from './Enemy.js';
+export * from './Skill.js';
 
 // Domain Services
 export * from './services/WarningCollector.js';
