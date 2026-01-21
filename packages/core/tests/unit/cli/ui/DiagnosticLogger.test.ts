@@ -4,7 +4,7 @@
  * Tests diagnostic logging, timing, and performance metrics
  */
 
-import { DiagnosticLogger } from '../../packages/cli/src/cli/ui/DiagnosticLogger';
+import { DiagnosticLogger } from '@coreto/cli/cli/ui/DiagnosticLogger';
 
 describe('DiagnosticLogger', () => {
   let consoleLogSpy: jest.SpyInstance;

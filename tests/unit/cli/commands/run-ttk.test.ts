@@ -11,10 +11,10 @@ import { DataLoadError } from '@coreto/core';
 import { ConfigError } from '@coreto/core';
 import { FileSystemError } from '@coreto/core';
 import { BattleResult } from '@coreto/core';
-import type { IConfigLoader } from '../../../../packages/core/src/core/ports/IConfigLoader.js';
-import type { IDataLoader, RmmzDatabase } from '../../../../packages/core/src/core/ports/IDataLoader.js';
-import type { IBattleSimulator } from '../../../../packages/core/src/core/ports/IBattleSimulator.js';
-import type { IReporter } from '../../../../packages/core/src/core/ports/IReporter.js';
+import type { IConfigLoader } from '@coreto/core';
+import type { IDataLoader, RmmzDatabase } from '@coreto/core';
+import type { IBattleSimulator } from '@coreto/core';
+import type { IReporter } from '@coreto/core';
 
 describe('RunTtk Command', () => {
   let RunTtkCommand: any;
@@ -22,11 +22,11 @@ describe('RunTtk Command', () => {
   let resolve: jest.Mock;
 
   beforeAll(async () => {
-    const containerModule = await import('@/infrastructure/di/container.js');
+    const containerModule = await import('@coreto/core/infrastructure/di/container');
     registerDependencies = jest.spyOn(containerModule, 'registerDependencies') as any;
     resolve = jest.spyOn(containerModule, 'resolve') as any;
 
-    RunTtkCommand = (await import('@/cli/commands/run-ttk.js')).default;
+    RunTtkCommand = (await import('@coreto/cli/cli/commands/run-ttk')).default;
   });
 
   beforeEach(() => {

@@ -2,7 +2,7 @@ import { describe, it, expect } from '@jest/globals';
 
 describe('HelloCommand', () => {
   it('should print greeting and status lines', async () => {
-    const { default: HelloCommand } = await import('@/cli/commands/hello.js');
+    const { default: HelloCommand } = await import('@coreto/cli/cli/commands/hello');
 
     const cmd: any = Object.create(HelloCommand.prototype);
     cmd.parse = async () => ({ flags: { name: 'Coreto' } });

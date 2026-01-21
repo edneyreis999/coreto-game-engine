@@ -6,15 +6,15 @@
  */
 
 import { describe, it, expect, beforeAll, beforeEach } from '@jest/globals';
-import { ValidationError } from '../../src/core/errors/ValidationError.js';
-import { DataLoadError } from '../../src/core/errors/DataLoadError.js';
-import { ConfigError } from '../../src/core/errors/ConfigError.js';
-import { FileSystemError } from '../../src/core/errors/FileSystemError.js';
-import { BattleResult } from '../../src/core/domain/BattleResult.js';
-import type { IConfigLoader } from '../../src/core/ports/IConfigLoader.js';
-import type { IDataLoader, RmmzDatabase } from '../../src/core/ports/IDataLoader.js';
-import type { IBattleSimulator } from '../../src/core/ports/IBattleSimulator.js';
-import type { IReporter } from '../../src/core/ports/IReporter.js';
+import { ValidationError } from '@coreto/core';
+import { DataLoadError } from '@coreto/core';
+import { ConfigError } from '@coreto/core';
+import { FileSystemError } from '@coreto/core';
+import { BattleResult } from '@coreto/core';
+import type { IConfigLoader } from '@coreto/core';
+import type { IDataLoader, RmmzDatabase } from '@coreto/core';
+import type { IBattleSimulator } from '@coreto/core';
+import type { IReporter } from '@coreto/core';
 
 describe('RunTtk Command', () => {
   let RunTtkCommand: any;
@@ -22,11 +22,11 @@ describe('RunTtk Command', () => {
   let resolve: jest.Mock;
 
   beforeAll(async () => {
-    const containerModule = await import('@/infrastructure/di/container.js');
+    const containerModule = await import('@coreto/core/infrastructure/di/container');
     registerDependencies = jest.spyOn(containerModule, 'registerDependencies') as any;
     resolve = jest.spyOn(containerModule, 'resolve') as any;
 
-    RunTtkCommand = (await import('@/cli/commands/run-ttk.js')).default;
+    RunTtkCommand = (await import('@coreto/cli/cli/commands/run-ttk')).default;
   });
 
   beforeEach(() => {
