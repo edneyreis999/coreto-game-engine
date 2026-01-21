@@ -54,6 +54,7 @@
     "jest-canvas-mock": "^2.5.2",
     "prettier": "^3.4.2",
     "ts-jest": "^29.2.5",
+    "ts-morph": "^23.0.0",
     "tsc-alias": "^1.8.16",
     "tsx": "^4.19.2",
     "typescript": "^5.9.3"

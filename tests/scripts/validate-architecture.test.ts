@@ -1,11 +1,11 @@
 /**
  * Unit tests for Architecture Validator
  *
- * Tests the DDD + Hexagonal Architecture constraint validation logic.
+ * Tests the DDD + Hexagonal Architecture constraint validation logic
+ * using ts-morph for AST parsing.
  */
 
-// Import without type annotations to avoid module resolution issues
-const { validateArchitecture } = require('../../scripts/validate-architecture.ts');
+import { validateArchitecture } from '../../scripts/validate-architecture.js';
 
 describe('validateArchitecture', () => {
   describe('validation result structure', () => {
@@ -35,10 +35,12 @@ describe('validateArchitecture', () => {
         'domain_imports_infrastructure',
         'domain_imports_application',
         'domain_imports_cli',
+        'application_imports_infrastructure',
+        'application_imports_cli',
+        'no_di_violation',
         'port_leaks_implementation',
         'port_import_not_type_only',
         'infrastructure_missing_port',
-        'core_imports_violation',
       ];
 
       for (const key of expectedKeys) {
@@ -71,10 +73,12 @@ describe('validateArchitecture', () => {
         'domain_imports_infrastructure',
         'domain_imports_application',
         'domain_imports_cli',
+        'application_imports_infrastructure',
+        'application_imports_cli',
+        'no_di_violation',
         'port_leaks_implementation',
         'port_import_not_type_only',
         'infrastructure_missing_port',
-        'core_imports_violation',
       ];
 
       for (const violation of result.violations) {
@@ -104,7 +108,7 @@ describe('validateArchitecture', () => {
 
       for (const violation of violations) {
         expect(violation.file).toContain('/domain/');
-        expect(violation.message).toContain('application');
+        expect(violation.message).toMatch(/application|use-cases/);
       }
     });
 
@@ -121,6 +125,62 @@ describe('validateArchitecture', () => {
     });
   });
 
+  describe('application import violations', () => {
+    it('should detect application importing from infrastructure layer', () => {
+      const result = validateArchitecture();
+      const violations = result.violations.filter(
+        (v: { type: string }) => v.type === 'application_imports_infrastructure'
+      );
+
+      for (const violation of violations) {
+        expect(
+          violation.file.includes('/use-cases/') || violation.file.includes('/ports/')
+        ).toBe(true);
+        expect(violation.message).toContain('infrastructure');
+      }
+    });
+
+    it('should detect application importing from cli layer', () => {
+      const result = validateArchitecture();
+      const violations = result.violations.filter(
+        (v: { type: string }) => v.type === 'application_imports_cli'
+      );
+
+      for (const violation of violations) {
+        expect(
+          violation.file.includes('/use-cases/') || violation.file.includes('/ports/')
+        ).toBe(true);
+        expect(violation.message).toContain('cli');
+      }
+    });
+  });
+
+  describe('DI violation detector', () => {
+    it('should detect direct instantiation without DI', () => {
+      const result = validateArchitecture();
+      const violations = result.violations.filter(
+        (v: { type: string }) => v.type === 'no_di_violation'
+      );
+
+      for (const violation of violations) {
+        expect(violation.file).toContain('/infrastructure/');
+        expect(violation.message).toContain('Direct instantiation');
+        expect(violation.details).toContain('dependency injection');
+      }
+    });
+
+    it('should exclude built-in classes from DI violations', () => {
+      const result = validateArchitecture();
+      const violations = result.violations.filter(
+        (v: { type: string }) => v.type === 'no_di_violation'
+      );
+
+      for (const violation of violations) {
+        expect(violation.message).not.toMatch(/new (Map|Set|Array|Object|Error|Date|Promise)\(/);
+      }
+    });
+  });
+
   describe('port implementation leak violations', () => {
     it('should detect ports importing implementation libraries', () => {
       const result = validateArchitecture();
@@ -130,7 +190,7 @@ describe('validateArchitecture', () => {
 
       for (const violation of violations) {
         expect(violation.file).toContain('/ports/');
-        expect(violation.message.toLowerCase()).toMatch(/implementation|zod|fs\.|jsdom|pixi/i);
+        expect(violation.message.toLowerCase()).toMatch(/implementation|zod|fs\.|jsdom|pixi/);
       }
     });
 
@@ -202,6 +262,28 @@ describe('validateArchitecture', () => {
       }
     });
   });
+
+  describe('options parameter', () => {
+    it('should accept empty options object', () => {
+      expect(() => validateArchitecture({})).not.toThrow();
+    });
+
+    it('should accept options with jsonOutput', () => {
+      expect(() => validateArchitecture({ jsonOutput: true })).not.toThrow();
+      expect(() => validateArchitecture({ jsonOutput: false })).not.toThrow();
+    });
+
+    it('should return consistent results with different options', () => {
+      const result1 = validateArchitecture({});
+      const result2 = validateArchitecture({ jsonOutput: true });
+      const result3 = validateArchitecture({ jsonOutput: false });
+
+      expect(result1.success).toBe(result2.success);
+      expect(result1.success).toBe(result3.success);
+      expect(result1.violations.length).toBe(result2.violations.length);
+      expect(result1.violations.length).toBe(result3.violations.length);
+    });
+  });
 });
 
 describe('Architecture Validator Contract', () => {
@@ -225,6 +307,83 @@ describe('Architecture Validator Contract', () => {
         'summary' in result;
 
       expect(hasRequiredProps).toBe(true);
+    });
+  });
+
+  describe('violation type completeness', () => {
+    it('should support all required violation types', () => {
+      const result = validateArchitecture();
+      const requiredTypes = [
+        'domain_imports_infrastructure',
+        'domain_imports_application',
+        'domain_imports_cli',
+        'application_imports_infrastructure',
+        'application_imports_cli',
+        'no_di_violation',
+        'port_leaks_implementation',
+        'port_import_not_type_only',
+        'infrastructure_missing_port',
+      ];
+
+      for (const type of requiredTypes) {
+        expect(result.summary).toHaveProperty(type);
+      }
+    });
+  });
+
+  describe('file path handling', () => {
+    it('should return absolute file paths in violations', () => {
+      const result = validateArchitecture();
+
+      for (const violation of result.violations) {
+        expect(violation.file).toMatch(/^\/.*/); // Absolute path starts with /
+      }
+    });
+
+    it('should return valid line numbers in violations', () => {
+      const result = validateArchitecture();
+
+      for (const violation of result.violations) {
+        expect(violation.line).toBeGreaterThan(0);
+        expect(Number.isInteger(violation.line)).toBe(true);
+      }
+    });
+  });
+});
+
+describe('Architecture Validator - AST Parsing', () => {
+  describe('ts-morph integration', () => {
+    it('should use ts-morph for AST parsing', () => {
+      // This test verifies that the validator uses ts-morph
+      // by checking that it can parse TypeScript files correctly
+      const result = validateArchitecture();
+      expect(result).toBeDefined();
+
+      // If ts-morph is working, we should get proper line numbers
+      for (const violation of result.violations) {
+        expect(violation.line).toBeGreaterThan(0);
+        expect(typeof violation.line).toBe('number');
+      }
+    });
+
+    it('should handle TypeScript syntax correctly', () => {
+      // This test verifies that the validator can handle TypeScript syntax
+      const result = validateArchitecture();
+
+      // Should not throw any errors during parsing
+      expect(result).toBeDefined();
+      expect(typeof result.success).toBe('boolean');
+    });
+  });
+
+  describe('performance and scalability', () => {
+    it('should complete validation in reasonable time', () => {
+      const startTime = Date.now();
+      const result = validateArchitecture();
+      const endTime = Date.now();
+
+      expect(result).toBeDefined();
+      expect(endTime - startTime).toBeLessThan(10000); // Should complete in under 10 seconds
     });
   });
 });

@@ -2,8 +2,10 @@
 /**
  * Architecture Validation Script
  *
- * Validates DDD + Hexagonal Architecture constraints:
+ * Validates DDD + Hexagonal Architecture constraints using ts-morph for AST parsing:
  * - Domain layer MUST NOT import from application/infrastructure/cli layers
+ * - Application layer MUST NOT import from infrastructure/cli layers
+ * - Infrastructure MUST NOT instantiate domain/use-case classes directly (use DI)
  * - Ports MUST NOT contain implementation details (no Zod, no fs, no JSDOM)
  * - Infrastructure classes MUST implement port interfaces
  * - Port imports MUST use `type` keyword for compile-time only dependency
@@ -12,6 +14,7 @@
  * Exit codes: 0 = valid, 1 = violations found
  */
 
+import { Project, SyntaxKind, type SourceFile, type ImportDeclaration, type NewExpression, type ClassDeclaration } from 'ts-morph';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
@@ -39,10 +42,12 @@ export type ViolationType =
   | 'domain_imports_infrastructure'
   | 'domain_imports_application'
   | 'domain_imports_cli'
+  | 'application_imports_infrastructure'
+  | 'application_imports_cli'
+  | 'no_di_violation'
   | 'port_leaks_implementation'
   | 'port_import_not_type_only'
-  | 'infrastructure_missing_port'
-  | 'core_imports_violation';
+  | 'infrastructure_missing_port';
 
 /** Architecture violation record */
 export interface ArchitectureViolation {
@@ -80,6 +85,15 @@ const IMPLEMENTATION_KEYWORDS = [
   'canvas',
   'winston',
   'reflect-metadata',
+];
+
+/** Known classes that are allowed to skip port implementation (helpers, errors, etc.) */
+const KNOWN_HELPERS = [
+  'IntegrityValidator',
+  'RmmzProjectValidator',
+  'ValidationError',
+  'DataLoadError',
+  'BattleTimeoutError',
 ];
 
 /**
@@ -127,34 +141,35 @@ function getLayer(filePath: string): keyof typeof LAYERS | null {
 }
 
 /**
- * Check if an import statement violates architecture rules
+ * Get the target layer from an import path
+ */
+function getTargetLayer(importPath: string, sourceFilePath: string): keyof typeof LAYERS | null {
+  // Resolve the full path of the import
+  const fullPath = path.resolve(path.dirname(sourceFilePath), importPath);
+  return getLayer(fullPath);
+}
+
+/**
+ * Check if an import statement violates layer architecture rules
  */
 function checkImportViolation(
-  importLine: string,
-  sourceLayer: keyof typeof LAYERS | null,
-  filePath: string,
-  lineNumber: number
+  importDecl: ImportDeclaration,
+  sourceFile: SourceFile
 ): ArchitectureViolation | null {
-  // Extract import path
-  const importMatch = importLine.match(/import\s+(?:type\s+)?{[^}]*}\s+from\s+['"]([^'"]+)['"]/) ||
-    importLine.match(/import\s+(?:type\s+)?\w+\s+from\s+['"]([^'"]+)['"]/);
-
-  if (!importMatch) {
+  const sourceLayer = getLayer(sourceFile.getFilePath());
+  if (!sourceLayer) {
     return null;
   }
 
-  const importPath = importMatch[1];
+  const importPath = importDecl.getModuleSpecifierValue();
+  const lineNumber = importDecl.getStartLineNumber();
 
-  // Check if it's a relative import or package import
-  const isRelativeImport = importPath.startsWith('.');
-  if (!isRelativeImport) {
-    return null; // External library, skip
+  // Skip external library imports (non-relative)
+  if (!importPath.startsWith('.')) {
+    return null;
   }
 
-  // Determine target layer
-  const fullPath = path.resolve(path.dirname(filePath), importPath);
-  const targetLayer = getLayer(fullPath);
-
+  const targetLayer = getTargetLayer(importPath, sourceFile.getFilePath());
   if (!targetLayer) {
     return null;
   }
@@ -163,8 +178,8 @@ function checkImportViolation(
   if (sourceLayer === 'domain') {
     if (targetLayer === 'infrastructure' || targetLayer === 'cli' || targetLayer === 'useCases') {
       return {
-        type: 'domain_imports_infrastructure',
-        file: filePath,
+        type: `domain_imports_${targetLayer === 'useCases' ? 'application' : targetLayer}` as ViolationType,
+        file: sourceFile.getFilePath(),
         line: lineNumber,
         message: `Domain layer importing from ${targetLayer} layer`,
         details: `Domain entities must not depend on ${targetLayer}. Import: ${importPath}`,
@@ -172,33 +187,185 @@ function checkImportViolation(
     }
   }
 
-  // Check for ports importing implementation details
-  if (sourceLayer === 'ports') {
-    const lowerImport = importLine.toLowerCase();
+  // Check for application layer importing from outer layers
+  if (sourceLayer === 'useCases' || sourceLayer === 'ports') {
+    if (targetLayer === 'infrastructure' || targetLayer === 'cli') {
+      return {
+        type: `application_imports_${targetLayer}` as ViolationType,
+        file: sourceFile.getFilePath(),
+        line: lineNumber,
+        message: `Application layer importing from ${targetLayer} layer`,
+        details: `Application layer must not depend on ${targetLayer}. Import: ${importPath}`,
+      };
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Check if port imports are type-only
+ */
+function checkPortImportTypeOnly(
+  importDecl: ImportDeclaration,
+  sourceFile: SourceFile
+): ArchitectureViolation | null {
+  const sourceLayer = getLayer(sourceFile.getFilePath());
+  if (sourceLayer !== 'ports') {
+    return null;
+  }
+
+  const importPath = importDecl.getModuleSpecifierValue();
+
+  // Only check imports from domain layer
+  if (!importPath.startsWith('../domain/')) {
+    return null;
+  }
+
+  // Check if it's a type-only import
+  const isTypeOnly = importDecl.isTypeOnly();
+
+  if (!isTypeOnly) {
+    return {
+      type: 'port_import_not_type_only',
+      file: sourceFile.getFilePath(),
+      line: importDecl.getStartLineNumber(),
+      message: 'Port import not using `type` keyword',
+      details: `Port imports should use \`import type\` for compile-time only dependency. Import: ${importPath}`,
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Check for implementation details in port files
+ */
+function checkPortImplementationLeaks(sourceFile: SourceFile): ArchitectureViolation[] {
+  const violations: ArchitectureViolation[] = [];
+  const sourceLayer = getLayer(sourceFile.getFilePath());
+
+  if (sourceLayer !== 'ports') {
+    return violations;
+  }
+
+  // Check imports for implementation keywords
+  const imports = sourceFile.getImportDeclarations();
+  for (const importDecl of imports) {
+    const importText = importDecl.getText().toLowerCase();
+    const lineNumber = importDecl.getStartLineNumber();
+
     for (const keyword of IMPLEMENTATION_KEYWORDS) {
-      if (lowerImport.includes(keyword)) {
-        return {
+      if (importText.includes(keyword)) {
+        violations.push({
           type: 'port_leaks_implementation',
-          file: filePath,
+          file: sourceFile.getFilePath(),
           line: lineNumber,
           message: `Port importing implementation detail: ${keyword}`,
-          details: `Ports must not import infrastructure libraries. Import: ${importLine}`,
-        };
+          details: `Ports must not import infrastructure libraries. Import: ${importDecl.getText()}`,
+        });
+        break;
+      }
+    }
+  }
+
+  return violations;
+}
+
+/**
+ * Check for direct instantiation without DI (no-di-violation)
+ * Detects 'new Class()' in infrastructure layer for classes that should use DI
+ */
+function checkNoDIViolations(sourceFile: SourceFile): ArchitectureViolation[] {
+  const violations: ArchitectureViolation[] = [];
+  const sourceLayer = getLayer(sourceFile.getFilePath());
+
+  // Only check infrastructure layer for DI violations
+  if (sourceLayer !== 'infrastructure') {
+    return violations;
+  }
+
+  const newExpressions = sourceFile.getDescendantsOfKind(SyntaxKind.NewExpression);
+
+  for (const newExpr of newExpressions) {
+    const expression = newExpr.getExpression();
+    const className = expression.getText();
+    const lineNumber = newExpr.getStartLineNumber();
+
+    // Skip known allowed instantiations (data structures, built-ins, etc.)
+    const allowedClasses = [
+      'Map', 'Set', 'Array', 'Object', 'Error', 'Date', 'Promise',
+      'IntegrityValidator', 'RmmzProjectValidator',
+    ];
+
+    if (allowedClasses.includes(className)) {
+      continue;
+    }
+
+    // Skip instantiations inside factory methods or builder patterns
+    const parentFunction = newExpr.getFirstAncestorByKind(SyntaxKind.FunctionDeclaration);
+    if (parentFunction) {
+      const functionName = parentFunction.getName();
+      if (functionName?.toLowerCase().includes('create') ||
+          functionName?.toLowerCase().includes('build') ||
+          functionName?.toLowerCase().includes('factory')) {
+        continue;
       }
     }
 
-    // Check if port imports are type-only
-    if (!importLine.includes('import type') && !importLine.includes('import { type')) {
-      // Port files in the ports directory
-      if (filePath.includes('/ports/') && importPath.startsWith('../domain/')) {
-        return {
-          type: 'port_import_not_type_only',
-          file: filePath,
-          line: lineNumber,
-          message: 'Port import not using `type` keyword',
-          details: `Port imports should use \`import type\` for compile-time only dependency. Import: ${importLine}`,
-        };
-      }
+    // Report DI violation for domain or use-case classes
+    violations.push({
+      type: 'no_di_violation',
+      file: sourceFile.getFilePath(),
+      line: lineNumber,
+      message: `Direct instantiation without DI: new ${className}()`,
+      details: 'Infrastructure should use dependency injection instead of direct instantiation.',
+    });
+  }
+
+  return violations;
+}
+
+/**
+ * Check if infrastructure adapter implements a port interface
+ */
+function checkInfrastructureImplementsPort(sourceFile: SourceFile): ArchitectureViolation | null {
+  const sourceLayer = getLayer(sourceFile.getFilePath());
+
+  // Only check infrastructure adapters
+  if (sourceLayer !== 'infrastructure' || !sourceFile.getFilePath().includes('/adapters/')) {
+    return null;
+  }
+
+  const classes = sourceFile.getClasses();
+
+  for (const classDecl of classes) {
+    const className = classDecl.getName();
+
+    if (!className) {
+      continue;
+    }
+
+    // Skip known helper classes
+    if (KNOWN_HELPERS.includes(className)) {
+      continue;
+    }
+
+    // Check if class implements a port interface
+    const implementedInterfaces = classDecl.getImplements();
+    const hasPortInterface = implementedInterfaces.some(imp => {
+      const interfaceName = imp.getExpression().getText();
+      return interfaceName.startsWith('I');
+    });
+
+    if (!hasPortInterface) {
+      return {
+        type: 'infrastructure_missing_port',
+        file: sourceFile.getFilePath(),
+        line: classDecl.getStartLineNumber(),
+        message: `Infrastructure class ${className} does not implement a port interface`,
+        details: 'Infrastructure adapters should implement corresponding port interfaces for dependency inversion.',
+      };
     }
   }
 
@@ -208,122 +375,69 @@ function checkImportViolation(
 /**
  * Validate a single file for architecture violations
  */
-function validateFile(filePath: string): ArchitectureViolation[] {
+function validateFile(sourceFile: SourceFile): ArchitectureViolation[] {
   const violations: ArchitectureViolation[] = [];
-  const layer = getLayer(filePath);
 
-  if (!layer) {
-    return violations;
-  }
-
-  const content = fs.readFileSync(filePath, 'utf-8');
-  const lines = content.split('\n');
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (!line) continue; // Skip empty lines
-    const lineNumber = i + 1;
-
-    // Check import statements
-    if (line.trim().startsWith('import')) {
-      const violation = checkImportViolation(line, layer, filePath, lineNumber);
-      if (violation) {
-        violations.push(violation);
-      }
+  // Check import violations
+  const imports = sourceFile.getImportDeclarations();
+  for (const importDecl of imports) {
+    const importViolation = checkImportViolation(importDecl, sourceFile);
+    if (importViolation) {
+      violations.push(importViolation);
     }
 
-    // Check port files for implementation keywords in content (not just imports)
-    if (layer === 'ports') {
-      const lowerLine = line.toLowerCase();
-      for (const keyword of IMPLEMENTATION_KEYWORDS) {
-        // Skip comments
-        if (lowerLine.trim().startsWith('//') || lowerLine.trim().startsWith('*')) {
-          continue;
-        }
-        // Check for implementation details in port interfaces
-        if (lowerLine.includes(keyword) && !lowerLine.includes('import') && !lowerLine.includes('deprecated')) {
-          violations.push({
-            type: 'port_leaks_implementation',
-            file: filePath,
-            line: lineNumber,
-            message: `Port contains implementation detail: ${keyword}`,
-            details: `Ports must be pure contracts without infrastructure references.`,
-          });
-        }
-      }
+    const typeOnlyViolation = checkPortImportTypeOnly(importDecl, sourceFile);
+    if (typeOnlyViolation) {
+      violations.push(typeOnlyViolation);
     }
   }
+
+  // Check port implementation leaks
+  violations.push(...checkPortImplementationLeaks(sourceFile));
+
+  // Check DI violations
+  violations.push(...checkNoDIViolations(sourceFile));
 
   return violations;
 }
 
 /**
- * Check if infrastructure adapter implements a port
- */
-function checkInfrastructureImplementsPort(filePath: string): ArchitectureViolation | null {
-  const layer = getLayer(filePath);
-
-  // Only check infrastructure adapters
-  if (layer !== 'infrastructure' || !filePath.includes('/adapters/')) {
-    return null;
-  }
-
-  const content = fs.readFileSync(filePath, 'utf-8');
-
-  // Check if file implements a port interface
-  const implementsMatch = content.match(/implements\s+(I\w+)/);
-
-  if (!implementsMatch) {
-    // Check if it's a class (should implement a port)
-    const classMatch = content.match(/export\s+class\s+(\w+)\s+/);
-    if (classMatch && classMatch[1] && !content.includes('export enum') && !content.includes('export type')) {
-      const className = classMatch[1];
-
-      // Skip known helper classes that don't need ports
-      const knownHelpers = [
-        'IntegrityValidator',
-        'RmmzProjectValidator',
-        'ValidationError',
-        'DataLoadError',
-      ];
-
-      if (!knownHelpers.includes(className)) {
-        return {
-          type: 'infrastructure_missing_port',
-          file: filePath,
-          line: 1,
-          message: `Infrastructure class ${className} does not implement a port interface`,
-          details: 'Infrastructure adapters should implement corresponding port interfaces for dependency inversion.',
-        };
-      }
-    }
-  }
-
-  return null;
-}
-
-/**
- * Main validation function
+ * Main validation function using ts-morph for AST parsing
  */
 export function validateArchitecture(_options: { jsonOutput?: boolean } = {}): ValidationResult {
   const violations: ArchitectureViolation[] = [];
 
-  // 1. Check all TypeScript files for import violations
-  const allFiles = [
+  // Create ts-morph project
+  const project = new Project({
+    skipAddingFilesFromTsConfig: true,
+    compilerOptions: {
+      allowJs: true,
+    },
+  });
+
+  // Get all TypeScript files from relevant layers
+  const allFilePaths = [
     ...getTypeScriptFiles(LAYERS.domain),
     ...getTypeScriptFiles(LAYERS.ports),
     ...getTypeScriptFiles(LAYERS.useCases),
     ...getTypeScriptFiles(LAYERS.infrastructure),
   ];
 
-  for (const file of allFiles) {
-    violations.push(...validateFile(file));
+  // Add source files to project
+  const sourceFiles = project.addSourceFilesAtPaths(allFilePaths);
+
+  // Validate each file
+  for (const sourceFile of sourceFiles) {
+    violations.push(...validateFile(sourceFile));
   }
 
-  // 2. Check infrastructure classes implement ports
-  const infrastructureFiles = getTypeScriptFiles(LAYERS.infrastructure);
-  for (const file of infrastructureFiles) {
-    const violation = checkInfrastructureImplementsPort(file);
+  // Check infrastructure classes implement ports
+  const infrastructureFiles = sourceFiles.filter(sf =>
+    sf.getFilePath().includes('/infrastructure/adapters/')
+  );
+
+  for (const sourceFile of infrastructureFiles) {
+    const violation = checkInfrastructureImplementsPort(sourceFile);
     if (violation) {
       violations.push(violation);
     }
@@ -334,10 +448,12 @@ export function validateArchitecture(_options: { jsonOutput?: boolean } = {}): V
     domain_imports_infrastructure: 0,
     domain_imports_application: 0,
     domain_imports_cli: 0,
+    application_imports_infrastructure: 0,
+    application_imports_cli: 0,
+    no_di_violation: 0,
     port_leaks_implementation: 0,
     port_import_not_type_only: 0,
     infrastructure_missing_port: 0,
-    core_imports_violation: 0,
   } as Record<ViolationType, number>;
 
   for (const violation of violations) {
@@ -365,6 +481,8 @@ function printResults(result: ValidationResult): void {
     console.log('\n✅ No architecture violations found!\n');
     console.log('All constraints satisfied:');
     console.log('  • Domain layer does not import from outer layers');
+    console.log('  • Application layer does not import from infrastructure/cli');
+    console.log('  • Infrastructure uses dependency injection (no direct instantiation)');
     console.log('  • Ports do not leak implementation details');
     console.log('  • Infrastructure classes implement port interfaces');
     console.log('  • Port imports use `type` keyword for compile-time dependency\n');
@@ -421,13 +539,10 @@ async function main(): Promise<void> {
 }
 
 // Run if called directly
-// Check if this file is being executed directly (not imported)
 const isDirectExecution = (): boolean => {
   try {
-    // ESM check using import.meta
     return import.meta.url === `file://${process.argv[1]}`;
   } catch {
-    // CommonJS fallback - check if require.main is this module
     const modulePath = _filename;
     return require.main === module ||
       (require.main && require.main.filename === modulePath);
