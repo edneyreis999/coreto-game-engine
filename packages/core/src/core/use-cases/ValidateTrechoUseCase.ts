@@ -8,19 +8,19 @@ import { BattleResult } from '../domain/BattleResult.js';
  */
 export interface TrechoValidationResult {
   /** Trecho unique identifier */
-  trechoId: string;
+  readonly trechoId: string;
   /** Human-readable trecho name */
-  trechoName: string;
+  readonly trechoName: string;
   /** True if average TTK is within tolerance */
-  passed: boolean;
+  readonly passed: boolean;
   /** Average TTK in turns across all battles */
-  avgTtkTurns: number;
+  readonly avgTtkTurns: number;
   /** Average TTK in actions across all battles */
-  avgTtkActions: number;
+  readonly avgTtkActions: number;
   /** All battle results for this trecho */
-  battles: BattleResult[];
+  readonly battles: BattleResult[];
   /** Subset of battles that failed tolerance check */
-  failedBattles: BattleResult[];
+  readonly failedBattles: BattleResult[];
 }
 
 /**

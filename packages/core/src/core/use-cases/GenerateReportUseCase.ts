@@ -10,11 +10,30 @@ import { IReporterToken } from '../../infrastructure/di/tokens.js';
  */
 export interface GenerateReportInput {
   /** Report metadata (version, timestamp, seed, project path) */
-  metadata: ReportMetadata;
+  readonly metadata: ReportMetadata;
   /** Trecho validation results with aggregated metrics */
-  trechoResults: TrechoValidationResult[];
+  readonly trechoResults: TrechoValidationResult[];
   /** Validation warnings collected during simulation (ADR-013) */
-  warnings: Warning[];
+  readonly warnings: Warning[];
+}
+
+/**
+ * Calculates the 95th percentile of an array of numeric values.
+ *
+ * @param values - Array of numeric values to calculate percentile for
+ * @returns The 95th percentile value, or 0 for empty arrays
+ */
+function calculateP95(values: number[]): number {
+  if (values.length === 0) return 0;
+  if (values.length === 1) return values[0]!;
+
+  // Sort values in ascending order
+  const sorted = [...values].sort((a, b) => a - b);
+
+  // Calculate p95 index (ensure it's within bounds)
+  const index = Math.min(Math.ceil(values.length * 0.95) - 1, values.length - 1);
+
+  return sorted[Math.max(0, index)]!;
 }
 
 /**
@@ -76,19 +95,25 @@ export class GenerateReportUseCase {
    */
   execute(input: GenerateReportInput): Report {
     // Convert TrechoValidationResult to TrechoSummary
-    const trechos: TrechoSummary[] = input.trechoResults.map((result) => ({
-      trechoId: result.trechoId,
-      trechoName: result.trechoName,
-      battles: result.battles,
-      aggregates: {
-        avgTtkTurns: result.avgTtkTurns,
-        p95TtkTurns: result.avgTtkTurns, // TODO: Calculate actual p95
-        avgTtkActions: result.avgTtkActions,
-        p95TtkActions: result.avgTtkActions, // TODO: Calculate actual p95
-      },
-      warnings: [], // Warnings are now collected at trecho level by reporter
-      passed: result.passed,
-    }));
+    const trechos: TrechoSummary[] = input.trechoResults.map((result) => {
+      // Calculate p95 percentiles from battle results
+      const ttkTurns = result.battles.map((b) => b.ttkTurns);
+      const ttkActions = result.battles.map((b) => b.ttkActions);
+
+      return {
+        trechoId: result.trechoId,
+        trechoName: result.trechoName,
+        battles: result.battles,
+        aggregates: {
+          avgTtkTurns: result.avgTtkTurns,
+          p95TtkTurns: calculateP95(ttkTurns),
+          avgTtkActions: result.avgTtkActions,
+          p95TtkActions: calculateP95(ttkActions),
+        },
+        warnings: [], // Warnings are now collected at trecho level by reporter
+        passed: result.passed,
+      };
+    });
 
     // Calculate summary
     const totalBattles = trechos.reduce((sum, t) => sum + t.battles.length, 0);

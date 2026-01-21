@@ -10,15 +10,15 @@ import { IBattleSimulatorToken } from '../../infrastructure/di/tokens.js';
  */
 export interface ExecuteBattleInput {
   /** Troop ID from RPG Maker MZ Troops.json (1-based index) */
-  troopId: number;
+  readonly troopId: number;
   /** Human-readable troop name for reporting */
-  troopName: string;
+  readonly troopName: string;
   /** Party configuration with member classes and levels */
-  party: PartyConfig;
+  readonly party: PartyConfig;
   /** RNG seed for deterministic execution (ADR-018) */
-  seed: number;
+  readonly seed: number;
   /** Maximum number of turns before battle timeout (optional, default: 100) */
-  maxTurns?: number;
+  readonly maxTurns?: number;
 }
 
 /**
@@ -27,9 +27,9 @@ export interface ExecuteBattleInput {
  */
 export interface ExecuteBattleOutput {
   /** Battle result with TTK metrics and victory status */
-  result: BattleResult;
+  readonly result: BattleResult;
   /** Execution duration in milliseconds */
-  durationMs: number;
+  readonly durationMs: number;
 }
 
 /**

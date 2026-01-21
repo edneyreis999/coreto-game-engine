@@ -116,9 +116,9 @@ describe('GenerateReportUseCase', () => {
         battles,
         aggregates: {
           avgTtkTurns: 3.5,
-          p95TtkTurns: 3.5,
+          p95TtkTurns: 4, // 95th percentile of [3, 4]
           avgTtkActions: 9,
-          p95TtkActions: 9,
+          p95TtkActions: 10, // 95th percentile of [8, 10]
         },
         warnings: [],
         passed: true,

@@ -21,8 +21,11 @@ export default {
   moduleNameMapper: {
     // Workspace package imports - map to built dist files
     '^@coreto/core$': '<rootDir>/packages/core/src/index.ts',
+    '^@coreto/core/(.*)\\.js$': '<rootDir>/packages/core/src/$1',
     '^@coreto/core/(.*)$': '<rootDir>/packages/core/src/$1',
+    '^@coreto/cli/(.*)\\.js$': '<rootDir>/packages/cli/src/$1',
     '^@coreto/cli/(.*)$': '<rootDir>/packages/cli/src/$1',
+    '^@coreto/electron/(.*)\\.js$': '<rootDir>/packages/electron/src/$1',
     '^@coreto/electron/(.*)$': '<rootDir>/packages/electron/src/$1',
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },
