@@ -27,18 +27,32 @@ export class JsdomHeadlessRuntime implements IHeadlessRuntime {
   private bootstrapper: HeadlessRuntimeBootstrapper | null = null;
   private projectPath: string | null = null;
   private isInitialized = false;
-  private diagnosticMode: boolean;
+  private diagnosticMode: boolean = false;
 
   /**
    * @param logger - Logger instance for diagnostic output
-   * @param diagnosticMode - Enable detailed logging (default: false)
    */
   constructor(
-    @inject(ILoggerToken) private readonly logger: ILogger,
-    diagnosticMode: boolean = false
+    @inject(ILoggerToken) private readonly logger: ILogger
   ) {
-    this.diagnosticMode = diagnosticMode;
-    this.logger.debug('[JsdomHeadlessRuntime] Constructor called', { diagnosticMode });
+    this.logger.debug('[JsdomHeadlessRuntime] Constructor called', { diagnosticMode: this.diagnosticMode });
+  }
+
+  /**
+   * Set diagnostic mode for detailed logging.
+   * Must be called before initialize().
+   *
+   * @param enabled - Enable diagnostic mode
+   */
+  setDiagnosticMode(enabled: boolean): void {
+    if (this.isInitialized) {
+      throw new RuntimeError(
+        'Cannot set diagnostic mode after initialization',
+        'warning'
+      );
+    }
+    this.diagnosticMode = enabled;
+    this.logger.debug('[JsdomHeadlessRuntime] Diagnostic mode set', { enabled });
   }
 
   /**
