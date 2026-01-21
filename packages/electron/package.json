@@ -16,7 +16,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "pack:mac": "npm run build && electron-builder --mac --config electron-builder.config.js",
-    "dist:mac": "npm run build && electron-builder --mac --config electron-builder.config.js --publish never"
+    "dist:mac": "npm run build && electron-builder --mac --config electron-builder.config.js --publish never",
+    "start:mac": "npm run pack:mac && open dist/mac/*.app"
   },
   "dependencies": {
     "@coreto/core": "workspace:*",
