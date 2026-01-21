@@ -6,17 +6,20 @@ export default {
   roots: ['<rootDir>/tests', '<rootDir>/packages'],
   testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
   transform: {
-    '^.+\\.ts$': [
+    '^.+\\.(ts|mts)$': [
       'ts-jest',
       {
         useESM: true,
         tsconfig: {
           module: 'ESNext',
-          moduleResolution: 'node',
+          moduleResolution: 'bundler',
         },
       },
     ],
   },
+  transformIgnorePatterns: [
+    'node_modules/(?!(ts-jest))',
+  ],
   // Module name mapping for workspace imports
   moduleNameMapper: {
     // Workspace package imports - map to built dist files
@@ -51,7 +54,7 @@ export default {
   verbose: true,
   testTimeout: 10000,
   extensionsToTreatAsEsm: ['.ts'],
-  moduleFileExtensions: ['ts', 'js', 'json', 'node'],
+  moduleFileExtensions: ['ts', 'mts', 'js', 'json', 'node'],
   // Ignore node_modules in packages during workspace discovery
   testPathIgnorePatterns: ['/node_modules/', '/packages/*/node_modules/'],
 };

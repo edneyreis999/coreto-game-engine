@@ -1,11 +1,11 @@
 # ADR Index - Coreto Game Engine
 
-**Total ADRs:** 31
-**Last Updated:** 2026-01-04
+**Total ADRs:** 32
+**Last Updated:** 2026-01-21
 
 ## Overview
 
-This index organizes all 31 Architecture Decision Records (ADRs) for the Coreto Game Engine project, organized by system module.
+This index organizes all 32 Architecture Decision Records (ADRs) for the Coreto Game Engine project, organized by system module.
 
 ---
 
@@ -34,7 +34,7 @@ This index organizes all 31 Architecture Decision Records (ADRs) for the Coreto 
 | [ADR-022](DOCS/ADR-022-documentation-before-implementation-greenfield-approach.md) | Documentation-Before-Implementation Greenfield Approach | Accepted |
 | [ADR-023](DOCS/ADR-023-madr-lightweight-adr-format.md) | MADR-Inspired Lightweight ADR Format | Accepted |
 
-### FOUNDATION Module (6 ADRs)
+### FOUNDATION Module (7 ADRs)
 
 | ID | Title | Status |
 |----|-------|--------|
@@ -44,6 +44,7 @@ This index organizes all 31 Architecture Decision Records (ADRs) for the Coreto 
 | [ADR-029](FOUNDATION/ADR-029-tsyringe-di-container.md) | TSyringe DI Container | Accepted |
 | [ADR-030](FOUNDATION/ADR-030-tsx-esbuild-build-tooling.md) | tsx/esbuild Build Tooling | Accepted |
 | [ADR-031](FOUNDATION/ADR-031-jest-testing-framework.md) | Jest Testing Framework | Accepted |
+| [ADR-032](FOUNDATION/ADR-032-ports-and-adapters-layer-contracts.md) | Ports and Adapters Layer Contracts | Accepted |
 
 ### REPORTER Module (4 ADRs)
 
@@ -86,11 +87,11 @@ This index organizes all 31 Architecture Decision Records (ADRs) for the Coreto 
 | CLI | 1 | Command-line interface framework |
 | CONFIG | 3 | Configuration format, validation, type system |
 | DOCS | 4 | Documentation standards and processes |
-| FOUNDATION | 6 | Core architectural principles, DI, build tooling, testing |
+| FOUNDATION | 7 | Core architectural principles, DI, ports/adapters, build tooling, testing |
 | REPORTER | 4 | Report generation and output |
 | RUNTIME | 6 | Headless execution environment |
 | SIMULATION | 7 | Battle simulation mechanics |
-| **TOTAL** | **31** | **All architectural decisions** |
+| **TOTAL** | **32** | **All architectural decisions** |
 
 ---
 
