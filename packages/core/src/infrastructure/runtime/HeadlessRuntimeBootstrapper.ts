@@ -1,3 +1,4 @@
+// @ts-expect-error - jsdom types resolution issue with ts-jest + pnpm
 import { JSDOM } from 'jsdom';
 import * as fs from 'fs';
 import * as path from 'path';

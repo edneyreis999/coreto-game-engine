@@ -30,6 +30,25 @@ export * from './core/domain/Report.js';
 export * from './core/domain/services/WarningCollector.js';
 
 // =============================================================================
+// Configuration Schemas (Zod)
+// =============================================================================
+
+export {
+  AnchorLevelRangeSchema,
+  TtkTargetSchema,
+  PartyMemberSchema,
+  PartyConfigSchema,
+  TrechoSchema,
+  ProjectConfigSchema,
+  type AnchorLevelRange as ZodAnchorLevelRange,
+  type TtkTarget as ZodTtkTarget,
+  type PartyMember as ZodPartyMember,
+  type PartyConfig as ZodPartyConfig,
+  type TrechoConfig as ZodTrechoConfig,
+  type ProjectConfig as ZodProjectConfig,
+} from './infrastructure/config/schemas.js';
+
+// =============================================================================
 // Port Interfaces
 // =============================================================================
 

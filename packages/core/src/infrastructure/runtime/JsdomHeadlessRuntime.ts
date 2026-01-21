@@ -18,6 +18,9 @@ import { ILoggerToken } from '../di/tokens.js';
 import { HeadlessRuntimeBootstrapper } from './HeadlessRuntimeBootstrapper.js';
 import { RuntimeError } from '../../core/errors/RuntimeError.js';
 
+// @ts-expect-error - jsdom types resolution issue with ts-jest + pnpm
+import type { JSDOM } from 'jsdom';
+
 /**
  * JSDOM-based headless runtime implementation.
  * Manages the complete lifecycle of RPG Maker MZ headless execution.
@@ -228,7 +231,7 @@ export class JsdomHeadlessRuntime implements IHeadlessRuntime {
    *
    * @returns JSDOM instance or null if not initialized
    */
-  getDOM(): import('jsdom').JSDOM | null {
+  getDOM(): JSDOM | null {
     return this.bootstrapper?.getDOM() ?? null;
   }
 

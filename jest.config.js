@@ -2,8 +2,8 @@
 export default {
   preset: 'ts-jest/presets/default-esm',
   testEnvironment: 'node',
-  // Test discovery in packages/tests/ directory
-  roots: ['<rootDir>/tests', '<rootDir>/packages'],
+  // Test discovery in packages/tests/ and examples/ directories
+  roots: ['<rootDir>/tests', '<rootDir>/packages', '<rootDir>/examples'],
   testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
   transform: {
     '^.+\\.(ts|mts)$': [
@@ -13,6 +13,10 @@ export default {
         tsconfig: {
           module: 'ESNext',
           moduleResolution: 'bundler',
+          lib: ['ES2022', 'DOM'],
+          types: ['node', 'jest', 'jsdom'],
+          allowSyntheticDefaultImports: true,
+          esModuleInterop: true,
         },
       },
     ],
@@ -32,7 +36,7 @@ export default {
     '^@coreto/electron/(.*)$': '<rootDir>/packages/electron/src/$1',
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },
-  setupFilesAfterEnv: ['jest-canvas-mock', '<rootDir>/packages/core/tests/setup.ts'],
+  setupFilesAfterEnv: ['jest-canvas-mock', '<rootDir>/packages/core/tests/setup.cjs'],
   // Coverage collection from packages
   collectCoverageFrom: [
     'packages/*/src/**/*.ts',

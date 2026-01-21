@@ -29,7 +29,8 @@
     "test:coverage": "jest --coverage",
     "clean": "pnpm --filter \"./packages/**\" clean && rm -rf node_modules pnpm-lock.yaml",
     "validate": "tsx scripts/validate-project.mts",
-    "validate:architecture": "tsx scripts/validate-architecture.ts"
+    "validate:architecture": "tsx scripts/validate-architecture.ts",
+    "sample": "tsx examples/run-sample.ts"
   },
   "dependencies": {
     "jsdom": "^25.0.0",
@@ -55,6 +56,7 @@
     "prettier": "^3.4.2",
     "ts-jest": "^29.2.5",
     "ts-morph": "^23.0.0",
+    "ts-node": "^10.9.2",
     "tsc-alias": "^1.8.16",
     "tsx": "^4.19.2",
     "typescript": "^5.9.3"
