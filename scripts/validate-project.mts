@@ -5,9 +5,9 @@
  */
 
 import 'reflect-metadata';
-import { RmmzProjectValidator } from '../src/infrastructure/adapters/data/RmmzProjectValidator.js';
-import { RmmzDataLoader } from '../src/infrastructure/adapters/data/RmmzDataLoader.js';
 import { IntegrityValidator } from '../src/infrastructure/adapters/data/IntegrityValidator.js';
+import { RmmzDataLoader } from '../src/infrastructure/adapters/data/RmmzDataLoader.js';
+import { RmmzProjectValidator } from '../src/infrastructure/adapters/data/RmmzProjectValidator.js';
 import { NodeFileSystem } from '../src/infrastructure/adapters/filesystem/NodeFileSystem.js';
 
 const projectPath = process.argv[2];
@@ -86,11 +86,14 @@ async function main() {
   } else {
     console.log(`   ⚠️  ${warnings.length} problema(s) encontrado(s):\n`);
 
-    const grouped = warnings.reduce((acc, w) => {
-      acc[w.type] = acc[w.type] || [];
-      acc[w.type].push(w);
-      return acc;
-    }, {} as Record<string, typeof warnings>);
+    const grouped = warnings.reduce(
+      (acc, w) => {
+        acc[w.type] = acc[w.type] || [];
+        acc[w.type].push(w);
+        return acc;
+      },
+      {} as Record<string, typeof warnings>
+    );
 
     for (const [type, items] of Object.entries(grouped)) {
       console.log(`   📌 ${type}: ${items.length} ocorrência(s)`);
@@ -107,26 +110,38 @@ async function main() {
   console.log('\n4️⃣  Amostra de dados:');
 
   console.log('\n   📚 Classes:');
-  db.$dataClasses?.filter(Boolean).slice(0, 5).forEach((c: any) => {
-    console.log(`      [${c.id}] ${c.name}`);
-  });
+  db.$dataClasses
+    ?.filter(Boolean)
+    .slice(0, 5)
+    .forEach((c: any) => {
+      console.log(`      [${c.id}] ${c.name}`);
+    });
 
   console.log('\n   👾 Inimigos (primeiros 5):');
-  db.$dataEnemies?.filter(Boolean).slice(0, 5).forEach((e: any) => {
-    const hp = e.params?.[0] || 'N/A';
-    const atk = e.params?.[2] || 'N/A';
-    const def = e.params?.[3] || 'N/A';
-    console.log(`      [${e.id}] ${e.name} - HP:${hp} ATK:${atk} DEF:${def}`);
-  });
+  db.$dataEnemies
+    ?.filter(Boolean)
+    .slice(0, 5)
+    .forEach((e: any) => {
+      const hp = e.params?.[0] || 'N/A';
+      const atk = e.params?.[2] || 'N/A';
+      const def = e.params?.[3] || 'N/A';
+      console.log(`      [${e.id}] ${e.name} - HP:${hp} ATK:${atk} DEF:${def}`);
+    });
 
   console.log('\n   ⚔️  Troops (primeiros 5):');
-  db.$dataTroops?.filter(Boolean).slice(0, 5).forEach((t: any) => {
-    const members = t.members?.map((m: any) => {
-      const enemy = db.$dataEnemies?.[m.enemyId];
-      return enemy?.name || `Enemy#${m.enemyId}`;
-    }).join(', ') || 'N/A';
-    console.log(`      [${t.id}] ${t.name}: ${members}`);
-  });
+  db.$dataTroops
+    ?.filter(Boolean)
+    .slice(0, 5)
+    .forEach((t: any) => {
+      const members =
+        t.members
+          ?.map((m: any) => {
+            const enemy = db.$dataEnemies?.[m.enemyId];
+            return enemy?.name || `Enemy#${m.enemyId}`;
+          })
+          .join(', ') || 'N/A';
+      console.log(`      [${t.id}] ${t.name}: ${members}`);
+    });
 
   console.log('\n' + '='.repeat(60));
   console.log('✅ Validação concluída!');

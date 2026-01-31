@@ -8,25 +8,25 @@
  * @see planos/002-implementacao-mvp/FDD-001-mvp-implementation.md Section 4.1
  */
 
-import { Command, Flags } from '@oclif/core';
-import * as path from 'path';
 import {
-  registerDependencies,
-  resolve,
+  ConfigError,
+  DataLoadError,
+  FileSystemError,
+  IBattleSimulatorToken,
   IConfigLoaderToken,
   IDataLoaderToken,
-  IBattleSimulatorToken,
   IReporterToken,
+  registerDependencies,
+  resolve,
+  ValidationError,
+  type IBattleSimulator,
   type IConfigLoader,
   type IDataLoader,
-  type IBattleSimulator,
   type IReporter,
-  ConfigError,
-  ValidationError,
-  FileSystemError,
-  DataLoadError,
 } from '@coreto/core';
-import { ProgressBarManager, DiagnosticLogger, SummaryFormatter } from '../ui/index.js';
+import { Command, Flags } from '@oclif/core';
+import * as path from 'path';
+import { DiagnosticLogger, ProgressBarManager, SummaryFormatter } from '../ui/index.js';
 
 /**
  * RunTtk Command - Main CLI command for TTK validation
@@ -382,9 +382,15 @@ export default class RunTtk extends Command {
    * @returns Exit code (1-3)
    */
   private getExitCode(error: unknown): number {
-    if (error instanceof ValidationError) return 1;
-    if (error instanceof ConfigError) return 1;
-    if (error instanceof FileSystemError) return 2;
+    if (error instanceof ValidationError) {
+      return 1;
+    }
+    if (error instanceof ConfigError) {
+      return 1;
+    }
+    if (error instanceof FileSystemError) {
+      return 2;
+    }
     if (error instanceof DataLoadError) {
       // DataLoadError can be filesystem or validation
       if (error.message.includes('ENOENT') || error.message.includes('EACCES')) {
@@ -395,9 +401,15 @@ export default class RunTtk extends Command {
 
     // Check error name for Node.js filesystem errors
     if (error instanceof Error) {
-      if (error.name.includes('ENOENT')) return 2;
-      if (error.name.includes('EACCES')) return 2;
-      if (error.name.includes('EPERM')) return 2;
+      if (error.name.includes('ENOENT')) {
+        return 2;
+      }
+      if (error.name.includes('EACCES')) {
+        return 2;
+      }
+      if (error.name.includes('EPERM')) {
+        return 2;
+      }
     }
 
     return 3; // Runtime error (default)
@@ -413,7 +425,9 @@ export default class RunTtk extends Command {
    */
   private setupGracefulShutdown(): void {
     process.on('SIGINT', () => {
-      if (this.shutdownInitiated) return;
+      if (this.shutdownInitiated) {
+        return;
+      }
 
       this.shutdownInitiated = true;
       this.log('');
@@ -422,7 +436,9 @@ export default class RunTtk extends Command {
     });
 
     process.on('SIGTERM', () => {
-      if (this.shutdownInitiated) return;
+      if (this.shutdownInitiated) {
+        return;
+      }
 
       this.shutdownInitiated = true;
       this.log('');
