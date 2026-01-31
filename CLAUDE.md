@@ -135,3 +135,15 @@ pnpm --filter @coreto/electron dev &
 pnpm --filter @coreto/electron build
 pnpm --filter @coreto/electron pack:mac
 ```
+
+## Essential Commands
+
+```bash
+pnpm lint              # Run ESLint
+pnpm type-check        # TypeScript check all packages
+pnpm test              # Run all tests
+pnpm --filter @coreto/electron test  # Electron tests only
+pnpm --filter @coreto/core test      # Core tests only
+pnpm build             # Build core + cli
+pnpm --filter @coreto/electron build  # Build electron
+```
