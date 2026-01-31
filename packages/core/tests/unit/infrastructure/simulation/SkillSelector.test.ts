@@ -1,5 +1,5 @@
-import { SkillSelector } from '../../src/infrastructure/simulation/SkillSelector.js';
-import type { SkillData } from '../../src/types/rmmz-data.js';
+import { SkillSelector } from '@coreto/core/infrastructure/simulation/SkillSelector.js';
+import type { SkillData } from '@coreto/core/types/rmmz-data.js';
 
 /**
  * Create a minimal valid SkillData mock

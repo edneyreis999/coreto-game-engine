@@ -10,11 +10,10 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { describe, it, expect, afterEach, beforeAll, afterAll } from '@jest/globals';
 
 // Keep E2E tests fast/stable: we validate the pipeline orchestration and report semantics,
 // not the internal implementation details of bootstrap/warp-loop.
-jest.mock('../../src/infrastructure/runtime/HeadlessRuntimeBootstrapper.js', () => {
+jest.mock('@coreto/core/infrastructure/runtime/HeadlessRuntimeBootstrapper.js', () => {
   return {
     HeadlessRuntimeBootstrapper: jest.fn().mockImplementation(() => {
       return {
@@ -26,7 +25,7 @@ jest.mock('../../src/infrastructure/runtime/HeadlessRuntimeBootstrapper.js', () 
   };
 });
 
-jest.mock('../../src/infrastructure/runtime/simulation/SyncWarpLoop.js', () => {
+jest.mock('@coreto/core/infrastructure/runtime/simulation/SyncWarpLoop.js', () => {
   return {
     SyncWarpLoop: jest.fn().mockImplementation((_maxFrames: number) => {
       return {

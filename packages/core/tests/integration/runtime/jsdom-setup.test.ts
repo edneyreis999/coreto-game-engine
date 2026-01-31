@@ -13,11 +13,11 @@
  * - Cleanup libera recursos (dom.window.close())
  */
 
-import { HeadlessRuntimeBootstrapper } from '../../src/infrastructure/runtime/HeadlessRuntimeBootstrapper.js';
+import { HeadlessRuntimeBootstrapper } from '@coreto/core/infrastructure/runtime/HeadlessRuntimeBootstrapper.js';
 
 // Mock ScriptLoader para testes de integração (Task 22)
 // Estes testes focam em JSDOM setup, não em carregamento de scripts
-jest.mock('../../src/infrastructure/runtime/loaders/ScriptLoader.js', () => {
+jest.mock('@coreto/core/infrastructure/runtime/loaders/ScriptLoader.js', () => {
   return {
     ScriptLoader: jest.fn().mockImplementation(() => {
       return {
@@ -30,7 +30,7 @@ jest.mock('../../src/infrastructure/runtime/loaders/ScriptLoader.js', () => {
 
 // Mock HeadlessOverrides para testes de integração (Task 22.5)
 // Estes testes focam em JSDOM setup, não em overrides de busy state
-jest.mock('../../src/infrastructure/runtime/overrides/HeadlessOverrides.js', () => {
+jest.mock('@coreto/core/infrastructure/runtime/overrides/HeadlessOverrides.js', () => {
   return {
     HeadlessOverrides: jest.fn().mockImplementation(() => {
       return {
@@ -43,7 +43,7 @@ jest.mock('../../src/infrastructure/runtime/overrides/HeadlessOverrides.js', () 
 
 // Mock DatabaseLoader para testes de integração (Task 21)
 // Estes testes focam em JSDOM setup, não em database loading
-jest.mock('../../src/infrastructure/runtime/loaders/DatabaseLoader.js', () => {
+jest.mock('@coreto/core/infrastructure/runtime/loaders/DatabaseLoader.js', () => {
   return {
     DatabaseLoader: jest.fn().mockImplementation(() => {
       return {

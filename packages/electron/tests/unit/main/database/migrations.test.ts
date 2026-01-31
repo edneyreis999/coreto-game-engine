@@ -167,7 +167,7 @@ describe('Database Migrations', () => {
         .all() as Array<{ version: number }>;
 
       for (let i = 0; i < migrations.length; i++) {
-        expect(migrations[i].version).toBe(i + 1);
+        expect(migrations[i]!.version).toBe(i + 1);
       }
     });
 
@@ -194,27 +194,27 @@ describe('Database Migrations', () => {
       initializeMigrationsTable(db);
 
       // Create a broken migration by temporarily modifying MIGRATIONS
+      // Use a version between current and max to ensure it gets applied
       const originalMigrations = [...MIGRATIONS];
 
       try {
-        // Add a broken migration
-        (MIGRATIONS as any).push({
-          version: 999,
+        // Replace the first migration with a broken one
+        (MIGRATIONS as any)[0] = {
+          version: 1,
           description: 'Broken migration',
           sql: 'INVALID SQL STATEMENT',
-        });
+        };
 
         expect(() => applyMigrations(db)).toThrow();
 
         // Verify migration was not recorded
         const brokenMigration = db
-          .prepare('SELECT * FROM schema_migrations WHERE version = 999')
+          .prepare('SELECT * FROM schema_migrations WHERE version = 1')
           .get() as { version: number } | undefined;
 
         expect(brokenMigration).toBeUndefined();
       } finally {
         // Restore original migrations
-        (MIGRATIONS as any).splice(1, MIGRATIONS.length - 1);
         originalMigrations.forEach((m, i) => {
           (MIGRATIONS as any)[i] = m;
         });
@@ -233,7 +233,7 @@ describe('Database Migrations', () => {
       );
 
       // Also create the tables that migration 1 would have created
-      db.exec(MIGRATIONS[0].sql);
+      db.exec(MIGRATIONS[0]!.sql);
 
       // Apply remaining migrations
       const appliedCount = applyMigrations(db);
@@ -268,14 +268,14 @@ describe('Database Migrations', () => {
 
     it('should have sequential version numbers starting from 1', () => {
       for (let i = 0; i < MIGRATIONS.length; i++) {
-        expect(MIGRATIONS[i].version).toBe(i + 1);
+        expect(MIGRATIONS[i]!.version).toBe(i + 1);
       }
     });
   });
 
   describe('CURRENT_SCHEMA_VERSION', () => {
     it('should match highest migration version', () => {
-      const highestMigrationVersion = MIGRATIONS[MIGRATIONS.length - 1].version;
+      const highestMigrationVersion = MIGRATIONS[MIGRATIONS.length - 1]!.version;
 
       expect(CURRENT_SCHEMA_VERSION).toBe(highestMigrationVersion);
     });

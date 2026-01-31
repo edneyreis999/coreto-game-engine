@@ -7,8 +7,8 @@
  * - Cleanup restaura Math.random original
  */
 
-import { HeadlessRuntimeBootstrapper } from '../../src/infrastructure/runtime/HeadlessRuntimeBootstrapper';
-import { DeterministicRNG } from '../../src/infrastructure/simulation/DeterministicRNG';
+import { HeadlessRuntimeBootstrapper } from '@coreto/core/infrastructure/runtime/HeadlessRuntimeBootstrapper';
+import { DeterministicRNG } from '@coreto/core/infrastructure/simulation/DeterministicRNG';
 
 describe('HeadlessRuntimeBootstrapper - RNG Unit Tests', () => {
   // Store original Math.random for safety

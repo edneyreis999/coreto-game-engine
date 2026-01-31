@@ -1,5 +1,5 @@
-import { ConfigError, ConfigFileNotFoundError, ConfigParseError } from '../../src/core/errors/ConfigError';
-import { DomainError } from '../../src/core/errors/DomainError';
+import { ConfigError, ConfigFileNotFoundError, ConfigParseError } from '@coreto/core/core/errors/ConfigError';
+import { DomainError } from '@coreto/core/core/errors/DomainError';
 
 describe('ConfigError', () => {
   describe('constructor', () => {

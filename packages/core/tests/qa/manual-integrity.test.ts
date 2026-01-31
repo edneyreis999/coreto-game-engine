@@ -3,9 +3,9 @@
  * These tests validate the manual QA scenarios from MANUAL_QA_GUIDE.md
  */
 
-import { IntegrityValidator } from '../../src/infrastructure/adapters/data/IntegrityValidator';
-import type { RmmzDatabase } from '../../src/core/ports/index.js';
-import type { EnemyData, TroopData, ClassData, SkillData, SystemData } from '../../src/types/rmmz-data.js';
+import { IntegrityValidator } from '@coreto/core/infrastructure/adapters/data/IntegrityValidator';
+import type { RmmzDatabase } from '@coreto/core/core/ports/index.js';
+import type { EnemyData, TroopData, ClassData, SkillData, SystemData } from '@coreto/core/types/rmmz-data.js';
 
 // Helper to create a minimal valid database
 function createValidDatabase(): RmmzDatabase {

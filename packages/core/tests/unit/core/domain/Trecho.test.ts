@@ -1,6 +1,6 @@
-import { Trecho, TrechoData } from '../../src/core/domain/Trecho.js';
-import { PartyConfig } from '../../src/core/domain/PartyConfig.js';
-import { ValidationError } from '../../src/core/errors/index.js';
+import { Trecho, TrechoData } from '@coreto/core/core/domain/Trecho.js';
+import { PartyConfig } from '@coreto/core/core/domain/PartyConfig.js';
+import { ValidationError } from '@coreto/core/core/errors/index.js';
 
 describe('Trecho', () => {
   const validParty = new PartyConfig([{ classId: 1, level: 5 }]);

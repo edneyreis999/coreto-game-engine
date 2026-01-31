@@ -4,14 +4,13 @@
  * Tests configuration loading and validation with Zod schemas.
  */
 
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import { ZodConfigLoader } from '../../src/infrastructure/config/ZodConfigLoader.js';
+import { ZodConfigLoader } from '@coreto/core/infrastructure/config/ZodConfigLoader.js';
 import {
   ConfigFileNotFoundError,
   ConfigParseError,
-} from '../../src/core/errors/ConfigError.js';
-import { ValidationError } from '../../src/core/errors/ValidationError.js';
-import type { IFileSystem } from '../../src/core/ports/index.js';
+} from '@coreto/core/core/errors/ConfigError.js';
+import { ValidationError } from '@coreto/core/core/errors/ValidationError.js';
+import type { IFileSystem } from '@coreto/core/core/ports/index.js';
 
 describe('ZodConfigLoader', () => {
   let configLoader: ZodConfigLoader;
@@ -20,10 +19,10 @@ describe('ZodConfigLoader', () => {
   beforeEach(() => {
     // Create mock filesystem
     mockFileSystem = {
-      exists: jest.fn<(path: string) => boolean>(),
-      readFileSync: jest.fn<(path: string) => string>(),
-      writeFileSync: jest.fn<(path: string, content: string) => void>(),
-      validateProjectPath: jest.fn<(path: string) => void>(),
+      exists: jest.fn() as jest.MockedFunction<(path: string) => boolean>,
+      readFileSync: jest.fn() as jest.MockedFunction<(path: string) => string>,
+      writeFileSync: jest.fn() as jest.MockedFunction<(path: string, content: string) => void>,
+      validateProjectPath: jest.fn() as jest.MockedFunction<(path: string) => void>,
     } as jest.Mocked<IFileSystem>;
 
     configLoader = new ZodConfigLoader(mockFileSystem);

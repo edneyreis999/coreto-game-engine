@@ -28,7 +28,7 @@ jest.mock('node:path', () => ({
 }))
 
 import { BrowserWindow } from 'electron'
-import { createWindow, mainWindow } from '../../../src/main/index'
+import { createWindow, mainWindow } from '@coreto/electron/main/index.js'
 
 describe('Main Process - index', () => {
   beforeEach(() => {

@@ -1,8 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import * as path from 'path';
 import * as os from 'os';
 import * as fs from 'fs';
-import { DatabaseLoader } from '../../src/infrastructure/runtime/loaders/DatabaseLoader.js';
+import { DatabaseLoader } from '@coreto/core/infrastructure/runtime/loaders/DatabaseLoader.js';
 
 describe('DatabaseLoader', () => {
   let tmpProjectPath: string;

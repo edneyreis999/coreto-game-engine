@@ -6,10 +6,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { RmmzProjectValidator } from '../../src/infrastructure/adapters/data/RmmzProjectValidator';
-import { RmmzDataLoader } from '../../src/infrastructure/adapters/data/RmmzDataLoader';
-import { IntegrityValidator } from '../../src/infrastructure/adapters/data/IntegrityValidator';
-import { NodeFileSystem } from '../../src/infrastructure/adapters/filesystem/NodeFileSystem';
+import { RmmzProjectValidator } from '@coreto/core/infrastructure/adapters/data/RmmzProjectValidator';
+import { RmmzDataLoader } from '@coreto/core/infrastructure/adapters/data/RmmzDataLoader';
+import { IntegrityValidator } from '@coreto/core/infrastructure/adapters/data/IntegrityValidator';
+import { NodeFileSystem } from '@coreto/core/infrastructure/adapters/filesystem/NodeFileSystem';
 
 const PROJECT_PATH = path.join(os.tmpdir(), 'e2e-qa-project');
 

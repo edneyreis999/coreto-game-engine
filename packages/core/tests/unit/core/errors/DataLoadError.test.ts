@@ -1,5 +1,5 @@
-import { DataLoadError, TroopNotFoundError, EnemyNotFoundError } from '../../src/core/errors/DataLoadError';
-import { DomainError } from '../../src/core/errors/DomainError';
+import { DataLoadError, TroopNotFoundError, EnemyNotFoundError } from '@coreto/core/core/errors/DataLoadError';
+import { DomainError } from '@coreto/core/core/errors/DomainError';
 
 describe('DataLoadError', () => {
   describe('constructor', () => {

@@ -6,9 +6,17 @@
 
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { useIpc, useIpcWithArg } from '@/hooks/useIpc'
+import type { CoretoAPI } from '@coreto/electron/preload/index.js'
 
-// Mock window.coreto API
-const mockCoreto = global.window.coreto as jest.Mocked<typeof global.window.coreto>
+// Extend Window interface with coreto property
+declare global {
+  interface Window {
+    coreto: jest.Mocked<CoretoAPI>;
+  }
+}
+
+// Get the mock from setup.renderer.ts
+const mockCoreto = (globalThis as { mockCoreto?: jest.Mocked<CoretoAPI> }).mockCoreto || (window as { coreto?: jest.Mocked<Window['coreto']> }).coreto!;
 
 describe('useIpc', () => {
   beforeEach(() => {

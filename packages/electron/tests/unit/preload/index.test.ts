@@ -7,8 +7,18 @@
 // Make this file an external module for global augmentations
 export {}
 
-// Mock Electron modules (must be before imports)
+// Mock process.contextIsolated
+// Note: contextIsolated is already defined by Electron types as readonly boolean
+// We use Object.defineProperty to override it for testing purposes
+Object.defineProperty(process, 'contextIsolated', {
+  value: true,
+  writable: true,
+  configurable: true
+})
+
+// Mock modules before importing
 const mockExposeInMainWorld = jest.fn()
+
 jest.mock('electron', () => ({
   contextBridge: {
     exposeInMainWorld: mockExposeInMainWorld
@@ -16,7 +26,6 @@ jest.mock('electron', () => ({
   ipcRenderer: jest.fn()
 }))
 
-// Mock @electron-toolkit/preload
 jest.mock('@electron-toolkit/preload', () => ({
   electronAPI: {
     ipcRenderer: {
@@ -29,27 +38,11 @@ jest.mock('@electron-toolkit/preload', () => ({
   }
 }))
 
-// Extend Process type to include contextIsolated (Electron-specific property)
-declare global {
-  namespace NodeJS {
-    interface Process {
-      contextIsolated?: boolean
-    }
-  }
-}
-
-// Mock process.contextIsolated
-const mockContextIsolated = true
-Object.defineProperty(process, 'contextIsolated', {
-  value: mockContextIsolated,
-  writable: true,
-  configurable: true
-})
+// Import initializePreload function AFTER mocks are set up
+import { initializePreload } from '@coreto/electron/preload/index.js'
 
 describe('Preload Script - index', () => {
   beforeEach(() => {
-    // Reset modules to force fresh require
-    jest.resetModules()
     // Reset mocks before each test
     jest.clearAllMocks()
     // Reset context isolation
@@ -58,8 +51,6 @@ describe('Preload Script - index', () => {
       writable: true,
       configurable: true
     })
-    // Reset the mock function
-    mockExposeInMainWorld.mockClear()
   })
 
   afterEach(() => {
@@ -72,9 +63,9 @@ describe('Preload Script - index', () => {
       expect(process.contextIsolated).toBe(true)
     })
 
-    it('should expose electronAPI via contextBridge when context is isolated', async () => {
+    it('should expose electronAPI via contextBridge when context is isolated', () => {
       // Act
-      require('../../../src/preload/index')
+      initializePreload()
 
       // Assert
       expect(mockExposeInMainWorld).toHaveBeenCalledWith(
@@ -83,9 +74,9 @@ describe('Preload Script - index', () => {
       )
     })
 
-    it('should expose coretoAPI via contextBridge when context is isolated', async () => {
+    it('should expose coretoAPI via contextBridge when context is isolated', () => {
       // Act
-      require('../../../src/preload/index')
+      initializePreload()
 
       // Assert
       expect(mockExposeInMainWorld).toHaveBeenCalledWith(
@@ -94,7 +85,7 @@ describe('Preload Script - index', () => {
       )
     })
 
-    it('should log warning when context isolation is disabled', async () => {
+    it('should log warning when context isolation is disabled', () => {
       // Arrange
       const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation()
       Object.defineProperty(process, 'contextIsolated', {
@@ -102,10 +93,9 @@ describe('Preload Script - index', () => {
         writable: true,
         configurable: true
       })
-      mockExposeInMainWorld.mockClear()
 
       // Act
-      require('../../../src/preload/index')
+      initializePreload()
 
       // Assert
       expect(consoleWarnSpy).toHaveBeenCalledWith(
@@ -116,16 +106,15 @@ describe('Preload Script - index', () => {
       consoleWarnSpy.mockRestore()
     })
 
-    it('should log error when context bridge exposure fails', async () => {
+    it('should log error when context bridge exposure fails', () => {
       // Arrange
       const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation()
-      mockExposeInMainWorld.mockImplementation(() => {
+      mockExposeInMainWorld.mockImplementationOnce(() => {
         throw new Error('Context bridge error')
       })
-      mockExposeInMainWorld.mockClear()
 
       // Act
-      require('../../../src/preload/index')
+      initializePreload()
 
       // Assert
       expect(consoleErrorSpy).toHaveBeenCalledWith(
@@ -135,14 +124,13 @@ describe('Preload Script - index', () => {
 
       // Cleanup
       consoleErrorSpy.mockRestore()
-      mockExposeInMainWorld.mockImplementation(() => {}) // Reset to safe implementation
     })
   })
 
   describe('IPC Exposure', () => {
-    it('should expose electronAPI with ipcRenderer', async () => {
+    it('should expose electronAPI with ipcRenderer', () => {
       // Act
-      require('../../../src/preload/index')
+      initializePreload()
 
       // Assert
       const electronCall = mockExposeInMainWorld.mock.calls.find(
@@ -152,21 +140,34 @@ describe('Preload Script - index', () => {
       expect(electronCall?.[1]).toHaveProperty('ipcRenderer')
     })
 
-    it('should expose coretoAPI placeholder for future IPC handlers', async () => {
+    it('should expose coretoAPI with simulation functions', () => {
       // Act
-      require('../../../src/preload/index')
+      initializePreload()
 
       // Assert
       const coretoCall = mockExposeInMainWorld.mock.calls.find(
         call => call[0] === 'coreto'
       )
       expect(coretoCall).toBeDefined()
-      expect(coretoCall?.[1]).toEqual({})
+
+      const api = coretoCall?.[1]
+
+      // Verificar funções críticas adicionadas nas Tasks 02-04
+      expect(api).toHaveProperty('startSimulation')
+      expect(api).toHaveProperty('cancelSimulation')
+      expect(api).toHaveProperty('onProgress')
+      expect(api).toHaveProperty('onComplete')
+      expect(api).toHaveProperty('onError')
+      expect(api).toHaveProperty('loadConfig')
+      expect(api).toHaveProperty('getSimulationResults')
+      expect(api).toHaveProperty('getSimulationProgress')
+      expect(api).toHaveProperty('openProject')
+      expect(api).toHaveProperty('validateProject')
     })
 
-    it('should call exposeInMainWorld twice (once for electron, once for coreto)', async () => {
+    it('should call exposeInMainWorld twice (once for electron, once for coreto)', () => {
       // Act
-      require('../../../src/preload/index')
+      initializePreload()
 
       // Assert
       expect(mockExposeInMainWorld).toHaveBeenCalledTimes(2)
@@ -174,9 +175,9 @@ describe('Preload Script - index', () => {
   })
 
   describe('Security Features', () => {
-    it('should not expose Node.js APIs directly to renderer', async () => {
+    it('should not expose Node.js APIs directly to renderer', () => {
       // Act
-      require('../../../src/preload/index')
+      initializePreload()
 
       // Assert
       // Verify that we're not exposing Node.js modules directly
@@ -194,9 +195,9 @@ describe('Preload Script - index', () => {
       expect(exposedAPI).not.toHaveProperty('child_process')
     })
 
-    it('should use contextBridge for all renderer APIs', async () => {
+    it('should use contextBridge for all renderer APIs', () => {
       // Act
-      require('../../../src/preload/index')
+      initializePreload()
 
       // Assert
       // All APIs should be exposed via contextBridge

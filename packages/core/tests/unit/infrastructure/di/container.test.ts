@@ -9,9 +9,9 @@ import {
   registerDependencies,
   clearContainer,
   resolve,
-} from '../../src/infrastructure/di/container.js';
-import { ILoggerToken } from '../../src/infrastructure/di/tokens.js';
-import type { ILogger } from '../../src/core/ports/ILogger.js';
+} from '@coreto/core/infrastructure/di/container.js';
+import { ILoggerToken } from '@coreto/core/infrastructure/di/tokens.js';
+import type { ILogger } from '@coreto/core/core/ports/ILogger.js';
 
 describe('DI Container', () => {
   beforeEach(() => {

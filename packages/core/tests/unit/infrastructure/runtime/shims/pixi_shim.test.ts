@@ -18,7 +18,7 @@ import {
   Graphics,
   Rectangle,
   Point,
-} from '../../src/infrastructure/runtime/shims/pixi_shim';
+} from '@coreto/core/infrastructure/runtime/shims/pixi_shim';
 
 describe('PIXI Shim', () => {
   describe('DisplayObject', () => {

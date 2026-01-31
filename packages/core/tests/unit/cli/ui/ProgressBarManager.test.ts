@@ -4,7 +4,7 @@
  * Tests progress bar lifecycle, updates, and thread safety
  */
 
-import { ProgressBarManager } from '../../packages/cli/src/cli/ui/ProgressBarManager';
+import { ProgressBarManager } from '@coreto/cli/cli/ui/ProgressBarManager.js';
 
 describe('ProgressBarManager', () => {
   let progressBar: ProgressBarManager;

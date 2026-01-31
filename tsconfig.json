@@ -48,7 +48,11 @@
       "@coreto/cli": ["./packages/cli/src"],
       "@coreto/cli/*": ["./packages/cli/src/*"],
       "@coreto/electron": ["./packages/electron/src"],
-      "@coreto/electron/*": ["./packages/electron/src/*"]
+      "@coreto/electron/*": ["./packages/electron/src/*"],
+      // Electron renderer path aliases (for Jest from monorepo root)
+      "@/hooks/*": ["./packages/electron/src/renderer/src/hooks/*"],
+      "@/components/*": ["./packages/electron/src/renderer/src/components/*"],
+      "@/lib/*": ["./packages/electron/src/renderer/src/lib/*"]
     },
 
     // Advanced Options

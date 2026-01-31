@@ -6,7 +6,6 @@
  * @see packages/electron/src/renderer/src/components/ConfigurationPanel/validation.ts
  */
 
-import { describe, it, expect } from '@jest/globals';
 
 import {
   validateTrechoForm,

@@ -1,5 +1,5 @@
-import { Warning, type WarningData } from '../../src/core/domain/Warning';
-import { ValidationError } from '../../src/core/errors/ValidationError';
+import { Warning, type WarningData } from '@coreto/core/core/domain/Warning';
+import { ValidationError } from '@coreto/core/core/errors/ValidationError';
 
 describe('Warning', () => {
   describe('constructor', () => {

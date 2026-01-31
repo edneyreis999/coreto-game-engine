@@ -1,5 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import { HeadlessOverrides } from '../../src/infrastructure/runtime/overrides/HeadlessOverrides.js';
+import { HeadlessOverrides } from '@coreto/core/infrastructure/runtime/overrides/HeadlessOverrides.js';
 
 describe('HeadlessOverrides', () => {
   beforeEach(() => {

@@ -1,9 +1,8 @@
-import { describe, it, expect } from '@jest/globals';
 import * as os from 'os';
 import * as path from 'path';
 import * as fs from 'fs';
-import { NodeFileSystem } from '../../src/infrastructure/adapters/filesystem/NodeFileSystem.js';
-import { ConfigError } from '../../src/core/errors/ConfigError.js';
+import { NodeFileSystem } from '@coreto/core/infrastructure/adapters/filesystem/NodeFileSystem.js';
+import { ConfigError } from '@coreto/core/core/errors/ConfigError.js';
 
 describe('NodeFileSystem', () => {
   it('should read/write files using Node fs', () => {

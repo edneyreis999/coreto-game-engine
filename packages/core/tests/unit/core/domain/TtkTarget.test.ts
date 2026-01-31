@@ -1,5 +1,5 @@
-import { TtkTarget } from '../../src/core/domain/TtkTarget';
-import { ValidationError } from '../../src/core/errors/ValidationError';
+import { TtkTarget } from '@coreto/core/core/domain/TtkTarget';
+import { ValidationError } from '@coreto/core/core/errors/ValidationError';
 
 describe('TtkTarget', () => {
   describe('constructor', () => {

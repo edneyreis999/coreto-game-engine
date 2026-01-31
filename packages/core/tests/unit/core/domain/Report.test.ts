@@ -5,9 +5,9 @@ import {
   ReportSummary,
   TrechoSummary,
   TrechoAggregates,
-} from '../../src/core/domain/Report.js';
-import { BattleResult } from '../../src/core/domain/BattleResult.js';
-import type { Warning } from '../../src/core/ports/IReporter.js';
+} from '@coreto/core/core/domain/Report.js';
+import { BattleResult } from '@coreto/core/core/domain/BattleResult.js';
+import type { Warning } from '@coreto/core/core/ports/IReporter.js';
 
 describe('Report', () => {
   const createValidMetadata = (): ReportMetadata => ({

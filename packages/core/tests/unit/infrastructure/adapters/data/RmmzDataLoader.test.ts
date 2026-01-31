@@ -5,12 +5,11 @@
  * Validates proper error handling and data parsing.
  */
 
-import { describe, it, expect, beforeEach } from '@jest/globals';
-import { RmmzDataLoader } from '../../src/infrastructure/adapters/data/RmmzDataLoader.js';
-import { RmmzProjectValidator } from '../../src/infrastructure/adapters/data/RmmzProjectValidator.js';
-import type { IFileSystem, RmmzDatabase } from '../../src/core/ports/index.js';
-import { DataLoadError } from '../../src/core/errors/DataLoadError.js';
-import type { EnemyData, TroopData, ClassData, SkillData, ItemData, SystemData } from '../../src/types/rmmz-data.js';
+import { RmmzDataLoader } from '@coreto/core/infrastructure/adapters/data/RmmzDataLoader.js';
+import { RmmzProjectValidator } from '@coreto/core/infrastructure/adapters/data/RmmzProjectValidator.js';
+import type { IFileSystem, RmmzDatabase } from '@coreto/core/core/ports/index.js';
+import { DataLoadError } from '@coreto/core/core/errors/DataLoadError.js';
+import type { EnemyData, TroopData, ClassData, SkillData, ItemData, SystemData } from '@coreto/core/types/rmmz-data.js';
 
 describe('RmmzDataLoader', () => {
   let loader: RmmzDataLoader;

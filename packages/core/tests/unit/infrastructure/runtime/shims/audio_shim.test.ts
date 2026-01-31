@@ -6,7 +6,7 @@
  */
 
 // Import shim to trigger global injection
-import '../../../../../src/infrastructure/runtime/shims/audio_shim';
+import '@coreto/core/infrastructure/runtime/shims/audio_shim.js';
 
 describe('Audio Shim', () => {
   let AudioContext: any;

@@ -1,5 +1,5 @@
-import { AnchorLevelRange } from '../../src/core/domain/AnchorLevelRange';
-import { ValidationError } from '../../src/core/errors/ValidationError';
+import { AnchorLevelRange } from '@coreto/core/core/domain/AnchorLevelRange';
+import { ValidationError } from '@coreto/core/core/errors/ValidationError';
 
 describe('AnchorLevelRange', () => {
   describe('constructor', () => {

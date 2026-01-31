@@ -1,9 +1,9 @@
 import 'reflect-metadata';
-import { ExecuteBattleUseCase, ExecuteBattleInput } from '../../src/core/use-cases/ExecuteBattleUseCase.js';
-import { IBattleSimulator, BattleSetup } from '../../src/core/ports/IBattleSimulator.js';
-import { BattleResult } from '../../src/core/domain/BattleResult.js';
-import { PartyConfig } from '../../src/core/domain/PartyConfig.js';
-import { BattleTimeoutError } from '../../src/core/errors/BattleTimeoutError.js';
+import { ExecuteBattleUseCase, ExecuteBattleInput } from '@coreto/core/core/use-cases/ExecuteBattleUseCase.js';
+import { IBattleSimulator, BattleSetup } from '@coreto/core/core/ports/IBattleSimulator.js';
+import { BattleResult } from '@coreto/core/core/domain/BattleResult.js';
+import { PartyConfig } from '@coreto/core/core/domain/PartyConfig.js';
+import { BattleTimeoutError } from '@coreto/core/core/errors/BattleTimeoutError.js';
 
 describe('ExecuteBattleUseCase', () => {
   let useCase: ExecuteBattleUseCase;

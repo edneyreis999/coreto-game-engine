@@ -7,7 +7,6 @@
  * Coverage target: 100%
  */
 
-import { describe, it, expect } from '@jest/globals';
 import { ZodError } from 'zod';
 import {
   AnchorLevelRangeSchema,
@@ -22,7 +21,7 @@ import {
   type PartyConfig,
   type TrechoConfig,
   type ProjectConfig,
-} from '../../src/infrastructure/config/schemas.js';
+} from '@coreto/core/infrastructure/config/schemas.js';
 
 describe('AnchorLevelRangeSchema', () => {
   describe('valid inputs', () => {

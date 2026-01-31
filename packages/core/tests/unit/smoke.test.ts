@@ -34,7 +34,7 @@ describe('Jest Setup Validation', () => {
 
   it('should resolve path aliases @/', async () => {
     // Validate that path aliases are working correctly
-    const rmmzDataModule = await import('@/types/rmmz-data');
+    const rmmzDataModule = await import('@coreto/core/types/rmmz-data');
     expect(rmmzDataModule).toBeDefined();
   });
 

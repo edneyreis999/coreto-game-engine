@@ -1,5 +1,5 @@
-import { ValidationError } from '../../src/core/errors/ValidationError';
-import { DomainError } from '../../src/core/errors/DomainError';
+import { ValidationError } from '@coreto/core/core/errors/ValidationError';
+import { DomainError } from '@coreto/core/core/errors/DomainError';
 import { z, ZodError } from 'zod';
 
 describe('ValidationError', () => {

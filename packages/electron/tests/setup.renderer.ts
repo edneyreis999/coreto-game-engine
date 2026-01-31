@@ -30,11 +30,14 @@ const mockCoretoAPI = {
   openProject: jest.fn(),
   validateProject: jest.fn(),
   runSimulation: jest.fn(),
+  startSimulation: jest.fn(),
   getSimulationProgress: jest.fn(),
   cancelSimulation: jest.fn(),
   getSimulationResults: jest.fn(),
   loadConfig: jest.fn(),
   getTrechos: jest.fn(),
+  updateTrecho: jest.fn(),
+  deleteTrecho: jest.fn(),
   getTroops: jest.fn(),
   getClasses: jest.fn(),
   getEnemies: jest.fn(),
@@ -42,6 +45,11 @@ const mockCoretoAPI = {
   addRecent: jest.fn(),
   getPreferences: jest.fn(),
   setPreferences: jest.fn(),
+  updateGlobalSettings: jest.fn(),
+  // Event listener functions - return cleanup function
+  onProgress: jest.fn(() => jest.fn()),
+  onComplete: jest.fn(() => jest.fn()),
+  onError: jest.fn(() => jest.fn()),
 }
 
 Object.defineProperty(global.window, 'coreto', {

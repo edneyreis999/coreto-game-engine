@@ -5,16 +5,15 @@
  * Config → Loader → Runtime/Simulation → Reporter (+ exit codes)
  */
 
-import { describe, it, expect, beforeAll, beforeEach } from '@jest/globals';
-import { ValidationError } from '../../src/core/errors/ValidationError.js';
-import { DataLoadError } from '../../src/core/errors/DataLoadError.js';
-import { ConfigError } from '../../src/core/errors/ConfigError.js';
-import { FileSystemError } from '../../src/core/errors/FileSystemError.js';
-import { BattleResult } from '../../src/core/domain/BattleResult.js';
-import type { IConfigLoader } from '../../src/core/ports/IConfigLoader.js';
-import type { IDataLoader, RmmzDatabase } from '../../src/core/ports/IDataLoader.js';
-import type { IBattleSimulator } from '../../src/core/ports/IBattleSimulator.js';
-import type { IReporter } from '../../src/core/ports/IReporter.js';
+import { ValidationError } from '@coreto/core/core/errors/ValidationError.js';
+import { DataLoadError } from '@coreto/core/core/errors/DataLoadError.js';
+import { ConfigError } from '@coreto/core/core/errors/ConfigError.js';
+import { FileSystemError } from '@coreto/core/core/errors/FileSystemError.js';
+import { BattleResult } from '@coreto/core/core/domain/BattleResult.js';
+import type { IConfigLoader } from '@coreto/core/core/ports/IConfigLoader.js';
+import type { IDataLoader, RmmzDatabase } from '@coreto/core/core/ports/IDataLoader.js';
+import type { IBattleSimulator } from '@coreto/core/core/ports/IBattleSimulator.js';
+import type { IReporter } from '@coreto/core/core/ports/IReporter.js';
 
 describe('RunTtk Command', () => {
   let RunTtkCommand: any;
@@ -22,11 +21,13 @@ describe('RunTtk Command', () => {
   let resolve: jest.Mock;
 
   beforeAll(async () => {
-    const containerModule = await import('@/infrastructure/di/container.js');
+    const containerModule = await import('@coreto/core/infrastructure/di/container.js');
     registerDependencies = jest.spyOn(containerModule, 'registerDependencies') as any;
     resolve = jest.spyOn(containerModule, 'resolve') as any;
 
-    RunTtkCommand = (await import('@/cli/commands/run-ttk.js')).default;
+    // run-ttk command is in @coreto/cli package, not @coreto/core
+    // This test file is in packages/core for testing the core business logic integration
+    RunTtkCommand = (await import('@coreto/cli/cli/commands/run-ttk.js')).default;
   });
 
   beforeEach(() => {

@@ -7,7 +7,6 @@
  * @see src/infrastructure/schemas/report.schema.ts
  */
 
-import { describe, it, expect } from '@jest/globals';
 import {
   WarningTypeSchema,
   WarningSeveritySchema,
@@ -31,7 +30,7 @@ import {
   type ReportMetadata,
   type ReportSummary,
   type Report,
-} from '../../src/infrastructure/schemas/report.schema';
+} from '@coreto/core/infrastructure/schemas/report.schema';
 
 describe('Report Schema Validation', () => {
   describe('WarningTypeSchema', () => {

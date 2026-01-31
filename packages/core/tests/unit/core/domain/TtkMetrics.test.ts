@@ -1,6 +1,6 @@
-import { TtkMetrics } from '../../src/core/domain/TtkMetrics';
-import { TtkTarget } from '../../src/core/domain/TtkTarget';
-import { ValidationError } from '../../src/core/errors/ValidationError';
+import { TtkMetrics } from '@coreto/core/core/domain/TtkMetrics';
+import { TtkTarget } from '@coreto/core/core/domain/TtkTarget';
+import { ValidationError } from '@coreto/core/core/errors/ValidationError';
 
 describe('TtkMetrics', () => {
   describe('constructor', () => {

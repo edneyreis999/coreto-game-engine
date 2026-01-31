@@ -1,5 +1,4 @@
-import { describe, it, expect } from '@jest/globals';
-import { ConsoleLogger } from '../../src/infrastructure/adapters/logger/ConsoleLogger.js';
+import { ConsoleLogger } from '@coreto/core/infrastructure/adapters/logger/ConsoleLogger.js';
 
 describe('ConsoleLogger', () => {
   it('should log with and without meta for each level', () => {
