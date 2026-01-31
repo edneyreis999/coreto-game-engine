@@ -99,6 +99,8 @@ export type IPCChannel =
   | 'simulation:cancel'
   | 'simulation:getResults'
   | 'config:load'
+  | 'config:save'
+  | 'config:exists'
   | 'config:getTrechos'
   | 'config:updateTrecho'
   | 'config:deleteTrecho'
@@ -110,7 +112,12 @@ export type IPCChannel =
   | 'recent:add'
   | 'preferences:get'
   | 'preferences:set'
-  | 'dialog:openDirectory';
+  | 'dialog:openDirectory'
+  | 'history:list'
+  | 'history:loadReport'
+  | 'history:export'
+  | 'history:delete'
+  | 'history:generateId';
 
 // ============================================================================
 // Project Handlers
@@ -292,6 +299,73 @@ export interface ProjectConfigResponse {
 }
 
 // No payload for config:getTrechos (takes no parameters)
+
+/**
+ * Zod schema for config:save payload.
+ */
+export const ConfigSavePayloadSchema = z.object({
+  projectPath: z
+    .string()
+    .min(1, 'Project path cannot be empty')
+    .refine((p) => !p.includes('..'), 'Path traversal not allowed'),
+  config: z.object({
+    version: z.string().default('1.0'),
+    trechos: z.array(
+      z.object({
+        id: z.string().min(1),
+        description: z.string().min(1),
+        heroTeam: z.object({
+          level: z.number().int().min(1).max(99),
+          actors: z.array(z.number().int().positive()).min(1),
+          weapons: z.record(z.number().int().nonnegative()),
+          armors: z.record(z.number().int().nonnegative()),
+        }),
+        enemyTeam: z.object({
+          troopId: z.number().int().positive(),
+          count: z.number().int().positive().optional(),
+        }),
+        expectedTTK: z.object({
+          min: z.number().int().nonnegative(),
+          max: z.number().int().nonnegative(),
+        }).optional(),
+      })
+    ).default([]),
+    metadata: z.object({
+      projectName: z.string().optional(),
+      lastModified: z.number().int().nonnegative().optional(),
+    }).optional(),
+  }),
+});
+
+export type ConfigSavePayload = z.infer<typeof ConfigSavePayloadSchema>;
+
+/**
+ * Response format for config:save handler.
+ */
+export interface ConfigSaveResponse {
+  success: boolean;
+  configPath: string;
+}
+
+/**
+ * Zod schema for config:exists payload.
+ */
+export const ConfigExistsPayloadSchema = z.object({
+  projectPath: z
+    .string()
+    .min(1, 'Project path cannot be empty')
+    .refine((p) => !p.includes('..'), 'Path traversal not allowed'),
+});
+
+export type ConfigExistsPayload = z.infer<typeof ConfigExistsPayloadSchema>;
+
+/**
+ * Response format for config:exists handler.
+ */
+export interface ConfigExistsResponse {
+  exists: boolean;
+  configPath: string;
+}
 
 /**
  * Zod schema for config:updateTrecho payload.
@@ -545,6 +619,151 @@ export type OpenDirectoryPayload = z.infer<typeof OpenDirectoryPayloadSchema>;
 export type OpenDirectoryResponse = OpenDirectoryResult;
 
 // ============================================================================
+// History Handlers
+// ============================================================================
+
+/**
+ * Simulation summary for history list.
+ * Lightweight data (~1KB) stored in SQLite.
+ */
+export interface SimulationSummary {
+  trechos: Array<{
+    id: string;
+    description: string;
+    avgTTK: number;
+    maxTTK: number;
+    minTTK: number;
+    battleCount: number;
+    status: 'SUCCESS' | 'FAILED';
+  }>;
+  overallTTK: number;
+  totalBattles: number;
+  warningCount: number;
+  criticalWarningCount: number;
+  duration: number;
+  seed?: number;
+}
+
+/**
+ * Simulation history entry.
+ */
+export interface SimulationHistoryEntry {
+  id: string;
+  projectPath: string;
+  timestamp: number;
+  status: 'SUCCESS' | 'FAILED' | 'CANCELLED';
+  summary: SimulationSummary;
+  hasReport: boolean;
+}
+
+/**
+ * Response format for history:list handler.
+ */
+export interface HistoryListResponse {
+  simulations: SimulationHistoryEntry[];
+}
+
+/**
+ * Full simulation report (detailed, ~500KB).
+ */
+export interface SimulationReport {
+  metadata: {
+    id: string;
+    timestamp: number;
+    projectPath: string;
+    version: string;
+  };
+  summary: SimulationSummary;
+  trechos: Array<{
+    id: string;
+    description: string;
+    battles: Array<{
+      battleId: string;
+      turns: number;
+      ttk: number;
+      winner: 'heroes' | 'enemies';
+      heroes: Array<{ actorId: number; hp: number; damage: number }>;
+      enemies: Array<{ enemyId: number; hp: number; damage: number }>;
+    }>;
+  }>;
+  warnings: Array<{
+    type: string;
+    severity: 'critical' | 'warning' | 'info';
+    message: string;
+    context: Record<string, unknown>;
+  }>;
+}
+
+/**
+ * Response format for history:loadReport handler.
+ */
+export interface HistoryLoadReportResponse {
+  report: SimulationReport | null;
+}
+
+/**
+ * Response format for history:export handler.
+ */
+export interface HistoryExportResponse {
+  filePath: string;
+}
+
+/**
+ * Response format for history:delete handler.
+ */
+export interface HistoryDeleteResponse {
+  deletedId: string;
+}
+
+/**
+ * Response format for history:generateId handler.
+ */
+export interface HistoryGenerateIdResponse {
+  simulationId: string;
+}
+
+/**
+ * Zod schema for history:list payload.
+ */
+export const HistoryListPayloadSchema = z.object({
+  projectPath: z.string().optional(),
+  limit: z.number().int().positive().optional(),
+});
+
+export type HistoryListPayload = z.infer<typeof HistoryListPayloadSchema>;
+
+/**
+ * Zod schema for history:loadReport payload.
+ */
+export const HistoryLoadReportPayloadSchema = z.object({
+  simulationId: z.string().uuid(),
+});
+
+export type HistoryLoadReportPayload = z.infer<typeof HistoryLoadReportPayloadSchema>;
+
+/**
+ * Zod schema for history:export payload.
+ */
+export const HistoryExportPayloadSchema = z.object({
+  simulationId: z.string().uuid(),
+  result: z.any(), // ReportData
+  projectPath: z.string().min(1),
+});
+
+export type HistoryExportPayload = z.infer<typeof HistoryExportPayloadSchema>;
+
+/**
+ * Zod schema for history:delete payload.
+ */
+export const HistoryDeletePayloadSchema = z.object({
+  simulationId: z.string().uuid(),
+});
+
+export type HistoryDeletePayload = z.infer<typeof HistoryDeletePayloadSchema>;
+
+// No payload for history:generateId
+
+// ============================================================================
 // Handler Response Types
 // ============================================================================
 
@@ -560,6 +779,8 @@ export type IPCResponse =
   | void // For simulation:cancel
   | ReportData // For simulation:getResults
   | ProjectConfigResponse
+  | ConfigSaveResponse
+  | ConfigExistsResponse
   | TrechoData[]
   | ConfigUpdateTrechoResponse
   | ConfigDeleteTrechoResponse
@@ -571,7 +792,12 @@ export type IPCResponse =
   | RecentAddResponse
   | PreferencesGetResponse
   | PreferencesSetResponse
-  | OpenDirectoryResponse;
+  | OpenDirectoryResponse
+  | HistoryListResponse
+  | HistoryLoadReportResponse
+  | HistoryExportResponse
+  | HistoryDeleteResponse
+  | HistoryGenerateIdResponse;
 
 /**
  * Error response format for all IPC handlers.
@@ -609,6 +835,8 @@ export const IPCPayloadSchemas = {
   'simulation:cancel': z.void(), // No payload
   'simulation:getResults': z.void(), // No payload
   'config:load': ConfigLoadPayloadSchema,
+  'config:save': ConfigSavePayloadSchema,
+  'config:exists': ConfigExistsPayloadSchema,
   'config:getTrechos': z.void(), // No payload
   'config:updateTrecho': ConfigUpdateTrechoPayloadSchema,
   'config:deleteTrecho': ConfigDeleteTrechoPayloadSchema,
@@ -621,6 +849,11 @@ export const IPCPayloadSchemas = {
   'preferences:get': z.void(), // No payload
   'preferences:set': PreferencesSetPayloadSchema,
   'dialog:openDirectory': OpenDirectoryPayloadSchema,
+  'history:list': HistoryListPayloadSchema,
+  'history:loadReport': HistoryLoadReportPayloadSchema,
+  'history:export': HistoryExportPayloadSchema,
+  'history:delete': HistoryDeletePayloadSchema,
+  'history:generateId': z.void(), // No payload
 } as const satisfies Record<IPCChannel, z.ZodTypeAny>;
 
 /**

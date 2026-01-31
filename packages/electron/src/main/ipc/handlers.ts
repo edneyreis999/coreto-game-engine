@@ -38,13 +38,10 @@ import {
   PartyConfig,
 } from '@coreto/core';
 import type { Trecho } from '@coreto/core';
-import { DomainError } from '@coreto/core';
 
 import type {
   IPCChannel,
-  IPCResponse,
   IPCResult,
-  IPCError,
   ProjectInfo,
   ValidationResult,
   SimulationResult,
@@ -82,6 +79,9 @@ import {
 import { getDatabase } from '../database/index.js';
 import { listRecentProjects, addRecentProject } from '../database/index.js';
 import { getUserPreferences, updateUserPreferences } from '../database/index.js';
+import { CONFIG_IPC_HANDLERS } from './config-handlers.js';
+import { HISTORY_IPC_HANDLERS } from './history-handlers.js';
+import { wrapHandler } from './ipc-response.js';
 
 // ============================================================================
 // Progress State Management
@@ -126,58 +126,6 @@ function resetProgress(): void {
 }
 
 // ============================================================================
-// Error Serialization
-// ============================================================================
-
-/**
- * Converts a DomainError to IPC-safe error format.
- * Stack traces are excluded for security.
- */
-function serializeError(error: unknown): IPCError {
-  if (error instanceof DomainError) {
-    return {
-      name: error.name,
-      message: error.message,
-      severity: error.severity,
-      context: error.context,
-      timestamp: error.timestamp.toISOString(),
-    };
-  }
-
-  if (error instanceof Error) {
-    return {
-      name: error.name,
-      message: error.message,
-      severity: 'critical',
-      context: {},
-      timestamp: new Date().toISOString(),
-    };
-  }
-
-  return {
-    name: 'UnknownError',
-    message: String(error),
-    severity: 'critical',
-    context: {},
-    timestamp: new Date().toISOString(),
-  };
-}
-
-/**
- * Wraps a handler function with error handling and response formatting.
- */
-function withErrorHandling<T extends IPCResponse>(
-  handler: () => Promise<T>
-): Promise<IPCResult<T>> {
-  return handler()
-    .then((data) => ({ success: true, data }))
-    .catch((error: unknown) => ({
-      success: false,
-      error: serializeError(error),
-    }));
-}
-
-// ============================================================================
 // Payload Validation Helper
 // ============================================================================
 
@@ -201,6 +149,25 @@ function validatePayload<T extends z.ZodTypeAny>(
 }
 
 // ============================================================================
+// Registry Helper
+// ============================================================================
+
+/**
+ * Type-safe handler retrieval from external registries.
+ * Throws if handler is not found (fail-fast during initialization).
+ */
+function getRegistryHandler<K extends IPCChannel>(
+  registry: Record<string, (event: IpcMainInvokeEvent, payload: unknown) => Promise<IPCResult>>,
+  channel: K
+): (event: IpcMainInvokeEvent, payload: unknown) => Promise<IPCResult> {
+  const handler = registry[channel];
+  if (!handler) {
+    throw new Error(`Handler not found for channel: ${channel}`);
+  }
+  return handler;
+}
+
+// ============================================================================
 // Project Handlers
 // ============================================================================
 
@@ -214,7 +181,7 @@ async function handleProjectOpen(
   _event: IpcMainInvokeEvent,
   payload: unknown
 ): Promise<IPCResult<ProjectInfo>> {
-  return withErrorHandling(async () => {
+  return wrapHandler(async () => {
     validatePayload('project:open', payload, ProjectOpenPayloadSchema);
 
     const { path: projectPath } = payload;
@@ -304,7 +271,7 @@ async function handleProjectValidate(
   _event: IpcMainInvokeEvent,
   payload: unknown
 ): Promise<IPCResult<ValidationResult>> {
-  return withErrorHandling(async () => {
+  return wrapHandler(async () => {
     validatePayload('project:validate', payload, ProjectValidatePayloadSchema);
 
     const { path: projectPath } = payload;
@@ -391,7 +358,7 @@ async function handleSimulationRun(
   _event: IpcMainInvokeEvent,
   payload: unknown
 ): Promise<IPCResult<SimulationResult>> {
-  return withErrorHandling(async () => {
+  return wrapHandler(async () => {
     validatePayload('simulation:run', payload, SimulationRunPayloadSchema);
 
     const {
@@ -533,7 +500,7 @@ async function handleSimulationGetProgress(
   _event: IpcMainInvokeEvent,
   _payload: unknown
 ): Promise<IPCResult<number>> {
-  return withErrorHandling(async () => {
+  return wrapHandler(async () => {
     return simulationProgress.percentage;
   });
 }
@@ -547,7 +514,7 @@ async function handleSimulationCancel(
   _event: IpcMainInvokeEvent,
   _payload: unknown
 ): Promise<IPCResult<void>> {
-  return withErrorHandling(async () => {
+  return wrapHandler(async () => {
     if (currentSimulationController) {
       currentSimulationController.abort();
       resetProgress();
@@ -585,7 +552,7 @@ async function handleSimulationGetResults(
   _event: IpcMainInvokeEvent,
   _payload: unknown
 ): Promise<IPCResult<ReportData>> {
-  return withErrorHandling(async () => {
+  return wrapHandler(async () => {
     if (!lastSimulationResults) {
       throw new Error('No simulation results available. Run a simulation first.');
     }
@@ -606,7 +573,7 @@ async function handleConfigLoad(
   _event: IpcMainInvokeEvent,
   payload: unknown
 ): Promise<IPCResult<ProjectConfigResponse>> {
-  return withErrorHandling(async () => {
+  return wrapHandler(async () => {
     validatePayload('config:load', payload, ConfigLoadPayloadSchema);
 
     const { configPath } = payload;
@@ -659,7 +626,7 @@ async function handleConfigGetTrechos(
   _event: IpcMainInvokeEvent,
   _payload: unknown
 ): Promise<IPCResult<TrechoData[]>> {
-  return withErrorHandling(async () => {
+  return wrapHandler(async () => {
     // For MVP, return empty array
     // Full implementation will load from database or last loaded config
     return [];
@@ -676,7 +643,7 @@ async function handleConfigUpdateTrecho(
   _event: IpcMainInvokeEvent,
   payload: unknown
 ): Promise<IPCResult<ConfigUpdateTrechoResponse>> {
-  return withErrorHandling(async () => {
+  return wrapHandler(async () => {
     validatePayload('config:updateTrecho', payload, ConfigUpdateTrechoPayloadSchema);
 
     const { trecho } = payload;
@@ -694,7 +661,7 @@ async function handleConfigUpdateTrecho(
       const party = new PartyConfig(trecho.party.members);
 
       // Validate trecho (will throw if invalid)
-      // eslint-disable-next-line no-new
+       
       new Trecho({
         id: trecho.id,
         name: trecho.name ?? trecho.id,
@@ -741,7 +708,7 @@ async function handleConfigDeleteTrecho(
   _event: IpcMainInvokeEvent,
   payload: unknown
 ): Promise<IPCResult<ConfigDeleteTrechoResponse>> {
-  return withErrorHandling(async () => {
+  return wrapHandler(async () => {
     validatePayload('config:deleteTrecho', payload, ConfigDeleteTrechoPayloadSchema);
 
     const { trechoId } = payload;
@@ -767,7 +734,7 @@ async function handleConfigUpdateGlobalSettings(
   _event: IpcMainInvokeEvent,
   payload: unknown
 ): Promise<IPCResult<ConfigUpdateGlobalSettingsResponse>> {
-  return withErrorHandling(async () => {
+  return wrapHandler(async () => {
     validatePayload(
       'config:updateGlobalSettings',
       payload,
@@ -806,7 +773,7 @@ async function handleDataGetTroops(
   _event: IpcMainInvokeEvent,
   payload: unknown
 ): Promise<IPCResult<TroopData[]>> {
-  return withErrorHandling(async () => {
+  return wrapHandler(async () => {
     validatePayload('data:getTroops', payload, DataGetTroopsPayloadSchema);
 
     const { projectPath } = payload;
@@ -845,7 +812,7 @@ async function handleDataGetClasses(
   _event: IpcMainInvokeEvent,
   payload: unknown
 ): Promise<IPCResult<ClassData[]>> {
-  return withErrorHandling(async () => {
+  return wrapHandler(async () => {
     validatePayload('data:getClasses', payload, DataGetClassesPayloadSchema);
 
     const { projectPath } = payload;
@@ -879,7 +846,7 @@ async function handleDataGetEnemies(
   _event: IpcMainInvokeEvent,
   payload: unknown
 ): Promise<IPCResult<EnemyData[]>> {
-  return withErrorHandling(async () => {
+  return wrapHandler(async () => {
     validatePayload('data:getEnemies', payload, DataGetEnemiesPayloadSchema);
 
     const { projectPath } = payload;
@@ -919,7 +886,7 @@ async function handleRecentList(
   _event: IpcMainInvokeEvent,
   payload: unknown
 ): Promise<IPCResult<RecentListResponse>> {
-  return withErrorHandling(async () => {
+  return wrapHandler(async () => {
     validatePayload('recent:list', payload, RecentListPayloadSchema);
 
     const limit = payload?.limit ?? 10;
@@ -944,7 +911,7 @@ async function handleRecentAdd(
   _event: IpcMainInvokeEvent,
   payload: unknown
 ): Promise<IPCResult<RecentAddResponse>> {
-  return withErrorHandling(async () => {
+  return wrapHandler(async () => {
     validatePayload('recent:add', payload, RecentAddPayloadSchema);
 
     const { path, name } = payload;
@@ -972,7 +939,7 @@ async function handlePreferencesGet(
   _event: IpcMainInvokeEvent,
   _payload: unknown
 ): Promise<IPCResult<PreferencesGetResponse>> {
-  return withErrorHandling(async () => {
+  return wrapHandler(async () => {
     const db = getDatabase();
     const userPrefs = getUserPreferences(db);
 
@@ -992,7 +959,7 @@ async function handlePreferencesSet(
   _event: IpcMainInvokeEvent,
   payload: unknown
 ): Promise<IPCResult<PreferencesSetResponse>> {
-  return withErrorHandling(async () => {
+  return wrapHandler(async () => {
     validatePayload('preferences:set', payload, PreferencesSetPayloadSchema);
 
     const db = getDatabase();
@@ -1029,13 +996,15 @@ async function handleDialogOpenDirectory(
   _event: IpcMainInvokeEvent,
   _payload: unknown
 ): Promise<IPCResult<OpenDirectoryResponse>> {
-  return withErrorHandling(async () => {
-    // Get the focused window or the main window
-    const focusedWindow = BrowserWindow.getAllWindows().find(
-      (w) => w.focused
-    );
+  return wrapHandler(async () => {
+    // Get the focused window using getFocusedWindow() (more efficient)
+    // If no window is focused, fall back to checking isFocused()
+    const focusedWindow = BrowserWindow.getFocusedWindow() ??
+      BrowserWindow.getAllWindows().find(w => w.isFocused());
 
-    const result = await dialog.showOpenDialog(focusedWindow ?? undefined, {
+    // dialog.showOpenDialog can accept undefined (per Electron docs), but TS types don't reflect this
+    // Type assertion needed because BaseWindow type doesn't include undefined
+    const result = await dialog.showOpenDialog((focusedWindow ?? undefined) as BrowserWindow | undefined, {
       properties: ['openDirectory'],
       title: 'Select RPG Maker MZ Project Folder',
     });
@@ -1065,6 +1034,9 @@ export const IPC_HANDLERS: Record<
   'simulation:cancel': handleSimulationCancel,
   'simulation:getResults': handleSimulationGetResults,
   'config:load': handleConfigLoad,
+  // Config handlers (from registry)
+  'config:save': getRegistryHandler(CONFIG_IPC_HANDLERS, 'config:save'),
+  'config:exists': getRegistryHandler(CONFIG_IPC_HANDLERS, 'config:exists'),
   'config:getTrechos': handleConfigGetTrechos,
   'config:updateTrecho': handleConfigUpdateTrecho,
   'config:deleteTrecho': handleConfigDeleteTrecho,
@@ -1077,6 +1049,12 @@ export const IPC_HANDLERS: Record<
   'preferences:get': handlePreferencesGet,
   'preferences:set': handlePreferencesSet,
   'dialog:openDirectory': handleDialogOpenDirectory,
+  // History handlers (from registry)
+  'history:list': getRegistryHandler(HISTORY_IPC_HANDLERS, 'history:list'),
+  'history:loadReport': getRegistryHandler(HISTORY_IPC_HANDLERS, 'history:loadReport'),
+  'history:export': getRegistryHandler(HISTORY_IPC_HANDLERS, 'history:export'),
+  'history:delete': getRegistryHandler(HISTORY_IPC_HANDLERS, 'history:delete'),
+  'history:generateId': getRegistryHandler(HISTORY_IPC_HANDLERS, 'history:generateId'),
 };
 
 /**
