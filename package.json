@@ -28,7 +28,8 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "clean": "pnpm --filter \"./packages/**\" clean && rm -rf node_modules pnpm-lock.yaml",
-    "validate": "tsx scripts/validate-project.mts"
+    "validate": "tsx scripts/validate-project.mts",
+    "ttk": "node packages/cli/dist/cli/index.js run-ttk --config temp/project.config.json --verbose"
   },
   "dependencies": {
     "jsdom": "^25.0.0",
