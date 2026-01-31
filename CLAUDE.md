@@ -34,9 +34,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 1. **TTK Validation** - Headless battle simulation (JSDOM + PIXI mocks), deterministic RNG (LCG), dual-metric TTK measurement
 2. **NSD Scene Generator** (planned) - Parses NSD docs, compares with RPG Maker maps, generates LLM-powered implementation prompts
 
-**Tech Stack:** TypeScript, TSyringe (DI), Zod (validation), better-sqlite3, jest + jest-canvas-mock, electron-builder
+## Documentation
 
-**Documentation:** 32 ADRs, PRD, HLD in `docs/`
+**All documentation lives in `docs/`.** Start at `docs/CLAUDE.md` for navigation guide, then `docs/adrs/INDEX.md` for architectural decisions.
 
 ## ADR Creation Process
 
@@ -54,7 +54,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Script:** `packages/cli/src/cli/commands/run-ttk.ts`
 
-**IMPORTANT:** All commands must be executed from the **monorepo root** (`/Users/edney/projects/coreto/game-engine/`)
+**IMPORTANT:** All commands must be executed from the **monorepo root**
 
 **Build:**
 
@@ -67,18 +67,11 @@ pnpm --filter @coreto/core build
 pnpm --filter @coreto/cli build
 ```
 
-**Run (Simplified):**
+**Run:**
 
 ```bash
 # From monorepo root
 pnpm ttk
-```
-
-**Run (Full Command):**
-
-```bash
-# From monorepo root
-node packages/cli/dist/cli/index.js run-ttk --config temp/project.config.json --verbose
 ```
 
 **Flags:**
@@ -94,26 +87,51 @@ node packages/cli/dist/cli/index.js run-ttk --config temp/project.config.json --
 - Requires `stub-index.html` in monorepo root (used by JSDOM for headless runtime)
 - Requires `temp/project.config.json` with trecho configurations
 
-## CLI Package Structure
+## CLI Package Architecture
 
-```
-packages/cli/
-├── bin/
-│   └── run.js              # Entry point (imports dist/cli/index.js)
-├── dist/                   # Compiled output (TypeScript → JavaScript)
-│   └── cli/
-│       ├── index.js        # Main CLI bootstrap (Oclif)
-│       ├── commands/       # Command implementations
-│       │   ├── run-ttk.js  # TTK validation command
-│       │   └── hello.js    # Example command
-│       └── ui/             # Progress bars, formatters, loggers
-├── src/
-│   └── cli/
-│       ├── index.ts        # Entry point source
-│       ├── commands/       # Command source files
-│       └── ui/             # UI components source
-├── package.json            # Package config (oclif settings)
-└── tsconfig.json           # TypeScript config
+**Framework:** Oclif-based CLI with TypeScript
+
+**Key Patterns:**
+
+- Commands follow Oclif convention in `dist/cli/commands/` after build
+- Entry point: `bin/run.js` → `dist/cli/index.js`
+- Source files in `src/cli/` compile to `dist/cli/`
+- UI components (progress bars, formatters) in `src/cli/ui/`
+
+## Electron Package Architecture
+
+**Build System:** electron-vite compiles TypeScript sources from `src/` to `out/` (not `dist/`). The `dist/` folder contains packaged apps from electron-builder.
+
+**Process Architecture:**
+
+- **Main Process** (`src/main/`) - Node.js backend with better-sqlite3 database and IPC handlers
+- **Preload Script** (`src/preload/`) - Security bridge exposing safe APIs to renderer via context bridge
+- **Renderer Process** (`src/renderer/`) - React 18 + shadcn/ui + Tailwind UI running in Chromium
+
+**Key Modules:**
+
+- `src/main/database/` - SQLite schema, migrations, queries (recent-projects, simulation-history, user-preferences)
+- `src/main/ipc/` - IPC request handlers and type contracts
+- `src/renderer/src/components/` - React components (ConfigurationPanel, ResultsPanel, ExecutionPanel, ProjectSelectionPanel)
+- `src/renderer/src/hooks/` - Custom React hooks (useConfig, useProject, useIpc)
+
+## Electron Dev Portal Execution
+
+**IMPORTANT:** Run from monorepo root.
+
+**Development mode:**
+
+```bash
+# Foreground (blocks terminal)
+pnpm --filter @coreto/electron dev
+
+# Background (recommended for AI execution)
+pnpm --filter @coreto/electron dev &
 ```
 
-**Note:** The CLI uses Oclif framework which expects commands in `dist/cli/commands/` directory.
+**Build for production:**
+
+```bash
+pnpm --filter @coreto/electron build
+pnpm --filter @coreto/electron pack:mac
+```
