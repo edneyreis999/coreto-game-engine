@@ -22,4 +22,4 @@ import { run } from '@oclif/core';
  * 3. Execute the command with parsed flags and arguments
  * 4. Handle errors and help output
  */
-await run();
+await run(process.argv.slice(2), import.meta.url);
