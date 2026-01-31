@@ -1,19 +1,26 @@
 /**
- * useSimulationProgress Hook
+ * useSimulationProgress Hook (Event Streaming Pattern)
  *
- * Custom React hook for polling simulation progress via IPC.
- * Provides real-time progress updates during long-running simulations.
+ * Custom React hook for real-time simulation progress via IPC event streaming.
+ * Replaces polling pattern with event-based updates for zero latency.
  *
  * Features:
- * - Polls simulation:getProgress at 500ms intervals during simulation
- * - Automatically stops polling when simulation completes
- * - Proper cleanup on unmount to prevent memory leaks
- * - Error handling for failed IPC calls
+ * - Event streaming (0ms latency vs 0-500ms polling)
+ * - Automatic cleanup on unmount (prevents memory leaks)
+ * - Type-safe event payloads
+ * - Supports both legacy (runSimulation) and new (startSimulation + events) APIs
  *
- * @see Task 4bccaf27-8aff-4af9-9f72-686ae85fe60e
+ * @see planos/005-run-ttk-electron/TECHSPEC.md Section 2.5
+ * @see planos/005-run-ttk-electron/tasks/02_task.md
+ * @see planos/005-run-ttk-electron/technical-debt.md DT-001
  */
 
-import { useCallback, useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import type {
+  ProgressPayload,
+  ErrorPayload,
+  SimulationResultPayload
+} from '@coreto/electron/preload/index.js';
 
 // ============================================================================
 // Type Definitions
@@ -47,10 +54,20 @@ export interface SimulationProgressState {
    * Whether a simulation is currently running.
    */
   isRunning: boolean;
+
+  /**
+   * Current stage of simulation.
+   */
+  stage?: ProgressPayload['stage'];
+
+  /**
+   * User-facing progress message.
+   */
+  message?: string;
 }
 
 /**
- * Simulation result returned when simulation completes.
+ * Legacy simulation result format (for backward compatibility).
  */
 export interface SimulationCompletionResult {
   /**
@@ -113,6 +130,11 @@ export interface UseSimulationProgressReturn {
   progress: SimulationProgressState;
 
   /**
+   * Detailed progress payload from worker (for advanced usage).
+   */
+  progressDetail: ProgressPayload | null;
+
+  /**
    * Status of the simulation.
    */
   status: SimulationStatus;
@@ -120,19 +142,32 @@ export interface UseSimulationProgressReturn {
   /**
    * Error message if simulation failed.
    */
-  error: string | null;
+  error: ErrorPayload | null;
 
   /**
    * Simulation result if simulation completed successfully.
    */
-  result: SimulationCompletionResult | null;
+  result: SimulationResultPayload | null;
 
   /**
-   * Starts a simulation with the given configuration.
+   * Starts a simulation with the given configuration (new event-based API).
+   * @param params - Simulation parameters
+   * @returns Promise that resolves when simulation starts (result comes via onComplete event)
+   */
+  startSimulation: (params: {
+    projectPath: string;
+    configPath: string;
+    seed?: number;
+    diagnostic?: boolean;
+  }) => Promise<void>;
+
+  /**
+   * Legacy simulation start (for backward compatibility).
+   * @deprecated Use startSimulation with event listeners instead
    * @param config - Simulation configuration
    * @returns Promise that resolves when simulation completes
    */
-  startSimulation: (config: {
+  runSimulation: (config: {
     projectPath: string;
     configPath?: string;
     trechoId?: string;
@@ -171,12 +206,11 @@ const initialProgress: SimulationProgressState = {
 // ============================================================================
 
 /**
- * Custom hook for polling simulation progress via IPC.
+ * Custom hook for real-time simulation progress via event streaming.
  *
- * Polls `simulation:getProgress` every 500ms while simulation is running.
- * Automatically stops polling when simulation completes or is cancelled.
+ * Uses IPC event listeners (onProgress, onComplete, onError) instead of polling.
+ * Automatically cleans up listeners on unmount to prevent memory leaks.
  *
- * @param pollInterval - Polling interval in milliseconds (default: 500)
  * @returns Simulation progress state and control functions
  *
  * @example
@@ -184,220 +218,208 @@ const initialProgress: SimulationProgressState = {
  *
  * await startSimulation({
  *   projectPath: '/path/to/project',
- *   trechoId: 'ato1-nivel1-10',
+ *   configPath: '/path/to/config.json',
  * });
  */
-export function useSimulationProgress(
-  pollInterval: number = 500
-): UseSimulationProgressReturn {
-  // Use useState for values that need to trigger re-renders
+export function useSimulationProgress(): UseSimulationProgressReturn {
+  // State for progress tracking
   const [progress, setProgressState] = useState<SimulationProgressState>(initialProgress);
-  const [status, setStatusState] = useState<SimulationStatus>('idle');
-  const [error, setErrorState] = useState<string | null>(null);
-  const [result, setResultState] = useState<SimulationCompletionResult | null>(null);
-  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [progressDetail, setProgressDetail] = useState<ProgressPayload | null>(null);
+  const [status, setStatus] = useState<SimulationStatus>('idle');
+  const [error, setError] = useState<ErrorPayload | null>(null);
+  const [result, setResult] = useState<SimulationResultPayload | null>(null);
 
   /**
-   * Updates the progress state and triggers re-render.
+   * Setup event listeners on mount.
+   * CRITICAL: Cleanup listeners on unmount to prevent memory leaks.
    */
-  const setProgress = useCallback((progress: Partial<SimulationProgressState>) => {
-    setProgressState((prev) => ({ ...prev, ...progress }));
+  useEffect(() => {
+    // Progress events
+    const cleanupProgress = window.coreto.onProgress((payload: ProgressPayload) => {
+      setProgressState({
+        percentage: payload.percentage,
+        current: payload.current,
+        currentIndex: payload.current,
+        totalItems: payload.total,
+        isRunning: true,
+        stage: payload.stage,
+        message: payload.message,
+        currentItem: payload.trechoName,
+      });
+      setProgressDetail(payload);
+      setStatus('running');
+    });
+
+    // Completion events
+    const cleanupComplete = window.coreto.onComplete((simulationResult: SimulationResultPayload) => {
+      setResult(simulationResult);
+      setStatus('completed');
+      setProgressState((prev) => ({
+        ...prev,
+        percentage: 100,
+        isRunning: false,
+      }));
+      setProgressDetail(null);
+    });
+
+    // Error events
+    const cleanupError = window.coreto.onError((errorPayload: ErrorPayload) => {
+      setError(errorPayload);
+      setStatus('error');
+      setProgressState((prev) => ({
+        ...prev,
+        isRunning: false,
+      }));
+      setProgressDetail(null);
+    });
+
+    // Cleanup on unmount
+    return () => {
+      cleanupProgress();
+      cleanupComplete();
+      cleanupError();
+    };
   }, []);
-
-  /**
-   * Updates the status state.
-   */
-  const setStatus = useCallback((status: SimulationStatus) => {
-    setStatusState(status);
-  }, []);
-
-  /**
-   * Updates the error state.
-   */
-  const setError = useCallback((error: string | null) => {
-    setErrorState(error);
-  }, []);
-
-  /**
-   * Updates the result state.
-   */
-  const setResult = useCallback((result: SimulationCompletionResult | null) => {
-    setResultState(result);
-  }, []);
-
-  /**
-   * Stops progress polling.
-   */
-  const stopPolling = useCallback(() => {
-    if (pollingIntervalRef.current) {
-      clearInterval(pollingIntervalRef.current);
-      pollingIntervalRef.current = null;
-    }
-  }, []);
-
-  /**
-   * Polls simulation progress via IPC.
-   */
-  const pollProgress = useCallback(async () => {
-    try {
-      const response = await window.coreto.getSimulationProgress();
-
-      if (response.success) {
-        const progressPercentage = response.data;
-
-        setProgress({
-          percentage: progressPercentage,
-        });
-
-        // Stop polling if simulation is complete (100%)
-        if (progressPercentage >= 100) {
-          stopPolling();
-        }
-      } else {
-        // Error polling progress - stop polling
-        console.error('Failed to poll progress:', response.error);
-        stopPolling();
-      }
-    } catch (error) {
-      console.error('Error polling progress:', error);
-      stopPolling();
-    }
-  }, [setProgress, stopPolling]);
-
-  /**
-   * Starts progress polling.
-   */
-  const startPolling = useCallback(() => {
-    // Clear any existing interval
-    stopPolling();
-
-    // Start new polling interval
-    pollingIntervalRef.current = setInterval(() => {
-      void pollProgress();
-    }, pollInterval);
-  }, [pollInterval, stopPolling, pollProgress]);
 
   /**
    * Resets the state to initial values.
-   * Defined before startSimulation to avoid circular dependency.
    */
   const reset = useCallback(() => {
-    stopPolling();
     setProgressState({ ...initialProgress });
-    setStatusState('idle');
-    setErrorState(null);
-    setResultState(null);
-  }, [stopPolling]);
+    setProgressDetail(null);
+    setStatus('idle');
+    setError(null);
+    setResult(null);
+  }, []);
 
   /**
-   * Starts a simulation with the given configuration.
+   * Starts a simulation (new event-based API).
+   * Returns immediately - result comes via onComplete event.
    */
-  const startSimulation = useCallback(
-    async (config: {
-      projectPath: string;
-      configPath?: string;
-      trechoId?: string;
-      troopId?: number;
-      seed?: number;
-      maxTurns?: number;
-    }): Promise<SimulationCompletionResult> => {
-      // Reset state
-      reset();
-      setStatus('running');
-      setProgress({ isRunning: true, percentage: 0 });
+  const startSimulation = useCallback(async (params: {
+    projectPath: string;
+    configPath: string;
+    seed?: number;
+    diagnostic?: boolean;
+  }): Promise<void> => {
+    // Reset state
+    reset();
+    setStatus('running');
+    setProgressState({ ...initialProgress, isRunning: true });
 
-      try {
-        // Start progress polling
-        startPolling();
+    try {
+      const coretoAPI = window.coreto;
+      const response = await coretoAPI.startSimulation(params);
 
-        // Invoke simulation:run IPC handler
-        const response = await window.coreto.runSimulation(config);
-
-        // Stop polling when simulation completes
-        stopPolling();
-
-        if (response.success) {
-          const simulationResult = response.data;
-
-          // Update state with result
-          setStatus('completed');
-          setProgress({
-            isRunning: false,
-            percentage: 100,
-            currentIndex: simulationResult.battleResult.ttkTurns,
-            totalItems: simulationResult.battleResult.ttkTurns,
-            currentItem: simulationResult.troopName,
-          });
-          setResult(simulationResult);
-          setError(null);
-
-          return simulationResult;
-        } else {
-          // Simulation failed
-          setStatus('error');
-          setProgress({ isRunning: false, percentage: 0 });
-          setError(response.error.message ?? 'Simulation failed');
-          setResult(null);
-
-          throw new Error(response.error.message ?? 'Simulation failed');
-        }
-      } catch (error) {
-        // Stop polling on error
-        stopPolling();
-
-        // Update error state
+      if (!response.success) {
         setStatus('error');
-        setProgress({ isRunning: false, percentage: 0 });
-        setError(
-          error instanceof Error ? error.message : 'Unknown error occurred'
-        );
-        setResult(null);
-
-        throw error;
+        setError({
+          title: 'Failed to Start Simulation',
+          description: response.error.message,
+          code: 'ERR_START_FAILED'
+        });
       }
-    },
-    [reset, setStatus, setProgress, startPolling, stopPolling, setResult, setError]
-  );
+      // If success, wait for onComplete event
+    } catch (err) {
+      setStatus('error');
+      setError({
+        title: 'Failed to Start Simulation',
+        description: err instanceof Error ? err.message : 'Unknown error',
+        code: 'ERR_START_FAILED'
+      });
+    }
+  }, [reset]);
+
+  /**
+   * Legacy simulation run (for backward compatibility).
+   * @deprecated Use startSimulation with event listeners instead
+   */
+  const runSimulation = useCallback(async (config: {
+    projectPath: string;
+    configPath?: string;
+    trechoId?: string;
+    troopId?: number;
+    seed?: number;
+    maxTurns?: number;
+  }): Promise<SimulationCompletionResult> => {
+    // Reset state
+    reset();
+    setStatus('running');
+    setProgressState({ ...initialProgress, isRunning: true });
+
+    try {
+      const coretoAPI = window.coreto;
+      const response = await coretoAPI.runSimulation(config);
+
+      if (response.success) {
+        const simulationResult = response.data;
+
+        // Update state with result
+        setStatus('completed');
+        setProgressState({
+          isRunning: false,
+          percentage: 100,
+          currentIndex: simulationResult.battleResult.ttkTurns,
+          totalItems: simulationResult.battleResult.ttkTurns,
+          currentItem: simulationResult.troopName,
+        });
+        setError(null);
+
+        return simulationResult;
+      } else {
+        // Simulation failed
+        setStatus('error');
+        setProgressState({ ...initialProgress, isRunning: false });
+        setError({
+          title: 'Simulation Failed',
+          description: response.error.message ?? 'Unknown error',
+          code: 'ERR_SIMULATION_FAILED'
+        });
+
+        throw new Error(response.error.message ?? 'Simulation failed');
+      }
+    } catch (err) {
+      // Update error state
+      setStatus('error');
+      setProgressState({ ...initialProgress, isRunning: false });
+      setError({
+        title: 'Simulation Failed',
+        description: err instanceof Error ? err.message : 'Unknown error occurred',
+        code: 'ERR_SIMULATION_FAILED'
+      });
+
+      throw err;
+    }
+  }, [reset]);
 
   /**
    * Cancels the currently running simulation.
    */
   const cancelSimulation = useCallback(async (): Promise<void> => {
     try {
-      // Stop polling
-      stopPolling();
-
-      // Invoke simulation:cancel IPC handler
-      await window.coreto.cancelSimulation();
-
-      // Update state
+      const coretoAPI = window.coreto;
+      await coretoAPI.cancelSimulation();
       setStatus('cancelled');
-      setProgress({ isRunning: false, percentage: 0 });
-      setError(null);
-      setResult(null);
-    } catch (error) {
-      console.error('Error cancelling simulation:', error);
-      setError(
-        error instanceof Error ? error.message : 'Failed to cancel simulation'
-      );
+      setProgressState({ ...initialProgress, isRunning: false });
+      setProgressDetail(null);
+    } catch (err) {
+      console.error('Error cancelling simulation:', err);
+      setError({
+        title: 'Cancellation Failed',
+        description: err instanceof Error ? err.message : 'Failed to cancel simulation',
+        code: 'ERR_CANCEL_FAILED'
+      });
     }
-  }, [stopPolling, setStatus, setProgress, setError]);
-
-  /**
-   * Cleanup on unmount.
-   */
-  useEffect(() => {
-    return () => {
-      stopPolling();
-    };
-  }, [stopPolling]);
+  }, []);
 
   return {
     progress,
+    progressDetail,
     status,
     error,
     result,
     startSimulation,
+    runSimulation,
     cancelSimulation,
     reset,
   };

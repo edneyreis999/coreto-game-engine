@@ -1,5 +1,10 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import { electronAPI } from '@electron-toolkit/preload';
+import type {
+  ProgressPayload,
+  ErrorPayload,
+  SimulationResultPayload
+} from '../main/workers/types';
 
 /**
  * Preload Script - IPC Bridge
@@ -15,6 +20,8 @@ import { electronAPI } from '@electron-toolkit/preload';
  *
  * The @electron-toolkit/preload provides a type-safe electronAPI
  * that exposes common Electron APIs to the renderer process.
+ *
+ * @see planos/005-run-ttk-electron/TECHSPEC.md Section 2.1
  */
 
 // ============================================================================
@@ -264,9 +271,125 @@ const coretoAPI = {
    */
 
   /**
-   * Executes a TTK battle simulation.
-   * @param config - Simulation configuration
-   * @returns Simulation result with battle metrics
+   * Simulation Event Listeners (Event Streaming Pattern)
+   *
+   * These listeners provide real-time updates from the worker process
+   * via IPC events. Each listener returns a cleanup function that must
+   * be called to remove the listener and prevent memory leaks.
+   *
+   * @see planos/005-run-ttk-electron/TECHSPEC.md Section 2.1
+   */
+
+  /**
+   * Subscribes to simulation progress updates.
+   * @param callback - Called with progress payload on each update
+   * @returns Cleanup function to remove listener
+   *
+   * @example
+   * const cleanup = window.coreto.onProgress((payload) => {
+   *   console.log(`Progress: ${payload.percentage}% - ${payload.message}`);
+   * });
+   * // Call cleanup() when done to prevent memory leaks
+   */
+  onProgress: (
+    callback: (payload: ProgressPayload) => void
+  ): (() => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, payload: ProgressPayload): void => {
+      callback(payload);
+    };
+    ipcRenderer.on('simulation:progress', listener);
+
+    // Return cleanup function
+    return () => {
+      ipcRenderer.removeListener('simulation:progress', listener);
+    };
+  },
+
+  /**
+   * Subscribes to simulation completion event.
+   * @param callback - Called with result when simulation completes
+   * @returns Cleanup function to remove listener
+   *
+   * @example
+   * const cleanup = window.coreto.onComplete((result) => {
+   *   console.log('Simulation complete:', result.report);
+   * });
+   */
+  onComplete: (
+    callback: (result: SimulationResultPayload) => void
+  ): (() => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, result: SimulationResultPayload): void => {
+      callback(result);
+    };
+    ipcRenderer.on('simulation:complete', listener);
+
+    return () => {
+      ipcRenderer.removeListener('simulation:complete', listener);
+    };
+  },
+
+  /**
+   * Subscribes to simulation error event.
+   * @param callback - Called with error payload on failure
+   * @returns Cleanup function to remove listener
+   *
+   * @example
+   * const cleanup = window.coreto.onError((error) => {
+   *   console.error('Simulation failed:', error.title);
+   * });
+   */
+  onError: (
+    callback: (error: ErrorPayload) => void
+  ): (() => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, error: ErrorPayload): void => {
+      callback(error);
+    };
+    ipcRenderer.on('simulation:error', listener);
+
+    return () => {
+      ipcRenderer.removeListener('simulation:error', listener);
+    };
+  },
+
+  /**
+   * Starts a simulation (command - invoke pattern).
+   * Returns immediately with simulationId. Result comes via onComplete event.
+   *
+   * @param params - Simulation parameters
+   * @returns Promise resolving to simulation ID
+   *
+   * @example
+   * const response = await window.coreto.startSimulation({
+   *   projectPath: '/path/to/project',
+   *   configPath: '/path/to/config.json',
+   *   seed: 12345
+   * });
+   * if (response.success) {
+   *   console.log('Simulation ID:', response.data.simulationId);
+   * }
+   */
+  startSimulation: (params: {
+    projectPath: string;
+    configPath: string;
+    seed?: number;
+    diagnostic?: boolean;
+  }): Promise<IPCResult<{ simulationId: string }>> =>
+    ipcRenderer.invoke('simulation:start', params),
+
+  /**
+   * Cancels the currently running simulation (command - invoke pattern).
+   *
+   * @returns Promise that resolves when cancellation is requested
+   *
+   * @example
+   * await window.coreto.cancelSimulation();
+   */
+  cancelSimulation: (): Promise<IPCResult<void>> =>
+    ipcRenderer.invoke('simulation:cancel'),
+
+  /**
+   * Legacy simulation handler (deprecated - use startSimulation + event listeners).
+   * @deprecated Use startSimulation with onProgress/onComplete/onError event listeners
    */
   runSimulation: (
     config: {
@@ -282,16 +405,11 @@ const coretoAPI = {
 
   /**
    * Gets the current simulation progress (0-100).
+   * @deprecated Use onProgress event listener instead
    * @returns Progress percentage
    */
   getSimulationProgress: (): Promise<IPCResult<number>> =>
     ipcRenderer.invoke('simulation:getProgress'),
-
-  /**
-   * Cancels the currently running simulation.
-   */
-  cancelSimulation: (): Promise<IPCResult<void>> =>
-    ipcRenderer.invoke('simulation:cancel'),
 
   /**
    * Gets the simulation results Report.
@@ -440,23 +558,56 @@ const coretoAPI = {
 // ============================================================================
 
 /**
- * Expose APIs to renderer process via contextBridge.
+ * Initializes the preload script by exposing APIs to the renderer process.
+ *
+ * This function can be called directly in tests to verify API exposure
+ * without relying on module-level side effects.
  *
  * The renderer process can access:
  * - window.electron: Standard Electron APIs (via @electron-toolkit/preload)
  * - window.coreto: Coreto-specific IPC APIs
+ *
+ * @example
+ * ```typescript
+ * // In production, called automatically at module load time
+ * initializePreload()
+ *
+ * // In tests, can be called after mocks are set up
+ * import { initializePreload } from './preload/index'
+ * jest.mock('electron', () => ({ contextBridge: { ... } }))
+ * initializePreload()
+ * ```
  */
-if (process.contextIsolated) {
-  try {
-    contextBridge.exposeInMainWorld('electron', electronAPI);
-    contextBridge.exposeInMainWorld('coreto', coretoAPI);
-  } catch (error) {
-    console.error('Failed to expose context bridge APIs:', error);
+export function initializePreload(): void {
+  if (process.contextIsolated) {
+    try {
+      contextBridge.exposeInMainWorld('electron', electronAPI);
+      contextBridge.exposeInMainWorld('coreto', coretoAPI);
+    } catch (error) {
+      console.error('Failed to expose context bridge APIs:', error);
+    }
+  } else {
+    // Fallback for non-isolated context (should not happen with proper config)
+    console.warn('Context isolation is not enabled. This is a security risk.');
   }
-} else {
-  // Fallback for non-isolated context (should not happen with proper config)
-  console.warn('Context isolation is not enabled. This is a security risk.');
 }
+
+/**
+ * Auto-initialize the preload script when imported.
+ *
+ * In production, this runs immediately when Electron loads the preload script.
+ * In tests, the module can be imported without triggering initialization,
+ * allowing tests to control when initialization happens.
+ */
+if (process.env.NODE_ENV !== 'test') {
+  initializePreload();
+}
+
+/**
+ * CoretoAPI type - The complete API interface exposed to renderer.
+ * Exported for type-safe testing and TypeScript definitions.
+ */
+export type CoretoAPI = typeof coretoAPI;
 
 /**
  * Export types for TypeScript definitions.
@@ -482,4 +633,8 @@ export type {
   IPCSuccessResponse,
   IPCErrorResponse,
   IPCResult,
+  // Worker types (re-exported for renderer)
+  ProgressPayload,
+  ErrorPayload,
+  SimulationResultPayload,
 };

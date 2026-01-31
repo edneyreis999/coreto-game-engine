@@ -12,6 +12,8 @@ const baseConfig = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/renderer/src/$1',
     '^@coreto/core$': '<rootDir>/../core/src/index.ts',
+    '^@coreto/electron/(.*)\\.js$': '<rootDir>/src/$1.ts',
+    '^@coreto/electron/(.+)$': '<rootDir>/src/$1.ts',
     '^(\\.{1,2}/.*)\\.js$': '$1'
   },
   transform: {
@@ -36,14 +38,21 @@ export default {
       ...baseConfig,
       displayName: 'main',
       testEnvironment: 'node',
-      roots: ['<rootDir>/tests'],
-      testMatch: ['**/tests/unit/main/**/*.test.ts', '**/tests/unit/preload/**/*.test.ts'],
+      maxWorkers: 1, // Run tests sequentially to avoid database singleton conflicts
+      roots: ['<rootDir>/tests', '<rootDir>/src/main'],
+      testMatch: [
+        '**/tests/unit/main/**/*.test.ts',
+        '**/tests/unit/preload/**/*.test.ts',
+        '**/src/main/**/__tests__/**/*.spec.ts',
+        '**/src/main/**/__tests__/**/*.test.ts'
+      ],
       setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
       collectCoverageFrom: [
         'src/main/**/*.ts',
         'src/preload/**/*.ts',
         '!src/main/**/*.d.ts',
-        '!src/preload/**/*.d.ts'
+        '!src/preload/**/*.d.ts',
+        '!src/main/**/__tests__/**'
       ],
     },
     // Renderer process tests (jsdom environment for React)

@@ -15,11 +15,9 @@
 
 import {
   type FC,
-  type ReactNode,
 } from 'react';
 import {
   AlertTriangle,
-  AlertCircle,
   Info,
   X,
 } from 'lucide-react';

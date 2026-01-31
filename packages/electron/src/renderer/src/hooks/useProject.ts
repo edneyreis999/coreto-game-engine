@@ -9,7 +9,7 @@
 
 import { useCallback, useState } from 'react';
 
-import type { ProjectInfo } from '@/types/preload';
+import type { ProjectInfo } from '@coreto/electron/preload/index.js';
 
 // ============================================================================
 // Validation Status
@@ -317,7 +317,7 @@ export function getValidationMessage(
         : 'Valid RPG Maker MZ project';
     case 'invalid':
       if (validation.errors.length > 0) {
-        return validation.errors[0];
+        return validation.errors[0] ?? 'Invalid project';
       }
       return 'Invalid project';
     default:

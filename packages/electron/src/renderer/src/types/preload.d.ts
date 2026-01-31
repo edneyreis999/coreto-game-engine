@@ -9,6 +9,13 @@
 
 import type { IPC } from '@electron-toolkit/preload';
 
+// Re-export worker types from preload for renderer convenience
+import type {
+  ProgressPayload,
+  ErrorPayload,
+  SimulationResultPayload
+} from '@coreto/electron/preload/index.js';
+
 // ============================================================================
 // Standard Electron API
 // ============================================================================
@@ -21,6 +28,12 @@ import type { IPC } from '@electron-toolkit/preload';
 interface ElectronAPI {
   ipcRenderer: IPC;
 }
+
+// ============================================================================
+// Worker Types (Re-exported)
+// ============================================================================
+
+export type { ProgressPayload, ErrorPayload, SimulationResultPayload };
 
 // ============================================================================
 // Domain Types
@@ -276,23 +289,72 @@ interface CoretoAPI {
   validateProject(path: string): Promise<IPCResult<ValidationResult>>;
 
   /**
-   * Simulation Handlers
+   * Simulation Handlers (Event Streaming Pattern)
    */
 
   /**
-   * Executes a TTK battle simulation.
-   * @param config - Simulation configuration
-   * @returns Promise with simulation result
+   * Subscribes to simulation progress updates.
+   * @param callback - Called with progress payload on each update
+   * @returns Cleanup function to remove listener (call on unmount!)
    *
    * @example
-   * const result = await window.coreto.runSimulation({
+   * const cleanup = window.coreto.onProgress((payload) => {
+   *   console.log(`Progress: ${payload.percentage}% - ${payload.message}`);
+   * });
+   * // Call cleanup() in useEffect cleanup to prevent memory leaks
+   */
+  onProgress(callback: (payload: ProgressPayload) => void): () => void;
+
+  /**
+   * Subscribes to simulation completion event.
+   * @param callback - Called with result when simulation completes
+   * @returns Cleanup function to remove listener
+   *
+   * @example
+   * const cleanup = window.coreto.onComplete((result) => {
+   *   console.log('Simulation complete:', result.report);
+   * });
+   */
+  onComplete(callback: (result: SimulationResultPayload) => void): () => void;
+
+  /**
+   * Subscribes to simulation error event.
+   * @param callback - Called with error payload on failure
+   * @returns Cleanup function to remove listener
+   *
+   * @example
+   * const cleanup = window.coreto.onError((error) => {
+   *   console.error('Simulation failed:', error.title);
+   * });
+   */
+  onError(callback: (error: ErrorPayload) => void): () => void;
+
+  /**
+   * Starts a simulation (command - invoke pattern).
+   * Returns immediately with simulationId. Result comes via onComplete event.
+   * @param params - Simulation parameters
+   * @returns Promise resolving to simulation ID
+   *
+   * @example
+   * const response = await window.coreto.startSimulation({
    *   projectPath: '/path/to/project',
-   *   troopId: 1,
+   *   configPath: '/path/to/config.json',
    *   seed: 12345
    * });
-   * if (result.success) {
-   *   console.log('TTK:', result.data.battleResult.ttkTurns);
+   * if (response.success) {
+   *   console.log('Simulation ID:', response.data.simulationId);
    * }
+   */
+  startSimulation(params: {
+    projectPath: string;
+    configPath: string;
+    seed?: number;
+    diagnostic?: boolean;
+  }): Promise<IPCResult<{ simulationId: string }>>;
+
+  /**
+   * Legacy simulation handler (deprecated - use startSimulation + event listeners).
+   * @deprecated Use startSimulation with onProgress/onComplete/onError event listeners
    */
   runSimulation(config: {
     projectPath: string;
@@ -305,13 +367,8 @@ interface CoretoAPI {
 
   /**
    * Gets the current simulation progress (0-100).
+   * @deprecated Use onProgress event listener instead
    * @returns Promise with progress percentage
-   *
-   * @example
-   * const result = await window.coreto.getSimulationProgress();
-   * if (result.success) {
-   *   console.log('Progress:', result.data, '%');
-   * }
    */
   getSimulationProgress(): Promise<IPCResult<number>>;
 
@@ -527,4 +584,8 @@ export type {
   IPCSuccessResponse,
   IPCErrorResponse,
   IPCResult,
+  // Worker types (re-exported for convenience)
+  ProgressPayload,
+  ErrorPayload,
+  SimulationResultPayload,
 };

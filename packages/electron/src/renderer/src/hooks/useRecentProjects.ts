@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import type { RecentProject } from '@/types/preload';
+import type { RecentProject } from '@coreto/electron/preload/index.js';
 
 // ============================================================================
 // Hook State

@@ -22,7 +22,7 @@ import { z } from 'zod';
 /**
  * Current schema version. Increment when schema changes.
  */
-export const CURRENT_SCHEMA_VERSION = 1;
+export const CURRENT_SCHEMA_VERSION = 2;
 
 /**
  * SQL for recent_projects table.
@@ -41,6 +41,7 @@ export const RECENT_PROJECTS_TABLE_SQL = `
 /**
  * SQL for simulation_history table.
  * Stores simulation execution results for TTK tracking.
+ * @deprecated Use simulation_history_v2 for new simulations
  */
 export const SIMULATION_HISTORY_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS simulation_history (
@@ -59,6 +60,24 @@ export const SIMULATION_HISTORY_TABLE_SQL = `
     passed INTEGER NOT NULL,
     warnings TEXT,
     executed_at INTEGER NOT NULL
+  );
+`;
+
+/**
+ * SQL for simulation_history_v2 table.
+ * Stores simulation summaries with three-tier storage strategy:
+ * - Summary JSON (~1KB) stored in SQLite for quick queries
+ * - Optional file path to detailed report (~500KB) stored on export
+ */
+export const SIMULATION_HISTORY_V2_TABLE_SQL = `
+  CREATE TABLE IF NOT EXISTS simulation_history_v2 (
+    id TEXT PRIMARY KEY,
+    project_path TEXT NOT NULL,
+    timestamp INTEGER NOT NULL,
+    status TEXT NOT NULL CHECK(status IN ('SUCCESS', 'FAILED', 'CANCELLED')),
+    summary_json TEXT NOT NULL,
+    report_file_path TEXT,
+    created_at INTEGER NOT NULL
   );
 `;
 
@@ -108,6 +127,16 @@ export const SIMULATION_HISTORY_INDEXES_SQL = `
     ON simulation_history(executed_at DESC);
   CREATE INDEX IF NOT EXISTS idx_simulation_history_trecho_id
     ON simulation_history(trecho_id);
+`;
+
+/**
+ * SQL for creating indexes on simulation_history_v2.
+ */
+export const SIMULATION_HISTORY_V2_INDEXES_SQL = `
+  CREATE INDEX IF NOT EXISTS idx_simulation_history_v2_project_path
+    ON simulation_history_v2(project_path, timestamp DESC);
+  CREATE INDEX IF NOT EXISTS idx_simulation_history_v2_timestamp
+    ON simulation_history_v2(timestamp DESC);
 `;
 
 // ============================================================================
@@ -173,6 +202,19 @@ export const SchemaMigrationDbSchema = z.object({
   applied_at: z.number().int().nonnegative(),
 });
 
+/**
+ * Zod schema for SimulationHistoryV2 database record.
+ */
+export const SimulationHistoryV2DbSchema = z.object({
+  id: z.string().uuid(),
+  project_path: z.string().min(1),
+  timestamp: z.number().int().nonnegative(),
+  status: z.enum(['SUCCESS', 'FAILED', 'CANCELLED']),
+  summary_json: z.string().min(1),
+  report_file_path: z.string().nullable(),
+  created_at: z.number().int().nonnegative(),
+});
+
 // ============================================================================
 // TypeScript Type Definitions
 // ============================================================================
@@ -186,6 +228,11 @@ export type RecentProjectDb = z.infer<typeof RecentProjectDbSchema>;
  * SimulationHistory database entity.
  */
 export type SimulationHistoryDb = z.infer<typeof SimulationHistoryDbSchema>;
+
+/**
+ * SimulationHistoryV2 database entity.
+ */
+export type SimulationHistoryV2Db = z.infer<typeof SimulationHistoryV2DbSchema>;
 
 /**
  * UserPreferences database entity.

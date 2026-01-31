@@ -13,6 +13,10 @@
 
 import type Database from 'better-sqlite3';
 import { CURRENT_SCHEMA_VERSION } from './schema.js';
+import {
+  SIMULATION_HISTORY_V2_TABLE_SQL,
+  SIMULATION_HISTORY_V2_INDEXES_SQL,
+} from './schema.js';
 
 /**
  * Migration definition.
@@ -98,9 +102,20 @@ export const MIGRATIONS: readonly Migration[] = [
       );
     `,
   },
+  {
+    version: 2,
+    description: 'Add simulation_history_v2 table with three-tier storage strategy',
+    sql: `
+      -- Create simulation_history_v2 table with three-tier storage
+      ${SIMULATION_HISTORY_V2_TABLE_SQL}
+
+      -- Create indexes for performance
+      ${SIMULATION_HISTORY_V2_INDEXES_SQL}
+    `,
+  },
   // Add future migrations here
   // {
-  //   version: 2,
+  //   version: 3,
   //   description: 'Add new feature',
   //   sql: `ALTER TABLE ...`,
   // },

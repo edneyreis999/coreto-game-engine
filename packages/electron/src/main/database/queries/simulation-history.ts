@@ -32,24 +32,27 @@ export interface SimulationHistoryInput {
 
 /**
  * Result type for SimulationHistory queries.
+ * Converts database INTEGER (0/1) to boolean for passed field.
  */
-export type SimulationHistory = Pick<
-  SimulationHistoryDb,
-  | 'id'
-  | 'project_path'
-  | 'config_name'
-  | 'trecho_id'
-  | 'troop_id'
-  | 'troop_name'
-  | 'ttk_turns'
-  | 'ttk_actions'
-  | 'duration_ms'
-  | 'seed'
-  | 'exp_gained'
-  | 'outcome'
-  | 'passed'
-  | 'executed_at'
-> & { warnings: string[] };
+export type SimulationHistory = Omit<
+  Pick<
+    SimulationHistoryDb,
+    | 'id'
+    | 'project_path'
+    | 'config_name'
+    | 'trecho_id'
+    | 'troop_id'
+    | 'troop_name'
+    | 'ttk_turns'
+    | 'ttk_actions'
+    | 'duration_ms'
+    | 'seed'
+    | 'exp_gained'
+    | 'outcome'
+    | 'executed_at'
+  >,
+  'passed'
+> & { passed: boolean; warnings: string[] };
 
 /**
  * Adds a simulation result to history.
@@ -92,9 +95,13 @@ export function addSimulationHistory(
 
   const id = result.lastInsertRowid as number;
 
+  // Convert boolean passed to number (0 or 1) for database storage
+  const { passed, ...inputWithoutPassed } = input;
+
   return {
     id,
-    ...input,
+    ...inputWithoutPassed,
+    passed: Boolean(passed), // Convert back to boolean for API
     executed_at: now,
   };
 }
@@ -248,7 +255,7 @@ function parseSimulationHistoryRow(row: unknown): SimulationHistory {
     seed: parsed.seed,
     exp_gained: parsed.exp_gained,
     outcome: parsed.outcome,
-    passed: parsed.passed === 1,
+    passed: parsed.passed === 1, // Convert INTEGER (0/1) to boolean
     warnings: parsed.warnings ? JSON.parse(parsed.warnings) : [],
     executed_at: parsed.executed_at,
   };

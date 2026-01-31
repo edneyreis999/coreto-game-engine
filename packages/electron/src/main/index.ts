@@ -1,8 +1,10 @@
 import 'reflect-metadata'
-import { app, BrowserWindow, shell } from 'electron'
+import { app, BrowserWindow, shell, utilityProcess, type UtilityProcess } from 'electron'
 import path from 'node:path'
-import { setupIpcHandlers } from './ipc/index.js'
+import { setupIpcHandlers, setMainWindowReference } from './ipc/index.js'
 import { initDatabase, closeDatabase, setDatabasePath } from './database/index.js'
+import { simulationController } from './services/index.js'
+import type { WorkerToMainMessage } from './workers/types.js'
 
 /**
  * Main Process Entry Point
@@ -58,6 +60,9 @@ export function createWindow(): BrowserWindow {
     mainWindow?.show()
   })
 
+  // Set window reference for IPC event forwarding (Task 02)
+  setMainWindowReference(mainWindow)
+
   // Handle external links in default browser
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url)
@@ -80,6 +85,8 @@ export function registerAppLifecycleHandlers(): void {
    * App lifecycle: Quit when all windows are closed (except macOS).
    */
   app.on('window-all-closed', () => {
+    // Cleanup simulation controller on window close
+    simulationController.cleanup()
     if (process.platform !== 'darwin') {
       app.quit()
     }
@@ -99,6 +106,7 @@ export function registerAppLifecycleHandlers(): void {
    */
   app.on('before-quit', () => {
     // TODO: Save window bounds for persistence (task #6)
+    simulationController.cleanup()
     closeDatabase()
   })
 }
@@ -142,3 +150,51 @@ if (process.env.NODE_ENV !== 'test') {
  * Export window instance for testing and IPC handler access.
  */
 export { mainWindow }
+
+// =============================================================================
+// UtilityProcess Worker Placeholder (Task 01)
+// =============================================================================
+
+/**
+ * Spawn a new UtilityProcess worker for TTK simulation.
+ *
+ * NOTE: This is a placeholder implementation for Task 01.
+ * Full lifecycle management will be implemented in Task 05 (SimulationController).
+ *
+ * @see planos/005-run-ttk-electron/tasks/01_task.md Section 4
+ */
+export function spawnWorker(): UtilityProcess {
+  const worker = utilityProcess.fork(
+    path.join(__dirname, './workers/simulation.worker.js'),
+    [],
+    {
+      serviceName: 'SimulationWorker',
+      stdio: 'pipe'
+    }
+  )
+
+  // Handle messages from worker
+  worker.on('message', (message: WorkerToMainMessage) => {
+    console.log('[Main] Received from worker:', message.type)
+    // TODO: Forward to renderer (Task 02 - IPC Layer)
+  })
+
+  // Handle worker crashes
+  worker.on('exit', (code) => {
+    if (code !== 0 && code !== null) {
+      console.error(`[Main] Worker crashed with code ${code}`)
+    }
+  })
+
+  // Log worker stdout for debugging
+  worker.stdout?.on('data', (data: Buffer) => {
+    console.log(`[Worker stdout] ${data.toString()}`)
+  })
+
+  // Log worker stderr for debugging
+  worker.stderr?.on('data', (data: Buffer) => {
+    console.error(`[Worker stderr] ${data.toString()}`)
+  })
+
+  return worker
+}

@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import type { IPCResult } from '@/types/preload';
+import type { IPCResult } from '@coreto/electron/preload/index.js';
 
 // ============================================================================
 // Hook State
@@ -57,6 +57,21 @@ interface IpcReturn<T> extends IpcState<T> {
    * Invokes the IPC call with the provided payload.
    */
   invoke: () => Promise<void>;
+
+  /**
+   * Resets the state to initial values.
+   */
+  reset: () => void;
+}
+
+/**
+ * Return value for useIpcWithArg hook.
+ */
+interface IpcReturnWithArg<T, A> extends IpcState<T> {
+  /**
+   * Invokes the IPC call with the provided argument.
+   */
+  invoke: (arg: A) => Promise<void>;
 
   /**
    * Resets the state to initial values.
@@ -180,7 +195,6 @@ export function useIpc<T>(
     } finally {
       abortControllerRef.current = null;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Invoke on mount if requested
@@ -226,7 +240,7 @@ export function useIpc<T>(
 export function useIpcWithArg<T, A>(
   ipcFn: (arg: A) => Promise<IPCResult<T>>,
   _options: UseIpcOptions = {}
-): IpcReturn<T> & { invoke: (arg: A) => Promise<void> } {
+): IpcReturnWithArg<T, A> {
   const [state, setState] = useState<IpcState<T>>({
     data: null,
     error: null,

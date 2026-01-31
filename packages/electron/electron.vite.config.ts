@@ -17,7 +17,12 @@ export default defineConfig({
     plugins: [externalizeDepsPlugin()],
     build: {
       rollupOptions: {
+        input: {
+          index: resolve(__dirname, 'src/main/index.ts'),
+          'workers/simulation.worker': resolve(__dirname, 'src/main/workers/simulation.worker.ts')
+        },
         output: {
+          entryFileNames: '[name].js',
           manualChunks(id) {
             if (id.includes('node_modules')) {
               return 'vendor'

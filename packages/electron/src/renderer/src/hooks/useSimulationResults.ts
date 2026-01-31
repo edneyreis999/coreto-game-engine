@@ -11,7 +11,7 @@
 import { useCallback } from 'react';
 
 import { useIpc } from './useIpc';
-import type { ReportData } from '@/types/preload';
+import type { ReportData } from '@coreto/electron/preload/index.js';
 
 // ============================================================================
 // Hook State

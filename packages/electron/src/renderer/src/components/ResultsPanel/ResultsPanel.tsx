@@ -23,7 +23,6 @@
 
 import {
   type FC,
-  useCallback,
   useRef,
   useEffect,
 } from 'react';

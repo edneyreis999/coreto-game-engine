@@ -38,11 +38,12 @@ export function getUserPreferences(db: Database.Database): UserPreferences {
 
   if (!row) {
     // Return defaults if no record exists
-    return {
+    // Note: window_bounds is omitted when undefined (exactOptionalPropertyTypes)
+    const defaults: UserPreferences = {
       theme: DEFAULT_USER_PREFERENCES.theme,
-      window_bounds: undefined,
       last_project_path: DEFAULT_USER_PREFERENCES.last_project_path,
     };
+    return defaults;
   }
 
   const parsed = UserPreferencesDbSchema.pick({
@@ -139,11 +140,18 @@ export function updateUserPreferences(
   updates: Partial<UserPreferences>
 ): UserPreferences {
   const current = getUserPreferences(db);
+
+  // Build merged preferences, handling optional properties correctly
   const merged: UserPreferences = {
     theme: updates.theme ?? current.theme,
-    window_bounds: updates.window_bounds ?? current.window_bounds,
-    last_project_path: updates.last_project_path ?? current.last_project_path,
+    last_project_path: updates.last_project_path ?? current.last_project_path ?? null,
   };
+
+  // Only include window_bounds if it's defined in updates or current
+  const newWindowBounds = updates.window_bounds ?? current.window_bounds;
+  if (newWindowBounds !== undefined) {
+    merged.window_bounds = newWindowBounds;
+  }
 
   return setUserPreferences(db, merged);
 }
@@ -157,7 +165,6 @@ export function updateUserPreferences(
 export function resetUserPreferences(db: Database.Database): UserPreferences {
   const defaults: UserPreferences = {
     theme: DEFAULT_USER_PREFERENCES.theme,
-    window_bounds: undefined,
     last_project_path: DEFAULT_USER_PREFERENCES.last_project_path,
   };
 
