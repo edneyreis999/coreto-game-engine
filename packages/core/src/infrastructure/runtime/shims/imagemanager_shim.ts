@@ -13,6 +13,9 @@
  * - ImageManager.isReady(): Always returns true
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// This file intentionally uses 'any' types to mock external ImageManager API
+
 /**
  * Applies ImageManager mocks to global ImageManager object.
  *

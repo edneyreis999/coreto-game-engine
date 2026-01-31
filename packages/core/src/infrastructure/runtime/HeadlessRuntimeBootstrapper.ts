@@ -5,6 +5,9 @@ import { ScriptLoader } from './loaders/ScriptLoader.js';
 import { DatabaseLoader } from './loaders/DatabaseLoader.js';
 import { DeterministicRNG } from '../simulation/DeterministicRNG.js';
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// This file intentionally uses 'any' types to interface with RPG Maker MZ runtime APIs
+
 /**
  * HeadlessRuntimeBootstrapper
  *
@@ -247,7 +250,7 @@ export class HeadlessRuntimeBootstrapper {
    */
   private mockCanvasAPI(window: any): void {
     // Mock CanvasRenderingContext2D
-    const CanvasRenderingContext2D = function (this: any) {
+    const CanvasRenderingContext2D = function (this: any): void {
       this.fillStyle = '#000000';
       this.strokeStyle = '#000000';
       this.lineWidth = 1;

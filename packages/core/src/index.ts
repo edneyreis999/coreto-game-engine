@@ -44,7 +44,6 @@ export type {
   IBattleSimulator,
   BattleSetup,
   IReporter,
-  Warning,
   WarningType,
   WarningSeverity,
   IHeadlessRuntime,
@@ -90,6 +89,19 @@ export {
   ILoggerToken,
   IFileSystemToken,
 } from './infrastructure/di/tokens.js';
+
+// =============================================================================
+// Infrastructure Adapters (for testing and external use)
+// =============================================================================
+
+export * from './infrastructure/adapters/data/index.js';
+export * from './infrastructure/adapters/filesystem/index.js';
+
+// =============================================================================
+// Runtime Infrastructure (for testing and headless execution)
+// =============================================================================
+
+export * from './infrastructure/runtime/index.js';
 
 // =============================================================================
 // TypeScript Types

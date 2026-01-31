@@ -11,6 +11,9 @@
  * - createEffekseerContext(): Stub for Effekseer particle system
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// This file intentionally uses 'any' types to mock external Graphics API
+
 interface GraphicsShim {
   frameCount: number;
   width: number;

@@ -11,7 +11,7 @@ import { HeadlessRuntimeBootstrapper } from '../runtime/HeadlessRuntimeBootstrap
 /**
  * Type assertion for accessing global RMMZ objects
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any, no-undef
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const globalScope = global as any;
 
 /**
@@ -397,7 +397,9 @@ export class HeadlessBattleSimulator implements IBattleSimulator {
    * @private
    */
   private determineBattleOutcome(): 'victory' | 'defeat' | 'timeout' {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const $gameTroop = (global as any).$gameTroop;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const $gameParty = (global as any).$gameParty;
 
     // Victory: all enemies dead
@@ -423,7 +425,7 @@ export class HeadlessBattleSimulator implements IBattleSimulator {
    * This method intentionally returns 0 for non-victory outcomes.
    */
   private getBattleExpGained(outcome: 'victory' | 'defeat' | 'timeout'): number {
-    if (outcome !== 'victory') return 0;
+    if (outcome !== 'victory') {return 0;}
 
     try {
       const BattleManager = globalScope.BattleManager;

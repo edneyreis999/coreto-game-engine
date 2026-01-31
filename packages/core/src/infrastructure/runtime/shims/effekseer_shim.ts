@@ -10,6 +10,9 @@
  * All methods are no-op stubs that satisfy initialization checks.
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// This file intentionally uses 'any' types to mock external Effekseer API
+
 interface EffekseerShim {
   initRuntime(path: string, onload: () => void, onerror: () => void): void;
   update(): void;

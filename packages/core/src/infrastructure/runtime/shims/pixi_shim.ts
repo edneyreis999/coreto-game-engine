@@ -15,6 +15,10 @@
  * @see docs/adrs/RUNTIME/ADR-015-graphics-mocking-strategy-headless-runtime.md
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
+// This file intentionally uses 'any' types to mock external PIXI.js API
+
 /**
  * Base class for all display objects in PIXI hierarchy.
  * Provides position, visibility, and transform properties.
@@ -70,7 +74,7 @@ Container.prototype.constructor = Container;
  * @returns The added child
  */
 Container.prototype.addChild = function (child: any) {
-  if (!child) return child;
+  if (!child) {return child;}
 
   // Remove from previous parent
   if (child.parent) {
@@ -386,7 +390,7 @@ PIXI.Loader = {
     },
     load: (cb?: () => void) => {
       // Immediately invoke callback - all resources are "loaded"
-      if (cb) cb();
+      if (cb) {cb();}
     },
   },
 };

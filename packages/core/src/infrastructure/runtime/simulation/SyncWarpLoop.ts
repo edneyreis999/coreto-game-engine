@@ -12,6 +12,9 @@
  * @module infrastructure/runtime/simulation
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// This file intentionally uses 'any' types to interface with RPG Maker MZ game loop APIs
+
 /**
  * Synchronous game loop that executes at maximum speed without waiting for RAF.
  *
@@ -113,7 +116,7 @@ export class SyncWarpLoop {
     }
 
     // Replace with safe stub
-    function StubColorFilter(this: any) {
+    function StubColorFilter(this: any): void {
       this.hue = 0;
       this.brightness = 255;
       this.colorTone = [0, 0, 0, 0];

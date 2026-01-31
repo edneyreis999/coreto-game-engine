@@ -37,7 +37,7 @@ export class DiagnosticLogger {
    * Start overall execution timing
    */
   startExecution(): void {
-    if (!this.enabled) return;
+    if (!this.enabled) {return;}
 
     this.startTime = Date.now();
     this.log('execution', 'Pipeline execution started');
@@ -49,7 +49,7 @@ export class DiagnosticLogger {
    * @param stage - Stage identifier (e.g., "config_load", "battle_execution")
    */
   startStage(stage: string): void {
-    if (!this.enabled) return;
+    if (!this.enabled) {return;}
 
     this.stageTimers.set(stage, Date.now());
     this.log(stage, `Stage started: ${stage}`);
@@ -61,7 +61,7 @@ export class DiagnosticLogger {
    * @param stage - Stage identifier
    */
   endStage(stage: string): void {
-    if (!this.enabled) return;
+    if (!this.enabled) {return;}
 
     const startTime = this.stageTimers.get(stage);
     if (!startTime) {
@@ -87,7 +87,7 @@ export class DiagnosticLogger {
    * @param data - Optional structured data
    */
   log(stage: string, message: string, data?: Record<string, unknown>): void {
-    if (!this.enabled) return;
+    if (!this.enabled) {return;}
 
     const entry: DiagnosticEntry = {
       timestamp: new Date(),
@@ -130,7 +130,7 @@ export class DiagnosticLogger {
    * @param totalBattles - Total battles executed
    */
   printSummary(totalBattles: number): void {
-    if (!this.enabled) return;
+    if (!this.enabled) {return;}
 
     const metrics = this.getMetrics(totalBattles);
 

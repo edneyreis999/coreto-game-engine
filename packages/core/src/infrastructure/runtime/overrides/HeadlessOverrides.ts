@@ -23,6 +23,9 @@
  *
  * Task 22.5: Headless Overrides
  */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// This file intentionally uses 'any' types to override RPG Maker MZ runtime APIs
 export class HeadlessOverrides {
   /**
    * Aplica todos os overrides: busy state + input neutralization.
@@ -274,7 +277,7 @@ export class HeadlessOverrides {
     }
 
     // Helper to ensure uniforms always exists
-    const ensureUniforms = function(self: any) {
+    const ensureUniforms = function(self: any): void {
       if (!self.uniforms || typeof self.uniforms !== 'object') {
         self.uniforms = {
           hue: 0,
@@ -404,7 +407,7 @@ export class HeadlessOverrides {
       if (this._scrollBar && this._scrollBar.update) {
         try {
           this._scrollBar.update();
-        } catch (e) {
+        } catch {
           // Ignore scrollbar update errors in headless mode
         }
       }

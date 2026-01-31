@@ -331,7 +331,7 @@ export class JsonReporter implements IReporter {
    * @returns Average value
    */
   private calculateAverage(values: number[]): number {
-    if (values.length === 0) return 0;
+    if (values.length === 0) {return 0;}
     const sum = values.reduce((acc, val) => acc + val, 0);
     return sum / values.length;
   }
@@ -345,8 +345,12 @@ export class JsonReporter implements IReporter {
    * @returns Percentile value
    */
   private calculatePercentile(values: number[], percentile: number): number {
-    if (values.length === 0) return 0;
-    if (values.length === 1) return values[0]!;
+    /* eslint-disable @typescript-eslint/no-non-null-assertion */
+    // Using non-null assertion because array bounds are verified in this function
+    if (values.length === 0) {return 0;}
+    if (values.length === 1) {
+      return values[0]!;
+    }
 
     // Sort values in ascending order
     const sorted = [...values].sort((a, b) => a - b);
@@ -364,6 +368,7 @@ export class JsonReporter implements IReporter {
     // Otherwise, interpolate between lower and upper
     const fraction = index - lower;
     return sorted[lower]! + fraction * (sorted[upper]! - sorted[lower]!);
+    /* eslint-enable @typescript-eslint/no-non-null-assertion */
   }
 
   /**

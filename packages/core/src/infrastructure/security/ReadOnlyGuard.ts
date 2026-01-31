@@ -19,6 +19,9 @@
  * ```
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// This file intentionally uses 'any' types to intercept fs module API
+
 import { createRequire } from 'module';
 import type { PathOrFileDescriptor, WriteFileOptions } from 'fs';
 import * as path from 'path';

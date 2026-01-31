@@ -1,6 +1,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// This file intentionally uses 'any' types to interface with RPG Maker MZ database APIs
+
 /**
  * DatabaseLoader
  *

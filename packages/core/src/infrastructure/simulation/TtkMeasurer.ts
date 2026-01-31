@@ -6,7 +6,7 @@ import { ValidationError } from '../../core/errors/ValidationError.js';
 /**
  * Type assertion for accessing global RMMZ objects
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any, no-undef
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const globalScope = global as any;
 
 /**
@@ -85,7 +85,7 @@ export class TtkMeasurer {
     const self = this;
 
     // Inject action counter
-    Game_Battler.prototype.performAction = function (action: any) {
+    Game_Battler.prototype.performAction = function (action: unknown) {
       // Increment counter only for party members (not enemies)
       if (this.isActor && this.isActor()) {
         self.actionCount++;

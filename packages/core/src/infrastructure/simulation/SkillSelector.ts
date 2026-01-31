@@ -3,7 +3,7 @@ import { injectable } from 'tsyringe';
 /**
  * Type assertion for accessing global RMMZ objects
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any, no-undef
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const globalScope = global as any;
 
 /**

@@ -11,6 +11,9 @@
  * - All methods are no-op, but maintain API compatibility
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// This file intentionally uses 'any' types to mock external Web Audio API
+
 /**
  * Mock AudioContext implementation.
  *
