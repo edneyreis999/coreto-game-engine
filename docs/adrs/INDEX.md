@@ -1,7 +1,7 @@
 # ADR Index - Coreto Game Engine
 
-**Total ADRs:** 31
-**Last Updated:** 2026-01-04
+**Total ADRs:** 32
+**Last Updated:** 2026-01-31
 
 ## Overview
 
@@ -77,6 +77,12 @@ This index organizes all 31 Architecture Decision Records (ADRs) for the Coreto 
 | [ADR-020](SIMULATION/ADR-020-dual-metric-ttk-measurement-turns-and-actions.md) | Dual-Metric TTK Measurement (Turns and Actions) | Accepted |
 | [ADR-027](SIMULATION/ADR-027-level-based-skill-derivation-from-learnings.md) | Level-Based Skill Derivation from Class Learnings | Accepted |
 
+### UI Module (1 ADR)
+
+| ID | Title | Status |
+|----|-------|--------|
+| [ADR-032](UI/ADR-032-electron-dev-portal-multi-tool-platform.md) | Electron Dev Portal for Multi-Tool Platform | Accepted |
+
 ---
 
 ## Summary by Module
@@ -90,7 +96,8 @@ This index organizes all 31 Architecture Decision Records (ADRs) for the Coreto 
 | REPORTER | 4 | Report generation and output |
 | RUNTIME | 6 | Headless execution environment |
 | SIMULATION | 7 | Battle simulation mechanics |
-| **TOTAL** | **31** | **All architectural decisions** |
+| UI | 1 | Desktop interface (Electron Dev Portal) |
+| **TOTAL** | **32** | **All architectural decisions** |
 
 ---
 
