@@ -10,20 +10,12 @@
 
 import { HeadlessRuntimeBootstrapper } from '@coreto/core/infrastructure/runtime/HeadlessRuntimeBootstrapper';
 import { DeterministicRNG } from '@coreto/core/infrastructure/simulation/DeterministicRNG';
-import { FileSystemAdapter } from '@coreto/core/infrastructure/runtime/FileSystemAdapter';
 
 describe('HeadlessRuntimeBootstrapper', () => {
-  let fileSystemAdapter: FileSystemAdapter;
-
-  beforeEach(() => {
-    fileSystemAdapter = new FileSystemAdapter();
-  });
-
   describe('bootstrap process', () => {
     it('should initialize with correct dependencies', () => {
       const bootstrapper = new HeadlessRuntimeBootstrapper(false);
       expect(bootstrapper).toBeDefined();
-      expect(fileSystemAdapter).toBeDefined();
     });
 
     it('should support diagnostic mode', () => {

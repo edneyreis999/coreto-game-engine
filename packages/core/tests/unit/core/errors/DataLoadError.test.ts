@@ -101,6 +101,7 @@ describe('TroopNotFoundError', () => {
       expect(json.context).toHaveProperty('trechoId', trechoId);
     });
   });
+});
 
 describe('EnemyNotFoundError', () => {
   describe('constructor', () => {

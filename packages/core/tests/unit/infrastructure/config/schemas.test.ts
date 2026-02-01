@@ -15,12 +15,14 @@ import {
   PartyConfigSchema,
   TrechoSchema,
   ProjectConfigSchema,
-  type AnchorLevelRange,
-  type TtkTarget,
-  type PartyMember,
-  type PartyConfig,
-  type TrechoConfig,
-  type ProjectConfig,
+} from '@coreto/core/infrastructure/config/schemas.js';
+import type {
+  AnchorLevelRange,
+  TtkTarget,
+  PartyMember,
+  PartyConfig,
+  TrechoConfig,
+  ProjectConfig,
 } from '@coreto/core/infrastructure/config/schemas.js';
 
 describe('AnchorLevelRangeSchema', () => {

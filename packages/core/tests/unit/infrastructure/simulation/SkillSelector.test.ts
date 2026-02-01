@@ -110,13 +110,13 @@ describe('SkillSelector', () => {
     test.each([
       // [actorHP, actorMP, skillHPCost, skillMPCost, expectedSkillId, description]
       [100, 50, 0, 0, 1, 'default sufficient HP/MP'],
-      [5, 50, 0, 10, 2, 'insufficient MP for skill'],
+      [5, 5, 0, 10, 2, 'insufficient MP for skill'],
       [10, 50, 10, 0, 2, 'insufficient HP for skill'],
       [10, 10, 0, 10, 1, 'exact MP cost'],
       [10, 10, 10, 0, 2, 'exact HP cost (would kill)'],
       [11, 50, 10, 0, 1, 'HP > HP cost'],
     ])('should select skill %p with HP:%p, MP:%p, HPCost:%p, MPCost:%p - %s',
-      (actorHP, actorMP, skillHPCost, skillMPCost, expectedSkillId, description) => {
+      (actorHP, actorMP, skillHPCost, skillMPCost, expectedSkillId, _description) => {
         mockActor.hp = actorHP;
         mockActor.mp = actorMP;
 
@@ -160,7 +160,7 @@ describe('SkillSelector', () => {
       [1, 0, 1, 'HP cost is 0 (should accept)'],
       [1, undefined, 1, 'HP cost is undefined (should accept)'],
     ])('HP: %p, Cost: %p -> Skill: %p (%s)',
-      (actorHP, skillHPCost, expectedSkillId, description) => {
+      (actorHP, skillHPCost, expectedSkillId, _description) => {
         mockActor.hp = actorHP;
 
         if (skillHPCost === undefined) {
@@ -183,7 +183,7 @@ describe('SkillSelector', () => {
       [0, 0, 1, 'MP cost is 0 (should accept)'],
       [0, undefined, 1, 'MP cost is undefined (should accept)'],
     ])('MP: %p, Cost: %p -> Skill: %p (%s)',
-      (actorMP, skillMPCost, expectedSkillId, description) => {
+      (actorMP, skillMPCost, expectedSkillId, _description) => {
         mockActor.mp = actorMP;
 
         if (skillMPCost === undefined) {
@@ -206,7 +206,7 @@ describe('SkillSelector', () => {
       [100, 5, 0, 10, 2, 'HP sufficient but MP insufficient'],
       [5, 100, 5, 0, 2, 'MP sufficient but HP insufficient'],
     ])('HP:%p, MP:%p, HPCost:%p, MPCost:%p -> Skill: %p (%s)',
-      (actorHP, actorMP, skillHPCost, skillMPCost, expectedSkillId, description) => {
+      (actorHP, actorMP, skillHPCost, skillMPCost, expectedSkillId, _description) => {
         mockActor.hp = actorHP;
         mockActor.mp = actorMP;
 
@@ -226,7 +226,7 @@ describe('SkillSelector', () => {
       [[mockEnemy2], mockEnemy2, 'single enemy'],
       [[mockEnemy1, mockEnemy2, { enemyId: 3, hp: 60, name: 'Goblin' }], mockEnemy1, 'multiple enemies, always first'],
     ])('should target first alive enemy from %p - %s',
-      (aliveMembers, expectedTarget, description) => {
+      (aliveMembers, expectedTarget, _description) => {
         mockGlobal.$gameTroop.aliveMembers = jest.fn(() => aliveMembers);
 
         const result = selector.selectSkillForActor(mockActor);
@@ -241,7 +241,7 @@ describe('SkillSelector', () => {
       [9999, 9999, 0, 0, 1, 'maximum resources'],
       [1, 0, 0, 0, 1, 'minimum resources'],
     ])('HP:%p, MP:%p, HPCost:%p, MPCost:%p -> Skill: %p (%s)',
-      (actorHP, actorMP, skillHPCost, skillMPCost, expectedSkillId, description) => {
+      (actorHP, actorMP, skillHPCost, skillMPCost, expectedSkillId, _description) => {
         mockActor.hp = actorHP;
         mockActor.mp = actorMP;
 
@@ -271,7 +271,7 @@ describe('SkillSelector', () => {
       [10, 50, 10, 0, 2, 'HP cost constraint'],
       [50, 5, 0, 10, 2, 'MP cost constraint'],
     ])('should respect %s - HP:%p, MP:%p, HPCost:%p, MPCost:%p -> Skill: %p',
-      (constraint, actorHP, actorMP, skillHPCost, skillMPCost, expectedSkillId) => {
+      (actorHP, actorMP, skillHPCost, skillMPCost, expectedSkillId, _constraint) => {
         mockActor.hp = actorHP;
         mockActor.mp = actorMP;
 
@@ -290,7 +290,7 @@ describe('SkillSelector', () => {
       [50, 0, 1, 'basic attack selection when affordable'],
       [0, 10, 2, 'Guard fallback when unaffordable'],
     ])('should implement %s - MP:%p, MPCost:%p -> Skill: %p',
-      (behavior, actorMP, skillMPCost, expectedSkillId) => {
+      (actorMP, skillMPCost, expectedSkillId, _behavior) => {
         mockActor.mp = actorMP;
         mockGlobal.$dataSkills[1].mpCost = skillMPCost;
 

@@ -9,7 +9,7 @@ import { RmmzDataLoader } from '@coreto/core/infrastructure/adapters/data/RmmzDa
 import { RmmzProjectValidator } from '@coreto/core/infrastructure/adapters/data/RmmzProjectValidator.js';
 import type { IFileSystem, RmmzDatabase } from '@coreto/core/core/ports/index.js';
 import { DataLoadError } from '@coreto/core/core/errors/DataLoadError.js';
-import type { EnemyData, TroopData, ClassData, SkillData, ItemData, SystemData } from '@coreto/core/types/rmmz-data.js';
+import type { EnemyData, TroopData, SystemData } from '@coreto/core/types/rmmz-data.js';
 
 describe('RmmzDataLoader', () => {
   let loader: RmmzDataLoader;

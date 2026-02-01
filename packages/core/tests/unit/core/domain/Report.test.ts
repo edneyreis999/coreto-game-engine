@@ -78,39 +78,29 @@ describe('Report', () => {
       expect(report.warnings).toHaveLength(1);
     });
 
-    it('should handle edge cases', () => {
-      const testCases = [
-        {
-          description: 'empty trechos',
-          data: {
-            metadata: createValidMetadata(),
-            summary: createValidSummary(),
-            trechos: [],
-            warnings: [],
-          },
-          assertions: (report: Report) => {
-            expect(report.trechos).toHaveLength(0);
-          },
-        },
-        {
-          description: 'empty warnings',
-          data: {
-            metadata: createValidMetadata(),
-            summary: createValidSummary(),
-            trechos: [createValidTrechoSummary()],
-            warnings: [],
-          },
-          assertions: (report: Report) => {
-            expect(report.warnings).toHaveLength(0);
-          },
-        },
-      ];
+    describe('edge cases', () => {
+      it('should handle empty trechos', () => {
+        const data: ReportData = {
+          metadata: createValidMetadata(),
+          summary: createValidSummary(),
+          trechos: [],
+          warnings: [],
+        };
 
-      testCases.forEach(({ description, data, assertions }) => {
-        it(description, () => {
-          const report = new Report(data);
-          assertions(report);
-        });
+        const report = new Report(data);
+        expect(report.trechos).toHaveLength(0);
+      });
+
+      it('should handle empty warnings', () => {
+        const data: ReportData = {
+          metadata: createValidMetadata(),
+          summary: createValidSummary(),
+          trechos: [createValidTrechoSummary()],
+          warnings: [],
+        };
+
+        const report = new Report(data);
+        expect(report.warnings).toHaveLength(0);
       });
 
       it('should create report with multiple trechos', () => {
@@ -176,43 +166,53 @@ describe('Report', () => {
   });
 
   describe('overallPassed', () => {
-    it('should correctly calculate overallPassed status', () => {
-      // Test all combinations
-      const testCases = [
-        {
-          description: 'true when all trechos passed',
+    describe('should correctly calculate overallPassed status', () => {
+      it('should be true when all trechos passed', () => {
+        const data: ReportData = {
+          metadata: createValidMetadata(),
+          summary: createValidSummary(),
           trechos: [createValidTrechoSummary(true), createValidTrechoSummary(true)],
-          expected: true,
-        },
-        {
-          description: 'false when any trecho failed',
+          warnings: [],
+        };
+
+        const report = new Report(data);
+        expect(report.overallPassed).toBe(true);
+      });
+
+      it('should be false when any trecho failed', () => {
+        const data: ReportData = {
+          metadata: createValidMetadata(),
+          summary: createValidSummary(),
           trechos: [createValidTrechoSummary(true), createValidTrechoSummary(false)],
-          expected: false,
-        },
-        {
-          description: 'false when all trechos failed',
+          warnings: [],
+        };
+
+        const report = new Report(data);
+        expect(report.overallPassed).toBe(false);
+      });
+
+      it('should be false when all trechos failed', () => {
+        const data: ReportData = {
+          metadata: createValidMetadata(),
+          summary: createValidSummary(),
           trechos: [createValidTrechoSummary(false), createValidTrechoSummary(false)],
-          expected: false,
-        },
-        {
-          description: 'true when no trechos (empty report)',
+          warnings: [],
+        };
+
+        const report = new Report(data);
+        expect(report.overallPassed).toBe(false);
+      });
+
+      it('should be true when no trechos (empty report)', () => {
+        const data: ReportData = {
+          metadata: createValidMetadata(),
+          summary: createValidSummary(),
           trechos: [],
-          expected: true,
-        },
-      ];
+          warnings: [],
+        };
 
-      testCases.forEach(({ description, trechos, expected }) => {
-        it(description, () => {
-          const data: ReportData = {
-            metadata: createValidMetadata(),
-            summary: createValidSummary(),
-            trechos,
-            warnings: [],
-          };
-
-          const report = new Report(data);
-          expect(report.overallPassed).toBe(expected);
-        });
+        const report = new Report(data);
+        expect(report.overallPassed).toBe(true);
       });
 
       it('should be independent of warnings', () => {

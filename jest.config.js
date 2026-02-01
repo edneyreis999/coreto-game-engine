@@ -6,17 +6,20 @@ export default {
   roots: ['<rootDir>/packages'],
   testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
   transform: {
-    '^.+\\.ts$': [
+    '^.+\\.tsx?$': [
       'ts-jest',
       {
         useESM: true,
         tsconfig: {
-          module: 'ESNext',
-          moduleResolution: 'node',
+          esModuleInterop: true,
+          allowSyntheticDefaultImports: true,
         },
       },
     ],
   },
+  transformIgnorePatterns: [
+    'node_modules',
+  ],
   // Module name mapping for workspace imports
   moduleNameMapper: {
     // Workspace package imports - strip .js extension and map to src files

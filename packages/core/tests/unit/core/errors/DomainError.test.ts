@@ -1,4 +1,4 @@
-import { DomainError, ErrorSeverity } from '@coreto/core/core/errors/DomainError';
+import { DomainError } from '@coreto/core/core/errors/DomainError';
 import { TestDomainError } from './fakes/TestDomainError';
 
 describe('DomainError', () => {

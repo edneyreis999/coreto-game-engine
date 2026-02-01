@@ -25,7 +25,8 @@
     "build": "tsc",
     "dev": "tsx watch src/cli/index.ts",
     "type-check": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "test": "tsx tests/integration/commands/run-ttk.integration.spec.ts"
   },
   "dependencies": {
     "@oclif/core": "^4.0.0",
@@ -37,6 +38,7 @@
     "@types/node": "^22.10.5",
     "tsc-alias": "^1.8.16",
     "tsx": "^4.19.2",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "execa": "^9.3.0"
   }
 }
