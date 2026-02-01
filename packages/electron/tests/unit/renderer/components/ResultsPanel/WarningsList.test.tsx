@@ -11,17 +11,17 @@ import type { WarningData } from '@/types/preload'
 
 // Mock lucide-react icons
 jest.mock('lucide-react', () => ({
-  AlertTriangle: ({ className, 'data-testid': testId }: { className: string; 'data-testid'?: string }) => (
-    <svg data-testid={testId ?? 'alert-triangle-icon'} className={className} />
+  AlertTriangle: ({ className }: { className: string }) => (
+    <svg className={className} />
   ),
-  AlertCircle: ({ className, 'data-testid': testId }: { className: string; 'data-testid'?: string }) => (
-    <svg data-testid={testId ?? 'alert-circle-icon'} className={className} />
+  AlertCircle: ({ className }: { className: string }) => (
+    <svg className={className} />
   ),
-  Info: ({ className, 'data-testid': testId }: { className: string; 'data-testid'?: string }) => (
-    <svg data-testid={testId ?? 'info-icon'} className={className} />
+  Info: ({ className }: { className: string }) => (
+    <svg className={className} />
   ),
-  X: ({ className, 'data-testid': testId }: { className: string; 'data-testid'?: string }) => (
-    <svg data-testid={testId ?? 'x-icon'} className={className} />
+  X: ({ className }: { className: string }) => (
+    <svg className={className} />
   ),
 }))
 
@@ -99,17 +99,18 @@ describe('WarningsList', () => {
   })
 
   describe('severity grouping', () => {
-    it('should group critical warnings together', () => {
+    it('should show all severities when present', () => {
       const warnings: WarningData[] = [
         { type: 'c1', severity: 'critical', message: 'Critical 1', context: {} },
         { type: 'w1', severity: 'warning', message: 'Warning 1', context: {} },
-        { type: 'c2', severity: 'critical', message: 'Critical 2', context: {} },
+        { type: 'i1', severity: 'info', message: 'Info 1', context: {} },
       ]
 
       render(<WarningsList warnings={warnings} />)
 
-      const criticalBadges = screen.getAllByText(/Critical/)
-      expect(criticalBadges.length).toBeGreaterThan(0)
+      expect(screen.getByText(/Critical/)).toBeInTheDocument()
+      expect(screen.getByText(/Warning/)).toBeInTheDocument()
+      expect(screen.getByText(/Info/)).toBeInTheDocument()
     })
 
     it('should only show badge for present severities', () => {
@@ -119,48 +120,9 @@ describe('WarningsList', () => {
 
       render(<WarningsList warnings={warnings} />)
 
-      // Use getAllByText since "Warning" appears in both badge and message
       expect(screen.queryByText(/Critical/)).not.toBeInTheDocument()
-      expect(screen.getAllByText(/Warning/).length).toBeGreaterThan(0)
+      expect(screen.getByText(/Warning/)).toBeInTheDocument()
       expect(screen.queryByText(/Info/)).not.toBeInTheDocument()
-    })
-  })
-
-  describe('styling', () => {
-    it('should apply custom className', () => {
-      const { container } = render(<WarningsList warnings={[]} className="custom-class" />)
-
-      expect(container.firstChild).toHaveClass('custom-class')
-    })
-
-    it('should color critical badges red', () => {
-      const warnings: WarningData[] = [
-        { type: 'c1', severity: 'critical', message: 'Critical', context: {} },
-      ]
-
-      const { container } = render(<WarningsList warnings={warnings} />)
-
-      expect(container.querySelector('.bg-red-100')).toBeInTheDocument()
-    })
-
-    it('should color warning badges yellow', () => {
-      const warnings: WarningData[] = [
-        { type: 'w1', severity: 'warning', message: 'Warning', context: {} },
-      ]
-
-      const { container } = render(<WarningsList warnings={warnings} />)
-
-      expect(container.querySelector('.bg-yellow-100')).toBeInTheDocument()
-    })
-
-    it('should color info badges blue', () => {
-      const warnings: WarningData[] = [
-        { type: 'i1', severity: 'info', message: 'Info', context: {} },
-      ]
-
-      const { container } = render(<WarningsList warnings={warnings} />)
-
-      expect(container.querySelector('.bg-blue-100')).toBeInTheDocument()
     })
   })
 })

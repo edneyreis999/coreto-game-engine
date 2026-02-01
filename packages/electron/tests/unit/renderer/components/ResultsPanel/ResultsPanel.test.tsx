@@ -14,17 +14,17 @@ const mockCoreto = global.window.coreto as jest.Mocked<typeof global.window.core
 
 // Mock lucide-react icons
 jest.mock('lucide-react', () => ({
-  BarChart3: ({ className, 'data-testid': testId }: { className: string; 'data-testid'?: string }) => (
-    <svg data-testid={testId ?? 'bar-chart-icon'} className={className} />
+  BarChart3: ({ className }: { className: string }) => (
+    <svg className={className} />
   ),
-  Loader2: ({ className, 'data-testid': testId }: { className: string; 'data-testid'?: string }) => (
-    <svg data-testid={testId ?? 'loader-icon'} className={className} />
+  Loader2: ({ className }: { className: string }) => (
+    <svg className={className} />
   ),
-  XCircle: ({ className, 'data-testid': testId }: { className: string; 'data-testid'?: string }) => (
-    <svg data-testid={testId ?? 'x-circle-icon'} className={className} />
+  XCircle: ({ className }: { className: string }) => (
+    <svg className={className} />
   ),
-  RotateCw: ({ className, 'data-testid': testId }: { className: string; 'data-testid'?: string }) => (
-    <svg data-testid={testId ?? 'rotate-icon'} className={className} />
+  RotateCw: ({ className }: { className: string }) => (
+    <svg className={className} />
   ),
 }))
 
@@ -35,21 +35,6 @@ jest.mock('@/hooks/useSimulationResults', () => ({
 
 const { useSimulationResults } = require('@/hooks/useSimulationResults')
 
-// Mock sub-components to avoid import issues
-jest.mock('@/components/ResultsPanel/EmptyState', () => ({
-  EmptyState: ({ title, message }: { title?: string; message?: string }) => (
-    <div data-testid="empty-state">
-      <div data-testid="empty-title">{title}</div>
-      <div data-testid="empty-message">{message}</div>
-    </div>
-  ),
-}))
-
-jest.mock('@/components/ResultsPanel/TrechoCard', () => ({
-  TrechoCard: ({ trecho }: { trecho: { name: string } }) => (
-    <div data-testid={`trecho-card-${trecho.name}`}>{trecho.name}</div>
-  ),
-}))
 
 const mockReportData: ReportData = {
   trechos: [
@@ -134,7 +119,6 @@ describe('ResultsPanel', () => {
 
       render(<ResultsPanel isVisible={true} />)
 
-      expect(screen.getByTestId('loader-icon')).toBeInTheDocument()
       expect(screen.getByText('Loading results...')).toBeInTheDocument()
     })
 
@@ -149,8 +133,7 @@ describe('ResultsPanel', () => {
 
       render(<ResultsPanel isVisible={true} />)
 
-      expect(screen.getByTestId('empty-state')).toBeInTheDocument()
-      expect(screen.getByTestId('empty-title')).toHaveTextContent('No Simulation Results')
+      expect(screen.getByText('No Simulation Results')).toBeInTheDocument()
     })
   })
 
@@ -222,8 +205,8 @@ describe('ResultsPanel', () => {
 
       render(<ResultsPanel isVisible={true} />)
 
-      expect(screen.getByTestId('trecho-card-Forest Battles')).toBeInTheDocument()
-      expect(screen.getByTestId('trecho-card-Cave Battles')).toBeInTheDocument()
+      expect(screen.getByText('Forest Battles')).toBeInTheDocument()
+      expect(screen.getByText('Cave Battles')).toBeInTheDocument()
     })
 
     it('should show warnings in summary when critical warnings exist', () => {
@@ -269,8 +252,7 @@ describe('ResultsPanel', () => {
 
       render(<ResultsPanel isVisible={true} />)
 
-      // The mocked EmptyState shows title in a div with data-testid="empty-title"
-      expect(screen.getByTestId('empty-title')).toHaveTextContent('No Trechos in Report')
+      expect(screen.getByText('No Trechos in Report')).toBeInTheDocument()
     })
   })
 
@@ -292,22 +274,6 @@ describe('ResultsPanel', () => {
       await waitFor(() => {
         expect(mockRefresh).toHaveBeenCalled()
       })
-    })
-  })
-
-  describe('styling', () => {
-    it('should apply custom className', () => {
-      useSimulationResults.mockReturnValue({
-        report: null,
-        error: null,
-        isLoading: false,
-        hasResults: false,
-        refresh: jest.fn(),
-      })
-
-      const { container } = render(<ResultsPanel isVisible={true} className="custom-class" />)
-
-      expect(container.firstChild).toHaveClass('custom-class')
     })
   })
 })

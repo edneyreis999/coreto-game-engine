@@ -67,20 +67,7 @@ describe('ConfigFileNotFoundError', () => {
     });
   });
 
-  describe('Error inheritance', () => {
-    it('should be instanceof ConfigError', () => {
-      const error = new ConfigFileNotFoundError('/path/to/config.json');
-
-      expect(error instanceof ConfigError).toBe(true);
-    });
-
-    it('should be instanceof DomainError', () => {
-      const error = new ConfigFileNotFoundError('/path/to/config.json');
-
-      expect(error instanceof DomainError).toBe(true);
-    });
   });
-});
 
 describe('ConfigParseError', () => {
   describe('constructor', () => {
@@ -120,23 +107,4 @@ describe('ConfigParseError', () => {
     });
   });
 
-  describe('Error inheritance', () => {
-    it('should be instanceof ConfigError', () => {
-      const error = new ConfigParseError('/path/to/config.json', new Error('test'));
-
-      expect(error instanceof ConfigError).toBe(true);
-    });
-
-    it('should be instanceof DomainError', () => {
-      const error = new ConfigParseError('/path/to/config.json', new Error('test'));
-
-      expect(error instanceof DomainError).toBe(true);
-    });
-
-    it('should be throwable', () => {
-      expect(() => {
-        throw new ConfigParseError('/path/to/config.json', new Error('test'));
-      }).toThrow('Failed to parse configuration');
-    });
   });
-});

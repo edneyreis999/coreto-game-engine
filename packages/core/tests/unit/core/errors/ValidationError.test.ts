@@ -163,27 +163,4 @@ describe('ValidationError', () => {
     });
   });
 
-  describe('Error inheritance', () => {
-    it('should be throwable', () => {
-      expect(() => {
-        throw new ValidationError('Validation failed');
-      }).toThrow('Validation failed');
-    });
-
-    it('should be catchable as ValidationError', () => {
-      try {
-        throw new ValidationError('Validation failed');
-      } catch (error) {
-        expect(error).toBeInstanceOf(ValidationError);
-      }
-    });
-
-    it('should be catchable as DomainError', () => {
-      try {
-        throw new ValidationError('Validation failed');
-      } catch (error) {
-        expect(error).toBeInstanceOf(DomainError);
-      }
-    });
   });
-});

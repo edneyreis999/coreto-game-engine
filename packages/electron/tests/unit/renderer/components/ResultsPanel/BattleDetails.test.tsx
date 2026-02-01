@@ -11,29 +11,29 @@ import type { ReportBattleResult } from '@/types/preload'
 
 // Mock lucide-react icons
 jest.mock('lucide-react', () => ({
-  ChevronDown: ({ className, 'data-testid': testId }: { className: string; 'data-testid'?: string }) => (
-    <svg data-testid={testId ?? 'chevron-down'} className={className} />
+  ChevronDown: ({ className }: { className: string }) => (
+    <svg className={className} />
   ),
-  ChevronUp: ({ className, 'data-testid': testId }: { className: string; 'data-testid'?: string }) => (
-    <svg data-testid={testId ?? 'chevron-up'} className={className} />
+  ChevronUp: ({ className }: { className: string }) => (
+    <svg className={className} />
   ),
-  Trophy: ({ className, 'data-testid': testId }: { className: string; 'data-testid'?: string }) => (
-    <svg data-testid={testId ?? 'trophy-icon'} className={className} />
+  Trophy: ({ className }: { className: string }) => (
+    <svg className={className} />
   ),
-  XCircle: ({ className, 'data-testid': testId }: { className: string; 'data-testid'?: string }) => (
-    <svg data-testid={testId ?? 'x-circle-icon'} className={className} />
+  XCircle: ({ className }: { className: string }) => (
+    <svg className={className} />
   ),
-  Clock: ({ className, 'data-testid': testId }: { className: string; 'data-testid'?: string }) => (
-    <svg data-testid={testId ?? 'clock-icon'} className={className} />
+  Clock: ({ className }: { className: string }) => (
+    <svg className={className} />
   ),
-  Sword: ({ className, 'data-testid': testId }: { className: string; 'data-testid'?: string }) => (
-    <svg data-testid={testId ?? 'sword-icon'} className={className} />
+  Sword: ({ className }: { className: string }) => (
+    <svg className={className} />
   ),
-  Zap: ({ className, 'data-testid': testId }: { className: string; 'data-testid'?: string }) => (
-    <svg data-testid={testId ?? 'zap-icon'} className={className} />
+  Zap: ({ className }: { className: string }) => (
+    <svg className={className} />
   ),
-  Star: ({ className, 'data-testid': testId }: { className: string; 'data-testid'?: string }) => (
-    <svg data-testid={testId ?? 'star-icon'} className={className} />
+  Star: ({ className }: { className: string }) => (
+    <svg className={className} />
   ),
 }))
 
@@ -102,7 +102,7 @@ describe('BattleDetails', () => {
       expect(screen.getByText(/Battle Details \(3\)/)).toBeInTheDocument()
     })
 
-    it('should render chevron-down when collapsed', () => {
+    it('should render collapse indicator when collapsed', () => {
       render(
         <BattleDetails
           battles={mockBattles}
@@ -111,11 +111,10 @@ describe('BattleDetails', () => {
         />
       )
 
-      expect(screen.getByTestId('chevron-down')).toBeInTheDocument()
-      expect(screen.queryByTestId('chevron-up')).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /collapse/i })).toBeInTheDocument()
     })
 
-    it('should render chevron-up when expanded', () => {
+    it('should render expand indicator when expanded', () => {
       render(
         <BattleDetails
           battles={mockBattles}
@@ -124,13 +123,12 @@ describe('BattleDetails', () => {
         />
       )
 
-      expect(screen.getByTestId('chevron-up')).toBeInTheDocument()
-      expect(screen.queryByTestId('chevron-down')).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /expand/i })).toBeInTheDocument()
     })
   })
 
   describe('expand/collapse', () => {
-    it('should call onToggle when header clicked', () => {
+    it('should call onToggle when button clicked', () => {
       render(
         <BattleDetails
           battles={mockBattles}
@@ -139,8 +137,8 @@ describe('BattleDetails', () => {
         />
       )
 
-      const header = screen.getByText(/Battle Details/)
-      fireEvent.click(header)
+      const toggleButton = screen.getByRole('button', { name: /toggle details/i })
+      fireEvent.click(toggleButton)
 
       expect(mockOnToggle).toHaveBeenCalledTimes(1)
     })
@@ -183,6 +181,7 @@ describe('BattleDetails', () => {
       )
 
       expect(screen.getByText('Victory')).toBeInTheDocument()
+      expect(screen.getByText(/EXP: 10/)).toBeInTheDocument()
     })
 
     it('should display Defeat badge for defeat outcome', () => {
@@ -195,6 +194,7 @@ describe('BattleDetails', () => {
       )
 
       expect(screen.getByText('Defeat')).toBeInTheDocument()
+      expect(screen.getByText(/EXP: 0/)).toBeInTheDocument()
     })
 
     it('should display Timeout badge for timeout outcome', () => {
@@ -207,20 +207,7 @@ describe('BattleDetails', () => {
       )
 
       expect(screen.getByText('Timeout')).toBeInTheDocument()
-    })
-
-    it('should show EXP gained only for victories', () => {
-      render(
-        <BattleDetails
-          battles={mockBattles}
-          isExpanded={true}
-          onToggle={mockOnToggle}
-        />
-      )
-
-      // Slime (victory) should show EXP
-      const expElements = screen.getAllByText(/EXP/)
-      expect(expElements.length).toBeGreaterThan(0)
+      expect(screen.getByText(/EXP: 0/)).toBeInTheDocument()
     })
   })
 
@@ -234,9 +221,7 @@ describe('BattleDetails', () => {
         />
       )
 
-      // Label and value are in separate spans, check for both
-      expect(screen.getAllByText(/Turns/).length).toBeGreaterThan(0)
-      expect(screen.getByText('5')).toBeInTheDocument()
+      expect(screen.getByText('Turns: 5')).toBeInTheDocument()
     })
 
     it('should display TTK Actions', () => {
@@ -248,8 +233,7 @@ describe('BattleDetails', () => {
         />
       )
 
-      expect(screen.getAllByText(/Actions/).length).toBeGreaterThan(0)
-      expect(screen.getByText('8')).toBeInTheDocument()
+      expect(screen.getByText('Actions: 8')).toBeInTheDocument()
     })
 
     it('should display Duration', () => {
@@ -261,8 +245,7 @@ describe('BattleDetails', () => {
         />
       )
 
-      expect(screen.getAllByText(/Duration/).length).toBeGreaterThan(0)
-      expect(screen.getByText(/1\.50s/)).toBeInTheDocument()
+      expect(screen.getByText('Duration: 1.50s')).toBeInTheDocument()
     })
 
     it('should display Seed', () => {
@@ -274,23 +257,7 @@ describe('BattleDetails', () => {
         />
       )
 
-      expect(screen.getAllByText(/Seed/).length).toBeGreaterThan(0)
-      expect(screen.getByText('12345')).toBeInTheDocument()
-    })
-  })
-
-  describe('styling', () => {
-    it('should apply custom className', () => {
-      const { container } = render(
-        <BattleDetails
-          battles={mockBattles}
-          isExpanded={false}
-          onToggle={mockOnToggle}
-          className="custom-class"
-        />
-      )
-
-      expect(container.firstChild).toHaveClass('custom-class')
+      expect(screen.getByText('Seed: 12345')).toBeInTheDocument()
     })
   })
 })

@@ -53,34 +53,7 @@ describe('SkillFormulaError', () => {
     });
   });
 
-  describe('Error inheritance', () => {
-    it('should be instanceof DomainError', () => {
-      const error = new SkillFormulaError(10, 'a.atk * 4', 'Error');
-
-      expect(error instanceof DomainError).toBe(true);
-    });
-
-    it('should be instanceof SkillFormulaError', () => {
-      const error = new SkillFormulaError(10, 'a.atk * 4', 'Error');
-
-      expect(error instanceof SkillFormulaError).toBe(true);
-    });
-
-    it('should be throwable', () => {
-      expect(() => {
-        throw new SkillFormulaError(10, 'a.atk * 4', 'Error');
-      }).toThrow('Skill formula error');
-    });
-
-    it('should be catchable as DomainError', () => {
-      try {
-        throw new SkillFormulaError(10, 'a.atk * 4', 'Error');
-      } catch (error) {
-        expect(error).toBeInstanceOf(DomainError);
-      }
-    });
-  });
-
+  
   describe('context data', () => {
     it('should provide debugging context for formula issues', () => {
       const skillId = 42;

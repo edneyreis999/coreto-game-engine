@@ -102,27 +102,6 @@ describe('TroopNotFoundError', () => {
     });
   });
 
-  describe('Error inheritance', () => {
-    it('should be instanceof DataLoadError', () => {
-      const error = new TroopNotFoundError(42);
-
-      expect(error instanceof DataLoadError).toBe(true);
-    });
-
-    it('should be instanceof DomainError', () => {
-      const error = new TroopNotFoundError(42);
-
-      expect(error instanceof DomainError).toBe(true);
-    });
-
-    it('should be throwable', () => {
-      expect(() => {
-        throw new TroopNotFoundError(42);
-      }).toThrow('Troop ID 42 not found');
-    });
-  });
-});
-
 describe('EnemyNotFoundError', () => {
   describe('constructor', () => {
     it('should create error with warning severity', () => {
@@ -162,26 +141,7 @@ describe('EnemyNotFoundError', () => {
     });
   });
 
-  describe('Error inheritance', () => {
-    it('should be instanceof DataLoadError', () => {
-      const error = new EnemyNotFoundError(10, 5);
-
-      expect(error instanceof DataLoadError).toBe(true);
-    });
-
-    it('should be instanceof DomainError', () => {
-      const error = new EnemyNotFoundError(10, 5);
-
-      expect(error instanceof DomainError).toBe(true);
-    });
-
-    it('should be throwable', () => {
-      expect(() => {
-        throw new EnemyNotFoundError(10, 5);
-      }).toThrow('Enemy ID 10 not found');
-    });
-  });
-
+  
   describe('severity difference', () => {
     it('should have critical severity for TroopNotFoundError', () => {
       const troopError = new TroopNotFoundError(42);

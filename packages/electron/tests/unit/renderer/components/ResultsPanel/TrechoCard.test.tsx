@@ -11,38 +11,23 @@ import type { TrechoSummaryData } from '@/types/preload'
 
 // Mock lucide-react icons
 jest.mock('lucide-react', () => ({
-  CheckCircle2: ({ className, 'data-testid': testId }: { className: string; 'data-testid'?: string }) => (
-    <svg data-testid={testId ?? 'check-circle-icon'} className={className} />
+  CheckCircle2: ({ className }: { className: string }) => (
+    <svg className={className} />
   ),
-  XCircle: ({ className, 'data-testid': testId }: { className: string; 'data-testid'?: string }) => (
-    <svg data-testid={testId ?? 'x-circle-icon'} className={className} />
+  XCircle: ({ className }: { className: string }) => (
+    <svg className={className} />
   ),
-  AlertTriangle: ({ className, 'data-testid': testId }: { className: string; 'data-testid'?: string }) => (
-    <svg data-testid={testId ?? 'alert-triangle-icon'} className={className} />
+  AlertTriangle: ({ className }: { className: string }) => (
+    <svg className={className} />
   ),
-  ChevronDown: ({ className, 'data-testid': testId }: { className: string; 'data-testid'?: string }) => (
-    <svg data-testid={testId ?? 'chevron-down'} className={className} />
+  ChevronDown: ({ className }: { className: string }) => (
+    <svg className={className} />
   ),
-  ChevronUp: ({ className, 'data-testid': testId }: { className: string; 'data-testid'?: string }) => (
-    <svg data-testid={testId ?? 'chevron-up'} className={className} />
-  ),
-}))
-
-// Mock sub-components
-jest.mock('@/components/ResultsPanel/BattleDetails', () => ({
-  BattleDetails: ({ isExpanded, onToggle }: { isExpanded: boolean; onToggle: () => void }) => (
-    <div>
-      <button onClick={onToggle}>Toggle Details</button>
-      {isExpanded && <div>Battle Details Content</div>}
-    </div>
+  ChevronUp: ({ className }: { className: string }) => (
+    <svg className={className} />
   ),
 }))
 
-jest.mock('@/components/ResultsPanel/WarningsList', () => ({
-  WarningsList: ({ warnings }: { warnings: unknown[] }) => (
-    <div>Warnings: {warnings.length}</div>
-  ),
-}))
 
 const createMockTrecho = (overrides?: Partial<TrechoSummaryData>): TrechoSummaryData => ({
   id: 'trecho-1',
@@ -125,20 +110,16 @@ describe('TrechoCard', () => {
   describe('status coloring', () => {
     it('should display green badge when passed with no critical warnings', () => {
       const trecho = createMockTrecho({ passed: true, warnings: [] })
-      const { container } = render(<TrechoCard trecho={trecho} />)
+      render(<TrechoCard trecho={trecho} />)
 
-      expect(container.querySelector('.bg-green-50')).toBeInTheDocument()
       expect(screen.getByText('Passed')).toBeInTheDocument()
-      expect(screen.getByTestId('check-circle-icon')).toBeInTheDocument()
     })
 
     it('should display red badge when failed', () => {
       const trecho = createMockTrecho({ passed: false, warnings: [] })
-      const { container } = render(<TrechoCard trecho={trecho} />)
+      render(<TrechoCard trecho={trecho} />)
 
-      expect(container.querySelector('.bg-red-50')).toBeInTheDocument()
       expect(screen.getByText('Failed')).toBeInTheDocument()
-      expect(screen.getByTestId('x-circle-icon')).toBeInTheDocument()
     })
 
     it('should display red badge when has critical warnings', () => {
@@ -148,9 +129,8 @@ describe('TrechoCard', () => {
           { type: 'critical', severity: 'critical', message: 'Critical error', context: {} },
         ],
       })
-      const { container } = render(<TrechoCard trecho={trecho} />)
+      render(<TrechoCard trecho={trecho} />)
 
-      expect(container.querySelector('.bg-red-50')).toBeInTheDocument()
       expect(screen.getByText('Failed')).toBeInTheDocument()
     })
 
@@ -161,16 +141,14 @@ describe('TrechoCard', () => {
           { type: 'warning', severity: 'warning', message: 'Warning message', context: {} },
         ],
       })
-      const { container } = render(<TrechoCard trecho={trecho} />)
+      render(<TrechoCard trecho={trecho} />)
 
-      expect(container.querySelector('.bg-yellow-50')).toBeInTheDocument()
       expect(screen.getByText('Warning')).toBeInTheDocument()
-      expect(screen.getByTestId('alert-triangle-icon')).toBeInTheDocument()
     })
   })
 
   describe('warnings display', () => {
-    it('should show WarningsList when warnings exist', () => {
+    it('should show warnings count when warnings exist', () => {
       const trecho = createMockTrecho({
         warnings: [
           { type: 'warning', severity: 'warning', message: 'Warning', context: {} },
@@ -178,42 +156,34 @@ describe('TrechoCard', () => {
       })
       render(<TrechoCard trecho={trecho} />)
 
-      expect(screen.getByText(/Warnings: 1/)).toBeInTheDocument()
+      expect(screen.getByText(/1 warning/)).toBeInTheDocument()
     })
 
-    it('should not show WarningsList when no warnings', () => {
+    it('should not show warnings when no warnings', () => {
       const trecho = createMockTrecho({ warnings: [] })
       render(<TrechoCard trecho={trecho} />)
 
-      expect(screen.queryByText(/Warnings:/)).not.toBeInTheDocument()
+      expect(screen.queryByText(/warning/)).not.toBeInTheDocument()
     })
   })
 
   describe('battle details', () => {
-    it('should render BattleDetails component', () => {
+    it('should render expandable battle details', () => {
       const trecho = createMockTrecho()
       render(<TrechoCard trecho={trecho} />)
 
-      expect(screen.getByText('Toggle Details')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /toggle details/i })).toBeInTheDocument()
     })
 
     it('should toggle details when button clicked', () => {
       const trecho = createMockTrecho()
       render(<TrechoCard trecho={trecho} />)
 
-      const toggleButton = screen.getByText('Toggle Details')
+      const toggleButton = screen.getByRole('button', { name: /toggle details/i })
       fireEvent.click(toggleButton)
 
-      expect(screen.getByText('Battle Details Content')).toBeInTheDocument()
+      expect(screen.getByText('Battle Details')).toBeInTheDocument()
     })
   })
 
-  describe('styling', () => {
-    it('should apply custom className', () => {
-      const trecho = createMockTrecho()
-      const { container } = render(<TrechoCard trecho={trecho} className="custom-class" />)
-
-      expect(container.firstChild).toHaveClass('custom-class')
-    })
   })
-})

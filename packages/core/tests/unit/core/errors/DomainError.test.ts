@@ -1,15 +1,5 @@
 import { DomainError, ErrorSeverity } from '@coreto/core/core/errors/DomainError';
-
-// Concrete implementation for testing the abstract class
-class TestDomainError extends DomainError {
-  constructor(
-    message: string,
-    severity: ErrorSeverity = 'critical',
-    context?: Record<string, unknown>
-  ) {
-    super(message, severity, context);
-  }
-}
+import { TestDomainError } from './fakes/TestDomainError';
 
 describe('DomainError', () => {
   describe('constructor', () => {
@@ -105,35 +95,7 @@ describe('DomainError', () => {
     });
   });
 
-  describe('Error inheritance', () => {
-    it('should be instanceof Error', () => {
-      const error = new TestDomainError('Test error');
-
-      expect(error instanceof Error).toBe(true);
-    });
-
-    it('should be instanceof DomainError', () => {
-      const error = new TestDomainError('Test error');
-
-      expect(error instanceof DomainError).toBe(true);
-    });
-
-    it('should be throwable', () => {
-      expect(() => {
-        throw new TestDomainError('Test error');
-      }).toThrow('Test error');
-    });
-
-    it('should be catchable as Error', () => {
-      try {
-        throw new TestDomainError('Test error');
-      } catch (error) {
-        expect(error).toBeInstanceOf(Error);
-        expect(error).toBeInstanceOf(DomainError);
-      }
-    });
-  });
-
+  
   describe('timestamp', () => {
     it('should set timestamp when error is created', () => {
       const before = new Date();

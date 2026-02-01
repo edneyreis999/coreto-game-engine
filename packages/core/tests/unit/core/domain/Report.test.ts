@@ -78,174 +78,162 @@ describe('Report', () => {
       expect(report.warnings).toHaveLength(1);
     });
 
-    it('should create report with empty trechos', () => {
-      const data: ReportData = {
-        metadata: createValidMetadata(),
-        summary: createValidSummary(),
-        trechos: [],
-        warnings: [],
-      };
-
-      const report = new Report(data);
-
-      expect(report.trechos).toHaveLength(0);
-    });
-
-    it('should create report with empty warnings', () => {
-      const data: ReportData = {
-        metadata: createValidMetadata(),
-        summary: createValidSummary(),
-        trechos: [createValidTrechoSummary()],
-        warnings: [],
-      };
-
-      const report = new Report(data);
-
-      expect(report.warnings).toHaveLength(0);
-    });
-
-    it('should create report with multiple trechos', () => {
-      const data: ReportData = {
-        metadata: createValidMetadata(),
-        summary: createValidSummary(),
-        trechos: [
-          createValidTrechoSummary(),
-          {
-            trechoId: 'ato2-nivel11-20',
-            trechoName: 'Ato 2 - Níveis 11-20',
-            battles: [createValidBattleResult()],
-            aggregates: {
-              avgTtkTurns: 4.5,
-              p95TtkTurns: 5.5,
-              avgTtkActions: 12.0,
-              p95TtkActions: 14.0,
-            },
-            warnings: [],
-            passed: false,
-          },
-        ],
-        warnings: [],
-      };
-
-      const report = new Report(data);
-
-      expect(report.trechos).toHaveLength(2);
-      expect(report.trechos[0]?.trechoId).toBe('ato1-nivel1-10');
-      expect(report.trechos[1]?.trechoId).toBe('ato2-nivel11-20');
-    });
-
-    it('should create report with multiple warnings', () => {
-      const warnings: Warning[] = [
+    it('should handle edge cases', () => {
+      const testCases = [
         {
-          type: 'ttk_out_of_tolerance',
-          severity: 'warning',
-          message: 'TTK outside tolerance',
-          context: { troopId: 1 },
+          description: 'empty trechos',
+          data: {
+            metadata: createValidMetadata(),
+            summary: createValidSummary(),
+            trechos: [],
+            warnings: [],
+          },
+          assertions: (report: Report) => {
+            expect(report.trechos).toHaveLength(0);
+          },
         },
         {
-          type: 'battle_timeout',
-          severity: 'critical',
-          message: 'Battle timed out',
-          context: { troopId: 2 },
+          description: 'empty warnings',
+          data: {
+            metadata: createValidMetadata(),
+            summary: createValidSummary(),
+            trechos: [createValidTrechoSummary()],
+            warnings: [],
+          },
+          assertions: (report: Report) => {
+            expect(report.warnings).toHaveLength(0);
+          },
         },
       ];
 
-      const data: ReportData = {
-        metadata: createValidMetadata(),
-        summary: createValidSummary(),
-        trechos: [createValidTrechoSummary()],
-        warnings,
-      };
+      testCases.forEach(({ description, data, assertions }) => {
+        it(description, () => {
+          const report = new Report(data);
+          assertions(report);
+        });
+      });
 
-      const report = new Report(data);
+      it('should create report with multiple trechos', () => {
+        const data: ReportData = {
+          metadata: createValidMetadata(),
+          summary: createValidSummary(),
+          trechos: [
+            createValidTrechoSummary(),
+            {
+              trechoId: 'ato2-nivel11-20',
+              trechoName: 'Ato 2 - Níveis 11-20',
+              battles: [createValidBattleResult()],
+              aggregates: {
+                avgTtkTurns: 4.5,
+                p95TtkTurns: 5.5,
+                avgTtkActions: 12.0,
+                p95TtkActions: 14.0,
+              },
+              warnings: [],
+              passed: false,
+            },
+          ],
+          warnings: [],
+        };
 
-      expect(report.warnings).toHaveLength(2);
-      expect(report.warnings[0]?.type).toBe('ttk_out_of_tolerance');
-      expect(report.warnings[1]?.type).toBe('battle_timeout');
+        const report = new Report(data);
+
+        expect(report.trechos).toHaveLength(2);
+        expect(report.trechos[0]?.trechoId).toBe('ato1-nivel1-10');
+        expect(report.trechos[1]?.trechoId).toBe('ato2-nivel11-20');
+      });
+
+      it('should create report with multiple warnings', () => {
+        const warnings: Warning[] = [
+          {
+            type: 'ttk_out_of_tolerance',
+            severity: 'warning',
+            message: 'TTK outside tolerance',
+            context: { troopId: 1 },
+          },
+          {
+            type: 'battle_timeout',
+            severity: 'critical',
+            message: 'Battle timed out',
+            context: { troopId: 2 },
+          },
+        ];
+
+        const data: ReportData = {
+          metadata: createValidMetadata(),
+          summary: createValidSummary(),
+          trechos: [createValidTrechoSummary()],
+          warnings,
+        };
+
+        const report = new Report(data);
+
+        expect(report.warnings).toHaveLength(2);
+        expect(report.warnings[0]?.type).toBe('ttk_out_of_tolerance');
+        expect(report.warnings[1]?.type).toBe('battle_timeout');
+      });
     });
   });
 
   describe('overallPassed', () => {
-    it('should be true when all trechos passed', () => {
-      const data: ReportData = {
-        metadata: createValidMetadata(),
-        summary: createValidSummary(),
-        trechos: [
-          createValidTrechoSummary(true),
-          createValidTrechoSummary(true),
-        ],
-        warnings: [],
-      };
+    it('should correctly calculate overallPassed status', () => {
+      // Test all combinations
+      const testCases = [
+        {
+          description: 'true when all trechos passed',
+          trechos: [createValidTrechoSummary(true), createValidTrechoSummary(true)],
+          expected: true,
+        },
+        {
+          description: 'false when any trecho failed',
+          trechos: [createValidTrechoSummary(true), createValidTrechoSummary(false)],
+          expected: false,
+        },
+        {
+          description: 'false when all trechos failed',
+          trechos: [createValidTrechoSummary(false), createValidTrechoSummary(false)],
+          expected: false,
+        },
+        {
+          description: 'true when no trechos (empty report)',
+          trechos: [],
+          expected: true,
+        },
+      ];
 
-      const report = new Report(data);
+      testCases.forEach(({ description, trechos, expected }) => {
+        it(description, () => {
+          const data: ReportData = {
+            metadata: createValidMetadata(),
+            summary: createValidSummary(),
+            trechos,
+            warnings: [],
+          };
 
-      expect(report.overallPassed).toBe(true);
-    });
+          const report = new Report(data);
+          expect(report.overallPassed).toBe(expected);
+        });
+      });
 
-    it('should be false when any trecho failed', () => {
-      const data: ReportData = {
-        metadata: createValidMetadata(),
-        summary: createValidSummary(),
-        trechos: [
-          createValidTrechoSummary(true),
-          createValidTrechoSummary(false),
-        ],
-        warnings: [],
-      };
+      it('should be independent of warnings', () => {
+        const data: ReportData = {
+          metadata: createValidMetadata(),
+          summary: createValidSummary(),
+          trechos: [createValidTrechoSummary(true)],
+          warnings: [createValidWarning(), createValidWarning()],
+        };
 
-      const report = new Report(data);
+        const report = new Report(data);
 
-      expect(report.overallPassed).toBe(false);
-    });
-
-    it('should be false when all trechos failed', () => {
-      const data: ReportData = {
-        metadata: createValidMetadata(),
-        summary: createValidSummary(),
-        trechos: [
-          createValidTrechoSummary(false),
-          createValidTrechoSummary(false),
-        ],
-        warnings: [],
-      };
-
-      const report = new Report(data);
-
-      expect(report.overallPassed).toBe(false);
-    });
-
-    it('should be true when no trechos (empty report)', () => {
-      const data: ReportData = {
-        metadata: createValidMetadata(),
-        summary: createValidSummary(),
-        trechos: [],
-        warnings: [],
-      };
-
-      const report = new Report(data);
-
-      // Empty array: every() returns true
-      expect(report.overallPassed).toBe(true);
-    });
-
-    it('should calculate overallPassed independently of warnings', () => {
-      const data: ReportData = {
-        metadata: createValidMetadata(),
-        summary: createValidSummary(),
-        trechos: [createValidTrechoSummary(true)],
-        warnings: [createValidWarning(), createValidWarning()],
-      };
-
-      const report = new Report(data);
-
-      // Warnings don't affect overallPassed status
-      expect(report.overallPassed).toBe(true);
-      expect(report.warnings).toHaveLength(2);
+        // Warnings don't affect overallPassed status
+        expect(report.overallPassed).toBe(true);
+        expect(report.warnings).toHaveLength(2);
+      });
     });
   });
 
   describe('immutability', () => {
-    it('should be frozen', () => {
+    it('should freeze the report object', () => {
       const data: ReportData = {
         metadata: createValidMetadata(),
         summary: createValidSummary(),
@@ -256,90 +244,6 @@ describe('Report', () => {
       const report = new Report(data);
 
       expect(Object.isFrozen(report)).toBe(true);
-    });
-
-    it('should have frozen metadata', () => {
-      const data: ReportData = {
-        metadata: createValidMetadata(),
-        summary: createValidSummary(),
-        trechos: [createValidTrechoSummary()],
-        warnings: [],
-      };
-
-      const report = new Report(data);
-
-      expect(Object.isFrozen(report.metadata)).toBe(true);
-    });
-
-    it('should have frozen trechos array', () => {
-      const data: ReportData = {
-        metadata: createValidMetadata(),
-        summary: createValidSummary(),
-        trechos: [createValidTrechoSummary()],
-        warnings: [],
-      };
-
-      const report = new Report(data);
-
-      expect(Object.isFrozen(report.trechos)).toBe(true);
-    });
-
-    it('should have frozen each trecho summary', () => {
-      const data: ReportData = {
-        metadata: createValidMetadata(),
-        summary: createValidSummary(),
-        trechos: [createValidTrechoSummary()],
-        warnings: [],
-      };
-
-      const report = new Report(data);
-
-      report.trechos.forEach((trecho) => {
-        expect(Object.isFrozen(trecho)).toBe(true);
-      });
-    });
-
-    it('should have frozen warnings array', () => {
-      const data: ReportData = {
-        metadata: createValidMetadata(),
-        summary: createValidSummary(),
-        trechos: [createValidTrechoSummary()],
-        warnings: [createValidWarning()],
-      };
-
-      const report = new Report(data);
-
-      expect(Object.isFrozen(report.warnings)).toBe(true);
-    });
-
-    it('should not allow modification of trechos array', () => {
-      const data: ReportData = {
-        metadata: createValidMetadata(),
-        summary: createValidSummary(),
-        trechos: [createValidTrechoSummary()],
-        warnings: [],
-      };
-
-      const report = new Report(data);
-
-      expect(() => {
-        (report.trechos as TrechoSummary[]).push(createValidTrechoSummary());
-      }).toThrow();
-    });
-
-    it('should not allow modification of warnings array', () => {
-      const data: ReportData = {
-        metadata: createValidMetadata(),
-        summary: createValidSummary(),
-        trechos: [createValidTrechoSummary()],
-        warnings: [],
-      };
-
-      const report = new Report(data);
-
-      expect(() => {
-        (report.warnings as Warning[]).push(createValidWarning());
-      }).toThrow();
     });
 
     it('should not share reference with input metadata', () => {

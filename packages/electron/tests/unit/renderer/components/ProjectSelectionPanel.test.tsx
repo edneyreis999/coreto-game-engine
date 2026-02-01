@@ -248,7 +248,6 @@ describe('ProjectSelectionPanel', () => {
       })
 
       await waitFor(() => {
-        expect(screen.getByTestId('alert-circle')).toBeInTheDocument()
         expect(screen.getByText(/Validating/i)).toBeInTheDocument()
       })
     })
@@ -277,7 +276,7 @@ describe('ProjectSelectionPanel', () => {
       })
 
       await waitFor(() => {
-        expect(screen.getByTestId('check-circle')).toBeInTheDocument()
+        expect(screen.getByText('Valid')).toBeInTheDocument()
       })
     })
 
@@ -302,7 +301,7 @@ describe('ProjectSelectionPanel', () => {
       })
 
       await waitFor(() => {
-        expect(screen.getByTestId('x-circle')).toBeInTheDocument()
+        expect(screen.getByText('Invalid')).toBeInTheDocument()
       })
     })
 

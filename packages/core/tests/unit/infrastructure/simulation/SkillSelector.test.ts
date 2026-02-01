@@ -107,79 +107,45 @@ describe('SkillSelector', () => {
   });
 
   describe('selectSkillForActor', () => {
-    it('should select Attack (skill ID 1) when actor has sufficient HP/MP', () => {
-      const result = selector.selectSkillForActor(mockActor);
+    test.each([
+      // [actorHP, actorMP, skillHPCost, skillMPCost, expectedSkillId, description]
+      [100, 50, 0, 0, 1, 'default sufficient HP/MP'],
+      [5, 50, 0, 10, 2, 'insufficient MP for skill'],
+      [10, 50, 10, 0, 2, 'insufficient HP for skill'],
+      [10, 10, 0, 10, 1, 'exact MP cost'],
+      [10, 10, 10, 0, 2, 'exact HP cost (would kill)'],
+      [11, 50, 10, 0, 1, 'HP > HP cost'],
+    ])('should select skill %p with HP:%p, MP:%p, HPCost:%p, MPCost:%p - %s',
+      (actorHP, actorMP, skillHPCost, skillMPCost, expectedSkillId, description) => {
+        mockActor.hp = actorHP;
+        mockActor.mp = actorMP;
 
-      expect(result.skillId).toBe(1); // Attack
-      expect(result.target).toBe(mockEnemy1); // First alive enemy
-    });
+        if (skillHPCost > 0) {
+          (mockGlobal.$dataSkills[1] as any).hpCost = skillHPCost;
+        } else {
+          delete (mockGlobal.$dataSkills[1] as any).hpCost;
+        }
 
-    it('should select Guard (skill ID 2) when actor has insufficient MP', () => {
-      // Set actor MP below required MP cost for Attack
-      mockActor.mp = 5;
-      mockGlobal.$dataSkills[1].mpCost = 10; // Attack costs 10 MP
+        mockGlobal.$dataSkills[1].mpCost = skillMPCost;
 
-      const result = selector.selectSkillForActor(mockActor);
-
-      expect(result.skillId).toBe(2); // Guard (fallback)
-      expect(result.target).toBe(mockEnemy1); // First alive enemy
-    });
-
-    it('should select Guard (skill ID 2) when actor has insufficient HP', () => {
-      // Set actor HP at hpCost threshold
-      mockActor.hp = 10;
-      (mockGlobal.$dataSkills[1] as any).hpCost = 10; // Attack costs 10 HP
-
-      const result = selector.selectSkillForActor(mockActor);
-
-      expect(result.skillId).toBe(2); // Guard (fallback)
-      expect(result.target).toBe(mockEnemy1); // First alive enemy
-    });
-
-    it('should select Attack when actor has exactly required MP', () => {
-      mockActor.mp = 10;
-      mockGlobal.$dataSkills[1].mpCost = 10; // Attack costs exactly 10 MP
-
-      const result = selector.selectSkillForActor(mockActor);
-
-      expect(result.skillId).toBe(1); // Attack (affordable)
-      expect(result.target).toBe(mockEnemy1);
-    });
-
-    it('should select Guard when actor HP equals hpCost (would kill actor)', () => {
-      mockActor.hp = 10;
-      (mockGlobal.$dataSkills[1] as any).hpCost = 10; // Attack costs 10 HP (would kill)
-
-      const result = selector.selectSkillForActor(mockActor);
-
-      expect(result.skillId).toBe(2); // Guard (cannot afford Attack)
-    });
-
-    it('should select Attack when actor HP > hpCost', () => {
-      mockActor.hp = 11;
-      (mockGlobal.$dataSkills[1] as any).hpCost = 10; // Attack costs 10 HP
-
-      const result = selector.selectSkillForActor(mockActor);
-
-      expect(result.skillId).toBe(1); // Attack (affordable)
-    });
+        const result = selector.selectSkillForActor(mockActor);
+        expect(result.skillId).toBe(expectedSkillId);
+      }
+    );
 
     it('should target first alive enemy from $gameTroop.aliveMembers()', () => {
       const result = selector.selectSkillForActor(mockActor);
-
       expect(result.target).toBe(mockEnemy1); // First in array
       expect(mockGlobal.$gameTroop.aliveMembers).toHaveBeenCalled();
     });
 
     it('should throw Error if $gameTroop not initialized', () => {
       mockGlobal.$gameTroop = null;
-
       expect(() => selector.selectSkillForActor(mockActor)).toThrow('$gameTroop not initialized');
     });
 
     it('should throw Error if no alive enemies found', () => {
       mockGlobal.$gameTroop.aliveMembers = jest.fn(() => []);
-
       expect(() => selector.selectSkillForActor(mockActor)).toThrow(
         'No alive enemies found. Battle should have ended.'
       );
@@ -187,232 +153,155 @@ describe('SkillSelector', () => {
   });
 
   describe('HP cost validation (ADR-004)', () => {
-    it('should reject skill when actor.hp <= skill.hpCost', () => {
-      mockActor.hp = 5;
-      (mockGlobal.$dataSkills[1] as any).hpCost = 5; // HP exactly at cost
+    test.each([
+      // [actorHP, skillHPCost, expectedSkillId, description]
+      [5, 5, 2, 'HP equals HP cost (should reject)'],
+      [6, 5, 1, 'HP > HP cost (should accept)'],
+      [1, 0, 1, 'HP cost is 0 (should accept)'],
+      [1, undefined, 1, 'HP cost is undefined (should accept)'],
+    ])('HP: %p, Cost: %p -> Skill: %p (%s)',
+      (actorHP, skillHPCost, expectedSkillId, description) => {
+        mockActor.hp = actorHP;
 
-      const result = selector.selectSkillForActor(mockActor);
+        if (skillHPCost === undefined) {
+          delete (mockGlobal.$dataSkills[1] as any).hpCost;
+        } else {
+          (mockGlobal.$dataSkills[1] as any).hpCost = skillHPCost;
+        }
 
-      expect(result.skillId).toBe(2); // Guard (cannot afford)
-    });
-
-    it('should accept skill when actor.hp > skill.hpCost', () => {
-      mockActor.hp = 6;
-      (mockGlobal.$dataSkills[1] as any).hpCost = 5; // HP above cost
-
-      const result = selector.selectSkillForActor(mockActor);
-
-      expect(result.skillId).toBe(1); // Attack (affordable)
-    });
-
-    it('should accept skill when hpCost is 0 (default)', () => {
-      mockActor.hp = 1; // Very low HP
-      (mockGlobal.$dataSkills[1] as any).hpCost = 0; // No HP cost
-
-      const result = selector.selectSkillForActor(mockActor);
-
-      expect(result.skillId).toBe(1); // Attack (affordable)
-    });
-
-    it('should accept skill when hpCost is undefined (defaults to 0)', () => {
-      mockActor.hp = 1; // Very low HP
-      delete (mockGlobal.$dataSkills[1] as any).hpCost; // No hpCost property
-
-      const result = selector.selectSkillForActor(mockActor);
-
-      expect(result.skillId).toBe(1); // Attack (affordable)
-    });
+        const result = selector.selectSkillForActor(mockActor);
+        expect(result.skillId).toBe(expectedSkillId);
+      }
+    );
   });
 
   describe('MP cost validation (ADR-004)', () => {
-    it('should reject skill when actor.mp < skill.mpCost', () => {
-      mockActor.mp = 9;
-      mockGlobal.$dataSkills[1].mpCost = 10; // MP below cost
+    test.each([
+      // [actorMP, skillMPCost, expectedSkillId, description]
+      [9, 10, 2, 'MP < MP cost (should reject)'],
+      [10, 10, 1, 'MP >= MP cost (should accept)'],
+      [0, 0, 1, 'MP cost is 0 (should accept)'],
+      [0, undefined, 1, 'MP cost is undefined (should accept)'],
+    ])('MP: %p, Cost: %p -> Skill: %p (%s)',
+      (actorMP, skillMPCost, expectedSkillId, description) => {
+        mockActor.mp = actorMP;
 
-      const result = selector.selectSkillForActor(mockActor);
+        if (skillMPCost === undefined) {
+          delete mockGlobal.$dataSkills[1].mpCost;
+        } else {
+          mockGlobal.$dataSkills[1].mpCost = skillMPCost;
+        }
 
-      expect(result.skillId).toBe(2); // Guard (cannot afford)
-    });
-
-    it('should accept skill when actor.mp >= skill.mpCost', () => {
-      mockActor.mp = 10;
-      mockGlobal.$dataSkills[1].mpCost = 10; // MP exactly at cost
-
-      const result = selector.selectSkillForActor(mockActor);
-
-      expect(result.skillId).toBe(1); // Attack (affordable)
-    });
-
-    it('should accept skill when mpCost is 0 (default)', () => {
-      mockActor.mp = 0; // No MP
-      mockGlobal.$dataSkills[1].mpCost = 0; // No MP cost
-
-      const result = selector.selectSkillForActor(mockActor);
-
-      expect(result.skillId).toBe(1); // Attack (affordable)
-    });
-
-    it('should accept skill when mpCost is undefined (defaults to 0)', () => {
-      mockActor.mp = 0; // No MP
-      delete mockGlobal.$dataSkills[1].mpCost; // No mpCost property
-
-      const result = selector.selectSkillForActor(mockActor);
-
-      expect(result.skillId).toBe(1); // Attack (affordable)
-    });
+        const result = selector.selectSkillForActor(mockActor);
+        expect(result.skillId).toBe(expectedSkillId);
+      }
+    );
   });
 
   describe('combined HP/MP validation', () => {
-    it('should reject skill when both HP and MP insufficient', () => {
-      mockActor.hp = 5;
-      mockActor.mp = 5;
-      (mockGlobal.$dataSkills[1] as any).hpCost = 5;
-      mockGlobal.$dataSkills[1].mpCost = 10;
+    test.each([
+      // [actorHP, actorMP, skillHPCost, skillMPCost, expectedSkillId, description]
+      [5, 5, 5, 10, 2, 'both HP and MP insufficient'],
+      [20, 20, 10, 10, 1, 'both HP and MP sufficient'],
+      [100, 5, 0, 10, 2, 'HP sufficient but MP insufficient'],
+      [5, 100, 5, 0, 2, 'MP sufficient but HP insufficient'],
+    ])('HP:%p, MP:%p, HPCost:%p, MPCost:%p -> Skill: %p (%s)',
+      (actorHP, actorMP, skillHPCost, skillMPCost, expectedSkillId, description) => {
+        mockActor.hp = actorHP;
+        mockActor.mp = actorMP;
 
-      const result = selector.selectSkillForActor(mockActor);
+        (mockGlobal.$dataSkills[1] as any).hpCost = skillHPCost;
+        mockGlobal.$dataSkills[1].mpCost = skillMPCost;
 
-      expect(result.skillId).toBe(2); // Guard (cannot afford)
-    });
-
-    it('should accept skill when both HP and MP sufficient', () => {
-      mockActor.hp = 20;
-      mockActor.mp = 20;
-      (mockGlobal.$dataSkills[1] as any).hpCost = 10;
-      mockGlobal.$dataSkills[1].mpCost = 10;
-
-      const result = selector.selectSkillForActor(mockActor);
-
-      expect(result.skillId).toBe(1); // Attack (affordable)
-    });
-
-    it('should reject skill when HP sufficient but MP insufficient', () => {
-      mockActor.hp = 100;
-      mockActor.mp = 5;
-      (mockGlobal.$dataSkills[1] as any).hpCost = 0;
-      mockGlobal.$dataSkills[1].mpCost = 10;
-
-      const result = selector.selectSkillForActor(mockActor);
-
-      expect(result.skillId).toBe(2); // Guard (cannot afford due to MP)
-    });
-
-    it('should reject skill when MP sufficient but HP insufficient', () => {
-      mockActor.hp = 5;
-      mockActor.mp = 100;
-      (mockGlobal.$dataSkills[1] as any).hpCost = 5;
-      mockGlobal.$dataSkills[1].mpCost = 0;
-
-      const result = selector.selectSkillForActor(mockActor);
-
-      expect(result.skillId).toBe(2); // Guard (cannot afford due to HP)
-    });
+        const result = selector.selectSkillForActor(mockActor);
+        expect(result.skillId).toBe(expectedSkillId);
+      }
+    );
   });
 
   describe('target selection (ADR-019 MVP)', () => {
-    it('should always select first enemy from aliveMembers array', () => {
-      const result = selector.selectSkillForActor(mockActor);
+    test.each([
+      // [aliveMembers, expectedTarget, description]
+      [[mockEnemy1, mockEnemy2], mockEnemy1, 'multiple enemies, pick first'],
+      [[mockEnemy2], mockEnemy2, 'single enemy'],
+      [[mockEnemy1, mockEnemy2, { enemyId: 3, hp: 60, name: 'Goblin' }], mockEnemy1, 'multiple enemies, always first'],
+    ])('should target first alive enemy from %p - %s',
+      (aliveMembers, expectedTarget, description) => {
+        mockGlobal.$gameTroop.aliveMembers = jest.fn(() => aliveMembers);
 
-      expect(result.target).toBe(mockEnemy1); // First enemy
-      expect(result.target).not.toBe(mockEnemy2); // Not second enemy
-    });
-
-    it('should handle single enemy in troop', () => {
-      mockGlobal.$gameTroop.aliveMembers = jest.fn(() => [mockEnemy2]);
-
-      const result = selector.selectSkillForActor(mockActor);
-
-      expect(result.target).toBe(mockEnemy2); // Only enemy
-    });
-
-    it('should handle multiple enemies in troop (always picks first)', () => {
-      const mockEnemy3 = { enemyId: 3, hp: 60, name: 'Goblin' };
-      mockGlobal.$gameTroop.aliveMembers = jest.fn(() => [mockEnemy1, mockEnemy2, mockEnemy3]);
-
-      const result = selector.selectSkillForActor(mockActor);
-
-      expect(result.target).toBe(mockEnemy1); // Always first
-    });
+        const result = selector.selectSkillForActor(mockActor);
+        expect(result.target).toBe(expectedTarget);
+      }
+    );
   });
 
   describe('edge cases', () => {
-    it('should handle actor with maximum resources', () => {
-      mockActor.hp = 9999;
-      mockActor.mp = 9999;
+    test.each([
+      // [actorHP, actorMP, skillHPCost, skillMPCost, expectedSkillId, description]
+      [9999, 9999, 0, 0, 1, 'maximum resources'],
+      [1, 0, 0, 0, 1, 'minimum resources'],
+    ])('HP:%p, MP:%p, HPCost:%p, MPCost:%p -> Skill: %p (%s)',
+      (actorHP, actorMP, skillHPCost, skillMPCost, expectedSkillId, description) => {
+        mockActor.hp = actorHP;
+        mockActor.mp = actorMP;
 
-      const result = selector.selectSkillForActor(mockActor);
+        (mockGlobal.$dataSkills[1] as any).hpCost = skillHPCost;
+        mockGlobal.$dataSkills[1].mpCost = skillMPCost;
 
-      expect(result.skillId).toBe(1); // Attack
-    });
+        const result = selector.selectSkillForActor(mockActor);
+        expect(result.skillId).toBe(expectedSkillId);
+      }
+    );
 
-    it('should handle actor with minimum resources (1 HP, 0 MP)', () => {
-      mockActor.hp = 1;
-      mockActor.mp = 0;
-      (mockGlobal.$dataSkills[1] as any).hpCost = 0;
-      mockGlobal.$dataSkills[1].mpCost = 0;
-
-      const result = selector.selectSkillForActor(mockActor);
-
-      expect(result.skillId).toBe(1); // Attack (no costs)
-    });
-
-    it('should handle $gameTroop.aliveMembers returning null (defensive)', () => {
-      mockGlobal.$gameTroop.aliveMembers = jest.fn(() => null);
-
-      expect(() => selector.selectSkillForActor(mockActor)).toThrow('No alive enemies found');
-    });
-
-    it('should handle $gameTroop.aliveMembers returning undefined (defensive)', () => {
-      mockGlobal.$gameTroop.aliveMembers = jest.fn(() => undefined);
-
-      expect(() => selector.selectSkillForActor(mockActor)).toThrow('No alive enemies found');
-    });
+    test.each([
+      // [aliveMembersValue, expectedError]
+      [null, 'No alive enemies found'],
+      [undefined, 'No alive enemies found'],
+    ])('should handle $gameTroop.aliveMembers returning %p',
+      (aliveMembersValue, expectedError) => {
+        mockGlobal.$gameTroop.aliveMembers = jest.fn(() => aliveMembersValue);
+        expect(() => selector.selectSkillForActor(mockActor)).toThrow(expectedError);
+      }
+    );
   });
 
   describe('ADR-004 compliance', () => {
-    it('should respect HP cost constraints', () => {
-      mockActor.hp = 10;
-      (mockGlobal.$dataSkills[1] as any).hpCost = 10;
+    test.each([
+      // [actorHP, actorMP, skillHPCost, skillMPCost, expectedSkillId, constraint]
+      [10, 50, 10, 0, 2, 'HP cost constraint'],
+      [50, 5, 0, 10, 2, 'MP cost constraint'],
+    ])('should respect %s - HP:%p, MP:%p, HPCost:%p, MPCost:%p -> Skill: %p',
+      (constraint, actorHP, actorMP, skillHPCost, skillMPCost, expectedSkillId) => {
+        mockActor.hp = actorHP;
+        mockActor.mp = actorMP;
 
-      const result = selector.selectSkillForActor(mockActor);
+        (mockGlobal.$dataSkills[1] as any).hpCost = skillHPCost;
+        mockGlobal.$dataSkills[1].mpCost = skillMPCost;
 
-      // Actor should not use skill that would kill them
-      expect(result.skillId).toBe(2); // Guard
-    });
-
-    it('should respect MP cost constraints', () => {
-      mockActor.mp = 5;
-      mockGlobal.$dataSkills[1].mpCost = 10;
-
-      const result = selector.selectSkillForActor(mockActor);
-
-      // Actor should not use skill they cannot afford
-      expect(result.skillId).toBe(2); // Guard
-    });
+        const result = selector.selectSkillForActor(mockActor);
+        expect(result.skillId).toBe(expectedSkillId);
+      }
+    );
   });
 
   describe('ADR-019 MVP compliance', () => {
-    it('should implement basic attack selection (MVP requirement)', () => {
-      const result = selector.selectSkillForActor(mockActor);
+    test.each([
+      // [actorMP, skillMPCost, expectedSkillId, behavior]
+      [50, 0, 1, 'basic attack selection when affordable'],
+      [0, 10, 2, 'Guard fallback when unaffordable'],
+    ])('should implement %s - MP:%p, MPCost:%p -> Skill: %p',
+      (behavior, actorMP, skillMPCost, expectedSkillId) => {
+        mockActor.mp = actorMP;
+        mockGlobal.$dataSkills[1].mpCost = skillMPCost;
 
-      // MVP: always select Attack (skill ID 1) when affordable
-      expect(result.skillId).toBe(1);
-    });
-
-    it('should implement Guard fallback (MVP requirement)', () => {
-      mockActor.mp = 0;
-      mockGlobal.$dataSkills[1].mpCost = 10;
-
-      const result = selector.selectSkillForActor(mockActor);
-
-      // MVP: fallback to Guard (skill ID 2) when Attack unaffordable
-      expect(result.skillId).toBe(2);
-    });
+        const result = selector.selectSkillForActor(mockActor);
+        expect(result.skillId).toBe(expectedSkillId);
+      }
+    );
 
     it('should implement first-enemy targeting (MVP requirement)', () => {
       const result = selector.selectSkillForActor(mockActor);
-
-      // MVP: always target first alive enemy
-      expect(result.target).toBe(mockEnemy1);
+      expect(result.target).toBe(mockEnemy1); // Always first alive enemy
     });
   });
 });

@@ -4,8 +4,8 @@
  * Tests terminal output formatting for battle summaries
  */
 
-import { SummaryFormatter } from '@coreto/cli/cli/ui/SummaryFormatter.js';
-import type { BattleSummary } from '@coreto/cli/cli/ui/types.js';
+import { SummaryFormatter } from '../SummaryFormatter.js';
+import type { BattleSummary } from '../types.js';
 
 describe('SummaryFormatter', () => {
   describe('format', () => {

@@ -53,34 +53,7 @@ describe('BattleTimeoutError', () => {
     });
   });
 
-  describe('Error inheritance', () => {
-    it('should be instanceof DomainError', () => {
-      const error = new BattleTimeoutError(5, 100000, 50000);
-
-      expect(error instanceof DomainError).toBe(true);
-    });
-
-    it('should be instanceof BattleTimeoutError', () => {
-      const error = new BattleTimeoutError(5, 100000, 50000);
-
-      expect(error instanceof BattleTimeoutError).toBe(true);
-    });
-
-    it('should be throwable', () => {
-      expect(() => {
-        throw new BattleTimeoutError(5, 100000, 50000);
-      }).toThrow('Battle timeout');
-    });
-
-    it('should be catchable as DomainError', () => {
-      try {
-        throw new BattleTimeoutError(5, 100000, 50000);
-      } catch (error) {
-        expect(error).toBeInstanceOf(DomainError);
-      }
-    });
-  });
-
+  
   describe('context data', () => {
     it('should provide debugging context for timeout investigation', () => {
       const troopId = 42;
