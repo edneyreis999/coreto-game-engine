@@ -33,7 +33,7 @@ O Coreto Game Engine e um wrapper read-only sobre projetos RPG Maker MZ que exec
 - Carregamento completo do database (10 arquivos JSON)
 - Validacao de referencias cruzadas (enemies, skills, classes)
 - Protecao contra path traversal
-- CLI base com Oclif
+- Electron Dev Portal para validacao TTK
 
 ## Instalacao
 
@@ -46,20 +46,15 @@ npm test
 ## Comandos
 
 ```bash
-# Validar projeto RPG Maker MZ
-npm run validate -- /caminho/para/projeto
-
 # Desenvolvimento
-npm run dev           # Watch mode
-npm run build         # Compilar
-npm run type-check    # Verificar tipos
+pnpm dev              # Inicia Electron em modo dev
+pnpm build            # Compilar todos os pacotes
+pnpm type-check       # Verificar tipos
+pnpm test             # Todos os testes
 
 # Testes
-npm test              # Todos os testes
-npm test -- tests/qa/ # Testes QA
-
-# CLI
-npx coreto-engine hello --name=World
+pnpm --filter @coreto/electron test  # Testes do Electron
+pnpm --filter @coreto/core test      # Testes do Core
 ```
 
 ## Validar Projeto Real
@@ -88,25 +83,24 @@ Saida esperada:
 
 ```
 game-engine/
-├── src/
-│   ├── cli/commands/          # Oclif commands
-│   ├── core/
+├── packages/
+│   ├── core/                  # Dominio puro (business logic)
 │   │   ├── domain/            # Entities, Value Objects
 │   │   ├── errors/            # Domain exceptions
 │   │   ├── ports/             # Interfaces
 │   │   └── use-cases/         # Business logic
-│   └── infrastructure/
-│       ├── adapters/data/     # RmmzDataLoader
-│       ├── config/            # Zod schemas
-│       └── security/          # PathSanitizer
+│   └── electron/              # App Electron (GUI)
+│       ├── main/              # Node.js backend
+│       ├── preload/           # Security bridge
+│       └── renderer/          # React UI
 ├── scripts/
-│   └── validate-project.mts   # CLI de validacao
+│   └── validate-project.mts   # Script de validacao
 ├── tests/
 │   ├── unit/
 │   ├── integration/
 │   └── qa/                    # Testes manuais
 └── docs/
-    ├── adrs/                  # 31 ADRs
+    ├── adrs/                  # 32 ADRs
     └── hld-coreto-game-engine.md
 ```
 
@@ -134,17 +128,19 @@ game-engine/
 ## Arquitetura
 
 ```
-CLI Layer (Oclif)
+Electron Dev Portal (React UI)
+  ↓
+IPC Handlers (Main Process)
+  ↓
+UtilityProcess (Simulation Worker)
+  ↓
+@coreto/core (Use Cases, Domain)
   ↓
 Config Layer (Zod validation)
   ↓
 Loader Layer (fs.readFileSync)
   ↓
-Headless Runtime [pendente]
-  ↓
-Simulation Layer [pendente]
-  ↓
-Reporter Layer [pendente]
+Headless Runtime (JSDOM + PIXI mocks)
 ```
 
 ### ADRs Principais
@@ -164,7 +160,7 @@ Reporter Layer [pendente]
 |-----------|------------|
 | Language | TypeScript 5.x (strict) |
 | Runtime | Node.js >= 20 |
-| CLI | Oclif v4 |
+| GUI | Electron 33 + React 18 + shadcn/ui |
 | Validation | Zod 3.x |
 | DI | TSyringe |
 | Testing | Jest |

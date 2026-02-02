@@ -26,8 +26,6 @@ export default {
     '^@coreto/core$': '<rootDir>/packages/core/src/index.ts',
     '^@coreto/core/(.*)\\.js$': '<rootDir>/packages/core/src/$1.ts',
     '^@coreto/core/(.+)$': '<rootDir>/packages/core/src/$1.ts',
-    '^@coreto/cli/(.*)\\.js$': '<rootDir>/packages/cli/src/$1.ts',
-    '^@coreto/cli/(.+)$': '<rootDir>/packages/cli/src/$1.ts',
     '^@coreto/electron/(.*)\\.js$': '<rootDir>/packages/electron/src/$1.ts',
     '^@coreto/electron/(.+)$': '<rootDir>/packages/electron/src/$1.ts',
     // Handle @/ path alias for @coreto/electron renderer (components, hooks, etc.)
@@ -43,8 +41,6 @@ export default {
     '^@/types/(.+)$': '<rootDir>/packages/core/src/types/$1.ts',
     '^@/infrastructure/(.*)\\.js$': '<rootDir>/packages/core/src/infrastructure/$1.ts',
     '^@/infrastructure/(.+)$': '<rootDir>/packages/core/src/infrastructure/$1.ts',
-    '^@/cli/(.*)\\.js$': '<rootDir>/packages/cli/src/cli/$1.ts',
-    '^@/cli/(.+)$': '<rootDir>/packages/cli/src/cli/$1.ts',
     '^@/(core/.*)\\.js$': '<rootDir>/packages/core/src/$1.ts',
     '^@/(core/.+)$': '<rootDir>/packages/core/src/$1.ts',
     // Generic @/ fallback - must come LAST
@@ -60,7 +56,6 @@ export default {
     '!**/*.d.ts',
     '!**/*.test.ts',
     '!**/*.spec.ts',
-    '!packages/cli/src/index.ts', // Entry point, covered by E2E
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],

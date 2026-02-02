@@ -9,7 +9,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Architecture:** pnpm monorepo
 
 - `@coreto/core` - shared business logic (headless runtime, validation)
-- `@coreto/cli` - Oclif-based CLI for Coreto Engine developers (deploy scripts, test runners, dev tooling)
 - `@coreto/electron` - Electron 33 Dev Portal for RPG Maker MZ game developers (TTK validation, NSD generator, DB editors)
   - Stack Principal:
     - Electron 33.0.0
@@ -27,7 +26,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **User Roles:**
 
 - **Game Developers** → Use `@coreto/electron` GUI to build RPG Maker MZ games (TTK validation, scene generation)
-- **Engine Developers** → Use `@coreto/cli` to maintain Coreto Engine (deploy, test, build automation)
 
 **Tools:**
 
@@ -49,54 +47,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 5. Update `docs/adrs/INDEX.md`
 
 **Skill invocation:** `Skill tool` with `skill: "adrs-management:adr-generate"` and `args: "{MODULE}"`
-
-## TTK Validation Execution
-
-**Script:** `packages/cli/src/cli/commands/run-ttk.ts`
-
-**IMPORTANT:** All commands must be executed from the **monorepo root**
-
-**Build:**
-
-```bash
-# Build both core and cli packages
-pnpm build
-
-# Or build individually
-pnpm --filter @coreto/core build
-pnpm --filter @coreto/cli build
-```
-
-**Run:**
-
-```bash
-# From monorepo root
-pnpm ttk
-```
-
-**Flags:**
-
-- `--config` / `-c` - Config path (required)
-- `--verbose` / `-v` - Progress bar + detailed output
-- `--diagnostic` / `-d` - Performance profiling
-- `--seed` / `-s` - RNG seed override
-- `--trecho` / `-t` - Run single trecho only
-
-**Dependencies:**
-
-- Requires `stub-index.html` in monorepo root (used by JSDOM for headless runtime)
-- Requires `temp/project.config.json` with trecho configurations
-
-## CLI Package Architecture
-
-**Framework:** Oclif-based CLI with TypeScript
-
-**Key Patterns:**
-
-- Commands follow Oclif convention in `dist/cli/commands/` after build
-- Entry point: `bin/run.js` → `dist/cli/index.js`
-- Source files in `src/cli/` compile to `dist/cli/`
-- UI components (progress bars, formatters) in `src/cli/ui/`
 
 ## Electron Package Architecture
 
@@ -144,6 +94,6 @@ pnpm type-check        # TypeScript check all packages
 pnpm test              # Run all tests
 pnpm --filter @coreto/electron test  # Electron tests only
 pnpm --filter @coreto/core test      # Core tests only
-pnpm build             # Build core + cli
+pnpm build             # Build core + electron
 pnpm --filter @coreto/electron build  # Build electron
 ```

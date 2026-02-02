@@ -45,8 +45,6 @@
     "paths": {
       "@coreto/core": ["./packages/core/src"],
       "@coreto/core/*": ["./packages/core/src/*"],
-      "@coreto/cli": ["./packages/cli/src"],
-      "@coreto/cli/*": ["./packages/cli/src/*"],
       "@coreto/electron": ["./packages/electron/src"],
       "@coreto/electron/*": ["./packages/electron/src/*"],
       // Electron renderer path aliases (for Jest from monorepo root)
@@ -72,7 +70,6 @@
   ],
   "references": [
     { "path": "./packages/core" },
-    { "path": "./packages/cli" },
     { "path": "./packages/electron" }
   ]
 }
