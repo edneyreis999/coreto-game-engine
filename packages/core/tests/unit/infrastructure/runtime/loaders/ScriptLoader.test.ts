@@ -32,7 +32,7 @@ describe('ScriptLoader', () => {
     (global as any).Graphics = { frameCount: 0 };
 
     // Create js/ directory and scripts from the repo fixture (copy-on-write)
-    const fixtureProject = path.join(process.cwd(), 'packages/core/tests/fixtures/rmmz-mini-project');
+    const fixtureProject = path.join(__dirname, '../../../../fixtures/rmmz-mini-project');
     const scripts = [
       'rmmz_core.js',
       'rmmz_managers.js',

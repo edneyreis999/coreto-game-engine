@@ -57,17 +57,6 @@ const PartyConfigFormSchema = z.object({
 });
 
 /**
- * Zod schema for tolerance percentage validation.
- */
-const _TolerancePercentFormSchema = z
-  .number({
-    required_error: 'Tolerance is required',
-    invalid_type_error: 'Tolerance must be a number',
-  })
-  .min(0, 'Tolerance must be at least 0%')
-  .max(100, 'Tolerance cannot exceed 100%');
-
-/**
  * Zod schema for troop IDs validation.
  */
 const TroopIdsFormSchema = z

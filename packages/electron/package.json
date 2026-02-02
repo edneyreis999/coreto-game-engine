@@ -18,8 +18,11 @@
     "rebuild:node": "pnpm rebuild better-sqlite3",
     "predev": "pnpm rebuild:electron",
     "pretest": "pnpm rebuild:node",
-    "test": "jest",
-    "test:watch": "jest --watch",
+    "test": "jest --config=../../jest.config.js --selectProjects electron-main --selectProjects electron-renderer --selectProjects electron-integration",
+    "test:watch": "jest --config=../../jest.config.js --selectProjects electron-main --selectProjects electron-renderer --selectProjects electron-integration --watch",
+    "test:main": "jest --config=../../jest.config.js --selectProjects electron-main",
+    "test:renderer": "jest --config=../../jest.config.js --selectProjects electron-renderer",
+    "test:integration": "jest --config=../../jest.config.js --selectProjects electron-integration",
     "pack:mac": "npm run build && electron-builder --mac --config electron-builder.config.js",
     "dist:mac": "npm run build && electron-builder --mac --config electron-builder.config.js --publish never",
     "start:mac": "npm run pack:mac && open dist/mac/*.app"

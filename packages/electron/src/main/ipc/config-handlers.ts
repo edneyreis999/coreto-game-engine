@@ -114,6 +114,9 @@ function validateConfigPayload<T>(
   if (!result.success) {
     // Type narrowing: when success is false, error is guaranteed to exist
     const parseError = result.error;
+    if (!parseError) {
+      throw new Error(`Invalid payload for ${channel}: Unknown error`);
+    }
     const errorMessages = parseError.errors
       .map((e: { path: (string | number)[]; message: string }) =>
         `${e.path.join('.')}: ${e.message}`

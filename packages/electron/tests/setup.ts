@@ -5,10 +5,10 @@
  */
 
 // Set NODE_ENV to test for all tests
-process.env.NODE_ENV = 'test'
+process.env.NODE_ENV = 'test';
 
 // Polyfill vi for Vitest compatibility (using Jest functions)
-global.vi = {
+(global as any).vi = {
   fn: jest.fn,
   mock: jest.mock,
   spyOn: jest.spyOn,
@@ -18,7 +18,7 @@ global.vi = {
 };
 
 // Mock import.meta.env for ES modules
-Object.defineProperty(global, 'import', {
+Object.defineProperty(global as any, 'import', {
   value: {
     meta: {
       env: {
@@ -27,4 +27,4 @@ Object.defineProperty(global, 'import', {
       }
     }
   }
-})
+});

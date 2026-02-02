@@ -17,7 +17,7 @@
  * @see packages/electron/src/main/ipc/index.ts
  */
 
-import { ipcMain, IpcMainInvokeEvent, dialog, BrowserWindow } from 'electron';
+import { ipcMain, IpcMainInvokeEvent, dialog, BrowserWindow, BaseWindow } from 'electron';
 import { z } from 'zod';
 import * as path from 'path';
 
@@ -1004,10 +1004,13 @@ async function handleDialogOpenDirectory(
 
     // dialog.showOpenDialog can accept undefined (per Electron docs), but TS types don't reflect this
     // Type assertion needed because BaseWindow type doesn't include undefined
-    const result = await dialog.showOpenDialog((focusedWindow ?? undefined) as BrowserWindow | undefined, {
-      properties: ['openDirectory'],
-      title: 'Select RPG Maker MZ Project Folder',
-    });
+    const result = await dialog.showOpenDialog(
+      (focusedWindow ?? undefined) as unknown as BaseWindow,
+      {
+        properties: ['openDirectory'],
+        title: 'Select RPG Maker MZ Project Folder',
+      }
+    );
 
     return {
       canceled: result.canceled,

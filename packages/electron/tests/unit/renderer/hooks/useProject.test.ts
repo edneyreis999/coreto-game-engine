@@ -6,17 +6,9 @@
 
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { useProject } from '@/hooks/useProject'
-import type { CoretoAPI } from '@coreto/electron/preload/index.js'
 
-// Extend Window interface with coreto property
-declare global {
-  interface Window {
-    coreto: jest.Mocked<CoretoAPI>;
-  }
-}
-
-// Mock window.coreto API
-const mockCoreto = (window as { coreto?: jest.Mocked<Window['coreto']> }).coreto!
+// Mock window.coreto API - defined in setup.renderer.ts
+const mockCoreto = (global as any).mockCoreto
 
 describe('useProject', () => {
   beforeEach(() => {

@@ -245,8 +245,8 @@ describe('ConfigService', () => {
 
       // Verify the complete saved config can be parsed
       expect(mockedFs.writeFile.mock.calls[0]).toBeDefined();
-      const writeCall = mockedFs.writeFile.mock.calls[0]!;
-      const savedConfig = JSON.parse(writeCall[1] as string);
+      const writeCall = mockedFs.writeFile.mock.calls[0];
+      const savedConfig = JSON.parse(writeCall?.[1] as string);
       expect(savedConfig).toMatchObject({
         version: '1.0',
         trechos: [],
@@ -260,8 +260,8 @@ describe('ConfigService', () => {
       const afterTime = Date.now();
 
       expect(mockedFs.writeFile.mock.calls[0]).toBeDefined();
-      const writeCall = mockedFs.writeFile.mock.calls[0]!;
-      const savedConfig = JSON.parse(writeCall[1] as string);
+      const writeCall = mockedFs.writeFile.mock.calls[0];
+      const savedConfig = JSON.parse(writeCall?.[1] as string);
 
       expect(savedConfig.metadata?.lastModified).toBeGreaterThanOrEqual(beforeTime);
       expect(savedConfig.metadata?.lastModified).toBeLessThanOrEqual(afterTime);
@@ -301,8 +301,8 @@ describe('ConfigService', () => {
       await service.saveConfig(mockProjectPath, configWithoutMetadata);
 
       expect(mockedFs.writeFile.mock.calls[0]).toBeDefined();
-      const writeCall = mockedFs.writeFile.mock.calls[0]!;
-      const savedConfig = JSON.parse(writeCall[1] as string);
+      const writeCall = mockedFs.writeFile.mock.calls[0];
+      const savedConfig = JSON.parse(writeCall?.[1] as string);
 
       expect(savedConfig.metadata).toBeDefined();
       expect(savedConfig.metadata.lastModified).toBeDefined();

@@ -5,14 +5,20 @@
  * Mocks window.coreto API and Electron APIs.
  */
 
+// Reference global type declarations (CoretoAPI for source files)
+/// <reference path="../src/renderer/src/types/preload.d.ts" />
+
 // Import jest-dom matchers
 import '@testing-library/jest-dom'
 
+// Import CoretoAPI type for proper mock typing
+import type { CoretoAPI } from '../src/renderer/src/types/preload'
+
 // Set NODE_ENV to test for all tests
-process.env.NODE_ENV = 'test'
+process.env.NODE_ENV = 'test';
 
 // Mock window.coreto API
-global.window = global.window || {}
+(global as any).window = (global as any).window || {};
 
 // Mock window.electron.ipcRenderer for dialog:openDirectory
 Object.defineProperty(global.window, 'electron', {
@@ -56,7 +62,15 @@ Object.defineProperty(global.window, 'coreto', {
   value: mockCoretoAPI,
   writable: true,
   configurable: true,
-})
+});
 
-// Make window.coreto available globally for test assertions
-global.mockCoreto = mockCoretoAPI
+// Type the mock with jest.Mocked<CoretoAPI> for proper type inference in tests
+// Use unknown as intermediate to bypass strict type checking
+const typedCoretoMock = mockCoretoAPI as unknown as jest.Mocked<CoretoAPI>;
+
+// Make window.coreto available globally for test assertions with proper types
+declare global {
+  const mockCoreto: jest.Mocked<CoretoAPI>;
+}
+
+(global as any).mockCoreto = typedCoretoMock;

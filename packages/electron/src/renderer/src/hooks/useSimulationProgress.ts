@@ -238,13 +238,12 @@ export function useSimulationProgress(): UseSimulationProgressReturn {
     const cleanupProgress = window.coreto.onProgress((payload: ProgressPayload) => {
       setProgressState({
         percentage: payload.percentage,
-        current: payload.current,
         currentIndex: payload.current,
         totalItems: payload.total,
         isRunning: true,
         stage: payload.stage,
         message: payload.message,
-        currentItem: payload.trechoName,
+        ...(payload.trechoName !== undefined && { currentItem: payload.trechoName }),
       });
       setProgressDetail(payload);
       setStatus('running');
