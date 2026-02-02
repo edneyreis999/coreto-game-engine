@@ -32,21 +32,21 @@ export function addRecentProject(
 ): RecentProject {
   const now = Date.now();
 
-  // Try to insert new record
+  // First, try to get existing record
+  const existing = getRecentProject(db, path);
+
+  if (existing) {
+    // Update existing record's timestamp
+    return updateLastOpened(db, path);
+  }
+
+  // Insert new record
   const insertStmt = db.prepare(`
     INSERT INTO recent_projects (path, name, last_opened_at, created_at)
     VALUES (?, ?, ?, ?)
   `);
 
-  try {
-    insertStmt.run(path, name, now, now);
-  } catch (error) {
-    // Unique constraint violation - update existing record
-    if (error instanceof Error && error.message.includes('UNIQUE')) {
-      return updateLastOpened(db, path);
-    }
-    throw error;
-  }
+  insertStmt.run(path, name, now, now);
 
   return { path, name, last_opened_at: now };
 }
