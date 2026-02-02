@@ -308,6 +308,7 @@ export const BattleDetails: FC<BattleDetailsProps> = ({
       <button
         type="button"
         onClick={onToggle}
+        aria-label={isExpanded ? "Collapse battle details" : "Expand battle details"}
         className={cn(
           'flex items-center justify-between gap-2',
           'w-full text-left',

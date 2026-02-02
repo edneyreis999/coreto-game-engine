@@ -114,6 +114,7 @@ const WarningBadge: FC<WarningBadgeProps> = ({ severity, count }) => {
 
   return (
     <div
+      data-testid={`severity-badge-${severity}`}
       className={cn(
         'flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium',
         config.className
