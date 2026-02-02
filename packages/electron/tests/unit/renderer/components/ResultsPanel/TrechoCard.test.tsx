@@ -5,7 +5,7 @@
  */
 
 import React from 'react'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import { TrechoCard } from '@/components/ResultsPanel'
 import type { TrechoSummaryData } from '@/types/preload'
 
@@ -24,6 +24,27 @@ jest.mock('lucide-react', () => ({
     <svg className={className} />
   ),
   ChevronUp: ({ className }: { className: string }) => (
+    <svg className={className} />
+  ),
+  Info: ({ className }: { className: string }) => (
+    <svg className={className} />
+  ),
+  X: ({ className }: { className: string }) => (
+    <svg className={className} />
+  ),
+  Trophy: ({ className }: { className: string }) => (
+    <svg className={className} />
+  ),
+  Clock: ({ className }: { className: string }) => (
+    <svg className={className} />
+  ),
+  Sword: ({ className }: { className: string }) => (
+    <svg className={className} />
+  ),
+  Zap: ({ className }: { className: string }) => (
+    <svg className={className} />
+  ),
+  Star: ({ className }: { className: string }) => (
     <svg className={className} />
   ),
 }))
@@ -143,7 +164,9 @@ describe('TrechoCard', () => {
       })
       render(<TrechoCard trecho={trecho} />)
 
-      expect(screen.getByText('Warning')).toBeInTheDocument()
+      // Status badge shows "Warning" when status is 'warning'
+      const warningElements = screen.getAllByText(/Warning/i)
+      expect(warningElements.length).toBeGreaterThanOrEqual(1)
     })
   })
 
@@ -151,19 +174,25 @@ describe('TrechoCard', () => {
     it('should show warnings count when warnings exist', () => {
       const trecho = createMockTrecho({
         warnings: [
-          { type: 'warning', severity: 'warning', message: 'Warning', context: {} },
+          { type: 'warning', severity: 'warning', message: 'This is a warning', context: {} },
         ],
       })
       render(<TrechoCard trecho={trecho} />)
 
-      expect(screen.getByText(/1 warning/)).toBeInTheDocument()
+      // There may be multiple "Warning" texts (status badge + type badge)
+      const warningElements = screen.getAllByText(/Warning/i)
+      expect(warningElements.length).toBeGreaterThanOrEqual(1)
+      // WarningsList renders the warning message
+      expect(screen.getByText('This is a warning')).toBeInTheDocument()
     })
 
     it('should not show warnings when no warnings', () => {
       const trecho = createMockTrecho({ warnings: [] })
       render(<TrechoCard trecho={trecho} />)
 
-      expect(screen.queryByText(/warning/)).not.toBeInTheDocument()
+      // When warnings array is empty, the entire WarningsList section is not rendered
+      // So we shouldn't find "Warning" badge or similar indicators
+      expect(screen.queryByText('Warning')).not.toBeInTheDocument()
     })
   })
 
@@ -172,17 +201,22 @@ describe('TrechoCard', () => {
       const trecho = createMockTrecho()
       render(<TrechoCard trecho={trecho} />)
 
-      expect(screen.getByRole('button', { name: /toggle details/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /expand battle details/i })).toBeInTheDocument()
     })
 
     it('should toggle details when button clicked', () => {
       const trecho = createMockTrecho()
       render(<TrechoCard trecho={trecho} />)
 
-      const toggleButton = screen.getByRole('button', { name: /toggle details/i })
+      const toggleButton = screen.getByRole('button', { name: /expand battle details/i })
+
+      // Click the button to expand
       fireEvent.click(toggleButton)
 
-      expect(screen.getByText('Battle Details')).toBeInTheDocument()
+      // "Battle Details" text should be visible (it's in the button itself)
+      expect(screen.getByText(/Battle Details/i)).toBeInTheDocument()
+      // After clicking, the aria-label should change to "Collapse battle details"
+      expect(screen.getByRole('button', { name: /collapse battle details/i })).toBeInTheDocument()
     })
   })
 

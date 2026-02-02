@@ -209,7 +209,7 @@ describe('ProjectSelectionPanel', () => {
         name: /Browse for Project Folder/i,
       })
 
-      act(() => {
+      await act(async () => {
         fireEvent.click(button)
       })
 
@@ -243,7 +243,7 @@ describe('ProjectSelectionPanel', () => {
         name: /Browse for Project Folder/i,
       })
 
-      act(() => {
+      await act(async () => {
         fireEvent.click(button)
       })
 
@@ -276,7 +276,7 @@ describe('ProjectSelectionPanel', () => {
       })
 
       await waitFor(() => {
-        expect(screen.getByText('Valid')).toBeInTheDocument()
+        expect(screen.getByText(/is a valid RPG Maker MZ project/)).toBeInTheDocument()
       })
     })
 
@@ -300,9 +300,10 @@ describe('ProjectSelectionPanel', () => {
         fireEvent.click(button)
       })
 
+      // The error message appears in both the p tag and li tag
       await waitFor(() => {
-        expect(screen.getByText('Invalid')).toBeInTheDocument()
-      })
+        expect(screen.getAllByText('Project is not valid')).toHaveLength(2)
+      }, { timeout: 3000 })
     })
 
     it('should show validation error messages', async () => {

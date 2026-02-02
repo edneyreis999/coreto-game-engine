@@ -26,6 +26,42 @@ jest.mock('lucide-react', () => ({
   RotateCw: ({ className }: { className: string }) => (
     <svg className={className} />
   ),
+  FileBarChart: ({ className }: { className: string }) => (
+    <svg className={className} />
+  ),
+  CheckCircle2: ({ className }: { className: string }) => (
+    <svg className={className} />
+  ),
+  AlertTriangle: ({ className }: { className: string }) => (
+    <svg className={className} />
+  ),
+  ChevronDown: ({ className }: { className: string }) => (
+    <svg className={className} />
+  ),
+  ChevronUp: ({ className }: { className: string }) => (
+    <svg className={className} />
+  ),
+  Trophy: ({ className }: { className: string }) => (
+    <svg className={className} />
+  ),
+  Clock: ({ className }: { className: string }) => (
+    <svg className={className} />
+  ),
+  Sword: ({ className }: { className: string }) => (
+    <svg className={className} />
+  ),
+  Zap: ({ className }: { className: string }) => (
+    <svg className={className} />
+  ),
+  Star: ({ className }: { className: string }) => (
+    <svg className={className} />
+  ),
+  Info: ({ className }: { className: string }) => (
+    <svg className={className} />
+  ),
+  X: ({ className }: { className: string }) => (
+    <svg className={className} />
+  ),
 }))
 
 // Mock useSimulationResults hook

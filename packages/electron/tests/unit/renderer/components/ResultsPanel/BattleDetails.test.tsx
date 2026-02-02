@@ -102,7 +102,7 @@ describe('BattleDetails', () => {
       expect(screen.getByText(/Battle Details \(3\)/)).toBeInTheDocument()
     })
 
-    it('should render collapse indicator when collapsed', () => {
+    it('should render expand indicator when collapsed', () => {
       render(
         <BattleDetails
           battles={mockBattles}
@@ -111,10 +111,10 @@ describe('BattleDetails', () => {
         />
       )
 
-      expect(screen.getByRole('button', { name: /collapse/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /expand battle details/i })).toBeInTheDocument()
     })
 
-    it('should render expand indicator when expanded', () => {
+    it('should render collapse indicator when expanded', () => {
       render(
         <BattleDetails
           battles={mockBattles}
@@ -123,7 +123,7 @@ describe('BattleDetails', () => {
         />
       )
 
-      expect(screen.getByRole('button', { name: /expand/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /collapse battle details/i })).toBeInTheDocument()
     })
   })
 
@@ -137,7 +137,8 @@ describe('BattleDetails', () => {
         />
       )
 
-      const toggleButton = screen.getByRole('button', { name: /toggle details/i })
+      // Button has aria-label that changes based on isExpanded state
+      const toggleButton = screen.getByRole('button', { name: /expand battle details/i })
       fireEvent.click(toggleButton)
 
       expect(mockOnToggle).toHaveBeenCalledTimes(1)
@@ -181,7 +182,8 @@ describe('BattleDetails', () => {
       )
 
       expect(screen.getByText('Victory')).toBeInTheDocument()
-      expect(screen.getByText(/EXP: 10/)).toBeInTheDocument()
+      expect(screen.getByText(/EXP/i)).toBeInTheDocument()
+      expect(screen.getByText('10')).toBeInTheDocument()
     })
 
     it('should display Defeat badge for defeat outcome', () => {
@@ -194,7 +196,8 @@ describe('BattleDetails', () => {
       )
 
       expect(screen.getByText('Defeat')).toBeInTheDocument()
-      expect(screen.getByText(/EXP: 0/)).toBeInTheDocument()
+      // EXP section only shows for victories with expGained > 0
+      expect(screen.queryByText(/EXP/i)).not.toBeInTheDocument()
     })
 
     it('should display Timeout badge for timeout outcome', () => {
@@ -207,7 +210,8 @@ describe('BattleDetails', () => {
       )
 
       expect(screen.getByText('Timeout')).toBeInTheDocument()
-      expect(screen.getByText(/EXP: 0/)).toBeInTheDocument()
+      // EXP section only shows for victories with expGained > 0
+      expect(screen.queryByText(/EXP/i)).not.toBeInTheDocument()
     })
   })
 
@@ -221,7 +225,8 @@ describe('BattleDetails', () => {
         />
       )
 
-      expect(screen.getByText('Turns: 5')).toBeInTheDocument()
+      expect(screen.getByText(/turns/i)).toBeInTheDocument()
+      expect(screen.getByText('5')).toBeInTheDocument()
     })
 
     it('should display TTK Actions', () => {
@@ -233,7 +238,8 @@ describe('BattleDetails', () => {
         />
       )
 
-      expect(screen.getByText('Actions: 8')).toBeInTheDocument()
+      expect(screen.getByText(/actions/i)).toBeInTheDocument()
+      expect(screen.getByText('8')).toBeInTheDocument()
     })
 
     it('should display Duration', () => {
@@ -245,7 +251,8 @@ describe('BattleDetails', () => {
         />
       )
 
-      expect(screen.getByText('Duration: 1.50s')).toBeInTheDocument()
+      expect(screen.getByText(/duration/i)).toBeInTheDocument()
+      expect(screen.getByText('1.50s')).toBeInTheDocument()
     })
 
     it('should display Seed', () => {
@@ -257,7 +264,8 @@ describe('BattleDetails', () => {
         />
       )
 
-      expect(screen.getByText('Seed: 12345')).toBeInTheDocument()
+      expect(screen.getByText(/seed/i)).toBeInTheDocument()
+      expect(screen.getByText('12345')).toBeInTheDocument()
     })
   })
 })

@@ -40,12 +40,12 @@ describe('WarningsList', () => {
         { type: 'info_warning', severity: 'info', message: 'Info issue', context: {} },
       ]
 
-      render(<WarningsList warnings={warnings} />)
+      const { container } = render(<WarningsList warnings={warnings} />)
 
-      // Use getAllByText since "Critical" appears in both badge and warning message
-      expect(screen.getAllByText(/Critical/).length).toBeGreaterThan(0)
-      expect(screen.getAllByText(/Warning/).length).toBeGreaterThan(0)
-      expect(screen.getAllByText(/Info/).length).toBeGreaterThan(0)
+      // Use data-testid to find badges
+      expect(container.querySelector('[data-testid="severity-badge-critical"]')).toBeInTheDocument()
+      expect(container.querySelector('[data-testid="severity-badge-warning"]')).toBeInTheDocument()
+      expect(container.querySelector('[data-testid="severity-badge-info"]')).toBeInTheDocument()
     })
 
     it('should show correct count for each severity', () => {
@@ -106,11 +106,11 @@ describe('WarningsList', () => {
         { type: 'i1', severity: 'info', message: 'Info 1', context: {} },
       ]
 
-      render(<WarningsList warnings={warnings} />)
+      const { container } = render(<WarningsList warnings={warnings} />)
 
-      expect(screen.getByText(/Critical/)).toBeInTheDocument()
-      expect(screen.getByText(/Warning/)).toBeInTheDocument()
-      expect(screen.getByText(/Info/)).toBeInTheDocument()
+      expect(container.querySelector('[data-testid="severity-badge-critical"]')).toBeInTheDocument()
+      expect(container.querySelector('[data-testid="severity-badge-warning"]')).toBeInTheDocument()
+      expect(container.querySelector('[data-testid="severity-badge-info"]')).toBeInTheDocument()
     })
 
     it('should only show badge for present severities', () => {
@@ -118,11 +118,11 @@ describe('WarningsList', () => {
         { type: 'w1', severity: 'warning', message: 'Warning', context: {} },
       ]
 
-      render(<WarningsList warnings={warnings} />)
+      const { container } = render(<WarningsList warnings={warnings} />)
 
-      expect(screen.queryByText(/Critical/)).not.toBeInTheDocument()
-      expect(screen.getByText(/Warning/)).toBeInTheDocument()
-      expect(screen.queryByText(/Info/)).not.toBeInTheDocument()
+      expect(container.querySelector('[data-testid="severity-badge-critical"]')).not.toBeInTheDocument()
+      expect(container.querySelector('[data-testid="severity-badge-warning"]')).toBeInTheDocument()
+      expect(container.querySelector('[data-testid="severity-badge-info"]')).not.toBeInTheDocument()
     })
   })
 })
