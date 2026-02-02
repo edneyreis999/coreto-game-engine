@@ -146,8 +146,8 @@ export class DatabaseLoader {
     ];
 
     for (const dataName of requiredData) {
-      // Database é carregado em window, não em global diretamente
-      const data = (global as any).window?.[dataName];
+      // Database é sincronizado para global[name] (linha 67)
+      const data = (global as any)[dataName];
 
       if (!data) {
         throw new Error(`Database validation failed: ${dataName} is ${data === null ? 'null' : 'undefined'}`);

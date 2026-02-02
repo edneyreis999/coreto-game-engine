@@ -28,6 +28,15 @@ describe('DatabaseLoader', () => {
   afterEach(() => {
     delete (global as any).window;
     delete (global as any).DataManager;
+    // Clean up $data* variables that tests may have set
+    const dataVars = [
+      '$dataActors', '$dataClasses', '$dataSkills', '$dataItems',
+      '$dataWeapons', '$dataArmors', '$dataEnemies', '$dataTroops',
+      '$dataStates', '$dataSystem',
+    ];
+    for (const varName of dataVars) {
+      delete (global as any)[varName];
+    }
     fs.rmSync(tmpProjectPath, { recursive: true, force: true });
   });
 
@@ -102,32 +111,32 @@ describe('DatabaseLoader', () => {
   });
 
   it('should validate required $data* variables in window', () => {
-    (global as any).window.$dataActors = [null];
-    (global as any).window.$dataClasses = [null];
-    (global as any).window.$dataSkills = [null];
-    (global as any).window.$dataItems = [null];
-    (global as any).window.$dataWeapons = [null];
-    (global as any).window.$dataArmors = [null];
-    (global as any).window.$dataEnemies = [null];
-    (global as any).window.$dataTroops = [null];
-    (global as any).window.$dataStates = [null];
-    (global as any).window.$dataSystem = { gameTitle: 'ok' };
+    (global as any).$dataActors = [null];
+    (global as any).$dataClasses = [null];
+    (global as any).$dataSkills = [null];
+    (global as any).$dataItems = [null];
+    (global as any).$dataWeapons = [null];
+    (global as any).$dataArmors = [null];
+    (global as any).$dataEnemies = [null];
+    (global as any).$dataTroops = [null];
+    (global as any).$dataStates = [null];
+    (global as any).$dataSystem = { gameTitle: 'ok' };
 
     const loader = new DatabaseLoader(tmpProjectPath);
     expect(() => loader.validateDatabase()).not.toThrow();
   });
 
   it('should warn when a required $data* array is empty (but still pass validation)', () => {
-    (global as any).window.$dataActors = [null];
-    (global as any).window.$dataClasses = [null];
-    (global as any).window.$dataSkills = [null];
-    (global as any).window.$dataItems = []; // empty array should warn
-    (global as any).window.$dataWeapons = [null];
-    (global as any).window.$dataArmors = [null];
-    (global as any).window.$dataEnemies = [null];
-    (global as any).window.$dataTroops = [null];
-    (global as any).window.$dataStates = [null];
-    (global as any).window.$dataSystem = { gameTitle: 'ok' };
+    (global as any).$dataActors = [null];
+    (global as any).$dataClasses = [null];
+    (global as any).$dataSkills = [null];
+    (global as any).$dataItems = []; // empty array should warn
+    (global as any).$dataWeapons = [null];
+    (global as any).$dataArmors = [null];
+    (global as any).$dataEnemies = [null];
+    (global as any).$dataTroops = [null];
+    (global as any).$dataStates = [null];
+    (global as any).$dataSystem = { gameTitle: 'ok' };
 
     const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
     const loader = new DatabaseLoader(tmpProjectPath);
@@ -137,15 +146,15 @@ describe('DatabaseLoader', () => {
   });
 
   it('should throw if a required $data* variable is missing', () => {
-    (global as any).window.$dataActors = [null];
-    (global as any).window.$dataClasses = [null];
-    (global as any).window.$dataSkills = [null];
-    (global as any).window.$dataItems = [null];
-    (global as any).window.$dataWeapons = [null];
-    (global as any).window.$dataArmors = [null];
-    (global as any).window.$dataEnemies = [null];
-    (global as any).window.$dataTroops = [null];
-    (global as any).window.$dataStates = [null];
+    (global as any).$dataActors = [null];
+    (global as any).$dataClasses = [null];
+    (global as any).$dataSkills = [null];
+    (global as any).$dataItems = [null];
+    (global as any).$dataWeapons = [null];
+    (global as any).$dataArmors = [null];
+    (global as any).$dataEnemies = [null];
+    (global as any).$dataTroops = [null];
+    (global as any).$dataStates = [null];
     // Intentionally omit $dataSystem to verify correct error reporting
 
     const loader = new DatabaseLoader(tmpProjectPath);
@@ -153,16 +162,16 @@ describe('DatabaseLoader', () => {
   });
 
   it('should report null vs undefined correctly in validation errors', () => {
-    (global as any).window.$dataActors = [null];
-    (global as any).window.$dataClasses = [null];
-    (global as any).window.$dataSkills = [null];
-    (global as any).window.$dataItems = [null];
-    (global as any).window.$dataWeapons = [null];
-    (global as any).window.$dataArmors = [null];
-    (global as any).window.$dataEnemies = [null];
-    (global as any).window.$dataTroops = [null];
-    (global as any).window.$dataStates = [null];
-    (global as any).window.$dataSystem = null;
+    (global as any).$dataActors = [null];
+    (global as any).$dataClasses = [null];
+    (global as any).$dataSkills = [null];
+    (global as any).$dataItems = [null];
+    (global as any).$dataWeapons = [null];
+    (global as any).$dataArmors = [null];
+    (global as any).$dataEnemies = [null];
+    (global as any).$dataTroops = [null];
+    (global as any).$dataStates = [null];
+    (global as any).$dataSystem = null;
 
     const loader = new DatabaseLoader(tmpProjectPath);
     expect(() => loader.validateDatabase()).toThrow(/\$dataSystem is null/);
