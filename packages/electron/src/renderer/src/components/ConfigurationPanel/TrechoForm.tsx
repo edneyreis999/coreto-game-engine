@@ -583,7 +583,7 @@ export const TrechoForm: FC<TrechoFormProps> = ({
           {troops.map((troop) => (
             <CheckboxField
               key={troop.value}
-              label={troop.label}
+              label={`(${troop.value}) ${troop.label}`}
               checked={selectedTroopIds.has(troop.value)}
               onChange={() => toggleTroop(troop.value)}
             />
