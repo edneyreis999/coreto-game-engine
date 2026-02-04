@@ -16,3 +16,5 @@ export {
 } from './useProject';
 export { useConfig } from './useConfig';
 export { useSimulationProgress } from './useSimulationProgress';
+export { useSimulationHistory } from './useSimulationHistory';
+export { useFieldValidation } from './useFieldValidation';

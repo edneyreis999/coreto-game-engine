@@ -156,6 +156,7 @@ export function useProject(): ProjectReturn {
    * Updates state with project info and validation results.
    */
   const openProject = useCallback(async (projectPath: string) => {
+    console.log('[useProject] openProject called with:', projectPath);
     setState({
       projectInfo: null,
       validation: { status: 'validating', errors: [], warnings: [] },
@@ -164,10 +165,13 @@ export function useProject(): ProjectReturn {
     });
 
     try {
+      console.log('[useProject] Calling window.coreto.openProject...');
       const result = await window.coreto.openProject(projectPath);
+      console.log('[useProject] openProject result:', result);
 
       if (result.success) {
         const info = result.data;
+        console.log('[useProject] Project is valid, info:', info);
         setState({
           projectInfo: info,
           validation: {
@@ -179,6 +183,7 @@ export function useProject(): ProjectReturn {
           error: null,
         });
       } else {
+        console.log('[useProject] Project is invalid, error:', result.error);
         setState({
           projectInfo: null,
           validation: {
@@ -191,6 +196,7 @@ export function useProject(): ProjectReturn {
         });
       }
     } catch (error) {
+      console.error('[useProject] Exception during openProject:', error);
       setState({
         projectInfo: null,
         validation: {

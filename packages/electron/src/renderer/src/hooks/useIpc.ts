@@ -260,6 +260,7 @@ export function useIpcWithArg<T, A>(
 
   const invoke = useCallback(
     async (arg: A) => {
+      console.log('[useIpcWithArg] invoke called with arg:', arg);
       // Cancel any pending request
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
@@ -269,19 +270,28 @@ export function useIpcWithArg<T, A>(
       const abortController = new AbortController();
       abortControllerRef.current = abortController;
 
-      setState((prev) => ({ ...prev, isLoading: true, error: null }));
+      setState((prev) => {
+        console.log('[useIpcWithArg] Setting isLoading: true');
+        return { ...prev, isLoading: true, error: null };
+      });
 
       try {
+        console.log('[useIpcWithArg] Calling ipcFn...');
         const result = await ipcFn(arg);
+        console.log('[useIpcWithArg] ipcFn returned:', result);
 
-        // Check if component is still mounted and request wasn't aborted
-        if (!isMountedRef.current || abortController.signal.aborted) {
+        // Only skip setState if the request was actively aborted (not unmounted)
+        // This allows data to be set even after unmount for debugging
+        if (abortController.signal.aborted) {
+          console.log('[useIpcWithArg] Request was aborted');
           return;
         }
 
         if (result.success) {
+          console.log('[useIpcWithArg] Result successful, setting data:', result.data);
           setState({ data: result.data, error: null, isLoading: false });
         } else {
+          console.log('[useIpcWithArg] Result failed:', result.error);
           setState({
             data: null,
             error: createIpcError(result.error),
@@ -289,11 +299,7 @@ export function useIpcWithArg<T, A>(
           });
         }
       } catch (error) {
-        // Check if component is still mounted and request wasn't aborted
-        if (!isMountedRef.current || abortController.signal.aborted) {
-          return;
-        }
-
+        console.log('[useIpcWithArg] Exception caught:', error);
         setState({
           data: null,
           error: error instanceof Error ? error : new Error(String(error)),

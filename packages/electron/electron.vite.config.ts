@@ -33,7 +33,15 @@ export default defineConfig({
     }
   },
   preload: {
-    plugins: [externalizeDepsPlugin()]
+    plugins: [externalizeDepsPlugin()],
+    build: {
+      rollupOptions: {
+        output: {
+          entryFileNames: '[name].js',
+          format: 'cjs'
+        }
+      }
+    }
   },
   renderer: {
     root: resolve(__dirname, 'src/renderer'),

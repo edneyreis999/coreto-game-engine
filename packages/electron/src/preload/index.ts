@@ -6,6 +6,10 @@ import type {
   SimulationResultPayload
 } from '../main/workers/types';
 
+// LOG INICIAL PARA VERIFICAR VERSÃO
+console.log('🚀 PRELOAD CARREGADO - Versão com logs de debug');
+console.log('📍 Timestamp:', new Date().toISOString());
+
 /**
  * Preload Script - IPC Bridge
  *
@@ -201,6 +205,41 @@ interface RecentProject {
 interface UserPreferences {
   theme: 'light' | 'dark' | 'system';
   lastProjectPath: string | null;
+}
+
+/**
+ * Simulation summary data for history entries.
+ */
+interface SimulationSummary {
+  totalBattles: number;
+  trechosCount: number;
+  passedCount: number;
+  failedCount: number;
+  timestamp: string;
+}
+
+/**
+ * History entry data structure.
+ */
+interface HistoryEntry {
+  id: string;
+  projectPath: string;
+  timestamp: number;
+  status: 'SUCCESS' | 'FAILED' | 'CANCELLED';
+  summary: SimulationSummary;
+  hasReport: boolean;
+}
+
+/**
+ * Detailed simulation report data structure.
+ */
+interface SimulationReport {
+  simulationId: string;
+  projectPath: string;
+  timestamp: number;
+  status: 'SUCCESS' | 'FAILED' | 'CANCELLED';
+  summary: SimulationSummary;
+  reportData: ReportData;
 }
 
 /**
@@ -551,6 +590,59 @@ const coretoAPI = {
     lastProjectPath?: string | null;
   }): Promise<IPCResult<UserPreferences>> =>
     ipcRenderer.invoke('preferences:set', preferences),
+
+  /**
+   * History Handlers
+   */
+
+  /**
+   * Lists simulation history from the database.
+   * @param projectPath - Optional filter by project path
+   * @param limit - Maximum number of entries to return (default: 50)
+   * @returns Array of history entries
+   */
+  listHistory: (
+    projectPath?: string,
+    limit?: number
+  ): Promise<IPCResult<{ simulations: HistoryEntry[] }>> =>
+    ipcRenderer.invoke('history:list', projectPath ? { projectPath, limit } : { limit }),
+
+  /**
+   * Loads a detailed simulation report from file.
+   * @param simulationId - UUID of the simulation
+   * @returns Simulation report or null if not found
+   */
+  loadHistoryReport: (simulationId: string): Promise<IPCResult<{ report: SimulationReport | null }>> =>
+    ipcRenderer.invoke('history:loadReport', { simulationId }),
+
+  /**
+   * Exports a simulation report to file.
+   * @param simulationId - UUID of the simulation
+   * @param result - Report data to export
+   * @param projectPath - Project path for file organization
+   * @returns File path of exported report
+   */
+  exportHistoryReport: (
+    simulationId: string,
+    result: ReportData,
+    projectPath: string
+  ): Promise<IPCResult<{ filePath: string }>> =>
+    ipcRenderer.invoke('history:export', { simulationId, result, projectPath }),
+
+  /**
+   * Deletes a simulation record and its report file.
+   * @param simulationId - UUID of the simulation to delete
+   * @returns The deleted simulation ID
+   */
+  deleteHistoryEntry: (simulationId: string): Promise<IPCResult<{ deletedId: string }>> =>
+    ipcRenderer.invoke('history:delete', { simulationId }),
+
+  /**
+   * Generates a unique simulation ID for a new simulation.
+   * @returns Unique simulation UUID
+   */
+  generateSimulationId: (): Promise<IPCResult<{ simulationId: string }>> =>
+    ipcRenderer.invoke('history:generateId', undefined),
 };
 
 // ============================================================================
@@ -579,16 +671,18 @@ const coretoAPI = {
  * ```
  */
 export function initializePreload(): void {
+  console.log('[Preload] initializePreload called, contextIsolated:', process.contextIsolated);
   if (process.contextIsolated) {
     try {
       contextBridge.exposeInMainWorld('electron', electronAPI);
       contextBridge.exposeInMainWorld('coreto', coretoAPI);
+      console.log('[Preload] Successfully exposed electron and coreto APIs');
     } catch (error) {
-      console.error('Failed to expose context bridge APIs:', error);
+      console.error('[Preload] Failed to expose context bridge APIs:', error);
     }
   } else {
     // Fallback for non-isolated context (should not happen with proper config)
-    console.warn('Context isolation is not enabled. This is a security risk.');
+    console.warn('[Preload] Context isolation is not enabled. This is a security risk.');
   }
 }
 
@@ -598,9 +692,14 @@ export function initializePreload(): void {
  * In production, this runs immediately when Electron loads the preload script.
  * In tests, the module can be imported without triggering initialization,
  * allowing tests to control when initialization happens.
+ *
+ * NOTE: Always initialize in Electron context (when contextBridge exists)
  */
-if (process.env.NODE_ENV !== 'test') {
+console.log('[Preload] Script loaded, contextBridge:', typeof contextBridge);
+if (typeof contextBridge !== 'undefined') {
   initializePreload();
+} else {
+  console.error('[Preload] contextBridge is undefined! API will not be available.');
 }
 
 /**
@@ -629,6 +728,9 @@ export type {
   EnemyData,
   RecentProject,
   UserPreferences,
+  SimulationSummary,
+  HistoryEntry,
+  SimulationReport,
   IPCError,
   IPCSuccessResponse,
   IPCErrorResponse,

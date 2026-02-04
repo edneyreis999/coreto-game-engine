@@ -783,6 +783,7 @@ async function handleDataGetTroops(
     logger.info(`[IPC] Getting troops data from: ${projectPath}`);
 
     const troopsPath = path.join(projectPath, 'data', 'Troops.json');
+
     const troopsJson = fs.readFileSync(troopsPath);
     const troopsData = JSON.parse(troopsJson) as Array<{
       id: number;
@@ -793,13 +794,22 @@ async function handleDataGetTroops(
         y: number;
         hidden: boolean;
       }>;
-    }>;
+    } | null>;
 
-    return troopsData.map((t) => ({
+    logger.info(`[IPC] Parsed ${troopsData.length} entries (including nulls)`);
+
+    // Filter out null entries (empty slots in RPG Maker)
+    const validTroops = troopsData.filter((t) => t !== null);
+    logger.info(`[IPC] Found ${validTroops.length} valid troops`);
+
+    const result = validTroops.map((t) => ({
       id: t.id,
       name: t.name,
       members: t.members,
     }));
+
+    logger.info(`[IPC] Returning ${result.length} troops`);
+    return result;
   });
 }
 
@@ -822,18 +832,29 @@ async function handleDataGetClasses(
     logger.info(`[IPC] Getting classes data from: ${projectPath}`);
 
     const classesPath = path.join(projectPath, 'data', 'Classes.json');
+    logger.info(`[IPC] Classes path: ${classesPath}, exists: ${fs.exists(classesPath)}`);
+
     const classesJson = fs.readFileSync(classesPath);
     const classesData = JSON.parse(classesJson) as Array<{
       id: number;
       name: string;
       expTable: number[];
-    }>;
+    } | null>;
 
-    return classesData.map((c) => ({
+    logger.info(`[IPC] Parsed ${classesData.length} entries (including nulls)`);
+
+    // Filter out null entries (empty slots in RPG Maker)
+    const validClasses = classesData.filter((c) => c !== null);
+    logger.info(`[IPC] Found ${validClasses.length} valid classes`);
+
+    const result = validClasses.map((c) => ({
       id: c.id,
       name: c.name,
       expTable: c.expTable,
     }));
+
+    logger.info(`[IPC] Returning ${result.length} classes`);
+    return result;
   });
 }
 

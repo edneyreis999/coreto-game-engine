@@ -52,8 +52,14 @@ export function wrapHandler<T extends IPCResponse>(
   handler: () => Promise<T>
 ): Promise<IPCResult<T>> {
   return handler()
-    .then((data) => success<T>(data))
-    .catch((error: unknown) => failure(serializeError(error)));
+    .then((data) => {
+      console.log('[wrapHandler] Success, data:', data);
+      return success<T>(data);
+    })
+    .catch((error: unknown) => {
+      console.error('[wrapHandler] Error caught:', error);
+      return failure(serializeError(error));
+    });
 }
 
 /**

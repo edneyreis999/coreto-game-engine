@@ -143,17 +143,25 @@ export const ConfigurationPanel: FC<ConfigurationPanelProps> = ({
 
   /**
    * Load project data on mount.
+   * Note: fetchClasses/fetchTroops excluded from deps to prevent infinite loop
+   * (they are stable internally but change due to ipcFn recreation)
    */
   useEffect(() => {
+    console.log('[ConfigurationPanel] Loading project data for:', projectPath);
     void fetchClasses(projectPath);
     void fetchTroops(projectPath);
-  }, [projectPath, fetchClasses, fetchTroops]);
+  }, [projectPath]);
 
   /**
    * Update project data when classes/troops are loaded.
    */
   useEffect(() => {
+    console.log('[ConfigurationPanel] classesData:', classesData);
+    console.log('[ConfigurationPanel] troopsData:', troopsData);
+    console.log('[ConfigurationPanel] isLoadingClasses:', isLoadingClasses);
+    console.log('[ConfigurationPanel] isLoadingTroops:', isLoadingTroops);
     if (classesData && troopsData) {
+      console.log('[ConfigurationPanel] Both loaded, updating projectData');
       setProjectData({
         classes: classesData.map((c) => ({ value: c.id, label: c.name })),
         troops: troopsData.map((t) => ({ value: t.id, label: t.name })),

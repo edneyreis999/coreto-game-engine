@@ -215,6 +215,41 @@ interface UserPreferences {
 }
 
 /**
+ * Simulation summary data for history entries.
+ */
+interface SimulationSummary {
+  totalBattles: number;
+  trechosCount: number;
+  passedCount: number;
+  failedCount: number;
+  timestamp: string;
+}
+
+/**
+ * History entry data structure.
+ */
+interface HistoryEntry {
+  id: string;
+  projectPath: string;
+  timestamp: number;
+  status: 'SUCCESS' | 'FAILED' | 'CANCELLED';
+  summary: SimulationSummary;
+  hasReport: boolean;
+}
+
+/**
+ * Detailed simulation report data structure.
+ */
+interface SimulationReport {
+  simulationId: string;
+  projectPath: string;
+  timestamp: number;
+  status: 'SUCCESS' | 'FAILED' | 'CANCELLED';
+  summary: SimulationSummary;
+  reportData: ReportData;
+}
+
+/**
  * IPC error structure.
  */
 interface IPCError {
@@ -527,6 +562,88 @@ interface CoretoAPI {
     theme?: 'light' | 'dark' | 'system';
     lastProjectPath?: string | null;
   }): Promise<IPCResult<UserPreferences>>;
+
+  /**
+   * History Handlers
+   */
+
+  /**
+   * Lists simulation history from the database.
+   * @param projectPath - Optional filter by project path
+   * @param limit - Maximum number of entries to return (default: 50)
+   * @returns Promise with array of history entries
+   *
+   * @example
+   * const result = await window.coreto.listHistory(undefined, 20);
+   * if (result.success) {
+   *   console.log('History:', result.data.simulations);
+   * }
+   */
+  listHistory(
+    projectPath?: string,
+    limit?: number
+  ): Promise<IPCResult<{ simulations: HistoryEntry[] }>>;
+
+  /**
+   * Loads a detailed simulation report from file.
+   * @param simulationId - UUID of the simulation
+   * @returns Promise with simulation report or null if not found
+   *
+   * @example
+   * const result = await window.coreto.loadHistoryReport('uuid');
+   * if (result.success && result.data.report) {
+   *   console.log('Report:', result.data.report);
+   * }
+   */
+  loadHistoryReport(
+    simulationId: string
+  ): Promise<IPCResult<{ report: SimulationReport | null }>>;
+
+  /**
+   * Exports a simulation report to file.
+   * @param simulationId - UUID of the simulation
+   * @param result - Report data to export
+   * @param projectPath - Project path for file organization
+   * @returns Promise with file path of exported report
+   *
+   * @example
+   * const result = await window.coreto.exportHistoryReport(simulationId, reportData, projectPath);
+   * if (result.success) {
+   *   console.log('Exported to:', result.data.filePath);
+   * }
+   */
+  exportHistoryReport(
+    simulationId: string,
+    result: ReportData,
+    projectPath: string
+  ): Promise<IPCResult<{ filePath: string }>>;
+
+  /**
+   * Deletes a simulation record and its report file.
+   * @param simulationId - UUID of the simulation to delete
+   * @returns Promise with the deleted simulation ID
+   *
+   * @example
+   * const result = await window.coreto.deleteHistoryEntry('uuid');
+   * if (result.success) {
+   *   console.log('Deleted:', result.data.deletedId);
+   * }
+   */
+  deleteHistoryEntry(
+    simulationId: string
+  ): Promise<IPCResult<{ deletedId: string }>>;
+
+  /**
+   * Generates a unique simulation ID for a new simulation.
+   * @returns Promise with unique simulation UUID
+   *
+   * @example
+   * const result = await window.coreto.generateSimulationId();
+   * if (result.success) {
+   *   console.log('Simulation ID:', result.data.simulationId);
+   * }
+   */
+  generateSimulationId(): Promise<IPCResult<{ simulationId: string }>>;
 }
 
 // ============================================================================
