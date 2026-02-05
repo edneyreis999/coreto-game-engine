@@ -18,6 +18,7 @@ import {
   ConfigNotFoundError,
   ConfigValidationError,
 } from '../services/config-service.js';
+import type { UIProjectConfig } from '../services/schemas.js';
 import type {
   IPCResponse,
   IPCResult,
@@ -143,7 +144,7 @@ function tolerancePercentToDecimal(percent: number): number {
  * Handler: config:save
  *
  * Saves a project configuration to temp/project.config.json.
- * Transforms ConfigurationPanel format to Core package ProjectConfig format.
+ * Transforms ConfigurationPanel format to UIProjectConfig format.
  */
 async function handleConfigSave(
   _event: IpcMainInvokeEvent,
@@ -163,36 +164,38 @@ async function handleConfigSave(
       trechosCount: config.trechos.length,
     });
 
-    // Transform ConfigurationPanel format to Core ProjectConfig format
-    // Core schema uses: anchorLevelRange {min, max}, ttkTarget {turns, actions, tolerance}
-    const trechos = config.trechos.map(t => ({
-      id: t.id,
-      name: t.name,
-      anchorLevelRange: {
-        min: t.anchorLevelMin,
-        max: t.anchorLevelMax,
+    // Transform ConfigurationPanel format to UIProjectConfig format
+    // UIProjectConfig uses: description, heroTeam, enemyTeam, expectedTTK
+    const uiConfig: UIProjectConfig = {
+      version: config.version,
+      trechos: config.trechos.map(t => ({
+        id: t.id,
+        description: t.name,
+        heroTeam: {
+          level: Math.max(t.anchorLevelMin, t.anchorLevelMax),
+          actors: t.party.members.map(m => m.classId),
+          weapons: {},
+          armors: {},
+        },
+        enemyTeam: {
+          troopId: t.troopIds[0] ?? 1,
+          count: 1,
+        },
+        expectedTTK: {
+          min: Math.floor(t.targetTtkTurns * (1 - tolerancePercentToDecimal(t.tolerancePercent))),
+          max: Math.ceil(t.targetTtkTurns * (1 + tolerancePercentToDecimal(t.tolerancePercent))),
+        },
+      })),
+      metadata: {
+        projectName: config.metadata?.projectName,
+        lastModified: Date.now(),
       },
-      ttkTarget: {
-        turns: t.targetTtkTurns,
-        actions: t.targetTtkActions,
-        tolerance: tolerancePercentToDecimal(t.tolerancePercent),
-      },
-      troopIds: t.troopIds,
-      party: t.party,
-    }));
-
-    const projectConfig = {
-      projectPath,
-      reportOutputPath: 'temp/reports',
-      seed: config.globalSettings?.seed ?? 12345,
-      maxBattleTurns: config.globalSettings?.maxBattleTurns,
-      trechos,
     };
 
-    console.log('[config:save] Project config to save:', JSON.stringify(projectConfig, null, 2));
+    console.log('[config:save] UI config to save:', JSON.stringify(uiConfig, null, 2));
 
-    // Save config using ConfigService with core schema
-    await configService.saveConfig(projectPath, projectConfig as any);
+    // Save config using ConfigService with UI schema
+    await configService.saveConfig(projectPath, uiConfig);
 
     return {
       success: true,
