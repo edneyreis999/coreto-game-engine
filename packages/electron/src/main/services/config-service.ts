@@ -16,7 +16,7 @@
 
 import path from 'node:path';
 import fs from 'node:fs/promises';
-import { ProjectConfigSchema, type ProjectConfig } from '@coreto/core';
+import { ProjectConfigSchema, type UIProjectConfig } from './schemas.js';
 
 // Current schema version for config files
 const CURRENT_SCHEMA_VERSION = '1.0';
@@ -76,7 +76,7 @@ export class ConfigService {
    * @throws {ConfigNotFoundError} If config file doesn't exist
    * @throws {ConfigValidationError} If validation fails after normalization
    */
-  async loadConfig(projectPath: string): Promise<ProjectConfig> {
+  async loadConfig(projectPath: string): Promise<UIProjectConfig> {
     const configPath = this.getConfigPath(projectPath);
 
     try {
@@ -129,7 +129,7 @@ export class ConfigService {
    * @param config - Configuration to save
    * @throws {ConfigValidationError} If validation fails
    */
-  async saveConfig(projectPath: string, config: ProjectConfig): Promise<void> {
+  async saveConfig(projectPath: string, config: UIProjectConfig): Promise<void> {
     const configPath = this.getConfigPath(projectPath);
 
     // Validate before saving
@@ -147,7 +147,7 @@ export class ConfigService {
     await fs.mkdir(tempDir, { recursive: true });
 
     // Update metadata
-    const configToSave: ProjectConfig = {
+    const configToSave: UIProjectConfig = {
       ...result.data,
       metadata: {
         ...result.data.metadata,
@@ -289,7 +289,7 @@ export class ConfigService {
    *
    * @returns Default project configuration
    */
-  createDefaultConfig(): ProjectConfig {
+  createDefaultConfig(): UIProjectConfig {
     return {
       version: CURRENT_SCHEMA_VERSION,
       trechos: [],
