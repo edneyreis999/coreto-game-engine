@@ -1,8 +1,10 @@
 import 'reflect-metadata';
 import { ValidateTrechoUseCase } from '@coreto/core';
-import { Trecho } from '@coreto/core';
-import { BattleResult } from '@coreto/core';
-import { PartyConfig } from '@coreto/core';
+
+import { BattleResultFakeBuilder } from '../../../fixtures/builders/BattleResultFakeBuilder';
+import { TrechoFakeBuilder } from '../../../fixtures/builders/TrechoFakeBuilder';
+import type { BattleResult } from '@coreto/core';
+import { TEST_CONSTANTS, TEST_TRECHO_IDS } from '../../../fixtures/test-constants';
 
 describe('ValidateTrechoUseCase', () => {
   let useCase: ValidateTrechoUseCase;
@@ -11,56 +13,25 @@ describe('ValidateTrechoUseCase', () => {
     useCase = new ValidateTrechoUseCase();
   });
 
-  const createTrecho = (overrides?: Partial<{
-    targetTtkTurns: number;
-    targetTtkActions: number;
-    tolerancePercent: number;
-  }>): Trecho => {
-    const party = new PartyConfig([{ classId: 1, level: 5 }]);
-    return new Trecho({
-      id: 'ato1-nivel1-10',
-      name: 'Ato 1 - Níveis 1-10',
-      anchorLevelMin: 1,
-      anchorLevelMax: 10,
-      targetTtkTurns: overrides?.targetTtkTurns ?? 3,
-      targetTtkActions: overrides?.targetTtkActions ?? 8,
-      tolerancePercent: overrides?.tolerancePercent ?? 15,
-      troopIds: [1, 2, 3],
-      party,
-    });
-  };
-
-  const createBattleResult = (overrides?: Partial<{
-    troopId: number;
-    troopName: string;
-    ttkTurns: number;
-    ttkActions: number;
-    outcome: 'victory' | 'defeat' | 'timeout';
-  }>): BattleResult => {
-    return new BattleResult({
-      troopId: overrides?.troopId ?? 1,
-      troopName: overrides?.troopName ?? 'Goblin Pack',
-      outcome: overrides?.outcome ?? 'victory',
-      ttkTurns: overrides?.ttkTurns ?? 3,
-      ttkActions: overrides?.ttkActions ?? 8,
-      durationMs: 1250,
-      seed: 12345,
-    });
-  };
-
   describe('execute', () => {
     it('should pass when average TTK within tolerance', () => {
       // Arrange
-      const trecho = createTrecho({
-        targetTtkTurns: 3,
-        targetTtkActions: 8,
-        tolerancePercent: 15,
-      });
+      const trecho = new TrechoFakeBuilder()
+        .withId(TEST_TRECHO_IDS.ATO1_NIVEL1_10)
+        .withTargetTtk(TEST_CONSTANTS.DEFAULT_TTK_TURNS, TEST_CONSTANTS.DEFAULT_TTK_ACTIONS)
+        .withTolerance(15)
+        .build();
 
       const battles = [
-        createBattleResult({ ttkTurns: 3, ttkActions: 8 }),
-        createBattleResult({ ttkTurns: 3, ttkActions: 9 }),
-        createBattleResult({ ttkTurns: 3, ttkActions: 7 }),
+        new BattleResultFakeBuilder()
+          .withTtkMetrics(TEST_CONSTANTS.DEFAULT_TTK_TURNS, TEST_CONSTANTS.DEFAULT_TTK_ACTIONS)
+          .build(),
+        new BattleResultFakeBuilder()
+          .withTtkMetrics(TEST_CONSTANTS.DEFAULT_TTK_TURNS, 9)
+          .build(),
+        new BattleResultFakeBuilder()
+          .withTtkMetrics(TEST_CONSTANTS.DEFAULT_TTK_TURNS, 7)
+          .build(),
       ];
 
       // Act
@@ -68,22 +39,28 @@ describe('ValidateTrechoUseCase', () => {
 
       // Assert
       expect(result.passed).toBe(true);
-      expect(result.avgTtkTurns).toBe(3);
-      expect(result.avgTtkActions).toBe(8);
+      expect(result.avgTtkTurns).toBe(TEST_CONSTANTS.DEFAULT_TTK_TURNS);
+      expect(result.avgTtkActions).toBe(TEST_CONSTANTS.DEFAULT_TTK_ACTIONS);
     });
 
     it('should fail when average TTK outside tolerance', () => {
       // Arrange
-      const trecho = createTrecho({
-        targetTtkTurns: 3,
-        targetTtkActions: 8,
-        tolerancePercent: 15,
-      });
+      const trecho = new TrechoFakeBuilder()
+        .withId(TEST_TRECHO_IDS.ATO1_NIVEL1_10)
+        .withTargetTtk(TEST_CONSTANTS.DEFAULT_TTK_TURNS, TEST_CONSTANTS.DEFAULT_TTK_ACTIONS)
+        .withTolerance(15)
+        .build();
 
       const battles = [
-        createBattleResult({ ttkTurns: 5, ttkActions: 12 }), // Far outside tolerance
-        createBattleResult({ ttkTurns: 5, ttkActions: 13 }),
-        createBattleResult({ ttkTurns: 6, ttkActions: 14 }),
+        new BattleResultFakeBuilder()
+          .withTtkMetrics(5, 12)
+          .build(), // Far outside tolerance
+        new BattleResultFakeBuilder()
+          .withTtkMetrics(5, 13)
+          .build(),
+        new BattleResultFakeBuilder()
+          .withTtkMetrics(6, 14)
+          .build(),
       ];
 
       // Act
@@ -96,33 +73,51 @@ describe('ValidateTrechoUseCase', () => {
 
     it('should calculate correct averages', () => {
       // Arrange
-      const trecho = createTrecho();
+      const trecho = new TrechoFakeBuilder().build();
       const battles = [
-        createBattleResult({ ttkTurns: 2, ttkActions: 6 }),
-        createBattleResult({ ttkTurns: 3, ttkActions: 8 }),
-        createBattleResult({ ttkTurns: 4, ttkActions: 10 }),
+        new BattleResultFakeBuilder()
+          .withTtkMetrics(2, 6)
+          .build(),
+        new BattleResultFakeBuilder()
+          .withTtkMetrics(TEST_CONSTANTS.DEFAULT_TTK_TURNS, TEST_CONSTANTS.DEFAULT_TTK_ACTIONS)
+          .build(),
+        new BattleResultFakeBuilder()
+          .withTtkMetrics(4, 10)
+          .build(),
       ];
 
       // Act
       const result = useCase.execute(trecho, battles);
 
       // Assert
-      expect(result.avgTtkTurns).toBe(3); // (2+3+4)/3 = 3
-      expect(result.avgTtkActions).toBe(8); // (6+8+10)/3 = 8
+      expect(result.avgTtkTurns).toBe(TEST_CONSTANTS.DEFAULT_TTK_TURNS); // (2+3+4)/3 = 3
+      expect(result.avgTtkActions).toBe(TEST_CONSTANTS.DEFAULT_TTK_ACTIONS); // (6+8+10)/3 = 8
     });
 
     it('should identify failed individual battles', () => {
       // Arrange
-      const trecho = createTrecho({
-        targetTtkTurns: 3,
-        targetTtkActions: 8,
-        tolerancePercent: 15,
-      });
+      const trecho = new TrechoFakeBuilder()
+        .withId(TEST_TRECHO_IDS.ATO1_NIVEL1_10)
+        .withTargetTtk(TEST_CONSTANTS.DEFAULT_TTK_TURNS, TEST_CONSTANTS.DEFAULT_TTK_ACTIONS)
+        .withTolerance(15)
+        .build();
 
       const battles = [
-        createBattleResult({ troopId: 1, troopName: 'Troop 1', ttkTurns: 3, ttkActions: 8 }), // Pass
-        createBattleResult({ troopId: 2, troopName: 'Troop 2', ttkTurns: 6, ttkActions: 15 }), // Fail
-        createBattleResult({ troopId: 3, troopName: 'Troop 3', ttkTurns: 3, ttkActions: 9 }), // Pass
+        new BattleResultFakeBuilder()
+          .withTroopId(1)
+          .withTroopName('Troop 1')
+          .withTtkMetrics(TEST_CONSTANTS.DEFAULT_TTK_TURNS, TEST_CONSTANTS.DEFAULT_TTK_ACTIONS)
+          .build(), // Pass
+        new BattleResultFakeBuilder()
+          .withTroopId(2)
+          .withTroopName('Troop 2')
+          .withTtkMetrics(6, 15)
+          .build(), // Fail
+        new BattleResultFakeBuilder()
+          .withTroopId(3)
+          .withTroopName('Troop 3')
+          .withTtkMetrics(TEST_CONSTANTS.DEFAULT_TTK_TURNS, 9)
+          .build(), // Pass
       ];
 
       // Act
@@ -135,7 +130,7 @@ describe('ValidateTrechoUseCase', () => {
 
     it('should handle empty battle results', () => {
       // Arrange
-      const trecho = createTrecho();
+      const trecho = new TrechoFakeBuilder().build();
       const battles: BattleResult[] = [];
 
       // Act
@@ -151,44 +146,56 @@ describe('ValidateTrechoUseCase', () => {
 
     it('should handle single battle result', () => {
       // Arrange
-      const trecho = createTrecho({
-        targetTtkTurns: 3,
-        targetTtkActions: 8,
-        tolerancePercent: 15,
-      });
+      const trecho = new TrechoFakeBuilder()
+        .withId(TEST_TRECHO_IDS.ATO1_NIVEL1_10)
+        .withTargetTtk(TEST_CONSTANTS.DEFAULT_TTK_TURNS, TEST_CONSTANTS.DEFAULT_TTK_ACTIONS)
+        .withTolerance(15)
+        .build();
 
-      const battles = [createBattleResult({ ttkTurns: 3, ttkActions: 8 })];
+      const battles = [
+        new BattleResultFakeBuilder()
+          .withTtkMetrics(TEST_CONSTANTS.DEFAULT_TTK_TURNS, TEST_CONSTANTS.DEFAULT_TTK_ACTIONS)
+          .build(),
+      ];
 
       // Act
       const result = useCase.execute(trecho, battles);
 
       // Assert
       expect(result.passed).toBe(true);
-      expect(result.avgTtkTurns).toBe(3);
-      expect(result.avgTtkActions).toBe(8);
+      expect(result.avgTtkTurns).toBe(TEST_CONSTANTS.DEFAULT_TTK_TURNS);
+      expect(result.avgTtkActions).toBe(TEST_CONSTANTS.DEFAULT_TTK_ACTIONS);
       expect(result.battles).toHaveLength(1);
     });
 
     it('should include trecho id and name in result', () => {
       // Arrange
-      const trecho = createTrecho();
-      const battles = [createBattleResult()];
+      const trecho = new TrechoFakeBuilder()
+        .withId(TEST_TRECHO_IDS.ATO1_NIVEL1_10)
+        .build();
+      const battles = [new BattleResultFakeBuilder().build()];
 
       // Act
       const result = useCase.execute(trecho, battles);
 
       // Assert
-      expect(result.trechoId).toBe('ato1-nivel1-10');
+      expect(result.trechoId).toBe(TEST_TRECHO_IDS.ATO1_NIVEL1_10);
       expect(result.trechoName).toBe('Ato 1 - Níveis 1-10');
     });
 
     it('should include all battles in result', () => {
       // Arrange
-      const trecho = createTrecho();
+      const trecho = new TrechoFakeBuilder().build();
       const battles = [
-        createBattleResult({ troopId: 1 }),
-        createBattleResult({ troopId: 2 }),
-        createBattleResult({ troopId: 3 }),
+        new BattleResultFakeBuilder()
+          .withTroopId(1)
+          .build(),
+        new BattleResultFakeBuilder()
+          .withTroopId(2)
+          .build(),
+        new BattleResultFakeBuilder()
+          .withTroopId(3)
+          .build(),
       ];
 
       // Act
@@ -201,17 +208,23 @@ describe('ValidateTrechoUseCase', () => {
 
     it('should pass when average is exactly at tolerance boundary', () => {
       // Arrange
-      const trecho = createTrecho({
-        targetTtkTurns: 10,
-        targetTtkActions: 40,
-        tolerancePercent: 20, // ±20%
-      });
+      const trecho = new TrechoFakeBuilder()
+        .withId(TEST_TRECHO_IDS.ATO1_NIVEL1_10)
+        .withTargetTtk(10, 40)
+        .withTolerance(20)
+        .build(); // ±20%
 
       // Average will be 12 turns (20% above) and 48 actions (20% above) - should pass
       const battles = [
-        createBattleResult({ ttkTurns: 12, ttkActions: 48 }),
-        createBattleResult({ ttkTurns: 12, ttkActions: 48 }),
-        createBattleResult({ ttkTurns: 12, ttkActions: 48 }),
+        new BattleResultFakeBuilder()
+          .withTtkMetrics(12, 48)
+          .build(),
+        new BattleResultFakeBuilder()
+          .withTtkMetrics(12, 48)
+          .build(),
+        new BattleResultFakeBuilder()
+          .withTtkMetrics(12, 48)
+          .build(),
       ];
 
       // Act
@@ -225,15 +238,17 @@ describe('ValidateTrechoUseCase', () => {
 
     it('should fail when only one metric outside tolerance', () => {
       // Arrange
-      const trecho = createTrecho({
-        targetTtkTurns: 3,
-        targetTtkActions: 8,
-        tolerancePercent: 15,
-      });
+      const trecho = new TrechoFakeBuilder()
+        .withId(TEST_TRECHO_IDS.ATO1_NIVEL1_10)
+        .withTargetTtk(TEST_CONSTANTS.DEFAULT_TTK_TURNS, TEST_CONSTANTS.DEFAULT_TTK_ACTIONS)
+        .withTolerance(15)
+        .build();
 
       // Turns within tolerance, but actions outside
       const battles = [
-        createBattleResult({ ttkTurns: 3, ttkActions: 15 }), // Actions way outside
+        new BattleResultFakeBuilder()
+          .withTtkMetrics(TEST_CONSTANTS.DEFAULT_TTK_TURNS, 15)
+          .build(), // Actions way outside
       ];
 
       // Act

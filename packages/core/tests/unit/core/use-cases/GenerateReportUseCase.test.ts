@@ -1,10 +1,13 @@
 import 'reflect-metadata';
 import { GenerateReportUseCase, GenerateReportInput } from '@coreto/core';
-import { IReporter, Warning } from '@coreto/core';
-import { Report, ReportMetadata } from '@coreto/core';
-import { TrechoValidationResult } from '@coreto/core';
-import { BattleResult } from '@coreto/core';
-import type { WarningData } from '@coreto/core';
+import { IReporter } from '@coreto/core';
+import { Report } from '@coreto/core';
+import type { TrechoValidationResult } from '@coreto/core';
+
+import { BattleResultFakeBuilder } from '../../../fixtures/builders/BattleResultFakeBuilder';
+import { ReportMetadataFakeBuilder } from '../../../fixtures/builders/ReportMetadataFakeBuilder';
+import { WarningFakeBuilder } from '../../../fixtures/builders/WarningFakeBuilder';
+import { TEST_CONSTANTS } from '../../../fixtures/test-constants';
 
 describe('GenerateReportUseCase', () => {
   let useCase: GenerateReportUseCase;
@@ -24,54 +27,26 @@ describe('GenerateReportUseCase', () => {
     useCase = new GenerateReportUseCase(mockReporter);
   });
 
-  const createMetadata = (): ReportMetadata => ({
-    version: '1.0.0',
-    generatedAt: new Date('2024-01-01T00:00:00Z'),
-    seed: 12345,
-    projectPath: '/path/to/project',
-  });
-
-  const createBattleResult = (overrides?: Partial<{
-    troopId: number;
-    troopName: string;
-    ttkTurns: number;
-    ttkActions: number;
-  }>): BattleResult => {
-    return new BattleResult({
-      troopId: overrides?.troopId ?? 1,
-      troopName: overrides?.troopName ?? 'Goblin Pack',
-      outcome: 'victory',
-      ttkTurns: overrides?.ttkTurns ?? 3,
-      ttkActions: overrides?.ttkActions ?? 8,
-      durationMs: 1250,
-      seed: 12345,
-    });
-  };
-
   const createTrechoValidationResult = (
     overrides?: Partial<TrechoValidationResult>
   ): TrechoValidationResult => ({
     trechoId: overrides?.trechoId ?? 'ato1-nivel1-10',
     trechoName: overrides?.trechoName ?? 'Ato 1 - Níveis 1-10',
     passed: overrides?.passed ?? true,
-    avgTtkTurns: overrides?.avgTtkTurns ?? 3,
-    avgTtkActions: overrides?.avgTtkActions ?? 8,
-    battles: overrides?.battles ?? [createBattleResult()],
+    avgTtkTurns: overrides?.avgTtkTurns ?? TEST_CONSTANTS.DEFAULT_TTK_TURNS,
+    avgTtkActions: overrides?.avgTtkActions ?? TEST_CONSTANTS.DEFAULT_TTK_ACTIONS,
+    battles: overrides?.battles ?? [new BattleResultFakeBuilder().build()],
     failedBattles: overrides?.failedBattles ?? [],
   });
-
-  const createWarning = (overrides?: Partial<WarningData>): Warning =>
-    new Warning({
-      type: overrides?.type ?? 'ttk_out_of_tolerance',
-      severity: overrides?.severity ?? 'warning',
-      message: overrides?.message ?? 'TTK out of tolerance',
-      context: overrides?.context ?? { troopId: 1 },
-    });
 
   describe('execute', () => {
     it('should create report with correct metadata', () => {
       // Arrange
-      const metadata = createMetadata();
+      const metadata = new ReportMetadataFakeBuilder()
+        .withVersion(TEST_CONSTANTS.DEFAULT_REPORT_VERSION)
+        .withSeed(TEST_CONSTANTS.DEFAULT_SEED)
+        .build();
+
       const input: GenerateReportInput = {
         metadata,
         trechoResults: [createTrechoValidationResult()],
@@ -88,8 +63,14 @@ describe('GenerateReportUseCase', () => {
     it('should convert TrechoValidationResult to TrechoSummary', () => {
       // Arrange
       const battles = [
-        createBattleResult({ troopId: 1, ttkTurns: 3, ttkActions: 8 }),
-        createBattleResult({ troopId: 2, ttkTurns: 4, ttkActions: 10 }),
+        new BattleResultFakeBuilder()
+          .withTroopId(1)
+          .withTtkMetrics(TEST_CONSTANTS.DEFAULT_TTK_TURNS, TEST_CONSTANTS.DEFAULT_TTK_ACTIONS)
+          .build(),
+        new BattleResultFakeBuilder()
+          .withTroopId(2)
+          .withTtkMetrics(4, 10)
+          .build(),
       ];
 
       const trechoResult = createTrechoValidationResult({
@@ -101,8 +82,13 @@ describe('GenerateReportUseCase', () => {
         battles,
       });
 
+      const metadata = new ReportMetadataFakeBuilder()
+        .withVersion(TEST_CONSTANTS.DEFAULT_REPORT_VERSION)
+        .withSeed(TEST_CONSTANTS.DEFAULT_SEED)
+        .build();
+
       const input: GenerateReportInput = {
-        metadata: createMetadata(),
+        metadata,
         trechoResults: [trechoResult],
         warnings: [],
       };
@@ -130,13 +116,18 @@ describe('GenerateReportUseCase', () => {
     it('should include all warnings in report', () => {
       // Arrange
       const warnings = [
-        createWarning({ type: 'ttk_out_of_tolerance', severity: 'warning' }),
-        createWarning({ type: 'battle_timeout', severity: 'critical' }),
-        createWarning({ type: 'skill_formula_error', severity: 'info' }),
+        new WarningFakeBuilder().asTtkOutOfTolerance(1).build(),
+        new WarningFakeBuilder().asBattleTimeout(1, 10000, 100).asCritical().build(),
+        new WarningFakeBuilder().asInfo().withType('skill_formula_error').build(),
       ];
 
+      const metadata = new ReportMetadataFakeBuilder()
+        .withVersion(TEST_CONSTANTS.DEFAULT_REPORT_VERSION)
+        .withSeed(TEST_CONSTANTS.DEFAULT_SEED)
+        .build();
+
       const input: GenerateReportInput = {
-        metadata: createMetadata(),
+        metadata,
         trechoResults: [createTrechoValidationResult()],
         warnings,
       };
@@ -166,8 +157,13 @@ describe('GenerateReportUseCase', () => {
         }),
       ];
 
+      const metadata = new ReportMetadataFakeBuilder()
+        .withVersion(TEST_CONSTANTS.DEFAULT_REPORT_VERSION)
+        .withSeed(TEST_CONSTANTS.DEFAULT_SEED)
+        .build();
+
       const input: GenerateReportInput = {
-        metadata: createMetadata(),
+        metadata,
         trechoResults,
         warnings: [],
       };
@@ -184,8 +180,13 @@ describe('GenerateReportUseCase', () => {
 
     it('should handle empty trecho results', () => {
       // Arrange
+      const metadata = new ReportMetadataFakeBuilder()
+        .withVersion(TEST_CONSTANTS.DEFAULT_REPORT_VERSION)
+        .withSeed(TEST_CONSTANTS.DEFAULT_SEED)
+        .build();
+
       const input: GenerateReportInput = {
-        metadata: createMetadata(),
+        metadata,
         trechoResults: [],
         warnings: [],
       };
@@ -200,10 +201,15 @@ describe('GenerateReportUseCase', () => {
 
     it('should return immutable Report entity', () => {
       // Arrange
+      const metadata = new ReportMetadataFakeBuilder()
+        .withVersion(TEST_CONSTANTS.DEFAULT_REPORT_VERSION)
+        .withSeed(TEST_CONSTANTS.DEFAULT_SEED)
+        .build();
+
       const input: GenerateReportInput = {
-        metadata: createMetadata(),
+        metadata,
         trechoResults: [createTrechoValidationResult()],
-        warnings: [createWarning()],
+        warnings: [new WarningFakeBuilder().build()],
       };
 
       // Act
@@ -217,15 +223,20 @@ describe('GenerateReportUseCase', () => {
     it('should preserve battle results in trecho summaries', () => {
       // Arrange
       const battles = [
-        createBattleResult({ troopId: 1, troopName: 'Troop 1' }),
-        createBattleResult({ troopId: 2, troopName: 'Troop 2' }),
-        createBattleResult({ troopId: 3, troopName: 'Troop 3' }),
+        new BattleResultFakeBuilder().withTroopId(1).withTroopName('Troop 1').build(),
+        new BattleResultFakeBuilder().withTroopId(2).withTroopName('Troop 2').build(),
+        new BattleResultFakeBuilder().withTroopId(3).withTroopName('Troop 3').build(),
       ];
 
       const trechoResult = createTrechoValidationResult({ battles });
 
+      const metadata = new ReportMetadataFakeBuilder()
+        .withVersion(TEST_CONSTANTS.DEFAULT_REPORT_VERSION)
+        .withSeed(TEST_CONSTANTS.DEFAULT_SEED)
+        .build();
+
       const input: GenerateReportInput = {
-        metadata: createMetadata(),
+        metadata,
         trechoResults: [trechoResult],
         warnings: [],
       };
@@ -238,5 +249,4 @@ describe('GenerateReportUseCase', () => {
       expect(report.trechos[0]?.battles).toHaveLength(3);
     });
   });
-
-  });
+});

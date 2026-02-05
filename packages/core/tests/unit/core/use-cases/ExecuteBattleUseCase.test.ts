@@ -1,9 +1,11 @@
 import 'reflect-metadata';
 import { ExecuteBattleUseCase, ExecuteBattleInput } from '@coreto/core';
 import { IBattleSimulator, BattleSetup } from '@coreto/core';
-import { BattleResult } from '@coreto/core';
-import { PartyConfig } from '@coreto/core';
 import { BattleTimeoutError } from '@coreto/core';
+
+import { BattleResultFakeBuilder } from '../../../fixtures/builders/BattleResultFakeBuilder';
+import { PartyConfigFakeBuilder } from '../../../fixtures/builders/PartyConfigFakeBuilder';
+import { TEST_CONSTANTS } from '../../../fixtures/test-constants';
 
 describe('ExecuteBattleUseCase', () => {
   let useCase: ExecuteBattleUseCase;
@@ -25,23 +27,21 @@ describe('ExecuteBattleUseCase', () => {
   describe('execute', () => {
     it('should execute battle with correct setup', async () => {
       // Arrange
-      const party = new PartyConfig([{ classId: 1, level: 5 }]);
+      const party = new PartyConfigFakeBuilder().withSingleMember(1, 5).build();
       const input: ExecuteBattleInput = {
-        troopId: 1,
+        troopId: TEST_CONSTANTS.DEFAULT_TROOP_ID,
         troopName: 'Goblin Pack',
         party,
-        seed: 12345,
+        seed: TEST_CONSTANTS.DEFAULT_SEED,
       };
 
-      const mockResult = new BattleResult({
-        troopId: 1,
-        troopName: 'Goblin Pack',
-        outcome: 'victory',
-        ttkTurns: 3,
-        ttkActions: 8,
-        durationMs: 1250,
-        seed: 12345,
-      });
+      const mockResult = new BattleResultFakeBuilder()
+        .withTroopId(TEST_CONSTANTS.DEFAULT_TROOP_ID)
+        .withTroopName('Goblin Pack')
+        .withTtkMetrics(TEST_CONSTANTS.DEFAULT_TTK_TURNS, TEST_CONSTANTS.DEFAULT_TTK_ACTIONS)
+        .withDuration(TEST_CONSTANTS.DEFAULT_DURATION_MS)
+        .withSeed(TEST_CONSTANTS.DEFAULT_SEED)
+        .build();
 
       mockSimulator.executeBattle.mockResolvedValue(mockResult);
 
@@ -50,9 +50,9 @@ describe('ExecuteBattleUseCase', () => {
 
       // Assert
       expect(mockSimulator.executeBattle).toHaveBeenCalledWith({
-        troopId: 1,
+        troopId: TEST_CONSTANTS.DEFAULT_TROOP_ID,
         party,
-        seed: 12345,
+        seed: TEST_CONSTANTS.DEFAULT_SEED,
         maxTurns: undefined,
       });
       expect(output.result).toEqual(mockResult);
@@ -60,23 +60,21 @@ describe('ExecuteBattleUseCase', () => {
 
     it('should return duration in milliseconds', async () => {
       // Arrange
-      const party = new PartyConfig([{ classId: 1, level: 5 }]);
+      const party = new PartyConfigFakeBuilder().withSingleMember(1, 5).build();
       const input: ExecuteBattleInput = {
-        troopId: 1,
+        troopId: TEST_CONSTANTS.DEFAULT_TROOP_ID,
         troopName: 'Goblin Pack',
         party,
-        seed: 12345,
+        seed: TEST_CONSTANTS.DEFAULT_SEED,
       };
 
-      const mockResult = new BattleResult({
-        troopId: 1,
-        troopName: 'Goblin Pack',
-        outcome: 'victory',
-        ttkTurns: 3,
-        ttkActions: 8,
-        durationMs: 1250,
-        seed: 12345,
-      });
+      const mockResult = new BattleResultFakeBuilder()
+        .withTroopId(TEST_CONSTANTS.DEFAULT_TROOP_ID)
+        .withTroopName('Goblin Pack')
+        .withTtkMetrics(TEST_CONSTANTS.DEFAULT_TTK_TURNS, TEST_CONSTANTS.DEFAULT_TTK_ACTIONS)
+        .withDuration(TEST_CONSTANTS.DEFAULT_DURATION_MS)
+        .withSeed(TEST_CONSTANTS.DEFAULT_SEED)
+        .build();
 
       mockSimulator.executeBattle.mockResolvedValue(mockResult);
 
@@ -90,24 +88,22 @@ describe('ExecuteBattleUseCase', () => {
 
     it('should pass seed to simulator', async () => {
       // Arrange
-      const party = new PartyConfig([{ classId: 1, level: 5 }]);
+      const party = new PartyConfigFakeBuilder().withSingleMember(1, 5).build();
       const customSeed = 99999;
       const input: ExecuteBattleInput = {
-        troopId: 1,
+        troopId: TEST_CONSTANTS.DEFAULT_TROOP_ID,
         troopName: 'Goblin Pack',
         party,
         seed: customSeed,
       };
 
-      const mockResult = new BattleResult({
-        troopId: 1,
-        troopName: 'Goblin Pack',
-        outcome: 'victory',
-        ttkTurns: 3,
-        ttkActions: 8,
-        durationMs: 1250,
-        seed: customSeed,
-      });
+      const mockResult = new BattleResultFakeBuilder()
+        .withTroopId(TEST_CONSTANTS.DEFAULT_TROOP_ID)
+        .withTroopName('Goblin Pack')
+        .withTtkMetrics(TEST_CONSTANTS.DEFAULT_TTK_TURNS, TEST_CONSTANTS.DEFAULT_TTK_ACTIONS)
+        .withDuration(TEST_CONSTANTS.DEFAULT_DURATION_MS)
+        .withSeed(customSeed)
+        .build();
 
       mockSimulator.executeBattle.mockResolvedValue(mockResult);
 
@@ -121,12 +117,12 @@ describe('ExecuteBattleUseCase', () => {
 
     it('should handle battle timeout error', async () => {
       // Arrange
-      const party = new PartyConfig([{ classId: 1, level: 5 }]);
+      const party = new PartyConfigFakeBuilder().withSingleMember(1, 5).build();
       const input: ExecuteBattleInput = {
-        troopId: 1,
+        troopId: TEST_CONSTANTS.DEFAULT_TROOP_ID,
         troopName: 'Goblin Pack',
         party,
-        seed: 12345,
+        seed: TEST_CONSTANTS.DEFAULT_SEED,
       };
 
       const timeoutError = new BattleTimeoutError(1, 10000, 100);
@@ -138,24 +134,22 @@ describe('ExecuteBattleUseCase', () => {
 
     it('should use maxTurns when provided', async () => {
       // Arrange
-      const party = new PartyConfig([{ classId: 1, level: 5 }]);
+      const party = new PartyConfigFakeBuilder().withSingleMember(1, 5).build();
       const input: ExecuteBattleInput = {
-        troopId: 1,
+        troopId: TEST_CONSTANTS.DEFAULT_TROOP_ID,
         troopName: 'Goblin Pack',
         party,
-        seed: 12345,
+        seed: TEST_CONSTANTS.DEFAULT_SEED,
         maxTurns: 50,
       };
 
-      const mockResult = new BattleResult({
-        troopId: 1,
-        troopName: 'Goblin Pack',
-        outcome: 'victory',
-        ttkTurns: 3,
-        ttkActions: 8,
-        durationMs: 1250,
-        seed: 12345,
-      });
+      const mockResult = new BattleResultFakeBuilder()
+        .withTroopId(TEST_CONSTANTS.DEFAULT_TROOP_ID)
+        .withTroopName('Goblin Pack')
+        .withTtkMetrics(TEST_CONSTANTS.DEFAULT_TTK_TURNS, TEST_CONSTANTS.DEFAULT_TTK_ACTIONS)
+        .withDuration(TEST_CONSTANTS.DEFAULT_DURATION_MS)
+        .withSeed(TEST_CONSTANTS.DEFAULT_SEED)
+        .build();
 
       mockSimulator.executeBattle.mockResolvedValue(mockResult);
 
@@ -169,23 +163,21 @@ describe('ExecuteBattleUseCase', () => {
 
     it('should include result from simulator', async () => {
       // Arrange
-      const party = new PartyConfig([{ classId: 1, level: 5 }]);
+      const party = new PartyConfigFakeBuilder().withSingleMember(1, 5).build();
       const input: ExecuteBattleInput = {
-        troopId: 1,
+        troopId: TEST_CONSTANTS.DEFAULT_TROOP_ID,
         troopName: 'Goblin Pack',
         party,
-        seed: 12345,
+        seed: TEST_CONSTANTS.DEFAULT_SEED,
       };
 
-      const mockResult = new BattleResult({
-        troopId: 1,
-        troopName: 'Goblin Pack',
-        outcome: 'victory',
-        ttkTurns: 3,
-        ttkActions: 8,
-        durationMs: 1250,
-        seed: 12345,
-      });
+      const mockResult = new BattleResultFakeBuilder()
+        .withTroopId(TEST_CONSTANTS.DEFAULT_TROOP_ID)
+        .withTroopName('Goblin Pack')
+        .withTtkMetrics(TEST_CONSTANTS.DEFAULT_TTK_TURNS, TEST_CONSTANTS.DEFAULT_TTK_ACTIONS)
+        .withDuration(TEST_CONSTANTS.DEFAULT_DURATION_MS)
+        .withSeed(TEST_CONSTANTS.DEFAULT_SEED)
+        .build();
 
       mockSimulator.executeBattle.mockResolvedValue(mockResult);
 
@@ -194,7 +186,7 @@ describe('ExecuteBattleUseCase', () => {
 
       // Assert
       expect(output.result).toBe(mockResult);
-      expect(output.result.troopId).toBe(1);
+      expect(output.result.troopId).toBe(TEST_CONSTANTS.DEFAULT_TROOP_ID);
       expect(output.result.outcome).toBe('victory');
     });
   });
