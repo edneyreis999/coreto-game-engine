@@ -107,37 +107,17 @@ export interface GlobalSettingsFormData {
 // ============================================================================
 // Validation Types
 // ============================================================================
-
 /**
- * Form validation error for a specific field.
+ * Validation types are now exported from the domain layer.
+ * These types define the structure of validation results and errors.
+ *
+ * @see @coreto/electron/domain/validation/types
  */
-export interface FieldError {
-  /**
-   * Error message for the field.
-   */
-  message: string;
-}
-
-/**
- * Form validation errors mapped by field name.
- * Uses dot notation for nested fields (e.g., "party.members.0.classId").
- */
-export type FormErrors = Record<string, FieldError>;
-
-/**
- * Form validation state.
- */
-export interface FormValidation {
-  /**
-   * Whether the form is currently valid.
-   */
-  isValid: boolean;
-
-  /**
-   * Validation errors by field name.
-   */
-  errors: FormErrors;
-}
+export type {
+  FieldError,
+  FormErrors,
+  FormValidation,
+} from '@coreto/electron/domain/validation/types';
 
 // ============================================================================
 // Dropdown Option Types
