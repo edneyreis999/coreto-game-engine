@@ -6,8 +6,8 @@
  */
 
 import * as path from 'path';
-import { NodeFileSystem } from '@coreto/core/infrastructure/adapters/filesystem/NodeFileSystem.js';
-import type { EnemyData, TroopData, ClassData, SkillData, ItemData, SystemData } from '@coreto/core/types/rmmz-data.js';
+import { NodeFileSystem } from '@coreto/core';
+import type { EnemyData, TroopData, ClassData, SkillData, ItemData, SystemData } from '@coreto/core';
 
 describe('RmmzDataLoader Integration Tests', () => {
   let fileSystem: NodeFileSystem;

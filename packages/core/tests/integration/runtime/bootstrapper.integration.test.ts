@@ -1,4 +1,4 @@
-import { HeadlessRuntimeBootstrapper } from '@coreto/core/infrastructure/runtime/HeadlessRuntimeBootstrapper';
+import { HeadlessRuntimeBootstrapper } from '@coreto/core';
 import * as path from 'path';
 
 /**

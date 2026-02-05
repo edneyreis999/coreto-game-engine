@@ -3,10 +3,10 @@
  * These tests validate the manual QA scenarios from MANUAL_QA_GUIDE.md
  */
 
-import { DataLoadError } from '@coreto/core/core/errors/DataLoadError';
-import { RmmzDataLoader } from '@coreto/core/infrastructure/adapters/data/RmmzDataLoader';
-import { RmmzProjectValidator } from '@coreto/core/infrastructure/adapters/data/RmmzProjectValidator';
-import { NodeFileSystem } from '@coreto/core/infrastructure/adapters/filesystem/NodeFileSystem';
+import { DataLoadError } from '@coreto/core';
+import { RmmzDataLoader } from '@coreto/core';
+import { RmmzProjectValidator } from '@coreto/core';
+import { NodeFileSystem } from '@coreto/core';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -162,13 +162,18 @@ describe('Data Loading Tests', () => {
   let loader: RmmzDataLoader;
 
   beforeAll(() => {
-    setupFakeProject();
     fileSystem = new NodeFileSystem();
     validator = new RmmzProjectValidator(fileSystem);
     loader = new RmmzDataLoader(fileSystem, validator);
   });
 
-  afterAll(() => {
+  beforeEach(() => {
+    // Ensure fresh state before each test
+    setupFakeProject();
+  });
+
+  afterEach(() => {
+    // Clean up after each test to prevent state leakage
     cleanupFakeProject();
   });
 
@@ -184,13 +189,10 @@ describe('Data Loading Tests', () => {
       const markerPath = path.join(PROJECT_PATH, 'game.rmmzproject');
       fs.unlinkSync(markerPath);
 
-      try {
-        await expect(validator.validateProjectStructure(PROJECT_PATH)).rejects.toThrow(
-          DataLoadError
-        );
-      } finally {
-        fs.writeFileSync(markerPath, '');
-      }
+      await expect(validator.validateProjectStructure(PROJECT_PATH)).rejects.toThrow(
+        DataLoadError
+      );
+      // Cleanup handled by afterEach hook
     });
   });
 
@@ -200,13 +202,10 @@ describe('Data Loading Tests', () => {
       const backupPath = path.join(PROJECT_PATH, 'data-backup');
       fs.renameSync(dataPath, backupPath);
 
-      try {
-        await expect(validator.validateProjectStructure(PROJECT_PATH)).rejects.toThrow(
-          DataLoadError
-        );
-      } finally {
-        fs.renameSync(backupPath, dataPath);
-      }
+      await expect(validator.validateProjectStructure(PROJECT_PATH)).rejects.toThrow(
+        DataLoadError
+      );
+      // Cleanup handled by afterEach hook
     });
   });
 
@@ -238,15 +237,11 @@ describe('Data Loading Tests', () => {
   describe('TC-DATA-005: Arquivo JSON Corrompido', () => {
     it('should throw DataLoadError for corrupted JSON', async () => {
       const itemsPath = path.join(PROJECT_PATH, 'data/Items.json');
-      const originalContent = fs.readFileSync(itemsPath, 'utf-8');
 
       fs.writeFileSync(itemsPath, 'invalid json{');
 
-      try {
-        await expect(loader.loadDatabase(PROJECT_PATH)).rejects.toThrow(DataLoadError);
-      } finally {
-        fs.writeFileSync(itemsPath, originalContent);
-      }
+      await expect(loader.loadDatabase(PROJECT_PATH)).rejects.toThrow(DataLoadError);
+      // Cleanup handled by afterEach hook
     });
   });
 });

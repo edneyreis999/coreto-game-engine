@@ -1,4 +1,4 @@
-import { DatabaseLoader } from '@coreto/core/infrastructure/runtime/loaders/DatabaseLoader';
+import { DatabaseLoader } from '@coreto/core';
 import * as path from 'path';
 
 /**

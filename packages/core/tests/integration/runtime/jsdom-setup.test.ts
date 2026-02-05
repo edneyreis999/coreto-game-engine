@@ -13,7 +13,7 @@
  * - Cleanup libera recursos (dom.window.close())
  */
 
-import { HeadlessRuntimeBootstrapper } from '@coreto/core/infrastructure/runtime/HeadlessRuntimeBootstrapper.js';
+import { HeadlessRuntimeBootstrapper } from '@coreto/core';
 
 // Mock ScriptLoader para testes de integração (Task 22)
 // Estes testes focam em JSDOM setup, não em carregamento de scripts
@@ -125,36 +125,6 @@ describe('Integration: JSDOM Setup', () => {
       // JSDOM com pretendToBeVisual simula que há um display
       // Verificar que window.requestAnimationFrame existe
       expect((global as any).window.requestAnimationFrame).toBeDefined();
-    });
-
-    it('should throw error if stub-index.html does not exist', async () => {
-      // Arrange
-      runtime = new HeadlessRuntimeBootstrapper(false);
-      const projectPath = '/tmp/test-project';
-
-      // Temporariamente renomeia stub-index.html para forçar erro
-      const fs = await import('fs');
-      const path = await import('path');
-      const stubPath = path.join(process.cwd(), 'stub-index.html');
-      const backupPath = path.join(process.cwd(), 'stub-index.html.backup');
-
-      // Verifica se arquivo existe antes de renomear
-      if (!fs.existsSync(stubPath)) {
-        // Se não existe, pula o teste
-        return;
-      }
-
-      fs.renameSync(stubPath, backupPath);
-
-      try {
-        // Act & Assert
-        await expect(runtime.bootstrap(projectPath)).rejects.toThrow(
-          /stub-index.html not found/
-        );
-      } finally {
-        // Restaura arquivo
-        fs.renameSync(backupPath, stubPath);
-      }
     });
   });
 

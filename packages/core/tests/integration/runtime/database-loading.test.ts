@@ -1,5 +1,4 @@
-import { HeadlessRuntimeBootstrapper } from '@coreto/core/infrastructure/runtime/HeadlessRuntimeBootstrapper';
-import { DatabaseLoader } from '@coreto/core/infrastructure/runtime/loaders/DatabaseLoader';
+import { HeadlessRuntimeBootstrapper, DatabaseLoader } from '@coreto/core';
 import * as path from 'path';
 
 /**

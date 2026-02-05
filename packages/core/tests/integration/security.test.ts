@@ -6,9 +6,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { PathSanitizer } from '@coreto/core/infrastructure/security/PathSanitizer';
-import { ValidationError } from '@coreto/core/core/errors/ValidationError';
-import { ReadOnlyGuard } from '@coreto/core/infrastructure/security/ReadOnlyGuard';
+import { PathSanitizer, ReadOnlyGuard, ValidationError } from '@coreto/core';
 
 describe('Security Tests', () => {
   let tempDir: string;
