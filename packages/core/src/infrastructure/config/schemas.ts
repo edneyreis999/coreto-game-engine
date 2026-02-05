@@ -209,10 +209,18 @@ export const ProjectConfigSchema = z.object({
  *
  * These types are automatically derived from the schemas above,
  * ensuring perfect sync between validation logic and TypeScript types.
+ *
+ * NAMING CONVENTION:
+ * All types use "DTO" suffix to distinguish from Domain classes.
+ * - AnchorLevelRangeDTO (Zod) vs AnchorLevelRange (Domain class)
+ * - TtkTargetDTO (Zod) vs TtkTarget (Domain class)
+ * - PartyConfigDTO (Zod) vs PartyConfig (Domain class)
+ * - TrechoDTO (Zod) vs Trecho (Domain entity)
+ * - ProjectConfigDTO (Zod) vs ProjectConfig (Port interface)
  */
-export type AnchorLevelRange = z.infer<typeof AnchorLevelRangeSchema>;
-export type TtkTarget = z.infer<typeof TtkTargetSchema>;
-export type PartyMember = z.infer<typeof PartyMemberSchema>;
-export type PartyConfig = z.infer<typeof PartyConfigSchema>;
-export type TrechoConfig = z.infer<typeof TrechoSchema>;
-export type ProjectConfig = z.infer<typeof ProjectConfigSchema>;
+export type AnchorLevelRangeDTO = z.infer<typeof AnchorLevelRangeSchema>;
+export type TtkTargetDTO = z.infer<typeof TtkTargetSchema>;
+export type PartyMemberDTO = z.infer<typeof PartyMemberSchema>;
+export type PartyConfigDTO = z.infer<typeof PartyConfigSchema>;
+export type TrechoDTO = z.infer<typeof TrechoSchema>;
+export type ProjectConfigDTO = z.infer<typeof ProjectConfigSchema>;

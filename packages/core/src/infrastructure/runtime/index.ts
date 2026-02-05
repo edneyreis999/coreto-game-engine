@@ -19,8 +19,9 @@
  */
 
 export { HeadlessRuntimeBootstrapper } from './HeadlessRuntimeBootstrapper.js';
-export { ScriptLoader } from './loaders/index.js';
+export { ScriptLoader, DatabaseLoader } from './loaders/index.js';
 export { SyncWarpLoop } from './simulation/index.js';
+export { HeadlessOverrides } from './overrides/HeadlessOverrides.js';
 
 // Export shims for testing and headless runtime
 export * from './shims/index.js';

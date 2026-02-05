@@ -96,12 +96,39 @@ export {
 
 export * from './infrastructure/adapters/data/index.js';
 export * from './infrastructure/adapters/filesystem/index.js';
+export * from './infrastructure/adapters/reporter/index.js';
+export * from './infrastructure/security/index.js';
 
 // =============================================================================
-// Configuration Schemas (specific exports to avoid conflicts)
+// Report Schemas and Types
 // =============================================================================
 
-export { ProjectConfigSchema } from './infrastructure/config/schemas.js';
+export {
+  WarningTypeSchema,
+  WarningSeveritySchema,
+  WarningSchema,
+  ActorSchema,
+  ActionSchema,
+  TurnSchema,
+  BattleResultSchema,
+  TrechoAggregatesSchema,
+  TrechoReportSchema,
+  ReportMetadataSchema,
+  ReportSummarySchema,
+  ReportSchema,
+  type WarningType as WarningTypeDTO,
+  type WarningSeverity as WarningSeverityDTO,
+  type Warning as WarningDTO,
+  type Actor as ActorDTO,
+  type Action as ActionDTO,
+  type Turn as TurnDTO,
+  type BattleResult as BattleResultDTO,
+  type TrechoAggregates as TrechoAggregatesDTO,
+  type TrechoReport as TrechoReportDTO,
+  type ReportMetadata as ReportMetadataDTO,
+  type ReportSummary as ReportSummaryDTO,
+  type Report as ReportDTO,
+} from './infrastructure/schemas/report.schema.js';
 
 // =============================================================================
 // Runtime Infrastructure (for testing and headless execution)
@@ -110,8 +137,33 @@ export { ProjectConfigSchema } from './infrastructure/config/schemas.js';
 export * from './infrastructure/runtime/index.js';
 
 // =============================================================================
+// Simulation Infrastructure
+// =============================================================================
+
+export * from './infrastructure/simulation/index.js';
+
+// =============================================================================
+// Configuration Module
+// =============================================================================
+
+export { ZodConfigLoader } from './infrastructure/config/ZodConfigLoader.js';
+export {
+  AnchorLevelRangeSchema,
+  TtkTargetSchema,
+  PartyMemberSchema,
+  PartyConfigSchema,
+  TrechoSchema,
+  ProjectConfigSchema,
+  type AnchorLevelRangeDTO,
+  type TtkTargetDTO,
+  type PartyMemberDTO,
+  type PartyConfigDTO,
+  type TrechoDTO,
+  type ProjectConfigDTO,
+} from './infrastructure/config/schemas.js';
+
+// =============================================================================
 // TypeScript Types
 // =============================================================================
 
-export * from './types/config.js';
 export * from './types/rmmz-data.js';
