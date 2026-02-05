@@ -1,8 +1,7 @@
 import * as os from 'os';
 import * as path from 'path';
 import * as fs from 'fs';
-import { NodeFileSystem } from '@coreto/core/infrastructure/adapters/filesystem/NodeFileSystem.js';
-import { ConfigError } from '@coreto/core/core/errors/ConfigError.js';
+import { NodeFileSystem, ConfigError } from '@coreto/core';
 
 describe('NodeFileSystem', () => {
   it('should read/write files using Node fs', () => {

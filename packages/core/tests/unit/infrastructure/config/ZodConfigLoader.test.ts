@@ -4,13 +4,13 @@
  * Tests configuration loading and validation with Zod schemas.
  */
 
-import { ZodConfigLoader } from '@coreto/core/infrastructure/config/ZodConfigLoader.js';
+import { ZodConfigLoader } from '@coreto/core';
 import {
   ConfigFileNotFoundError,
   ConfigParseError,
-} from '@coreto/core/core/errors/ConfigError.js';
-import { ValidationError } from '@coreto/core/core/errors/ValidationError.js';
-import type { IFileSystem } from '@coreto/core/core/ports/index.js';
+  ValidationError,
+} from '@coreto/core';
+import type { IFileSystem } from '@coreto/core';
 
 describe('ZodConfigLoader', () => {
   let configLoader: ZodConfigLoader;

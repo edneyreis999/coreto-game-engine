@@ -5,9 +5,8 @@
  * Validates that the warning-based approach (ADR-013) is correctly implemented.
  */
 
-import { IntegrityValidator } from '@coreto/core/infrastructure/adapters/data/IntegrityValidator.js';
-import type { RmmzDatabase } from '@coreto/core/core/ports/index.js';
-import type { EnemyData, TroopData, ClassData, SkillData, SystemData } from '@coreto/core/types/rmmz-data.js';
+import { IntegrityValidator } from '@coreto/core';
+import type { RmmzDatabase, EnemyData, TroopData, ClassData, SkillData, SystemData } from '@coreto/core';
 
 describe('IntegrityValidator', () => {
   let validator: IntegrityValidator;

@@ -7,23 +7,21 @@
  * Coverage target: 100%
  */
 
-import { ZodError } from 'zod';
 import {
   AnchorLevelRangeSchema,
-  TtkTargetSchema,
-  PartyMemberSchema,
   PartyConfigSchema,
-  TrechoSchema,
+  PartyMemberSchema,
   ProjectConfigSchema,
-} from '@coreto/core/infrastructure/config/schemas.js';
-import type {
-  AnchorLevelRange,
-  TtkTarget,
-  PartyMember,
-  PartyConfig,
-  TrechoConfig,
-  ProjectConfig,
-} from '@coreto/core/infrastructure/config/schemas.js';
+  TrechoSchema,
+  TtkTargetSchema,
+  type AnchorLevelRangeDTO,
+  type PartyConfigDTO,
+  type PartyMemberDTO,
+  type ProjectConfigDTO,
+  type TrechoDTO,
+  type TtkTargetDTO,
+} from '@coreto/core';
+import { ZodError } from 'zod';
 
 describe('AnchorLevelRangeSchema', () => {
   describe('valid inputs', () => {
@@ -79,17 +77,13 @@ describe('AnchorLevelRangeSchema', () => {
     it('should reject missing min field', () => {
       const input = { max: 10 };
       expect(() => AnchorLevelRangeSchema.parse(input)).toThrow(ZodError);
-      expect(() => AnchorLevelRangeSchema.parse(input)).toThrow(
-        'anchorLevelRange.min is required'
-      );
+      expect(() => AnchorLevelRangeSchema.parse(input)).toThrow('anchorLevelRange.min is required');
     });
 
     it('should reject missing max field', () => {
       const input = { min: 5 };
       expect(() => AnchorLevelRangeSchema.parse(input)).toThrow(ZodError);
-      expect(() => AnchorLevelRangeSchema.parse(input)).toThrow(
-        'anchorLevelRange.max is required'
-      );
+      expect(() => AnchorLevelRangeSchema.parse(input)).toThrow('anchorLevelRange.max is required');
     });
 
     it('should reject non-number types', () => {
@@ -100,7 +94,7 @@ describe('AnchorLevelRangeSchema', () => {
 
   describe('type inference', () => {
     it('should infer correct TypeScript type', () => {
-      const validRange: AnchorLevelRange = { min: 1, max: 99 };
+      const validRange: AnchorLevelRangeDTO = { min: 1, max: 99 };
       expect(validRange.min).toBe(1);
       expect(validRange.max).toBe(99);
     });
@@ -152,17 +146,13 @@ describe('TtkTargetSchema', () => {
     it('should reject tolerance < 0', () => {
       const input = { turns: 10, actions: 40, tolerance: -0.1 };
       expect(() => TtkTargetSchema.parse(input)).toThrow(ZodError);
-      expect(() => TtkTargetSchema.parse(input)).toThrow(
-        'ttkTarget.tolerance must be at least 0'
-      );
+      expect(() => TtkTargetSchema.parse(input)).toThrow('ttkTarget.tolerance must be at least 0');
     });
 
     it('should reject tolerance > 1', () => {
       const input = { turns: 10, actions: 40, tolerance: 1.5 };
       expect(() => TtkTargetSchema.parse(input)).toThrow(ZodError);
-      expect(() => TtkTargetSchema.parse(input)).toThrow(
-        'ttkTarget.tolerance cannot exceed 1'
-      );
+      expect(() => TtkTargetSchema.parse(input)).toThrow('ttkTarget.tolerance cannot exceed 1');
     });
 
     it('should reject non-integer turns/actions', () => {
@@ -173,21 +163,17 @@ describe('TtkTargetSchema', () => {
     it('should reject missing required fields', () => {
       const input1 = { actions: 40 };
       expect(() => TtkTargetSchema.parse(input1)).toThrow(ZodError);
-      expect(() => TtkTargetSchema.parse(input1)).toThrow(
-        'ttkTarget.turns is required'
-      );
+      expect(() => TtkTargetSchema.parse(input1)).toThrow('ttkTarget.turns is required');
 
       const input2 = { turns: 10 };
       expect(() => TtkTargetSchema.parse(input2)).toThrow(ZodError);
-      expect(() => TtkTargetSchema.parse(input2)).toThrow(
-        'ttkTarget.actions is required'
-      );
+      expect(() => TtkTargetSchema.parse(input2)).toThrow('ttkTarget.actions is required');
     });
   });
 
   describe('type inference', () => {
     it('should infer correct TypeScript type', () => {
-      const validTarget: TtkTarget = { turns: 10, actions: 40, tolerance: 0.15 };
+      const validTarget: TtkTargetDTO = { turns: 10, actions: 40, tolerance: 0.15 };
       expect(validTarget.turns).toBe(10);
       expect(validTarget.actions).toBe(40);
       expect(validTarget.tolerance).toBe(0.15);
@@ -226,17 +212,13 @@ describe('PartyMemberSchema', () => {
     it('should reject level < 1', () => {
       const input = { classId: 1, level: 0 };
       expect(() => PartyMemberSchema.parse(input)).toThrow(ZodError);
-      expect(() => PartyMemberSchema.parse(input)).toThrow(
-        'party.member.level must be at least 1'
-      );
+      expect(() => PartyMemberSchema.parse(input)).toThrow('party.member.level must be at least 1');
     });
 
     it('should reject level > 99', () => {
       const input = { classId: 1, level: 100 };
       expect(() => PartyMemberSchema.parse(input)).toThrow(ZodError);
-      expect(() => PartyMemberSchema.parse(input)).toThrow(
-        'party.member.level cannot exceed 99'
-      );
+      expect(() => PartyMemberSchema.parse(input)).toThrow('party.member.level cannot exceed 99');
     });
 
     it('should reject non-integer values', () => {
@@ -255,7 +237,7 @@ describe('PartyMemberSchema', () => {
 
   describe('type inference', () => {
     it('should infer correct TypeScript type', () => {
-      const validMember: PartyMember = { classId: 1, level: 10 };
+      const validMember: PartyMemberDTO = { classId: 1, level: 10 };
       expect(validMember.classId).toBe(1);
       expect(validMember.level).toBe(10);
     });
@@ -317,15 +299,13 @@ describe('PartyConfigSchema', () => {
     it('should reject missing members field', () => {
       const input = {};
       expect(() => PartyConfigSchema.parse(input)).toThrow(ZodError);
-      expect(() => PartyConfigSchema.parse(input)).toThrow(
-        'party.members is required'
-      );
+      expect(() => PartyConfigSchema.parse(input)).toThrow('party.members is required');
     });
   });
 
   describe('type inference', () => {
     it('should infer correct TypeScript type', () => {
-      const validParty: PartyConfig = {
+      const validParty: PartyConfigDTO = {
         members: [{ classId: 1, level: 10 }],
       };
       expect(validParty.members[0]?.classId).toBe(1);
@@ -365,9 +345,7 @@ describe('TrechoSchema', () => {
     it('should reject empty id', () => {
       const input = { ...validTrechoBase, id: '' };
       expect(() => TrechoSchema.parse(input)).toThrow(ZodError);
-      expect(() => TrechoSchema.parse(input)).toThrow(
-        'trecho.id cannot be empty'
-      );
+      expect(() => TrechoSchema.parse(input)).toThrow('trecho.id cannot be empty');
     });
 
     it('should reject missing id', () => {
@@ -412,7 +390,7 @@ describe('TrechoSchema', () => {
   describe('type inference', () => {
     it('should infer correct TypeScript type', () => {
       // Parse to get inferred type with defaults applied
-      const validTrecho: TrechoConfig = TrechoSchema.parse(validTrechoBase);
+      const validTrecho: TrechoDTO = TrechoSchema.parse(validTrechoBase);
       expect(validTrecho.id).toBe('ato1-nivel1-10');
       expect(validTrecho.troopIds).toHaveLength(3);
       expect(validTrecho.ttkTarget.tolerance).toBe(0.15);
@@ -470,9 +448,7 @@ describe('ProjectConfigSchema', () => {
     it('should reject empty projectPath', () => {
       const input = { ...validProjectBase, projectPath: '' };
       expect(() => ProjectConfigSchema.parse(input)).toThrow(ZodError);
-      expect(() => ProjectConfigSchema.parse(input)).toThrow(
-        'projectPath cannot be empty'
-      );
+      expect(() => ProjectConfigSchema.parse(input)).toThrow('projectPath cannot be empty');
     });
 
     it('should reject projectPath with path traversal (..)', () => {
@@ -486,9 +462,7 @@ describe('ProjectConfigSchema', () => {
     it('should reject non-integer seed', () => {
       const input = { ...validProjectBase, seed: 12345.67 };
       expect(() => ProjectConfigSchema.parse(input)).toThrow(ZodError);
-      expect(() => ProjectConfigSchema.parse(input)).toThrow(
-        'seed must be an integer'
-      );
+      expect(() => ProjectConfigSchema.parse(input)).toThrow('seed must be an integer');
     });
 
     it('should reject empty trechos array', () => {
@@ -503,25 +477,21 @@ describe('ProjectConfigSchema', () => {
       const input = { ...validProjectBase };
       delete (input as any).projectPath;
       expect(() => ProjectConfigSchema.parse(input)).toThrow(ZodError);
-      expect(() => ProjectConfigSchema.parse(input)).toThrow(
-        'projectPath is required'
-      );
+      expect(() => ProjectConfigSchema.parse(input)).toThrow('projectPath is required');
     });
 
     it('should reject missing trechos', () => {
       const input = { ...validProjectBase };
       delete (input as any).trechos;
       expect(() => ProjectConfigSchema.parse(input)).toThrow(ZodError);
-      expect(() => ProjectConfigSchema.parse(input)).toThrow(
-        'trechos is required'
-      );
+      expect(() => ProjectConfigSchema.parse(input)).toThrow('trechos is required');
     });
   });
 
   describe('type inference', () => {
     it('should infer correct TypeScript type', () => {
       // Parse to get inferred type with defaults applied
-      const validProject: ProjectConfig = ProjectConfigSchema.parse(validProjectBase);
+      const validProject: ProjectConfigDTO = ProjectConfigSchema.parse(validProjectBase);
       expect(validProject.projectPath).toBe('/Users/edney/projects/mz-game');
       expect(validProject.trechos).toHaveLength(1);
       expect(validProject.seed).toBe(12345);

@@ -5,11 +5,7 @@
  * Focuses on edge cases, error handling, and validation logic.
  */
 
-import { RmmzDataLoader } from '@coreto/core/infrastructure/adapters/data/RmmzDataLoader.js';
-import { RmmzProjectValidator } from '@coreto/core/infrastructure/adapters/data/RmmzProjectValidator.js';
-import type { IFileSystem, RmmzDatabase } from '@coreto/core/core/ports/index.js';
-import { DataLoadError } from '@coreto/core/core/errors/DataLoadError.js';
-import type { EnemyData, TroopData, SystemData } from '@coreto/core/types/rmmz-data.js';
+import { DataLoadError, RmmzDataLoader, RmmzProjectValidator, type EnemyData, type IFileSystem, type RmmzDatabase, type SystemData, type TroopData } from '@coreto/core';
 
 describe('RmmzDataLoader', () => {
   let loader: RmmzDataLoader;
