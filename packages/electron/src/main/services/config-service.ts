@@ -17,9 +17,8 @@
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import { ProjectConfigSchema, type UIProjectConfig } from './schemas.js';
-
-// Current schema version for config files
-const CURRENT_SCHEMA_VERSION = '1.0';
+import { normalizeSchema } from '../../domain/services/config-migrator.js';
+import { CURRENT_SCHEMA_VERSION } from '../../domain/schemas/project-config.schema.js';
 
 /**
  * Error thrown when project config file is not found.
@@ -46,6 +45,8 @@ export class ConfigValidationError extends Error {
  *
  * Provides methods for loading and saving project configurations
  * with automatic schema normalization and validation.
+ *
+ * Schema normalization is delegated to domain layer services.
  */
 export class ConfigService {
   /**
@@ -85,7 +86,8 @@ export class ConfigService {
       const raw = JSON.parse(json);
 
       // Normalize before validation (Technical Debt DT-003)
-      const normalized = this.normalizeSchema(raw);
+      // Delegates to domain migration service
+      const normalized = normalizeSchema(raw);
 
       // Validate with Zod
       const result = ProjectConfigSchema.safeParse(normalized);
@@ -183,103 +185,15 @@ export class ConfigService {
   /**
    * Normalizes old config schemas to current version.
    *
-   * This method implements Technical Debt DT-003 (Schema Normalization).
-   * It prevents breaking changes when schema evolves by:
-   *
-   * 1. Adding missing fields with defaults
-   * 2. Migrating renamed fields (backward compatibility)
-   * 3. Updating version field
-   *
-   * Migration Rules:
-   * - missing version → set to '1.0'
-   * - missing metadata → set to {}
-   * - maxTurns → maxBattleTurns (legacy field rename)
+   * Delegates to domain migration service.
    *
    * @param raw - Raw config object (from file or user input)
    * @returns Normalized config object
+   *
+   * @see ../../domain/services/config-migrator.ts
    */
   normalizeSchema(raw: unknown): unknown {
-    if (!raw || typeof raw !== 'object') {
-      return raw;
-    }
-
-    // Type assertion for mutation
-    const config = raw as Record<string, unknown>;
-
-    // Add missing version field
-    if (!config.version) {
-      config.version = CURRENT_SCHEMA_VERSION;
-    }
-
-    // Add missing metadata field
-    if (!config.metadata) {
-      config.metadata = {};
-    }
-
-    // Migration: maxTurns → maxBattleTurns (legacy field rename)
-    // This handles configs from older versions
-    if ('maxTurns' in config && !('maxBattleTurns' in config)) {
-      config.maxBattleTurns = config.maxTurns;
-      delete config.maxTurns;
-    }
-
-    // Migration: Ensure trechos is an array
-    if (!config.trechos || !Array.isArray(config.trechos)) {
-      config.trechos = [];
-    }
-
-    // Normalize each trecho
-    if (Array.isArray(config.trechos)) {
-      config.trechos = config.trechos.map((trecho: unknown) =>
-        this.normalizeTrechoSchema(trecho)
-      );
-    }
-
-    return config;
-  }
-
-  /**
-   * Normalizes a single trecho schema.
-   *
-   * Handles trecho-specific migrations and default values.
-   *
-   * @param raw - Raw trecho object
-   * @returns Normalized trecho object
-   */
-  private normalizeTrechoSchema(raw: unknown): unknown {
-    if (!raw || typeof raw !== 'object') {
-      return raw;
-    }
-
-    const trecho = raw as Record<string, unknown>;
-
-    // Ensure required fields exist
-    if (!trecho.id) {
-      trecho.id = `trecho-${Date.now()}`;
-    }
-
-    if (!trecho.description) {
-      trecho.description = 'Unnamed Trecho';
-    }
-
-    // Normalize heroTeam
-    if (!trecho.heroTeam) {
-      trecho.heroTeam = {
-        level: 1,
-        actors: [],
-        weapons: {},
-        armors: {},
-      };
-    }
-
-    // Normalize enemyTeam
-    if (!trecho.enemyTeam) {
-      trecho.enemyTeam = {
-        troopId: 1,
-      };
-    }
-
-    return trecho;
+    return normalizeSchema(raw);
   }
 
   /**
