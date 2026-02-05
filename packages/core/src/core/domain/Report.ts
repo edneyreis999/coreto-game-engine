@@ -1,5 +1,5 @@
 import { BattleResult } from './BattleResult.js';
-import type { Warning } from '../ports/IReporter.js';
+import type { WarningData } from './Warning.js';
 
 /**
  * Report metadata.
@@ -81,7 +81,7 @@ export interface TrechoSummary {
   /**
    * Warnings collected for this trecho.
    */
-  warnings: Warning[];
+  warnings: WarningData[];
 
   /**
    * Validation status: true if all battles within tolerance.
@@ -153,7 +153,7 @@ export interface ReportData {
   /**
    * Validation warnings collected during simulation (ADR-013).
    */
-  warnings: Warning[];
+  warnings: WarningData[];
 }
 
 /**
@@ -198,7 +198,7 @@ export class Report {
   readonly metadata: ReportMetadata;
   readonly summary: ReportSummary;
   readonly trechos: readonly TrechoSummary[];
-  readonly warnings: readonly Warning[];
+  readonly warnings: readonly WarningData[];
   readonly overallPassed: boolean;
 
   /**

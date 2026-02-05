@@ -13,6 +13,23 @@ export interface GenerateReportInput {
   trechoResults: TrechoValidationResult[];
   /** Validation warnings collected during simulation (ADR-013) */
   warnings: Warning[];
+  /** Peak memory usage in MB (captured by orchestrator in infrastructure layer) */
+  peakMemoryMB?: number;
+}
+
+/**
+ * Calculate the specified percentile from an array of numbers.
+ * Uses the ceiling method: index = ceil(percentile/100 * length) - 1.
+ *
+ * @param values - Array of numeric values
+ * @param percentile - Percentile to calculate (0-100)
+ * @returns The percentile value, or 0 if array is empty
+ */
+function calculatePercentile(values: number[], percentile: number): number {
+  if (values.length === 0) return 0;
+  const sorted: number[] = [...values].sort((a, b) => a - b);
+  const index = Math.ceil((percentile / 100) * sorted.length) - 1;
+  return sorted[Math.max(0, index)]!;
 }
 
 /**
@@ -79,9 +96,15 @@ export class GenerateReportUseCase {
       battles: result.battles,
       aggregates: {
         avgTtkTurns: result.avgTtkTurns,
-        p95TtkTurns: result.avgTtkTurns, // TODO: Calculate actual p95
+        p95TtkTurns: calculatePercentile(
+          result.battles.map((b) => b.ttkTurns),
+          95
+        ),
         avgTtkActions: result.avgTtkActions,
-        p95TtkActions: result.avgTtkActions, // TODO: Calculate actual p95
+        p95TtkActions: calculatePercentile(
+          result.battles.map((b) => b.ttkActions),
+          95
+        ),
       },
       warnings: [], // Warnings are now collected at trecho level by reporter
       passed: result.passed,
@@ -96,7 +119,6 @@ export class GenerateReportUseCase {
     }
     const successRate =
       totalBattles > 0 ? trechos.filter((t) => t.passed).length / trechos.length : 0;
-    const memoryUsage = process.memoryUsage();
 
     return new Report({
       metadata: input.metadata,
@@ -107,7 +129,7 @@ export class GenerateReportUseCase {
         totalWarnings,
         warningsByType,
         successRate,
-        peakMemoryMB: memoryUsage.heapUsed / (1024 * 1024),
+        peakMemoryMB: input.peakMemoryMB ?? 0,
       },
       trechos,
       warnings: input.warnings,

@@ -104,9 +104,9 @@ describe('GenerateReportUseCase', () => {
         battles,
         aggregates: {
           avgTtkTurns: 3.5,
-          p95TtkTurns: 3.5,
+          p95TtkTurns: 4,
           avgTtkActions: 9,
-          p95TtkActions: 9,
+          p95TtkActions: 10,
         },
         warnings: [],
         passed: true,

@@ -91,7 +91,9 @@ export {
 } from './infrastructure/di/tokens.js';
 
 // =============================================================================
-// Infrastructure Adapters (for testing and external use)
+// Infrastructure Adapters
+// Exported for integration tests and DI registration.
+// Prefer using port interfaces (IDataLoader, IFileSystem, IReporter) via DI.
 // =============================================================================
 
 export * from './infrastructure/adapters/data/index.js';
@@ -132,12 +134,14 @@ export {
 
 // =============================================================================
 // Runtime Infrastructure (for testing and headless execution)
+// NOTE: Exported for core package tests. External consumers should use DI.
 // =============================================================================
 
 export * from './infrastructure/runtime/index.js';
 
 // =============================================================================
 // Simulation Infrastructure
+// NOTE: Exported for core package tests. External consumers should use DI.
 // =============================================================================
 
 export * from './infrastructure/simulation/index.js';

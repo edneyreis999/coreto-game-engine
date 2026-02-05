@@ -58,7 +58,9 @@ export abstract class DomainError extends Error {
     this.timestamp = new Date();
 
     // Maintains proper stack trace for where our error was thrown (only available on V8)
-    Error.captureStackTrace(this, this.constructor);
+    if (typeof Error.captureStackTrace === 'function') {
+      Error.captureStackTrace(this, this.constructor);
+    }
   }
 
   /**
