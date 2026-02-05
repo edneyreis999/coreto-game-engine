@@ -117,3 +117,16 @@ pnpm --filter @coreto/electron build  # Build electron
 ```bash
 pnpm --filter @coreto/core build
 ```
+
+### Module Aliases Require Multi-Config Setup
+
+**Symptom:** TypeScript compiles but `electron-vite dev` fails with "failed to resolve import @coreto/electron/domain/*"
+
+**Cause:** Vite/Rollup has its own module resolution. Each build environment needs explicit alias config.
+
+**Fix:** When adding new module aliases, update ALL configs:
+1. `tsconfig.json` → `compilerOptions.paths`
+2. `jest.config.js` → `moduleNameMapper` (for ALL projects: main, renderer, integration)
+3. `electron.vite.config.ts` → `resolve.alias` (for BOTH main AND renderer sections)
+
+**Note:** electron-vite builds 3 separate processes. Each needs its own alias configuration.
