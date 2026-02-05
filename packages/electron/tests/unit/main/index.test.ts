@@ -12,6 +12,7 @@ jest.mock('electron', () => ({
     quit: jest.fn()
   },
   BrowserWindow: jest.fn().mockImplementation(() => ({
+    loadURL: jest.fn().mockResolvedValue(undefined),
     loadFile: jest.fn().mockResolvedValue(undefined),
     once: jest.fn(),
     webContents: {
@@ -68,6 +69,7 @@ describe('Main Process - index', () => {
     it('should load the renderer process from the correct path', () => {
       // Arrange
       const mockWindow = {
+        loadURL: jest.fn().mockResolvedValue(undefined),
         loadFile: jest.fn().mockResolvedValue(undefined),
         once: jest.fn(),
         webContents: {
@@ -91,6 +93,7 @@ describe('Main Process - index', () => {
       process.env.NODE_ENV = 'development'
 
       const mockWindow = {
+        loadURL: jest.fn().mockResolvedValue(undefined),
         loadFile: jest.fn().mockResolvedValue(undefined),
         once: jest.fn(),
         webContents: {
@@ -139,6 +142,7 @@ describe('Main Process - index', () => {
     it('should set external link handler to open in default browser', () => {
       // Arrange
       const mockWindow = {
+        loadURL: jest.fn().mockResolvedValue(undefined),
         loadFile: jest.fn().mockResolvedValue(undefined),
         once: jest.fn(),
         webContents: {
@@ -174,6 +178,7 @@ describe('Main Process - index', () => {
       process.env.NODE_ENV = 'development'
 
       const mockWindow = {
+        loadURL: jest.fn().mockResolvedValue(undefined),
         loadFile: jest.fn().mockResolvedValue(undefined),
         once: jest.fn(),
         webContents: {
@@ -200,6 +205,7 @@ describe('Main Process - index', () => {
       process.env.NODE_ENV = 'production'
 
       const mockWindow = {
+        loadURL: jest.fn().mockResolvedValue(undefined),
         loadFile: jest.fn().mockResolvedValue(undefined),
         once: jest.fn(),
         webContents: {
