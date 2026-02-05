@@ -619,6 +619,18 @@ export class HeadlessOverrides {
         return;
       }
 
+      // FIX: Also check if we're stuck in turn phase with empty action battlers
+      // This can happen if the battle was initialized but startTurn was never called
+      if (
+        this._phase === 'turn' &&
+        (!this._actionBattlers || this._actionBattlers.length === 0) &&
+        !this.isBattleEnd()
+      ) {
+        console.log('[HeadlessOverrides] Detected turn phase with empty _actionBattlers, forcing startTurn()');
+        this.startTurn();
+        return;
+      }
+
       // Otherwise use original logic
       return _BattleManager_updatePhase.call(this, timeActive);
     };

@@ -1,6 +1,4 @@
 import { JSDOM } from 'jsdom';
-import * as fs from 'fs';
-import * as path from 'path';
 import { ScriptLoader } from './loaders/ScriptLoader.js';
 import { DatabaseLoader } from './loaders/DatabaseLoader.js';
 import { DeterministicRNG } from '../simulation/DeterministicRNG.js';
@@ -129,17 +127,8 @@ export class HeadlessRuntimeBootstrapper {
   private async step1_initializeJSDOM(projectPath: string): Promise<void> {
     this.log('[Bootstrap] Step 1: Initialize JSDOM');
 
-    // Localiza stub-index.html
-    // Usando path relativo ao módulo atual (__dirname não existe em ESM)
-    const htmlPath = path.join(process.cwd(), 'stub-index.html');
-
-    if (!fs.existsSync(htmlPath)) {
-      throw new Error(
-        `stub-index.html not found at ${htmlPath}. Ensure it exists in project root.`
-      );
-    }
-
-    const html = fs.readFileSync(htmlPath, 'utf-8');
+    // HTML stub básico para JSDOM - embutido diretamente no código
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body><div id="stub-root"></div></body></html>`;
 
     // Cria instância JSDOM com opções específicas do RMMZ
     this.dom = new JSDOM(html, {

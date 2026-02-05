@@ -13,6 +13,8 @@ import { z } from 'zod';
 
 import type { IConfigLoader, ProjectConfig, IFileSystem } from '../../core/ports/index.js';
 import type { Trecho } from '../../core/domain/Trecho.js';
+import { Trecho as TrechoClass } from '../../core/domain/Trecho.js';
+import { PartyConfig } from '../../core/domain/PartyConfig.js';
 import { IFileSystemToken } from '../di/tokens.js';
 import {
   ConfigError,
@@ -200,10 +202,20 @@ export class ZodConfigLoader implements IConfigLoader {
         const trechoData = TrechoSchema.parse(trechosData[i]);
 
         // Convert validated Zod data to Trecho domain entity
-        // Note: This requires importing PartyConfig and constructing Trecho
-        // For now, we'll return the validated data as-is
-        // TODO: Convert to proper Trecho domain entities
-        validatedTrechos.push(trechoData as unknown as Trecho);
+        // Map from JSON format (nested ttkTarget) to domain format (flat properties)
+        const trecho = new TrechoClass({
+          id: trechoData.id,
+          name: trechoData.name ?? '',
+          anchorLevelMin: trechoData.anchorLevelRange.min,
+          anchorLevelMax: trechoData.anchorLevelRange.max,
+          targetTtkTurns: trechoData.ttkTarget.turns,
+          targetTtkActions: trechoData.ttkTarget.actions,
+          tolerancePercent: trechoData.ttkTarget.tolerance * 100, // Convert 0-1 to 0-100
+          troopIds: trechoData.troopIds,
+          party: new PartyConfig(trechoData.party.members),
+        });
+
+        validatedTrechos.push(trecho);
       } catch (error) {
         if (error instanceof z.ZodError) {
           throw new ValidationError(`Validation failed for trecho at index ${i}`, {

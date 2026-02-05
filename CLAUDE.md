@@ -97,3 +97,16 @@ pnpm --filter @coreto/core test      # Core tests only
 pnpm build             # Build core + electron
 pnpm --filter @coreto/electron build  # Build electron
 ```
+
+## Troubleshooting
+
+### Core Package Requires Rebuild After Changes
+
+**Symptom:** `SyntaxError: The requested module '@coreto/core' does not provide an export named 'X'`
+
+**Cause:** electron-vite bundles `@coreto/core` into `out/main/`. Source changes to core aren't reflected until rebuild.
+
+**Fix:** Rebuild core after modifying its public API:
+```bash
+pnpm --filter @coreto/core build
+```

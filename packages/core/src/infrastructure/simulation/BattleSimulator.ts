@@ -7,6 +7,7 @@ import { BattleTimeoutError } from '../../core/errors/BattleTimeoutError.js';
 import { ValidationError } from '../../core/errors/ValidationError.js';
 import { SyncWarpLoop } from '../runtime/simulation/SyncWarpLoop.js';
 import { HeadlessRuntimeBootstrapper } from '../runtime/HeadlessRuntimeBootstrapper.js';
+import seedrandom from 'seedrandom';
 
 /**
  * Type assertion for accessing global RMMZ objects
@@ -206,19 +207,23 @@ export class HeadlessBattleSimulator implements IBattleSimulator {
 
   /**
    * Seed the RNG for deterministic execution.
-   * Uses Math.seedrandom if available, otherwise warns that determinism is not guaranteed.
+   *
+   * Uses seedrandom library to create deterministic RNG.
+   * Seeds the global Math.random for consistent battle execution.
    *
    * @param seed - RNG seed value
    * @private
    */
   private seedRandom(seed: number): void {
+    // Create deterministic RNG using seedrandom library
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const mathWithSeed = Math as any;
-    if (typeof mathWithSeed.seedrandom === 'function') {
-      mathWithSeed.seedrandom(seed.toString());
-    } else {
-      console.warn('[BattleSimulator] Math.seedrandom not available. Determinism not guaranteed.');
-    }
+    const rng = seedrandom(seed.toString()) as any;
+
+    // Override Math.random with deterministic version
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (Math as any).random = () => rng();
+
+    console.log(`[BattleSimulator] Seeded RNG with seed: ${seed}`);
   }
 
   /**

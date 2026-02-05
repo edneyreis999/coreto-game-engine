@@ -98,6 +98,12 @@ export * from './infrastructure/adapters/data/index.js';
 export * from './infrastructure/adapters/filesystem/index.js';
 
 // =============================================================================
+// Configuration Schemas (specific exports to avoid conflicts)
+// =============================================================================
+
+export { ProjectConfigSchema } from './infrastructure/config/schemas.js';
+
+// =============================================================================
 // Runtime Infrastructure (for testing and headless execution)
 // =============================================================================
 
