@@ -20,5 +20,5 @@
     "allowSyntheticDefaultImports": true,
     "composite": true
   },
-  "include": ["src/renderer/**/*"]
+  "include": ["src/renderer/**/*", "src/renderer/src/types/**/*.d.ts"]
 }
