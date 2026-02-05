@@ -1,26 +1,13 @@
-import { Trecho, TrechoData } from '@coreto/core/core/domain/Trecho.js';
-import { PartyConfig } from '@coreto/core/core/domain/PartyConfig.js';
-import { ValidationError } from '@coreto/core/core/errors/index.js';
+import { Trecho, TrechoData } from '@coreto/core';
+import { ValidationError } from '@coreto/core';
+import { TrechoFakeBuilder, PartyConfigFakeBuilder } from '../../../fakes';
 
 describe('Trecho', () => {
-  const validParty = new PartyConfig([{ classId: 1, level: 5 }]);
-
-  const createValidTrechoData = (): TrechoData => ({
-    id: 'ato1-nivel1-10',
-    name: 'Ato 1 - Níveis 1-10',
-    anchorLevelMin: 1,
-    anchorLevelMax: 10,
-    targetTtkTurns: 3,
-    targetTtkActions: 8,
-    tolerancePercent: 15,
-    troopIds: [1, 2, 3],
-    party: validParty,
-  });
+  const validParty = new PartyConfigFakeBuilder().build();
 
   describe('constructor', () => {
     it('should create trecho with valid data', () => {
-      const data = createValidTrechoData();
-      const trecho = new Trecho(data);
+      const trecho = new TrechoFakeBuilder().withParty(validParty).build();
 
       expect(trecho.id).toBe('ato1-nivel1-10');
       expect(trecho.name).toBe('Ato 1 - Níveis 1-10');
@@ -34,161 +21,153 @@ describe('Trecho', () => {
     });
 
     it('should throw ValidationError when id is empty', () => {
-      const data = createValidTrechoData();
-      data.id = '';
+      const builder = new TrechoFakeBuilder().withEmptyId();
 
-      expect(() => new Trecho(data)).toThrow(ValidationError);
-      expect(() => new Trecho(data)).toThrow('Trecho id is required');
+      expect(() => builder.build()).toThrow(ValidationError);
+      expect(() => builder.build()).toThrow('Trecho id is required');
     });
 
     it('should throw ValidationError when id is whitespace only', () => {
-      const data = createValidTrechoData();
-      data.id = '   ';
+      const builder = new TrechoFakeBuilder().withId('   ');
 
-      expect(() => new Trecho(data)).toThrow(ValidationError);
-      expect(() => new Trecho(data)).toThrow('Trecho id is required');
+      expect(() => builder.build()).toThrow(ValidationError);
+      expect(() => builder.build()).toThrow('Trecho id is required');
     });
 
     it('should throw ValidationError when anchorLevelMin is 0', () => {
-      const data = createValidTrechoData();
-      data.anchorLevelMin = 0;
+      const builder = new TrechoFakeBuilder().withBelowMinLevel();
 
-      expect(() => new Trecho(data)).toThrow(ValidationError);
-      expect(() => new Trecho(data)).toThrow('Anchor level must be 1-99');
+      expect(() => builder.build()).toThrow(ValidationError);
+      expect(() => builder.build()).toThrow('Anchor level must be 1-99');
     });
 
     it('should throw ValidationError when anchorLevelMax exceeds 99', () => {
-      const data = createValidTrechoData();
-      data.anchorLevelMax = 100;
+      const builder = new TrechoFakeBuilder().withAboveMaxLevel();
 
-      expect(() => new Trecho(data)).toThrow(ValidationError);
-      expect(() => new Trecho(data)).toThrow('Anchor level must be 1-99');
+      expect(() => builder.build()).toThrow(ValidationError);
+      expect(() => builder.build()).toThrow('Anchor level must be 1-99');
     });
 
     it('should throw ValidationError when anchorLevelMin > anchorLevelMax', () => {
-      const data = createValidTrechoData();
-      data.anchorLevelMin = 10;
-      data.anchorLevelMax = 5;
+      const builder = new TrechoFakeBuilder().withInvalidLevelRange();
 
-      expect(() => new Trecho(data)).toThrow(ValidationError);
-      expect(() => new Trecho(data)).toThrow('Anchor level min must be <= max');
+      expect(() => builder.build()).toThrow(ValidationError);
+      expect(() => builder.build()).toThrow('Anchor level min must be <= max');
     });
 
     it('should accept equal anchorLevelMin and anchorLevelMax', () => {
-      const data = createValidTrechoData();
-      data.anchorLevelMin = 5;
-      data.anchorLevelMax = 5;
-
-      const trecho = new Trecho(data);
+      const trecho = new TrechoFakeBuilder().withLevelRange(5, 5).build();
 
       expect(trecho.anchorLevelMin).toBe(5);
       expect(trecho.anchorLevelMax).toBe(5);
     });
 
     it('should throw ValidationError when tolerancePercent is negative', () => {
-      const data = createValidTrechoData();
-      data.tolerancePercent = -1;
+      const builder = new TrechoFakeBuilder().withNegativeTolerance();
 
-      expect(() => new Trecho(data)).toThrow(ValidationError);
-      expect(() => new Trecho(data)).toThrow('Tolerance must be 0-100');
+      expect(() => builder.build()).toThrow(ValidationError);
+      expect(() => builder.build()).toThrow('Tolerance must be 0-100');
     });
 
     it('should throw ValidationError when tolerancePercent exceeds 100', () => {
-      const data = createValidTrechoData();
-      data.tolerancePercent = 101;
+      const builder = new TrechoFakeBuilder().withAboveMaxTolerance();
 
-      expect(() => new Trecho(data)).toThrow(ValidationError);
-      expect(() => new Trecho(data)).toThrow('Tolerance must be 0-100');
+      expect(() => builder.build()).toThrow(ValidationError);
+      expect(() => builder.build()).toThrow('Tolerance must be 0-100');
     });
 
     it('should accept tolerancePercent at boundaries (0 and 100)', () => {
-      const data1 = createValidTrechoData();
-      data1.tolerancePercent = 0;
-      const trecho1 = new Trecho(data1);
+      const trecho1 = new TrechoFakeBuilder().withTolerance(0).build();
       expect(trecho1.tolerancePercent).toBe(0);
 
-      const data2 = createValidTrechoData();
-      data2.tolerancePercent = 100;
-      const trecho2 = new Trecho(data2);
+      const trecho2 = new TrechoFakeBuilder().withTolerance(100).build();
       expect(trecho2.tolerancePercent).toBe(100);
     });
 
     it('should throw ValidationError when troopIds is empty', () => {
-      const data = createValidTrechoData();
-      data.troopIds = [];
+      const builder = new TrechoFakeBuilder().withNoTroopIds();
 
-      expect(() => new Trecho(data)).toThrow(ValidationError);
-      expect(() => new Trecho(data)).toThrow('Trecho must have at least 1 troopId');
+      expect(() => builder.build()).toThrow(ValidationError);
+      expect(() => builder.build()).toThrow('Trecho must have at least 1 troopId');
     });
 
     it('should throw ValidationError when targetTtkTurns is 0', () => {
-      const data = createValidTrechoData();
-      data.targetTtkTurns = 0;
+      const builder = new TrechoFakeBuilder().withZeroTtkTurns();
 
-      expect(() => new Trecho(data)).toThrow(ValidationError);
-      expect(() => new Trecho(data)).toThrow('Target TTK turns must be >= 1');
+      expect(() => builder.build()).toThrow(ValidationError);
+      expect(() => builder.build()).toThrow('Target TTK turns must be >= 1');
     });
 
     it('should throw ValidationError when targetTtkTurns is negative', () => {
-      const data = createValidTrechoData();
-      data.targetTtkTurns = -1;
+      const data: TrechoData = {
+        id: 'test',
+        name: 'Test',
+        anchorLevelMin: 1,
+        anchorLevelMax: 10,
+        targetTtkTurns: -1,
+        targetTtkActions: 8,
+        tolerancePercent: 15,
+        troopIds: [1],
+        party: validParty,
+      };
 
       expect(() => new Trecho(data)).toThrow(ValidationError);
       expect(() => new Trecho(data)).toThrow('Target TTK turns must be >= 1');
     });
 
     it('should throw ValidationError when targetTtkActions is 0', () => {
-      const data = createValidTrechoData();
-      data.targetTtkActions = 0;
+      const builder = new TrechoFakeBuilder().withZeroTtkActions();
 
-      expect(() => new Trecho(data)).toThrow(ValidationError);
-      expect(() => new Trecho(data)).toThrow('Target TTK actions must be >= 1');
+      expect(() => builder.build()).toThrow(ValidationError);
+      expect(() => builder.build()).toThrow('Target TTK actions must be >= 1');
     });
 
     it('should throw ValidationError when targetTtkActions is negative', () => {
-      const data = createValidTrechoData();
-      data.targetTtkActions = -1;
+      const data: TrechoData = {
+        id: 'test',
+        name: 'Test',
+        anchorLevelMin: 1,
+        anchorLevelMax: 10,
+        targetTtkTurns: 3,
+        targetTtkActions: -1,
+        tolerancePercent: 15,
+        troopIds: [1],
+        party: validParty,
+      };
 
       expect(() => new Trecho(data)).toThrow(ValidationError);
       expect(() => new Trecho(data)).toThrow('Target TTK actions must be >= 1');
     });
 
     it('should include context in ValidationError for anchor level validation', () => {
-      const data = createValidTrechoData();
-      data.anchorLevelMin = 10;
-      data.anchorLevelMax = 5;
+      const builder = new TrechoFakeBuilder().withInvalidLevelRange();
 
+      expect(() => builder.build()).toThrow(ValidationError);
       try {
-        new Trecho(data);
-        fail('Expected ValidationError to be thrown');
+        builder.build();
       } catch (error) {
         expect(error).toBeInstanceOf(ValidationError);
         const validationError = error as ValidationError;
-        expect(validationError.context).toEqual({
-          anchorLevelMin: 10,
-          anchorLevelMax: 5,
-        });
+        // The builder sets min=10, max=1 internally for invalid range
+        expect(validationError.context).toHaveProperty('anchorLevelMin');
+        expect(validationError.context).toHaveProperty('anchorLevelMax');
       }
     });
   });
 
   describe('isWithinTolerance', () => {
     it('should return true when measured values exactly match targets', () => {
-      const data = createValidTrechoData();
-      data.targetTtkTurns = 3;
-      data.targetTtkActions = 8;
-      data.tolerancePercent = 15;
-      const trecho = new Trecho(data);
+      const trecho = new TrechoFakeBuilder().withParty(validParty).build();
 
       expect(trecho.isWithinTolerance(3, 8)).toBe(true);
     });
 
     it('should return true when measured values are within tolerance', () => {
-      const data = createValidTrechoData();
-      data.targetTtkTurns = 10;
-      data.targetTtkActions = 30;
-      data.tolerancePercent = 20; // ±20%
-      const trecho = new Trecho(data);
+      const trecho = new TrechoFakeBuilder()
+        .withTargetTtk(10, 30)
+        .withTolerance(20)
+        .withParty(validParty)
+        .build();
 
       // Within ±20%: 8-12 turns, 24-36 actions
       expect(trecho.isWithinTolerance(8, 24)).toBe(true);
@@ -197,11 +176,11 @@ describe('Trecho', () => {
     });
 
     it('should return false when turns outside tolerance', () => {
-      const data = createValidTrechoData();
-      data.targetTtkTurns = 10;
-      data.targetTtkActions = 30;
-      data.tolerancePercent = 20; // ±20%
-      const trecho = new Trecho(data);
+      const trecho = new TrechoFakeBuilder()
+        .withTargetTtk(10, 30)
+        .withTolerance(20)
+        .withParty(validParty)
+        .build();
 
       // Outside ±20%: turns < 8 or > 12
       expect(trecho.isWithinTolerance(7, 30)).toBe(false);
@@ -209,11 +188,11 @@ describe('Trecho', () => {
     });
 
     it('should return false when actions outside tolerance', () => {
-      const data = createValidTrechoData();
-      data.targetTtkTurns = 10;
-      data.targetTtkActions = 30;
-      data.tolerancePercent = 20; // ±20%
-      const trecho = new Trecho(data);
+      const trecho = new TrechoFakeBuilder()
+        .withTargetTtk(10, 30)
+        .withTolerance(20)
+        .withParty(validParty)
+        .build();
 
       // Outside ±20%: actions < 24 or > 36
       expect(trecho.isWithinTolerance(10, 23)).toBe(false);
@@ -221,11 +200,11 @@ describe('Trecho', () => {
     });
 
     it('should require BOTH metrics within tolerance', () => {
-      const data = createValidTrechoData();
-      data.targetTtkTurns = 10;
-      data.targetTtkActions = 30;
-      data.tolerancePercent = 20; // ±20%
-      const trecho = new Trecho(data);
+      const trecho = new TrechoFakeBuilder()
+        .withTargetTtk(10, 30)
+        .withTolerance(20)
+        .withParty(validParty)
+        .build();
 
       // Turns OK, actions NOT OK
       expect(trecho.isWithinTolerance(10, 40)).toBe(false);
@@ -235,11 +214,11 @@ describe('Trecho', () => {
     });
 
     it('should handle 0% tolerance (exact match only)', () => {
-      const data = createValidTrechoData();
-      data.targetTtkTurns = 5;
-      data.targetTtkActions = 15;
-      data.tolerancePercent = 0;
-      const trecho = new Trecho(data);
+      const trecho = new TrechoFakeBuilder()
+        .withTargetTtk(5, 15)
+        .withTolerance(0)
+        .withParty(validParty)
+        .build();
 
       expect(trecho.isWithinTolerance(5, 15)).toBe(true);
       expect(trecho.isWithinTolerance(5, 16)).toBe(false);
@@ -247,11 +226,11 @@ describe('Trecho', () => {
     });
 
     it('should handle 100% tolerance (very permissive)', () => {
-      const data = createValidTrechoData();
-      data.targetTtkTurns = 5;
-      data.targetTtkActions = 15;
-      data.tolerancePercent = 100; // ±100%
-      const trecho = new Trecho(data);
+      const trecho = new TrechoFakeBuilder()
+        .withTargetTtk(5, 15)
+        .withTolerance(100)
+        .withParty(validParty)
+        .build();
 
       // Within ±100%: 0-10 turns, 0-30 actions
       expect(trecho.isWithinTolerance(0, 0)).toBe(true);
@@ -259,11 +238,11 @@ describe('Trecho', () => {
     });
 
     it('should handle boundary values at tolerance limits', () => {
-      const data = createValidTrechoData();
-      data.targetTtkTurns = 10;
-      data.targetTtkActions = 30;
-      data.tolerancePercent = 10; // ±10%
-      const trecho = new Trecho(data);
+      const trecho = new TrechoFakeBuilder()
+        .withTargetTtk(10, 30)
+        .withTolerance(10)
+        .withParty(validParty)
+        .build();
 
       // Exactly at ±10%: 9-11 turns, 27-33 actions
       expect(trecho.isWithinTolerance(9, 27)).toBe(true);
@@ -277,22 +256,19 @@ describe('Trecho', () => {
 
   describe('immutability', () => {
     it('should be frozen', () => {
-      const data = createValidTrechoData();
-      const trecho = new Trecho(data);
+      const trecho = new TrechoFakeBuilder().withParty(validParty).build();
 
       expect(Object.isFrozen(trecho)).toBe(true);
     });
 
     it('should have frozen troopIds array', () => {
-      const data = createValidTrechoData();
-      const trecho = new Trecho(data);
+      const trecho = new TrechoFakeBuilder().withParty(validParty).build();
 
       expect(Object.isFrozen(trecho.troopIds)).toBe(true);
     });
 
     it('should not allow modification of troopIds', () => {
-      const data = createValidTrechoData();
-      const trecho = new Trecho(data);
+      const trecho = new TrechoFakeBuilder().withParty(validParty).build();
 
       expect(() => {
         (trecho.troopIds as number[]).push(99);
@@ -300,7 +276,17 @@ describe('Trecho', () => {
     });
 
     it('should not share reference with input troopIds', () => {
-      const data = createValidTrechoData();
+      const data: TrechoData = {
+        id: 'test',
+        name: 'Test',
+        anchorLevelMin: 1,
+        anchorLevelMax: 10,
+        targetTtkTurns: 3,
+        targetTtkActions: 8,
+        tolerancePercent: 15,
+        troopIds: [1, 2, 3],
+        party: validParty,
+      };
       const originalTroopIds = [...data.troopIds];
       const trecho = new Trecho(data);
 

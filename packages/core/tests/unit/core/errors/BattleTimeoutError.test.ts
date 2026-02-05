@@ -1,5 +1,5 @@
-import { BattleTimeoutError } from '@coreto/core/core/errors/BattleTimeoutError';
-import { DomainError } from '@coreto/core/core/errors/DomainError';
+import { BattleTimeoutError } from '@coreto/core';
+import { DomainError } from '@coreto/core';
 
 describe('BattleTimeoutError', () => {
   describe('constructor', () => {

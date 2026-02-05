@@ -5,9 +5,9 @@ import {
   ReportSummary,
   TrechoSummary,
   TrechoAggregates,
-} from '@coreto/core/core/domain/Report.js';
-import { BattleResult } from '@coreto/core/core/domain/BattleResult.js';
-import type { Warning } from '@coreto/core/core/ports/IReporter.js';
+  Warning,
+} from '@coreto/core';
+import { BattleResult } from '@coreto/core';
 
 describe('Report', () => {
   const createValidMetadata = (): ReportMetadata => ({
@@ -54,12 +54,13 @@ describe('Report', () => {
     passed,
   });
 
-  const createValidWarning = (): Warning => ({
-    type: 'ttk_out_of_tolerance',
-    severity: 'warning',
-    message: 'TTK outside tolerance window',
-    context: { troopId: 1 },
-  });
+  const createValidWarning = (): Warning =>
+    new Warning({
+      type: 'ttk_out_of_tolerance',
+      severity: 'warning',
+      message: 'TTK outside tolerance window',
+      context: { troopId: 1 },
+    });
 
   describe('constructor', () => {
     it('should create report with valid data', () => {
@@ -135,18 +136,18 @@ describe('Report', () => {
 
       it('should create report with multiple warnings', () => {
         const warnings: Warning[] = [
-          {
+          new Warning({
             type: 'ttk_out_of_tolerance',
             severity: 'warning',
             message: 'TTK outside tolerance',
             context: { troopId: 1 },
-          },
-          {
+          }),
+          new Warning({
             type: 'battle_timeout',
             severity: 'critical',
             message: 'Battle timed out',
             context: { troopId: 2 },
-          },
+          }),
         ];
 
         const data: ReportData = {

@@ -1,4 +1,4 @@
-import { DomainError, ErrorSeverity } from '@coreto/core/core/errors/DomainError';
+import { DomainError, ErrorSeverity } from '@coreto/core';
 
 // Concrete implementation for testing the abstract class
 export class TestDomainError extends DomainError {

@@ -1,5 +1,5 @@
-import { WarningCollector } from '@coreto/core/core/domain/services/WarningCollector';
-import { Warning, type WarningData } from '@coreto/core/core/domain/Warning';
+import { WarningCollector } from '@coreto/core';
+import { Warning, type WarningData } from '@coreto/core';
 
 describe('WarningCollector', () => {
   let collector: WarningCollector;

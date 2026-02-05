@@ -1,62 +1,76 @@
-import { AnchorLevelRange } from '@coreto/core/core/domain/AnchorLevelRange';
-import { ValidationError } from '@coreto/core/core/errors/ValidationError';
+import { ValidationError } from '@coreto/core';
+import { AnchorLevelRangeFakeBuilder } from '../../../fakes';
 
 describe('AnchorLevelRange', () => {
   describe('constructor', () => {
     it('should create valid range with min and max', () => {
-      const range = new AnchorLevelRange(5, 10);
+      const range = new AnchorLevelRangeFakeBuilder().withRange(5, 10).build();
 
       expect(range.min).toBe(5);
       expect(range.max).toBe(10);
     });
 
     it('should accept same min and max', () => {
-      const range = new AnchorLevelRange(5, 5);
+      const range = new AnchorLevelRangeFakeBuilder().withSingleLevel(5).build();
 
       expect(range.min).toBe(5);
       expect(range.max).toBe(5);
     });
 
     it('should accept level 1 as min', () => {
-      const range = new AnchorLevelRange(1, 10);
+      const range = new AnchorLevelRangeFakeBuilder().withRange(1, 10).build();
 
       expect(range.min).toBe(1);
     });
 
     it('should accept level 99 as max', () => {
-      const range = new AnchorLevelRange(1, 99);
+      const range = new AnchorLevelRangeFakeBuilder().withRange(1, 99).build();
 
       expect(range.max).toBe(99);
     });
 
     it('should throw ValidationError if min < 1', () => {
-      expect(() => new AnchorLevelRange(0, 10)).toThrow(ValidationError);
-      expect(() => new AnchorLevelRange(0, 10)).toThrow('Level min must be 1-99');
+      const builder = new AnchorLevelRangeFakeBuilder().withInvalidMin();
+
+      expect(() => builder.build()).toThrow(ValidationError);
+      expect(() => builder.build()).toThrow('Level min must be 1-99');
     });
 
     it('should throw ValidationError if min > 99', () => {
-      expect(() => new AnchorLevelRange(100, 100)).toThrow(ValidationError);
-      expect(() => new AnchorLevelRange(100, 100)).toThrow('Level min must be 1-99');
+      const builder = new AnchorLevelRangeFakeBuilder().withMin(100);
+
+      expect(() => builder.build()).toThrow(ValidationError);
+      expect(() => builder.build()).toThrow('Level min must be 1-99');
     });
 
     it('should throw ValidationError if max < 1', () => {
-      expect(() => new AnchorLevelRange(1, 0)).toThrow(ValidationError);
-      expect(() => new AnchorLevelRange(1, 0)).toThrow('Level max must be 1-99');
+      const builder = new AnchorLevelRangeFakeBuilder().withRange(1, 0);
+
+      expect(() => builder.build()).toThrow(ValidationError);
+      expect(() => builder.build()).toThrow('Level max must be 1-99');
     });
 
     it('should throw ValidationError if max > 99', () => {
-      expect(() => new AnchorLevelRange(1, 100)).toThrow(ValidationError);
-      expect(() => new AnchorLevelRange(1, 100)).toThrow('Level max must be 1-99');
+      const builder = new AnchorLevelRangeFakeBuilder().withInvalidMax();
+
+      expect(() => builder.build()).toThrow(ValidationError);
+      expect(() => builder.build()).toThrow('Level max must be 1-99');
     });
 
     it('should throw ValidationError if min > max', () => {
-      expect(() => new AnchorLevelRange(10, 5)).toThrow(ValidationError);
-      expect(() => new AnchorLevelRange(10, 5)).toThrow('Level min must be <= max');
+      const builder = new AnchorLevelRangeFakeBuilder().withInvalidRange();
+
+      expect(() => builder.build()).toThrow(ValidationError);
+      expect(() => builder.build()).toThrow('Level min must be <= max');
     });
 
     it('should include context in ValidationError', () => {
+      const builder = new AnchorLevelRangeFakeBuilder().withInvalidRange();
+
+      expect(() => builder.build()).toThrow(ValidationError);
+
       try {
-        new AnchorLevelRange(10, 5);
+        builder.build();
       } catch (error) {
         expect(error).toBeInstanceOf(ValidationError);
         const validationError = error as ValidationError;
@@ -68,13 +82,13 @@ describe('AnchorLevelRange', () => {
 
   describe('immutability', () => {
     it('should be frozen', () => {
-      const range = new AnchorLevelRange(5, 10);
+      const range = new AnchorLevelRangeFakeBuilder().build();
 
       expect(Object.isFrozen(range)).toBe(true);
     });
 
     it('should not allow modification of min', () => {
-      const range = new AnchorLevelRange(5, 10);
+      const range = new AnchorLevelRangeFakeBuilder().build();
 
       expect(() => {
         (range as any).min = 20;
@@ -82,7 +96,7 @@ describe('AnchorLevelRange', () => {
     });
 
     it('should not allow modification of max', () => {
-      const range = new AnchorLevelRange(5, 10);
+      const range = new AnchorLevelRangeFakeBuilder().build();
 
       expect(() => {
         (range as any).max = 20;
@@ -92,43 +106,43 @@ describe('AnchorLevelRange', () => {
 
   describe('contains', () => {
     it('should return true if level is within range', () => {
-      const range = new AnchorLevelRange(5, 10);
+      const range = new AnchorLevelRangeFakeBuilder().build();
 
       expect(range.contains(7)).toBe(true);
     });
 
     it('should return true for min level', () => {
-      const range = new AnchorLevelRange(5, 10);
+      const range = new AnchorLevelRangeFakeBuilder().build();
 
       expect(range.contains(5)).toBe(true);
     });
 
     it('should return true for max level', () => {
-      const range = new AnchorLevelRange(5, 10);
+      const range = new AnchorLevelRangeFakeBuilder().build();
 
       expect(range.contains(10)).toBe(true);
     });
 
     it('should return false if level is below min', () => {
-      const range = new AnchorLevelRange(5, 10);
+      const range = new AnchorLevelRangeFakeBuilder().build();
 
       expect(range.contains(4)).toBe(false);
     });
 
     it('should return false if level is above max', () => {
-      const range = new AnchorLevelRange(5, 10);
+      const range = new AnchorLevelRangeFakeBuilder().build();
 
       expect(range.contains(11)).toBe(false);
     });
 
     it('should return true for single-level range', () => {
-      const range = new AnchorLevelRange(5, 5);
+      const range = new AnchorLevelRangeFakeBuilder().withSingleLevel().build();
 
       expect(range.contains(5)).toBe(true);
     });
 
     it('should return false for level outside single-level range', () => {
-      const range = new AnchorLevelRange(5, 5);
+      const range = new AnchorLevelRangeFakeBuilder().withSingleLevel().build();
 
       expect(range.contains(4)).toBe(false);
       expect(range.contains(6)).toBe(false);
@@ -137,31 +151,31 @@ describe('AnchorLevelRange', () => {
 
   describe('midpoint', () => {
     it('should calculate midpoint for even range', () => {
-      const range = new AnchorLevelRange(5, 10);
+      const range = new AnchorLevelRangeFakeBuilder().build();
 
       expect(range.midpoint).toBe(7);
     });
 
     it('should calculate midpoint for odd range', () => {
-      const range = new AnchorLevelRange(5, 11);
+      const range = new AnchorLevelRangeFakeBuilder().withRange(5, 11).build();
 
       expect(range.midpoint).toBe(8);
     });
 
     it('should floor midpoint for fractional result', () => {
-      const range = new AnchorLevelRange(5, 9);
+      const range = new AnchorLevelRangeFakeBuilder().withRange(5, 9).build();
 
       expect(range.midpoint).toBe(7); // (5 + 9) / 2 = 7
     });
 
     it('should return same value for single-level range', () => {
-      const range = new AnchorLevelRange(5, 5);
+      const range = new AnchorLevelRangeFakeBuilder().withSingleLevel().build();
 
       expect(range.midpoint).toBe(5);
     });
 
     it('should calculate midpoint for full range', () => {
-      const range = new AnchorLevelRange(1, 99);
+      const range = new AnchorLevelRangeFakeBuilder().withFullRange().build();
 
       expect(range.midpoint).toBe(50);
     });
@@ -169,35 +183,35 @@ describe('AnchorLevelRange', () => {
 
   describe('equals', () => {
     it('should return true for identical ranges', () => {
-      const range1 = new AnchorLevelRange(5, 10);
-      const range2 = new AnchorLevelRange(5, 10);
+      const range1 = new AnchorLevelRangeFakeBuilder().build();
+      const range2 = new AnchorLevelRangeFakeBuilder().build();
 
       expect(range1.equals(range2)).toBe(true);
     });
 
     it('should return false for different min', () => {
-      const range1 = new AnchorLevelRange(5, 10);
-      const range2 = new AnchorLevelRange(6, 10);
+      const range1 = new AnchorLevelRangeFakeBuilder().build();
+      const range2 = new AnchorLevelRangeFakeBuilder().withMin(6).build();
 
       expect(range1.equals(range2)).toBe(false);
     });
 
     it('should return false for different max', () => {
-      const range1 = new AnchorLevelRange(5, 10);
-      const range2 = new AnchorLevelRange(5, 11);
+      const range1 = new AnchorLevelRangeFakeBuilder().build();
+      const range2 = new AnchorLevelRangeFakeBuilder().withMax(11).build();
 
       expect(range1.equals(range2)).toBe(false);
     });
 
     it('should return false for completely different ranges', () => {
-      const range1 = new AnchorLevelRange(5, 10);
-      const range2 = new AnchorLevelRange(15, 20);
+      const range1 = new AnchorLevelRangeFakeBuilder().build();
+      const range2 = new AnchorLevelRangeFakeBuilder().withRange(15, 20).build();
 
       expect(range1.equals(range2)).toBe(false);
     });
 
     it('should support reflexive equality', () => {
-      const range = new AnchorLevelRange(5, 10);
+      const range = new AnchorLevelRangeFakeBuilder().build();
 
       expect(range.equals(range)).toBe(true);
     });
@@ -205,19 +219,19 @@ describe('AnchorLevelRange', () => {
 
   describe('toString', () => {
     it('should format range as "Lv{min}-{max}"', () => {
-      const range = new AnchorLevelRange(5, 10);
+      const range = new AnchorLevelRangeFakeBuilder().build();
 
       expect(range.toString()).toBe('Lv5-10');
     });
 
     it('should format single-level range', () => {
-      const range = new AnchorLevelRange(5, 5);
+      const range = new AnchorLevelRangeFakeBuilder().withSingleLevel().build();
 
       expect(range.toString()).toBe('Lv5-5');
     });
 
     it('should format full range', () => {
-      const range = new AnchorLevelRange(1, 99);
+      const range = new AnchorLevelRangeFakeBuilder().withFullRange().build();
 
       expect(range.toString()).toBe('Lv1-99');
     });
