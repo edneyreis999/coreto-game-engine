@@ -1,7 +1,5 @@
-import { TtkMeasurer } from '@coreto/core/infrastructure/simulation/TtkMeasurer.js';
-import { TtkTarget } from '@coreto/core/core/domain/TtkTarget.js';
-import { TtkMetrics } from '@coreto/core/core/domain/TtkMetrics.js';
-import { ValidationError } from '@coreto/core/core/errors/ValidationError.js';
+import { TtkMeasurer } from '@coreto/core';
+import { TtkTarget, TtkMetrics, ValidationError } from '@coreto/core';
 
 /**
  * Type assertion for accessing global scope

@@ -1,4 +1,4 @@
-import { SyncWarpLoop } from '@coreto/core/infrastructure/runtime/simulation/SyncWarpLoop.js';
+import { SyncWarpLoop } from '@coreto/core';
 
 describe('SyncWarpLoop', () => {
   beforeEach(() => {

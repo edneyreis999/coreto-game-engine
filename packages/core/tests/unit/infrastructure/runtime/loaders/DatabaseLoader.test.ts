@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as os from 'os';
 import * as fs from 'fs';
-import { DatabaseLoader } from '@coreto/core/infrastructure/runtime/loaders/DatabaseLoader.js';
+import { DatabaseLoader } from '@coreto/core';
 
 describe('DatabaseLoader', () => {
   let tmpProjectPath: string;

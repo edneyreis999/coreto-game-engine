@@ -15,10 +15,13 @@ import {
   DisplayObject,
   Container,
   Sprite,
-  Graphics,
   Rectangle,
   Point,
-} from '@coreto/core/infrastructure/runtime/shims/pixi_shim';
+} from '@coreto/core';
+
+// Import Graphics directly from the pixi_shim module
+// We import Graphics as PixiGraphics to avoid confusion with PIXI.Graphics
+import { Graphics as PixiGraphics } from '../../../../../src/infrastructure/runtime/shims/pixi_shim';
 
 describe('PIXI Shim', () => {
   describe('DisplayObject', () => {
@@ -219,7 +222,7 @@ describe('PIXI Shim', () => {
 
   describe('Graphics', () => {
     it('should support method chaining for drawing operations', () => {
-      const graphics = new (Graphics as any)();
+      const graphics = new (PixiGraphics as any)();
 
       const result = graphics.clear().beginFill(0xff0000).drawRect(0, 0, 100, 100).endFill();
 
@@ -227,7 +230,7 @@ describe('PIXI Shim', () => {
     });
 
     it('should inherit Container functionality', () => {
-      const graphics = new (Graphics as any)();
+      const graphics = new (PixiGraphics as any)();
       const child = new (DisplayObject as any)();
 
       graphics.addChild(child);
@@ -470,7 +473,7 @@ describe('PIXI Shim', () => {
       expect(PIXI.DisplayObject).toBe(DisplayObject);
       expect(PIXI.Container).toBe(Container);
       expect(PIXI.Sprite).toBe(Sprite);
-      expect(PIXI.Graphics).toBe(Graphics);
+      expect(PIXI.Graphics).toBe(PixiGraphics);
       expect(PIXI.Rectangle).toBe(Rectangle);
       expect(PIXI.Point).toBe(Point);
       expect(PIXI.TextStyle).toBeDefined();

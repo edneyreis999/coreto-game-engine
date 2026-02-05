@@ -16,7 +16,7 @@
 import * as path from 'path';
 import * as os from 'os';
 import * as fs from 'fs';
-import { ReadOnlyGuard } from '@coreto/core/infrastructure/security/ReadOnlyGuard.js';
+import { ReadOnlyGuard } from '@coreto/core';
 
 describe('ReadOnlyGuard', () => {
   let guard: ReadOnlyGuard;

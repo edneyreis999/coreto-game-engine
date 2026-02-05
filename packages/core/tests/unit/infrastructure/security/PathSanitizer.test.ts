@@ -7,8 +7,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { PathSanitizer } from '@coreto/core/infrastructure/security/PathSanitizer.js';
-import { ValidationError } from '@coreto/core/core/errors/index.js';
+import { PathSanitizer, ValidationError } from '@coreto/core';
 
 describe('PathSanitizer', () => {
   let tempDir: string;

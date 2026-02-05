@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as os from 'os';
 import * as fs from 'fs';
-import { ScriptLoader } from '@coreto/core/infrastructure/runtime/loaders/ScriptLoader.js';
+import { ScriptLoader } from '@coreto/core';
 
 function writeFile(filePath: string, content: string): void {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });

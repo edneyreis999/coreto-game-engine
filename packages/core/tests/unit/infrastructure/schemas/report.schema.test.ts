@@ -8,6 +8,7 @@
  */
 
 import {
+  ReportSchema,
   WarningTypeSchema,
   WarningSeveritySchema,
   WarningSchema,
@@ -19,18 +20,17 @@ import {
   TrechoReportSchema,
   ReportMetadataSchema,
   ReportSummarySchema,
-  ReportSchema,
-  type Warning,
-  type Actor,
-  type Action,
-  type Turn,
-  type BattleResult,
-  type TrechoAggregates,
-  type TrechoReport,
-  type ReportMetadata,
-  type ReportSummary,
-  type Report,
-} from '@coreto/core/infrastructure/schemas/report.schema';
+  type WarningDTO as Warning,
+  type ActorDTO as Actor,
+  type ActionDTO as Action,
+  type TurnDTO as Turn,
+  type BattleResultDTO as BattleResult,
+  type TrechoAggregatesDTO as TrechoAggregates,
+  type TrechoReportDTO as TrechoReport,
+  type ReportMetadataDTO as ReportMetadata,
+  type ReportSummaryDTO as ReportSummary,
+  type ReportDTO as Report,
+} from '@coreto/core';
 
 describe('Report Schema Validation', () => {
   describe('WarningTypeSchema', () => {

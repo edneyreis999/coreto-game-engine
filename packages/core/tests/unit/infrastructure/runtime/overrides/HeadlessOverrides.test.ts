@@ -1,4 +1,4 @@
-import { HeadlessOverrides } from '@coreto/core/infrastructure/runtime/overrides/HeadlessOverrides.js';
+import { HeadlessOverrides } from '@coreto/core';
 
 describe('HeadlessOverrides', () => {
   beforeEach(() => {

@@ -9,7 +9,7 @@
  * - Validação de seeds inválidos
  */
 
-import { DeterministicRNG } from '@coreto/core/infrastructure/simulation/DeterministicRNG';
+import { DeterministicRNG } from '@coreto/core';
 
 describe('DeterministicRNG', () => {
   // Store original Math.random for restoration

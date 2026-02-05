@@ -8,8 +8,7 @@
  * - Cleanup and error handling
  */
 
-import { HeadlessRuntimeBootstrapper } from '@coreto/core/infrastructure/runtime/HeadlessRuntimeBootstrapper';
-import { DeterministicRNG } from '@coreto/core/infrastructure/simulation/DeterministicRNG';
+import { HeadlessRuntimeBootstrapper, DeterministicRNG } from '@coreto/core';
 
 describe('HeadlessRuntimeBootstrapper', () => {
   describe('bootstrap process', () => {
