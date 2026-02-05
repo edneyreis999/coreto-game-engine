@@ -27,5 +27,4 @@ export default {
   },
   transformIgnorePatterns: ['node_modules'],
   moduleFileExtensions: ['ts', 'js', 'json', 'node'],
-  testTimeout: 10000,
 };
