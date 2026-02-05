@@ -13,7 +13,6 @@
  */
 
 import { ipcMain, IpcMainInvokeEvent } from 'electron';
-import type { ProjectConfig } from '../services/schemas.js';
 import {
   configService,
   ConfigNotFoundError,
@@ -134,10 +133,17 @@ function validateConfigPayload<T>(
 // ============================================================================
 
 /**
+ * Helper to convert tolerance percent to decimal (15% -> 0.15)
+ */
+function tolerancePercentToDecimal(percent: number): number {
+  return Math.max(0, Math.min(1, percent / 100));
+}
+
+/**
  * Handler: config:save
  *
  * Saves a project configuration to temp/project.config.json.
- * Ensures CLI compatibility and validates with Zod before saving.
+ * Transforms ConfigurationPanel format to Core package ProjectConfig format.
  */
 async function handleConfigSave(
   _event: IpcMainInvokeEvent,
@@ -152,8 +158,41 @@ async function handleConfigSave(
 
     const { projectPath, config } = validated;
 
-    // Save config using ConfigService
-    await configService.saveConfig(projectPath, config as ProjectConfig);
+    console.log('[config:save] Saving config:', {
+      projectPath,
+      trechosCount: config.trechos.length,
+    });
+
+    // Transform ConfigurationPanel format to Core ProjectConfig format
+    // Core schema uses: anchorLevelRange {min, max}, ttkTarget {turns, actions, tolerance}
+    const trechos = config.trechos.map(t => ({
+      id: t.id,
+      name: t.name,
+      anchorLevelRange: {
+        min: t.anchorLevelMin,
+        max: t.anchorLevelMax,
+      },
+      ttkTarget: {
+        turns: t.targetTtkTurns,
+        actions: t.targetTtkActions,
+        tolerance: tolerancePercentToDecimal(t.tolerancePercent),
+      },
+      troopIds: t.troopIds,
+      party: t.party,
+    }));
+
+    const projectConfig = {
+      projectPath,
+      reportOutputPath: 'temp/reports',
+      seed: config.globalSettings?.seed ?? 12345,
+      maxBattleTurns: config.globalSettings?.maxBattleTurns,
+      trechos,
+    };
+
+    console.log('[config:save] Project config to save:', JSON.stringify(projectConfig, null, 2));
+
+    // Save config using ConfigService with core schema
+    await configService.saveConfig(projectPath, projectConfig as any);
 
     return {
       success: true,

@@ -194,7 +194,7 @@ export const ExecutionPanel: FC<ExecutionPanelProps> = ({
     status,
     error,
     result,
-    startSimulation,
+    runSimulation,
     cancelSimulation,
     reset,
   } = useSimulationProgress();
@@ -208,29 +208,22 @@ export const ExecutionPanel: FC<ExecutionPanelProps> = ({
       return;
     }
 
-    try {
-      // For MVP, run the first trecho in the configuration
-      const firstTrecho = config.trechos[0];
+    // For MVP, run the first trecho in the configuration
+    const firstTrecho = config.trechos[0];
 
-      if (!firstTrecho) {
-        return;
-      }
-
-      const simulationResult = await startSimulation({
-        projectPath: config.projectPath,
-        configPath: config.configPath,
-        trechoId: firstTrecho.id,
-        seed: config.globalSettings.seed,
-        maxTurns: config.globalSettings.maxBattleTurns,
-      });
-
-      // Notify parent component of completion
-      onSimulationComplete?.(simulationResult);
-    } catch (err) {
-      // Error is already handled by the hook
-      console.error('Simulation failed:', err);
+    if (!firstTrecho) {
+      return;
     }
-  }, [config, startSimulation, onSimulationComplete]);
+
+    // Run simulation - result is returned directly (not via event)
+    await runSimulation({
+      projectPath: config.projectPath,
+      configPath: config.configPath ?? '',
+      trechoId: firstTrecho.id,
+      seed: config.globalSettings.seed,
+      maxTurns: config.globalSettings.maxBattleTurns,
+    });
+  }, [config, runSimulation]);
 
   /**
    * Handles Cancel button click.
@@ -240,15 +233,6 @@ export const ExecutionPanel: FC<ExecutionPanelProps> = ({
     await cancelSimulation();
     reset();
   }, [cancelSimulation, reset]);
-
-  /**
-   * Notifies parent component when simulation completes.
-   */
-  useEffect(() => {
-    if (status === 'completed' && result && onSimulationComplete) {
-      onSimulationComplete(result);
-    }
-  }, [status, result, onSimulationComplete]);
 
   // ========================================================================
   // Render Helpers
@@ -475,7 +459,7 @@ export const ExecutionPanel: FC<ExecutionPanelProps> = ({
               </p>
               {error && (
                 <p className="text-xs text-red-700 dark:text-red-300">
-                  {error}
+                  {error.description || error.title}
                 </p>
               )}
             </div>

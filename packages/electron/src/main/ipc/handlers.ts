@@ -391,7 +391,11 @@ async function handleSimulationRun(
 
     try {
       // Load RPG Maker MZ data
-      await dataLoader.loadDatabase(projectPath);
+      const database = await dataLoader.loadDatabase(projectPath);
+
+      // Initialize simulator with loaded database
+      await simulator.initialize(database, projectPath);
+      logger.info('[IPC] Simulator initialized successfully');
 
       // Load config if provided
       let configTrechos: Trecho[] = [];
@@ -466,6 +470,8 @@ async function handleSimulationRun(
 
       updateProgress({ current: 1, total: trecho.troopIds.length });
 
+      // Use Trecho instance to check tolerance
+      // Trecho class has flat properties: targetTtkTurns, targetTtkActions, tolerancePercent
       const passed = trecho.isWithinTolerance(result.ttkTurns, result.ttkActions);
 
       return {

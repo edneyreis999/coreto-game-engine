@@ -27,6 +27,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "test:e2e": "jest --selectProjects electron-e2e --no-coverage",
+    "test:electron:e2e": "pnpm --filter @coreto/electron test:e2e",
     "clean": "pnpm --filter \"./packages/**\" clean && rm -rf node_modules pnpm-lock.yaml",
     "validate": "tsx scripts/validate-project.mts"
   },

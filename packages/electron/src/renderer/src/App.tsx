@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import { ProjectSelectionPanel, ConfigurationPanel, ExecutionPanel, ResultsPanel } from '@/components'
-import type { SimulationConfigData } from '@/components'
+import type { SimulationConfigData } from '@/components/ExecutionPanel'
+import type { ProjectConfigFormData } from '@/components/ConfigurationPanel'
 
 /**
  * Root App Component
@@ -18,19 +19,57 @@ export default function App(): React.ReactElement {
   const [simulationConfig, setSimulationConfig] = useState<SimulationConfigData | null>(null)
   const [simulationCompleted, setSimulationCompleted] = useState<boolean>(false)
 
-  const handleProjectSelected = (projectPath: string): void => {
+  const handleProjectSelected = useCallback((projectPath: string): void => {
     console.log('Project selected:', projectPath)
-    setSelectedProjectPath(projectPath)
-    // Reset simulation config when project changes
-    setSimulationConfig(null)
-    setSimulationCompleted(false)
-  }
+    // Only reset if project actually changed
+    if (projectPath !== selectedProjectPath) {
+      setSelectedProjectPath(projectPath)
+      // Reset simulation config when project changes
+      setSimulationConfig(null)
+      setSimulationCompleted(false)
+    }
+  }, [selectedProjectPath])
 
-  const handleConfigSaved = (config: SimulationConfigData): void => {
-    console.log('Configuration saved:', config)
-    // Store config for Execution Panel
-    setSimulationConfig(config)
-  }
+  const handleConfigSaved = useCallback(async (config: ProjectConfigFormData): Promise<void> => {
+    console.log('[App] Saving configuration:', config)
+
+    try {
+      // Call IPC to save config with the full trecho data
+      const response = await window.coreto.saveConfig(config.projectPath, {
+        version: '1.0',
+        trechos: config.trechos,
+        globalSettings: config.globalSettings,
+        metadata: {
+          projectName: config.projectPath.split('/').filter(Boolean).pop(),
+          lastModified: Date.now(),
+        },
+      })
+
+      console.log('[App] IPC response:', response)
+
+      if (response.success) {
+        console.log('[App] Configuration saved successfully:', response.data.configPath)
+        // Convert to SimulationConfigData for Execution Panel
+        const simConfig: SimulationConfigData = {
+          projectPath: config.projectPath,
+          configPath: response.data.configPath,
+          trechos: config.trechos.map(t => ({
+            id: t.id,
+            name: t.name,
+            troopIds: t.troopIds,
+          })),
+          globalSettings: config.globalSettings,
+        }
+        console.log('[App] Setting simulation config:', simConfig)
+        setSimulationConfig(simConfig)
+        console.log('[App] simulationConfig state updated')
+      } else {
+        console.error('[App] Failed to save configuration:', response.error)
+      }
+    } catch (error) {
+      console.error('[App] Error saving configuration:', error)
+    }
+  }, [])
 
   const handleSimulationComplete = (result: unknown): void => {
     console.log('Simulation complete:', result)

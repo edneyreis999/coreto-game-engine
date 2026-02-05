@@ -23,6 +23,7 @@
     "test:main": "jest --config=../../jest.config.js --selectProjects electron-main",
     "test:renderer": "jest --config=../../jest.config.js --selectProjects electron-renderer",
     "test:integration": "jest --config=../../jest.config.js --selectProjects electron-integration",
+    "test:e2e": "jest --config=../../jest.config.js --selectProjects electron-e2e",
     "pack:mac": "npm run build && electron-builder --mac --config electron-builder.config.js",
     "dist:mac": "npm run build && electron-builder --mac --config electron-builder.config.js --publish never",
     "start:mac": "npm run pack:mac && open dist/mac/*.app"

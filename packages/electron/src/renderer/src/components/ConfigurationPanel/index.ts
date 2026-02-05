@@ -15,7 +15,7 @@ export { TrechosListSection } from './TrechosListSection';
 export type { TrechosListSectionProps } from './TrechosListSection';
 
 export { TrechoForm } from './TrechoForm';
-export type { TrechoFormProps } from './TrechoForm';
+export type { TrechoFormProps } from './types';
 
 export { GlobalSettingsSection } from './GlobalSettingsSection';
 export type { GlobalSettingsSectionProps } from './GlobalSettingsSection';

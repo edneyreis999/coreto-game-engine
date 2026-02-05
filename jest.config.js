@@ -144,6 +144,26 @@ export default {
       setupFilesAfterEnv: ['<rootDir>/packages/electron/tests/setup.ts'],
       collectCoverageFrom: [],
     },
+
+    // --- E2E tests ---
+    {
+      displayName: 'electron-e2e',
+      ...baseConfig,
+      testEnvironment: 'node',
+      maxWorkers: 1,
+      roots: ['<rootDir>/packages/electron/tests'],
+      testMatch: ['<rootDir>/packages/electron/tests/e2e/**/*.test.ts'],
+      moduleNameMapper: {
+        '^@coreto/core$': '<rootDir>/packages/core/src/index.ts',
+        '^@coreto/core/(.*)\\.js$': '<rootDir>/packages/core/src/$1.ts',
+        '^@coreto/core/(.+)$': '<rootDir>/packages/core/src/$1.ts',
+        '^@coreto/electron/(.*)\\.js$': '<rootDir>/packages/electron/src/$1.ts',
+        '^@coreto/electron/(.+)$': '<rootDir>/packages/electron/src/$1.ts',
+        '^(\\.{1,2}/.*)\\.js$': '$1',
+      },
+      setupFilesAfterEnv: ['<rootDir>/packages/electron/tests/setup.ts'],
+      collectCoverageFrom: [],
+    },
   ],
 
   // ============================================================

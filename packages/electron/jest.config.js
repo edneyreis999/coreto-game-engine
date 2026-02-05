@@ -83,6 +83,17 @@ export default {
       setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
       collectCoverageFrom: [],
     },
+    // E2E tests
+    {
+      ...baseConfig,
+      displayName: 'e2e',
+      testEnvironment: 'node',
+      maxWorkers: 1, // Run sequentially to avoid database conflicts
+      roots: ['<rootDir>/tests'],
+      testMatch: ['**/tests/e2e/**/*.test.ts'],
+      setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
+      collectCoverageFrom: [],
+    },
   ],
   coverageThreshold: {
     global: {

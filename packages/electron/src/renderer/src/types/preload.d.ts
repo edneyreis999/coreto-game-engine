@@ -433,6 +433,65 @@ interface CoretoAPI {
    */
 
   /**
+   * Saves a project configuration.
+   * Accepts ConfigurationPanel format (TrechoFormData).
+   * @param projectPath - Absolute path to the project directory
+   * @param config - Configuration with trechos and global settings
+   * @returns Promise with success status and config file path
+   *
+   * @example
+   * const result = await window.coreto.saveConfig('/path/to/project', {
+   *   version: '1.0',
+   *   trechos: [
+   *     {
+   *       id: 'trecho-1',
+   *       name: 'Forest Battle',
+   *       anchorLevelMin: 1,
+   *       anchorLevelMax: 10,
+   *       targetTtkTurns: 5,
+   *       targetTtkActions: 10,
+   *       tolerancePercent: 15,
+   *       troopIds: [1, 2],
+   *       party: {
+   *         members: [{ classId: 1, level: 5 }]
+   *       }
+   *     }
+   *   ],
+   *   globalSettings: { seed: 12345, maxBattleTurns: 50 }
+   * });
+   * if (result.success) {
+   *   console.log('Saved to:', result.data.configPath);
+   * }
+   */
+  saveConfig(
+    projectPath: string,
+    config: {
+      version?: string;
+      trechos: Array<{
+        id: string;
+        name: string;
+        anchorLevelMin: number;
+        anchorLevelMax: number;
+        targetTtkTurns: number;
+        targetTtkActions: number;
+        tolerancePercent: number;
+        troopIds: number[];
+        party: {
+          members: Array<{ classId: number; level: number }>;
+        };
+      }>;
+      globalSettings?: {
+        seed: number;
+        maxBattleTurns?: number;
+      };
+      metadata?: {
+        projectName?: string;
+        lastModified?: number;
+      };
+    }
+  ): Promise<IPCResult<{ success: boolean; configPath: string }>>;
+
+  /**
    * Loads a project configuration file.
    * @param configPath - Absolute path to the config file
    * @returns Promise with project configuration

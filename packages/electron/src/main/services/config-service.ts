@@ -16,7 +16,10 @@
 
 import path from 'node:path';
 import fs from 'node:fs/promises';
-import { ProjectConfigSchema, type ProjectConfig, CURRENT_SCHEMA_VERSION } from './schemas.js';
+import { ProjectConfigSchema, type ProjectConfig } from '@coreto/core';
+
+// Current schema version for config files
+const CURRENT_SCHEMA_VERSION = '1.0';
 
 /**
  * Error thrown when project config file is not found.
