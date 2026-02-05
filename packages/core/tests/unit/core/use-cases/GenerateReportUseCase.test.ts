@@ -1,9 +1,10 @@
 import 'reflect-metadata';
-import { GenerateReportUseCase, GenerateReportInput } from '@coreto/core/core/use-cases/GenerateReportUseCase.js';
-import { IReporter, Warning } from '@coreto/core/core/ports/IReporter.js';
-import { Report, ReportMetadata } from '@coreto/core/core/domain/Report.js';
-import { TrechoValidationResult } from '@coreto/core/core/use-cases/ValidateTrechoUseCase.js';
-import { BattleResult } from '@coreto/core/core/domain/BattleResult.js';
+import { GenerateReportUseCase, GenerateReportInput } from '@coreto/core';
+import { IReporter, Warning } from '@coreto/core';
+import { Report, ReportMetadata } from '@coreto/core';
+import { TrechoValidationResult } from '@coreto/core';
+import { BattleResult } from '@coreto/core';
+import type { WarningData } from '@coreto/core';
 
 describe('GenerateReportUseCase', () => {
   let useCase: GenerateReportUseCase;
@@ -59,12 +60,13 @@ describe('GenerateReportUseCase', () => {
     failedBattles: overrides?.failedBattles ?? [],
   });
 
-  const createWarning = (overrides?: Partial<Warning>): Warning => ({
-    type: overrides?.type ?? 'ttk_out_of_tolerance',
-    severity: overrides?.severity ?? 'warning',
-    message: overrides?.message ?? 'TTK out of tolerance',
-    context: overrides?.context ?? { troopId: 1 },
-  });
+  const createWarning = (overrides?: Partial<WarningData>): Warning =>
+    new Warning({
+      type: overrides?.type ?? 'ttk_out_of_tolerance',
+      severity: overrides?.severity ?? 'warning',
+      message: overrides?.message ?? 'TTK out of tolerance',
+      context: overrides?.context ?? { troopId: 1 },
+    });
 
   describe('execute', () => {
     it('should create report with correct metadata', () => {
