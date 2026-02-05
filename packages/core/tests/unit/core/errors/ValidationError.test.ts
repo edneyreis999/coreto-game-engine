@@ -1,6 +1,5 @@
-import { ValidationError } from '@coreto/core';
+import { ValidationError, ValidationIssue } from '@coreto/core';
 import { DomainError } from '@coreto/core';
-import { z, ZodError } from 'zod';
 
 describe('ValidationError', () => {
   describe('constructor', () => {
@@ -28,107 +27,70 @@ describe('ValidationError', () => {
     });
   });
 
-  describe('fromZodError', () => {
-    it('should create ValidationError from ZodError', () => {
-      const schema = z.object({
-        id: z.string(),
-        value: z.number(),
-      });
+  describe('fromValidationIssues', () => {
+    it('should create ValidationError from validation issues', () => {
+      const issues: ValidationIssue[] = [
+        { path: 'id', message: 'Expected string, received number', code: 'invalid_type' },
+        { path: 'value', message: 'Expected number, received string', code: 'invalid_type' },
+      ];
+      const error = ValidationError.fromValidationIssues(issues);
 
-      try {
-        schema.parse({ id: 123, value: 'not a number' });
-      } catch (zodError) {
-        const error = ValidationError.fromZodError(zodError as ZodError);
-
-        expect(error).toBeInstanceOf(ValidationError);
-        expect(error.message).toBe('Schema validation failed');
-        expect(error.severity).toBe('critical');
-      }
+      expect(error).toBeInstanceOf(ValidationError);
+      expect(error.message).toBe('Schema validation failed');
+      expect(error.severity).toBe('critical');
     });
 
-    it('should extract issues from ZodError', () => {
-      const schema = z.object({
-        id: z.string(),
-        count: z.number().positive(),
-      });
+    it('should extract issues from validation issues array', () => {
+      const issues: ValidationIssue[] = [
+        { path: 'id', message: 'Expected string, received number', code: 'invalid_type' },
+        { path: 'count', message: 'Number must be positive', code: 'too_small' },
+      ];
+      const error = ValidationError.fromValidationIssues(issues);
 
-      try {
-        schema.parse({ id: 123, count: -5 });
-      } catch (zodError) {
-        const error = ValidationError.fromZodError(zodError as ZodError);
-
-        expect(error.context).toHaveProperty('issues');
-        expect(Array.isArray(error.context.issues)).toBe(true);
-        expect((error.context.issues as unknown[]).length).toBeGreaterThan(0);
-      }
+      expect(error.context).toHaveProperty('issues');
+      expect(Array.isArray(error.context.issues)).toBe(true);
+      expect((error.context.issues as unknown[]).length).toBeGreaterThan(0);
     });
 
     it('should format issues with path, message, and code', () => {
-      const schema = z.object({
-        trecho: z.object({
-          id: z.string(),
-        }),
-      });
+      const issues: ValidationIssue[] = [
+        { path: 'trecho.id', message: 'Expected string, received number', code: 'invalid_type' },
+      ];
+      const error = ValidationError.fromValidationIssues(issues);
+      const errorIssues = error.context.issues as Array<{
+        path: string;
+        message: string;
+        code: string;
+      }>;
 
-      try {
-        schema.parse({ trecho: { id: 123 } });
-      } catch (zodError) {
-        const error = ValidationError.fromZodError(zodError as ZodError);
-        const issues = error.context.issues as Array<{
-          path: string;
-          message: string;
-          code: string;
-        }>;
-
-        expect(issues.length).toBeGreaterThan(0);
-        expect(issues[0]).toHaveProperty('path');
-        expect(issues[0]).toHaveProperty('message');
-        expect(issues[0]).toHaveProperty('code');
-        expect(issues[0]?.path).toBe('trecho.id');
-      }
+      expect(errorIssues.length).toBe(1);
+      expect(errorIssues[0]).toHaveProperty('path');
+      expect(errorIssues[0]).toHaveProperty('message');
+      expect(errorIssues[0]).toHaveProperty('code');
+      expect(errorIssues[0]?.path).toBe('trecho.id');
     });
 
     it('should handle multiple validation issues', () => {
-      const schema = z.object({
-        id: z.string(),
-        name: z.string().min(3),
-        count: z.number().positive(),
-      });
+      const issues: ValidationIssue[] = [
+        { path: 'id', message: 'Expected string, received number', code: 'invalid_type' },
+        { path: 'name', message: 'String must contain at least 3 character(s)', code: 'too_small' },
+        { path: 'count', message: 'Number must be positive', code: 'too_small' },
+      ];
+      const error = ValidationError.fromValidationIssues(issues);
+      const errorIssues = error.context.issues as unknown[];
 
-      try {
-        schema.parse({ id: 123, name: 'ab', count: -1 });
-      } catch (zodError) {
-        const error = ValidationError.fromZodError(zodError as ZodError);
-        const issues = error.context.issues as unknown[];
-
-        expect(issues.length).toBe(3);
-      }
+      expect(errorIssues.length).toBe(3);
     });
 
     it('should handle nested path in issues', () => {
-      const schema = z.object({
-        config: z.object({
-          trechos: z.array(
-            z.object({
-              id: z.string(),
-            })
-          ),
-        }),
-      });
+      const issues: ValidationIssue[] = [
+        { path: 'config.trechos.1.id', message: 'Expected string, received number', code: 'invalid_type' },
+      ];
+      const error = ValidationError.fromValidationIssues(issues);
+      const errorIssues = error.context.issues as Array<{ path: string }>;
 
-      try {
-        schema.parse({
-          config: {
-            trechos: [{ id: 'valid' }, { id: 123 }],
-          },
-        });
-      } catch (zodError) {
-        const error = ValidationError.fromZodError(zodError as ZodError);
-        const issues = error.context.issues as Array<{ path: string }>;
-
-        expect(issues.length).toBeGreaterThan(0);
-        expect(issues[0]?.path).toBe('config.trechos.1.id');
-      }
+      expect(errorIssues.length).toBe(1);
+      expect(errorIssues[0]?.path).toBe('config.trechos.1.id');
     });
   });
 
@@ -147,19 +109,16 @@ describe('ValidationError', () => {
       expect(json.context).toEqual({ field: 'email', value: 'invalid' });
     });
 
-    it('should serialize Zod-derived error to JSON', () => {
-      const schema = z.object({ id: z.string() });
+    it('should serialize validation-issue-derived error to JSON', () => {
+      const issues: ValidationIssue[] = [
+        { path: 'id', message: 'Expected string, received number', code: 'invalid_type' },
+      ];
+      const error = ValidationError.fromValidationIssues(issues);
+      const json = error.toJSON();
 
-      try {
-        schema.parse({ id: 123 });
-      } catch (zodError) {
-        const error = ValidationError.fromZodError(zodError as ZodError);
-        const json = error.toJSON();
-
-        expect(json).toHaveProperty('name', 'ValidationError');
-        expect(json).toHaveProperty('message', 'Schema validation failed');
-        expect(json.context).toHaveProperty('issues');
-      }
+      expect(json).toHaveProperty('name', 'ValidationError');
+      expect(json).toHaveProperty('message', 'Schema validation failed');
+      expect(json.context).toHaveProperty('issues');
     });
   });
 

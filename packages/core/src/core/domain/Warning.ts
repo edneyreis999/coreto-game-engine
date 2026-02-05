@@ -1,5 +1,33 @@
-import type { WarningType, WarningSeverity } from '../../infrastructure/schemas/report.schema.js';
 import { ValidationError } from '../errors/index.js';
+
+/**
+ * Warning types for validation failures (ADR-013).
+ *
+ * - troop_not_found: Troop ID referenced in config doesn't exist in Troops.json
+ * - enemy_not_found: Enemy ID referenced in troop doesn't exist in Enemies.json
+ * - class_not_found: Class ID referenced in config doesn't exist in Classes.json
+ * - skill_not_found: Skill ID referenced in battle doesn't exist in Skills.json
+ * - ttk_out_of_tolerance: TTK measurement outside configured tolerance window
+ * - skill_formula_error: Error evaluating skill damage formula
+ * - battle_timeout: Battle exceeded maximum turn limit
+ */
+export type WarningType =
+  | 'troop_not_found'
+  | 'enemy_not_found'
+  | 'class_not_found'
+  | 'skill_not_found'
+  | 'ttk_out_of_tolerance'
+  | 'skill_formula_error'
+  | 'battle_timeout';
+
+/**
+ * Warning severity levels (ADR-013).
+ *
+ * - critical: Blocking issues that prevent battle execution
+ * - warning: Non-blocking issues that affect result validity
+ * - info: Informational messages for debugging
+ */
+export type WarningSeverity = 'critical' | 'warning' | 'info';
 
 /**
  * Warning data structure.

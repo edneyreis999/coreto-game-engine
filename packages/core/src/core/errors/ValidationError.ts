@@ -1,5 +1,17 @@
 import { DomainError } from './DomainError.js';
-import { ZodError } from 'zod';
+
+/**
+ * Generic validation issue structure.
+ * Framework-agnostic representation of a validation error.
+ */
+export interface ValidationIssue {
+  /** Dot-separated path to the invalid field */
+  path: string;
+  /** Human-readable error message */
+  message: string;
+  /** Machine-readable error code */
+  code: string;
+}
 
 /**
  * Error thrown when validation fails.
@@ -31,30 +43,21 @@ export class ValidationError extends DomainError {
   }
 
   /**
-   * Creates a ValidationError from a Zod validation error.
-   * Extracts all validation issues and includes them in the error context.
+   * Creates a ValidationError from generic validation issues.
+   * Framework-agnostic factory method.
    *
-   * @param zodError - The ZodError from schema validation
-   * @returns ValidationError with formatted Zod issues
+   * @param issues - Array of validation issues
+   * @returns ValidationError with formatted issues in context
    *
    * @example
    * ```typescript
-   * const schema = z.object({ id: z.string() });
-   * try {
-   *   schema.parse({ id: 123 });
-   * } catch (error) {
-   *   const validationError = ValidationError.fromZodError(error as ZodError);
-   *   // validationError.context.issues contains formatted validation errors
-   * }
+   * const issues: ValidationIssue[] = [
+   *   { path: 'id', message: 'Expected string, received number', code: 'invalid_type' }
+   * ];
+   * const error = ValidationError.fromValidationIssues(issues);
    * ```
    */
-  static fromZodError(zodError: ZodError): ValidationError {
-    const issues = zodError.issues.map((issue) => ({
-      path: issue.path.join('.'),
-      message: issue.message,
-      code: issue.code,
-    }));
-
+  static fromValidationIssues(issues: ValidationIssue[]): ValidationError {
     return new ValidationError('Schema validation failed', { issues });
   }
 }

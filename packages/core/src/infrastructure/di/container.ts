@@ -32,6 +32,9 @@ import { ZodConfigLoader } from '../config/ZodConfigLoader.js';
 import { RmmzDataLoader, RmmzProjectValidator } from '../adapters/data/index.js';
 import { HeadlessBattleSimulator } from '../simulation/BattleSimulator.js';
 import { JsonReporter } from '../adapters/reporter/JsonReporter.js';
+import { ExecuteBattleUseCase } from '../../core/use-cases/ExecuteBattleUseCase.js';
+import { GenerateReportUseCase } from '../../core/use-cases/GenerateReportUseCase.js';
+import { ValidateTrechoUseCase } from '../../core/use-cases/ValidateTrechoUseCase.js';
 
 // Re-export all tokens for external use
 export {
@@ -84,6 +87,26 @@ export function registerDependencies(): void {
 
   // RmmzProjectValidator: Helper for data loading validation (singleton)
   tsyringeContainer.registerSingleton(RmmzProjectValidator);
+
+  // Use Cases: registered with manual factory functions (domain stays framework-free)
+  // Usa o mesmo padrao de resolve que ja existe na linha 108: token as unknown as string
+  tsyringeContainer.register(ExecuteBattleUseCase, {
+    useFactory: () =>
+      new ExecuteBattleUseCase(
+        tsyringeContainer.resolve(IBattleSimulatorToken as unknown as string)
+      ),
+  });
+
+  tsyringeContainer.register(GenerateReportUseCase, {
+    useFactory: () =>
+      new GenerateReportUseCase(
+        tsyringeContainer.resolve(IReporterToken as unknown as string)
+      ),
+  });
+
+  tsyringeContainer.register(ValidateTrechoUseCase, {
+    useFactory: () => new ValidateTrechoUseCase(),
+  });
 
   console.log('[DI] All dependencies registered');
 }

@@ -1,8 +1,6 @@
-import { inject, injectable } from 'tsyringe';
 import { IReporter, Warning } from '../ports/IReporter.js';
 import { Report, ReportMetadata, TrechoSummary } from '../domain/Report.js';
 import { TrechoValidationResult } from './ValidateTrechoUseCase.js';
-import { IReporterToken } from '../../infrastructure/di/tokens.js';
 
 /**
  * Input data for GenerateReportUseCase.
@@ -61,9 +59,8 @@ export interface GenerateReportInput {
  * await useCase.writeReport(report, '/path/to/report.json');
  * ```
  */
-@injectable()
 export class GenerateReportUseCase {
-  constructor(@inject(IReporterToken) private readonly reporter: IReporter) {}
+  constructor(private readonly reporter: IReporter) {}
 
   /**
    * Generate a Report entity from validation results and warnings.

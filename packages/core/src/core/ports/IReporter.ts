@@ -1,26 +1,14 @@
 import type { Report, ReportMetadata } from '../domain/Report.js';
 import type { BattleResult } from '../domain/BattleResult.js';
+import type { WarningType, WarningSeverity } from '../domain/Warning.js';
 
-/**
- * Warning types for validation failures (ADR-013).
- */
-export type WarningType =
-  | 'troop_not_found'
-  | 'enemy_not_found'
-  | 'class_not_found'
-  | 'skill_not_found'
-  | 'ttk_out_of_tolerance'
-  | 'skill_formula_error'
-  | 'battle_timeout';
-
-/**
- * Warning severity levels (ADR-013).
- */
-export type WarningSeverity = 'critical' | 'warning' | 'info';
+// Re-export domain types for backward compatibility
+export type { WarningType, WarningSeverity };
 
 /**
  * Structured warning object for validation failures.
  * Warnings are collected instead of throwing exceptions (ADR-013).
+ * This is a plain DTO interface, different from the domain Warning class.
  */
 export interface Warning {
   /** Type of warning for categorization */

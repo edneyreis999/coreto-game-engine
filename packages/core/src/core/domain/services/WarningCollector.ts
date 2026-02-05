@@ -1,5 +1,5 @@
 import { Warning, type WarningData } from '../Warning.js';
-import type { WarningType, WarningSeverity } from '../../../infrastructure/schemas/report.schema.js';
+import type { WarningType, WarningSeverity } from '../Warning.js';
 
 /**
  * WarningCollector domain service.

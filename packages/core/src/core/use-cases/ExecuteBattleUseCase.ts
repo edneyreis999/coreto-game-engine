@@ -1,8 +1,6 @@
-import { inject, injectable } from 'tsyringe';
 import { IBattleSimulator, BattleSetup } from '../ports/IBattleSimulator.js';
 import { BattleResult } from '../domain/BattleResult.js';
 import { PartyConfig } from '../domain/PartyConfig.js';
-import { IBattleSimulatorToken } from '../../infrastructure/di/tokens.js';
 
 /**
  * Input data for ExecuteBattleUseCase.
@@ -62,9 +60,8 @@ export interface ExecuteBattleOutput {
  * console.log(`TTK: ${output.result.ttkTurns} turns`);
  * ```
  */
-@injectable()
 export class ExecuteBattleUseCase {
-  constructor(@inject(IBattleSimulatorToken) private readonly simulator: IBattleSimulator) {}
+  constructor(private readonly simulator: IBattleSimulator) {}
 
   /**
    * Execute a single battle simulation.

@@ -100,6 +100,12 @@ pnpm --filter @coreto/electron build  # Build electron
 
 ## Troubleshooting
 
+### Monorepo Import Rules
+
+**Never** use subpath imports (`@coreto/core/infrastructure/X`) — they fail in `tsc` even if Jest resolves them. Always import from `@coreto/core` directly. New modules must be barrel-exported in `packages/core/src/index.ts`.
+
+**Naming:** Domain = no suffix (`Warning`), Zod types = `*DTO` (`WarningDTO`), Schemas = `*Schema`. See `IMPORT_GUIDE.md` for full details.
+
 ### Core Package Requires Rebuild After Changes
 
 **Symptom:** `SyntaxError: The requested module '@coreto/core' does not provide an export named 'X'`

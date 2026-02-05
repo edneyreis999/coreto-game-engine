@@ -1,6 +1,37 @@
 import { injectable } from 'tsyringe';
 
 /**
+ * Minimal interface for RPG Maker MZ skill data ($dataSkills entries).
+ * Only includes fields used by SkillSelector.
+ */
+interface RmmzSkillData {
+  /** HP cost for using the skill (0 if none) */
+  hpCost?: number;
+  /** MP cost for using the skill */
+  mpCost?: number;
+}
+
+/**
+ * Minimal interface for RPG Maker MZ battler (Game_Actor/Game_Enemy).
+ * Only includes fields used by SkillSelector.
+ */
+interface RmmzBattler {
+  /** Current HP */
+  hp: number;
+  /** Current MP */
+  mp: number;
+}
+
+/**
+ * Minimal interface for RPG Maker MZ troop ($gameTroop).
+ * Only includes methods used by SkillSelector.
+ */
+interface RmmzTroop {
+  /** Returns array of alive enemy battlers */
+  aliveMembers(): RmmzBattler[];
+}
+
+/**
  * Type assertion for accessing global RMMZ objects
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -22,8 +53,7 @@ export interface SkillSelectionResult {
   /** ID of the selected skill (from Skills.json) */
   skillId: number;
   /** Target battler object (Game_Enemy or Game_Actor) */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  target: any;
+  target: RmmzBattler;
 }
 
 /**
@@ -63,10 +93,9 @@ export class SkillSelector {
    * @returns SkillSelectionResult with selected skill ID and target
    * @throws {Error} If no alive enemies found (battle should have ended)
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  selectSkillForActor(actor: any): SkillSelectionResult {
+  selectSkillForActor(actor: RmmzBattler): SkillSelectionResult {
     // Get basic attack skill data
-    const attackSkill = globalScope.$dataSkills[SKILL_ID_ATTACK];
+    const attackSkill = globalScope.$dataSkills[SKILL_ID_ATTACK] as RmmzSkillData;
 
     // Check if actor can afford to use Attack skill (ADR-004)
     const canAffordAttack = this.canAffordSkill(actor, attackSkill);
@@ -93,8 +122,7 @@ export class SkillSelector {
    * @returns true if actor can afford the skill, false otherwise
    * @private
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private canAffordSkill(actor: any, skill: any): boolean {
+  private canAffordSkill(actor: RmmzBattler, skill: RmmzSkillData): boolean {
     // Check HP cost (skill must have hpCost property, default to 0 if undefined)
     const hpCost = skill.hpCost ?? 0;
     if (hpCost > 0 && actor.hp <= hpCost) {
@@ -118,9 +146,8 @@ export class SkillSelector {
    * @throws {Error} If no alive enemies found
    * @private
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private selectTarget(): any {
-    const gameTroop = globalScope.$gameTroop;
+  private selectTarget(): RmmzBattler {
+    const gameTroop = globalScope.$gameTroop as RmmzTroop | undefined;
 
     if (!gameTroop) {
       throw new Error('$gameTroop not initialized');
@@ -134,6 +161,7 @@ export class SkillSelector {
     }
 
     // Return first alive enemy (MVP target selection)
-    return aliveEnemies[0];
+    // Non-null assertion: length check above guarantees this is defined
+    return aliveEnemies[0]!;
   }
 }

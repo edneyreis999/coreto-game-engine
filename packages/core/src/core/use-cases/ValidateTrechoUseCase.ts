@@ -1,4 +1,3 @@
-import { injectable } from 'tsyringe';
 import { Trecho } from '../domain/Trecho.js';
 import { BattleResult } from '../domain/BattleResult.js';
 
@@ -59,7 +58,6 @@ export interface TrechoValidationResult {
  * console.log(`Average TTK: ${validation.avgTtkTurns} turns`);
  * ```
  */
-@injectable()
 export class ValidateTrechoUseCase {
   /**
    * Validate a trecho based on battle results.

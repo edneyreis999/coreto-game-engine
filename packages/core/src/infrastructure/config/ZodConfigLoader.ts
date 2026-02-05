@@ -181,7 +181,13 @@ export class ZodConfigLoader implements IConfigLoader {
       return result;
     } catch (error) {
       if (error instanceof z.ZodError) {
-        throw ValidationError.fromZodError(error);
+        throw ValidationError.fromValidationIssues(
+          error.issues.map((issue) => ({
+            path: issue.path.join('.'),
+            message: issue.message,
+            code: issue.code,
+          }))
+        );
       }
       throw error;
     }
