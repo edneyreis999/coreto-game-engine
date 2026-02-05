@@ -27,6 +27,10 @@ export default {
         '^@coreto/core$': '<rootDir>/packages/core/src/index.ts',
         '^@coreto/core/(.*)\\.js$': '<rootDir>/packages/core/src/$1.ts',
         '^@coreto/core/(.+)$': '<rootDir>/packages/core/src/$1.ts',
+        '^@coreto/core/tests/fakes$': '<rootDir>/packages/core/tests/fakes/index.ts',
+        '^@coreto/core/tests/fakes/(.+)$': '<rootDir>/packages/core/tests/fakes/$1.ts',
+        '^@coreto/core/tests/fakes$': '<rootDir>/packages/core/tests/fakes/index.ts',
+        '^@coreto/core/tests/fakes/(.+)$': '<rootDir>/packages/core/tests/fakes/$1.ts',
         '^@/(.*)\\.js$': '<rootDir>/packages/core/src/$1.ts',
         '^@/(.+)$': '<rootDir>/packages/core/src/$1.ts',
         // Handle relative imports
@@ -62,6 +66,8 @@ export default {
         '^@coreto/core$': '<rootDir>/packages/core/src/index.ts',
         '^@coreto/core/(.*)\\.js$': '<rootDir>/packages/core/src/$1.ts',
         '^@coreto/core/(.+)$': '<rootDir>/packages/core/src/$1.ts',
+        '^@coreto/core/tests/fakes$': '<rootDir>/packages/core/tests/fakes/index.ts',
+        '^@coreto/core/tests/fakes/(.+)$': '<rootDir>/packages/core/tests/fakes/$1.ts',
         '^@coreto/electron/(.*)\\.js$': '<rootDir>/packages/electron/src/$1.ts',
         '^@coreto/electron/(.+)$': '<rootDir>/packages/electron/src/$1.ts',
         '^(\\.{1,2}/.*)\\.js$': '$1',
@@ -86,10 +92,24 @@ export default {
         '<rootDir>/packages/electron/tests/unit/renderer/**/*.test.ts',
         '<rootDir>/packages/electron/tests/unit/renderer/**/*.test.tsx',
       ],
+      transform: {
+        '^.+\\.tsx?$': [
+          'ts-jest',
+          {
+            useESM: true,
+            tsconfig: '<rootDir>/packages/electron/tsconfig.spec.json',
+            diagnostics: {
+              ignoreCodes: ['TS151002'],
+            },
+          },
+        ],
+      },
       moduleNameMapper: {
         '^@coreto/core$': '<rootDir>/packages/core/src/index.ts',
         '^@coreto/core/(.*)\\.js$': '<rootDir>/packages/core/src/$1.ts',
         '^@coreto/core/(.+)$': '<rootDir>/packages/core/src/$1.ts',
+        '^@coreto/core/tests/fakes$': '<rootDir>/packages/core/tests/fakes/index.ts',
+        '^@coreto/core/tests/fakes/(.+)$': '<rootDir>/packages/core/tests/fakes/$1.ts',
         '^@coreto/electron/(.*)\\.js$': '<rootDir>/packages/electron/src/$1.ts',
         '^@coreto/electron/(.+)$': '<rootDir>/packages/electron/src/$1.ts',
         '^@/hooks/(.*)$': '<rootDir>/packages/electron/src/renderer/src/hooks/$1',
@@ -117,10 +137,6 @@ export default {
         '!packages/electron/src/renderer/src/**/*.d.ts',
         '!packages/electron/src/renderer/src/main.tsx',
       ],
-      // Define globals for TypeScript type checking
-      globals: {
-        'window.coreto': true,
-      },
     },
 
     // --- Integration tests ---
@@ -134,6 +150,8 @@ export default {
         '^@coreto/core$': '<rootDir>/packages/core/src/index.ts',
         '^@coreto/core/(.*)\\.js$': '<rootDir>/packages/core/src/$1.ts',
         '^@coreto/core/(.+)$': '<rootDir>/packages/core/src/$1.ts',
+        '^@coreto/core/tests/fakes$': '<rootDir>/packages/core/tests/fakes/index.ts',
+        '^@coreto/core/tests/fakes/(.+)$': '<rootDir>/packages/core/tests/fakes/$1.ts',
         '^@coreto/electron/(.*)\\.js$': '<rootDir>/packages/electron/src/$1.ts',
         '^@coreto/electron/(.+)$': '<rootDir>/packages/electron/src/$1.ts',
         '^@/(.*)\\.js$': '<rootDir>/packages/electron/src/renderer/src/$1.ts',
@@ -157,6 +175,8 @@ export default {
         '^@coreto/core$': '<rootDir>/packages/core/src/index.ts',
         '^@coreto/core/(.*)\\.js$': '<rootDir>/packages/core/src/$1.ts',
         '^@coreto/core/(.+)$': '<rootDir>/packages/core/src/$1.ts',
+        '^@coreto/core/tests/fakes$': '<rootDir>/packages/core/tests/fakes/index.ts',
+        '^@coreto/core/tests/fakes/(.+)$': '<rootDir>/packages/core/tests/fakes/$1.ts',
         '^@coreto/electron/(.*)\\.js$': '<rootDir>/packages/electron/src/$1.ts',
         '^@coreto/electron/(.+)$': '<rootDir>/packages/electron/src/$1.ts',
         '^(\\.{1,2}/.*)\\.js$': '$1',
