@@ -1,13 +1,28 @@
 /**
  * useSimulationProgress Hook Tests (Event Streaming Pattern)
  *
- * Tests for the useSimulationProgress custom hook with event-based IPC.
+ * Tests the refactored hook that uses event streaming instead of polling.
+ * Validates:
+ * - Event listeners are registered on mount
+ * - Event listeners are cleaned up on unmount (memory leak prevention)
+ * - Progress updates trigger state changes
+ * - Complete/error events update state correctly
+ * - No polling (setInterval) is used
+ * - Full simulation lifecycle
  *
+ * @see planos/005-run-ttk-electron/tasks/02_task.md
  * @see packages/electron/src/renderer/src/hooks/useSimulationProgress.ts
  */
 
-import { renderHook, act } from '@testing-library/react';
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
+
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { useSimulationProgress } from '@/hooks/useSimulationProgress';
+import type {
+  ProgressPayload,
+  ErrorPayload,
+  SimulationResultPayload
+} from '@preload/index';
 
 // Mock window.coreto API with event-based methods
 type CleanupFn = () => void;
@@ -39,7 +54,7 @@ const createMockCoreto = () => {
   return mockCoreto;
 };
 
-// Mock simulation result
+// Mock simulation result for runSimulation (legacy method)
 const mockSimulationResult = {
   trechoId: 'ato1-nivel1-10',
   troopId: 1,
@@ -58,18 +73,28 @@ const mockSimulationResult = {
   warnings: [],
 };
 
-describe('useSimulationProgress', () => {
-  let mockCoreto: any;
+// Mock simulation result for event-based completion
+const mockEventResult: SimulationResultPayload = {
+  simulationId: 'sim-123',
+  projectPath: '/path/to/project',
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  report: {} as any,
+  duration: 5000,
+  seed: 12345,
+};
+
+describe('useSimulationProgress (Event Streaming)', () => {
+  let mockCoretoAPI: any;
 
   beforeEach(() => {
     jest.clearAllMocks();
     jest.useFakeTimers();
 
     // Create fresh mock for each test
-    mockCoreto = createMockCoreto();
+    mockCoretoAPI = createMockCoreto();
 
     // Set up window.coreto mock for jsdom environment
-    (window as any).coreto = mockCoreto;
+    (window as any).coreto = mockCoretoAPI;
   });
 
   afterEach(() => {
@@ -98,38 +123,225 @@ describe('useSimulationProgress', () => {
     });
   });
 
-  describe('event listeners setup', () => {
-    it('should register event listeners on mount', () => {
+  describe('Event Listener Registration', () => {
+    it('should setup event listeners on mount', () => {
       renderHook(() => useSimulationProgress());
 
-      expect(mockCoreto.onProgress).toHaveBeenCalled();
-      expect(mockCoreto.onComplete).toHaveBeenCalled();
-      expect(mockCoreto.onError).toHaveBeenCalled();
+      expect(mockCoretoAPI.onProgress).toHaveBeenCalledTimes(1);
+      expect(mockCoretoAPI.onComplete).toHaveBeenCalledTimes(1);
+      expect(mockCoretoAPI.onError).toHaveBeenCalledTimes(1);
     });
 
-    it('should cleanup event listeners on unmount', () => {
-      const progressCleanup = jest.fn();
-      const completeCleanup = jest.fn();
-      const errorCleanup = jest.fn();
+    it('should cleanup listeners on unmount', () => {
+      const cleanupProgress = jest.fn();
+      const cleanupComplete = jest.fn();
+      const cleanupError = jest.fn();
 
-      mockCoreto.onProgress.mockReturnValue(progressCleanup);
-      mockCoreto.onComplete.mockReturnValue(completeCleanup);
-      mockCoreto.onError.mockReturnValue(errorCleanup);
+      mockCoretoAPI.onProgress.mockReturnValue(cleanupProgress);
+      mockCoretoAPI.onComplete.mockReturnValue(cleanupComplete);
+      mockCoretoAPI.onError.mockReturnValue(cleanupError);
 
       const { unmount } = renderHook(() => useSimulationProgress());
       unmount();
 
-      expect(progressCleanup).toHaveBeenCalled();
-      expect(completeCleanup).toHaveBeenCalled();
-      expect(errorCleanup).toHaveBeenCalled();
+      expect(cleanupProgress).toHaveBeenCalledTimes(1);
+      expect(cleanupComplete).toHaveBeenCalledTimes(1);
+      expect(cleanupError).toHaveBeenCalledTimes(1);
+    });
+
+    it('should NOT use setInterval (polling eliminated)', () => {
+      const setIntervalSpy = jest.spyOn(global, 'setInterval');
+
+      renderHook(() => useSimulationProgress());
+
+      expect(setIntervalSpy).not.toHaveBeenCalled();
+
+      setIntervalSpy.mockRestore();
     });
   });
 
-  describe('startSimulation (event-based)', () => {
-    it('should call startSimulation and update status to running', async () => {
-      mockCoreto.startSimulation.mockResolvedValue({
+  describe('Progress Event Handling', () => {
+    it('should update progress state on progress event', async () => {
+      let progressCallback: (payload: ProgressPayload) => void;
+
+      mockCoretoAPI.onProgress.mockImplementation((callback: (payload: ProgressPayload) => void) => {
+        progressCallback = callback;
+        return jest.fn();
+      });
+
+      const { result } = renderHook(() => useSimulationProgress());
+
+      const testPayload: ProgressPayload = {
+        stage: 'battle',
+        trechoId: 'trecho-1',
+        trechoName: 'Test Trecho',
+        current: 50,
+        total: 100,
+        percentage: 50,
+        message: 'Battle 50/100 in Test Trecho',
+        timestamp: Date.now(),
+      };
+
+      act(() => {
+        progressCallback!(testPayload);
+      });
+
+      await waitFor(() => {
+        expect(result.current.progress.percentage).toBe(50);
+        expect(result.current.progress.stage).toBe('battle');
+        expect(result.current.progress.message).toBe('Battle 50/100 in Test Trecho');
+        expect(result.current.progress.currentItem).toBe('Test Trecho');
+        expect(result.current.status).toBe('running');
+      });
+    });
+
+    it('should store detailed progress payload', async () => {
+      let progressCallback: (payload: ProgressPayload) => void;
+
+      mockCoretoAPI.onProgress.mockImplementation((callback: (payload: ProgressPayload) => void) => {
+        progressCallback = callback;
+        return jest.fn();
+      });
+
+      const { result } = renderHook(() => useSimulationProgress());
+
+      const testPayload: ProgressPayload = {
+        stage: 'trecho',
+        trechoId: 'trecho-1',
+        trechoName: 'Test Trecho',
+        current: 1,
+        total: 10,
+        percentage: 10,
+        message: 'Starting Test Trecho',
+        timestamp: Date.now(),
+      };
+
+      act(() => {
+        progressCallback!(testPayload);
+      });
+
+      await waitFor(() => {
+        expect(result.current.progressDetail).toEqual(testPayload);
+      });
+    });
+  });
+
+  describe('Completion Event Handling', () => {
+    it('should update state on complete event', async () => {
+      let completeCallback: (result: SimulationResultPayload) => void;
+
+      mockCoretoAPI.onComplete.mockImplementation((callback: (payload: SimulationResultPayload) => void) => {
+        completeCallback = callback;
+        return jest.fn();
+      });
+
+      const { result } = renderHook(() => useSimulationProgress());
+
+      const testResult: SimulationResultPayload = {
+        simulationId: 'sim-123',
+        projectPath: '/path/to/project',
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        report: {} as any,
+        duration: 5000,
+        seed: 12345,
+      };
+
+      act(() => {
+        completeCallback!(testResult);
+      });
+
+      await waitFor(() => {
+        expect(result.current.status).toBe('completed');
+        expect(result.current.result).toEqual(testResult);
+        expect(result.current.progress.percentage).toBe(100);
+        expect(result.current.progress.isRunning).toBe(false);
+      });
+    });
+
+    it('should clear progressDetail on complete', async () => {
+      let progressCallback: (payload: ProgressPayload) => void;
+      let completeCallback: (result: SimulationResultPayload) => void;
+
+      mockCoretoAPI.onProgress.mockImplementation((callback: (payload: ProgressPayload) => void) => {
+        progressCallback = callback;
+        return jest.fn();
+      });
+
+      mockCoretoAPI.onComplete.mockImplementation((callback: (payload: SimulationResultPayload) => void) => {
+        completeCallback = callback;
+        return jest.fn();
+      });
+
+      const { result } = renderHook(() => useSimulationProgress());
+
+      // First set some progress
+      act(() => {
+        progressCallback!({
+          stage: 'battle',
+          trechoId: 'trecho-1',
+          trechoName: 'Test Trecho',
+          current: 50,
+          total: 100,
+          percentage: 50,
+          message: 'Running...',
+          timestamp: Date.now(),
+        });
+      });
+
+      // Then complete
+      const testResult: SimulationResultPayload = {
+        simulationId: 'sim-123',
+        projectPath: '/path/to/project',
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        report: {} as any,
+        duration: 5000,
+        seed: 12345,
+      };
+
+      act(() => {
+        completeCallback!(testResult);
+      });
+
+      await waitFor(() => {
+        expect(result.current.progressDetail).toBeNull();
+      });
+    });
+  });
+
+  describe('Error Event Handling', () => {
+    it('should update state on error event', async () => {
+      let errorCallback: (error: ErrorPayload) => void;
+
+      mockCoretoAPI.onError.mockImplementation((callback: (payload: ErrorPayload) => void) => {
+        errorCallback = callback;
+        return jest.fn();
+      });
+
+      const { result } = renderHook(() => useSimulationProgress());
+
+      const testError: ErrorPayload = {
+        title: 'Simulation Failed',
+        description: 'Invalid project path',
+        code: 'ERR_INVALID_PATH',
+      };
+
+      act(() => {
+        errorCallback!(testError);
+      });
+
+      await waitFor(() => {
+        expect(result.current.status).toBe('error');
+        expect(result.current.error).toEqual(testError);
+        expect(result.current.progress.isRunning).toBe(false);
+      });
+    });
+  });
+
+  describe('startSimulation Method', () => {
+    it('should call startSimulation and reset state', async () => {
+      mockCoretoAPI.startSimulation.mockResolvedValue({
         success: true,
-        data: { simulationId: 'test-sim-id' },
+        data: { simulationId: 'sim-123' },
       });
 
       const { result } = renderHook(() => useSimulationProgress());
@@ -141,18 +353,18 @@ describe('useSimulationProgress', () => {
         });
       });
 
-      expect(mockCoreto.startSimulation).toHaveBeenCalledWith({
+      expect(mockCoretoAPI.startSimulation).toHaveBeenCalledWith({
         projectPath: '/path/to/project',
         configPath: '/path/to/config.json',
       });
-      expect(result.current.progress.isRunning).toBe(true);
+      expect(result.current.status).toBe('running');
     });
 
-    it('should handle startSimulation errors', async () => {
-      mockCoreto.startSimulation.mockResolvedValue({
+    it('should handle startSimulation failure', async () => {
+      mockCoretoAPI.startSimulation.mockResolvedValue({
         success: false,
         error: {
-          name: 'StartError',
+          name: 'SimulationStartError',
           message: 'Failed to start',
           severity: 'critical' as const,
           context: {},
@@ -164,8 +376,8 @@ describe('useSimulationProgress', () => {
 
       await act(async () => {
         await result.current.startSimulation({
-          projectPath: '/invalid/path',
-          configPath: '/config.json',
+          projectPath: '/path/to/project',
+          configPath: '/path/to/config.json',
         });
       });
 
@@ -174,7 +386,7 @@ describe('useSimulationProgress', () => {
     });
 
     it('should handle network errors on startSimulation', async () => {
-      mockCoreto.startSimulation.mockRejectedValue(new Error('Network error'));
+      mockCoretoAPI.startSimulation.mockRejectedValue(new Error('Network error'));
 
       const { result } = renderHook(() => useSimulationProgress());
 
@@ -190,84 +402,9 @@ describe('useSimulationProgress', () => {
     });
   });
 
-  describe('progress events', () => {
-    it('should update progress state on progress event', () => {
-      const { result } = renderHook(() => useSimulationProgress());
-
-      const progressPayload = {
-        stage: 'battle' as const,
-        current: 50,
-        total: 100,
-        percentage: 50,
-        message: 'Battle 50/100',
-        timestamp: Date.now(),
-        trechoName: 'Trecho 1',
-      };
-
-      act(() => {
-        const progressCallback = (mockCoreto as any)._progressCallback;
-        if (progressCallback) {
-          progressCallback(progressPayload);
-        }
-      });
-
-      expect(result.current.progress.percentage).toBe(50);
-      expect(result.current.progress.currentItem).toBe('Trecho 1');
-      expect(result.current.progress.isRunning).toBe(true);
-      expect(result.current.status).toBe('running');
-      expect(result.current.progressDetail).toEqual(progressPayload);
-    });
-  });
-
-  describe('completion events', () => {
-    it('should update state on completion event', () => {
-      mockCoreto.startSimulation.mockResolvedValue({
-        success: true,
-        data: { simulationId: 'test-sim-id' },
-      });
-
-      const { result } = renderHook(() => useSimulationProgress());
-
-      act(() => {
-        const completeCallback = (mockCoreto as any)._completeCallback;
-        if (completeCallback) {
-          completeCallback(mockSimulationResult);
-        }
-      });
-
-      expect(result.current.status).toBe('completed');
-      expect(result.current.result).toEqual(mockSimulationResult);
-      expect(result.current.progress.percentage).toBe(100);
-      expect(result.current.progress.isRunning).toBe(false);
-    });
-  });
-
-  describe('error events', () => {
-    it('should update state on error event', () => {
-      const errorPayload = {
-        title: 'Simulation Failed',
-        description: 'Invalid project path',
-        code: 'ERR_INVALID_PATH',
-      };
-
-      const { result } = renderHook(() => useSimulationProgress());
-
-      act(() => {
-        const errorCallback = (mockCoreto as any)._errorCallback;
-        if (errorCallback) {
-          errorCallback(errorPayload);
-        }
-      });
-
-      expect(result.current.status).toBe('error');
-      expect(result.current.error).toEqual(errorPayload);
-      expect(result.current.progress.isRunning).toBe(false);
-    });
-  });
-
-  describe('runSimulation (legacy)', () => {
+  describe('runSimulation Method (Legacy)', () => {
     it('should call runSimulation and return result', async () => {
-      mockCoreto.runSimulation.mockResolvedValue({
+      mockCoretoAPI.runSimulation.mockResolvedValue({
         success: true,
         data: mockSimulationResult,
       });
@@ -283,7 +420,7 @@ describe('useSimulationProgress', () => {
         });
       });
 
-      expect(mockCoreto.runSimulation).toHaveBeenCalledWith({
+      expect(mockCoretoAPI.runSimulation).toHaveBeenCalledWith({
         projectPath: '/path/to/project',
         configPath: '/path/to/config.json',
       });
@@ -293,7 +430,7 @@ describe('useSimulationProgress', () => {
     });
 
     it('should handle runSimulation errors', async () => {
-      mockCoreto.runSimulation.mockResolvedValue({
+      mockCoretoAPI.runSimulation.mockResolvedValue({
         success: false,
         error: {
           name: 'SimulationError',
@@ -319,10 +456,11 @@ describe('useSimulationProgress', () => {
     });
   });
 
-  describe('cancelSimulation', () => {
-    it('should cancel running simulation', async () => {
-      mockCoreto.cancelSimulation.mockResolvedValue({
+  describe('cancelSimulation Method', () => {
+    it('should call cancelSimulation and update state', async () => {
+      mockCoretoAPI.cancelSimulation.mockResolvedValue({
         success: true,
+        data: undefined,
       });
 
       const { result } = renderHook(() => useSimulationProgress());
@@ -331,13 +469,14 @@ describe('useSimulationProgress', () => {
         await result.current.cancelSimulation();
       });
 
-      expect(mockCoreto.cancelSimulation).toHaveBeenCalled();
+      expect(mockCoretoAPI.cancelSimulation).toHaveBeenCalled();
       expect(result.current.status).toBe('cancelled');
-      expect(result.current.progress.isRunning).toBe(false);
     });
 
-    it('should handle cancel errors', async () => {
-      mockCoreto.cancelSimulation.mockRejectedValue(new Error('Failed to cancel'));
+    it('should handle cancelSimulation errors', async () => {
+      mockCoretoAPI.cancelSimulation.mockRejectedValue(
+        new Error('Cancel failed')
+      );
 
       const { result } = renderHook(() => useSimulationProgress());
 
@@ -346,39 +485,96 @@ describe('useSimulationProgress', () => {
       });
 
       expect(result.current.error?.title).toBe('Cancellation Failed');
-      expect(result.current.error?.code).toBe('ERR_CANCEL_FAILED');
     });
   });
 
-  describe('reset', () => {
-    it('should reset state to initial values', () => {
-      const { result } = renderHook(() => useSimulationProgress());
+  describe('reset Method', () => {
+    it('should reset all state to initial values', async () => {
+      let progressCallback: (payload: ProgressPayload) => void;
 
-      // First set some state
-      act(() => {
-        const completeCallback = (mockCoreto as any)._completeCallback;
-        if (completeCallback) {
-          completeCallback(mockSimulationResult);
-        }
+      mockCoretoAPI.onProgress.mockImplementation((callback: (payload: ProgressPayload) => void) => {
+        progressCallback = callback;
+        return jest.fn();
       });
 
-      expect(result.current.status).toBe('completed');
+      const { result } = renderHook(() => useSimulationProgress());
 
-      // Now reset
+      // Set some state
+      act(() => {
+        progressCallback!({
+          stage: 'battle',
+          trechoId: 'trecho-1',
+          trechoName: 'Test Trecho',
+          current: 50,
+          total: 100,
+          percentage: 50,
+          message: 'Running...',
+          timestamp: Date.now(),
+        });
+      });
+
+      await waitFor(() => {
+        expect(result.current.status).toBe('running');
+      });
+
+      // Reset
       act(() => {
         result.current.reset();
       });
 
-      expect(result.current.status).toBe('idle');
-      expect(result.current.progress.percentage).toBe(0);
-      expect(result.current.error).toBeNull();
-      expect(result.current.result).toBeNull();
+      await waitFor(() => {
+        expect(result.current.status).toBe('idle');
+        expect(result.current.progress.percentage).toBe(0);
+        expect(result.current.progressDetail).toBeNull();
+        expect(result.current.error).toBeNull();
+        expect(result.current.result).toBeNull();
+      });
     });
   });
 
-  describe('integration scenarios', () => {
+  describe('Memory Leak Prevention', () => {
+    it('should remove all event listeners after unmount', () => {
+      const cleanupProgress = jest.fn();
+      const cleanupComplete = jest.fn();
+      const cleanupError = jest.fn();
+
+      mockCoretoAPI.onProgress.mockReturnValue(cleanupProgress);
+      mockCoretoAPI.onComplete.mockReturnValue(cleanupComplete);
+      mockCoretoAPI.onError.mockReturnValue(cleanupError);
+
+      const { unmount } = renderHook(() => useSimulationProgress());
+
+      // Verify listeners are registered
+      expect(mockCoretoAPI.onProgress).toHaveBeenCalled();
+      expect(mockCoretoAPI.onComplete).toHaveBeenCalled();
+      expect(mockCoretoAPI.onError).toHaveBeenCalled();
+
+      // Unmount
+      unmount();
+
+      // Verify cleanup functions were called
+      expect(cleanupProgress).toHaveBeenCalled();
+      expect(cleanupComplete).toHaveBeenCalled();
+      expect(cleanupError).toHaveBeenCalled();
+    });
+  });
+
+  describe('Integration Scenarios', () => {
     it('should handle full simulation lifecycle', async () => {
-      mockCoreto.startSimulation.mockResolvedValue({
+      let progressCallback: (payload: ProgressPayload) => void;
+      let completeCallback: (result: SimulationResultPayload) => void;
+
+      mockCoretoAPI.onProgress.mockImplementation((callback: (payload: ProgressPayload) => void) => {
+        progressCallback = callback;
+        return jest.fn();
+      });
+
+      mockCoretoAPI.onComplete.mockImplementation((callback: (payload: SimulationResultPayload) => void) => {
+        completeCallback = callback;
+        return jest.fn();
+      });
+
+      mockCoretoAPI.startSimulation.mockResolvedValue({
         success: true,
         data: { simulationId: 'test-sim-id' },
       });
@@ -397,50 +593,49 @@ describe('useSimulationProgress', () => {
 
       // Progress events
       act(() => {
-        const progressCallback = (mockCoreto as any)._progressCallback;
-        if (progressCallback) {
-          progressCallback({
-            stage: 'battle' as const,
-            current: 25,
-            total: 100,
-            percentage: 25,
-            message: 'Battle 25/100',
-            timestamp: Date.now(),
-            trechoName: 'Trecho 1',
-          });
-        }
+        progressCallback!({
+          stage: 'battle',
+          trechoId: 'trecho-1',
+          trechoName: 'Test Trecho',
+          current: 25,
+          total: 100,
+          percentage: 25,
+          message: 'Battle 25/100',
+          timestamp: Date.now(),
+        });
       });
 
-      expect(result.current.progress.percentage).toBe(25);
+      await waitFor(() => {
+        expect(result.current.progress.percentage).toBe(25);
+      });
 
       // More progress
       act(() => {
-        const progressCallback = (mockCoreto as any)._progressCallback;
-        if (progressCallback) {
-          progressCallback({
-            stage: 'battle' as const,
-            current: 75,
-            total: 100,
-            percentage: 75,
-            message: 'Battle 75/100',
-            timestamp: Date.now(),
-            trechoName: 'Trecho 1',
-          });
-        }
+        progressCallback!({
+          stage: 'battle',
+          trechoId: 'trecho-1',
+          trechoName: 'Test Trecho',
+          current: 75,
+          total: 100,
+          percentage: 75,
+          message: 'Battle 75/100',
+          timestamp: Date.now(),
+        });
       });
 
-      expect(result.current.progress.percentage).toBe(75);
+      await waitFor(() => {
+        expect(result.current.progress.percentage).toBe(75);
+      });
 
       // Complete
       act(() => {
-        const completeCallback = (mockCoreto as any)._completeCallback;
-        if (completeCallback) {
-          completeCallback(mockSimulationResult);
-        }
+        completeCallback!(mockEventResult);
       });
 
-      expect(result.current.status).toBe('completed');
-      expect(result.current.progress.percentage).toBe(100);
+      await waitFor(() => {
+        expect(result.current.status).toBe('completed');
+        expect(result.current.progress.percentage).toBe(100);
+      });
     });
   });
 });

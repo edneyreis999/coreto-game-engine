@@ -18,6 +18,24 @@ import type { UIProjectConfig } from '../schemas.js';
 jest.mock('node:fs/promises');
 const mockedFs = fs as jest.Mocked<typeof fs>;
 
+// ============================================================================
+// Test Helpers
+// ============================================================================
+
+/**
+ * Creates a minimal valid config for testing.
+ * Accepts partial overrides to customize specific fields.
+ */
+function createValidConfig(overrides?: Partial<UIProjectConfig>): UIProjectConfig {
+  const defaultConfig: UIProjectConfig = {
+    version: '1.0',
+    trechos: [],
+    metadata: { projectName: 'Test' },
+  };
+
+  return { ...defaultConfig, ...overrides };
+}
+
 describe('ConfigService', () => {
   let service: ConfigService;
   const mockProjectPath = '/test/project';
@@ -28,13 +46,31 @@ describe('ConfigService', () => {
     jest.clearAllMocks();
   });
 
-  describe('getConfigPath', () => {
-    it('should return correct path matching CLI expectation', () => {
-      // Access private method via any for testing
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const configPath = (service as any).getConfigPath(mockProjectPath);
-      expect(configPath).toBe(mockConfigPath);
-      expect(configPath).toContain('temp/project.config.json');
+  describe('config path behavior', () => {
+    it('should use correct path matching CLI expectation', async () => {
+      // Test through public interface - configExists uses getConfigPath internally
+      mockedFs.access.mockResolvedValue(undefined);
+
+      await service.configExists(mockProjectPath);
+
+      // Verify the correct path was used (temp/project.config.json)
+      expect(mockedFs.access).toHaveBeenCalledWith(
+        expect.stringContaining('temp/project.config.json')
+      );
+      expect(mockedFs.access).toHaveBeenCalledWith(mockConfigPath);
+    });
+
+    it('should load config from temp directory', async () => {
+      mockedFs.readFile.mockResolvedValue(JSON.stringify(createValidConfig()));
+
+      await service.loadConfig(mockProjectPath);
+
+      // Verify the correct path was used
+      expect(mockedFs.readFile).toHaveBeenCalledWith(
+        expect.stringContaining('temp/project.config.json'),
+        'utf-8'
+      );
+      expect(mockedFs.readFile).toHaveBeenCalledWith(mockConfigPath, 'utf-8');
     });
   });
 
@@ -109,53 +145,49 @@ describe('ConfigService', () => {
   });
 
   describe('loadConfig', () => {
-    const validConfig: UIProjectConfig = {
-      version: '1.0',
-      trechos: [
-        {
-          id: 'trecho-1',
-          description: 'Test Trecho',
-          heroTeam: {
-            level: 5,
-            actors: [1, 2],
-            weapons: { 1: 10 },
-            armors: { 2: 5 },
+    describe('with valid config', () => {
+      beforeEach(() => {
+        mockedFs.readFile.mockResolvedValue(JSON.stringify(createValidConfig({
+          trechos: [
+            {
+              id: 'trecho-1',
+              description: 'Test Trecho',
+              heroTeam: {
+                level: 5,
+                actors: [1, 2],
+                weapons: { 1: 10 },
+                armors: { 2: 5 },
+              },
+              enemyTeam: {
+                troopId: 1,
+                count: 3,
+              },
+              expectedTTK: {
+                min: 10,
+                max: 20,
+              },
+            },
+          ],
+          metadata: {
+            projectName: 'Test Project',
+            lastModified: Date.now(),
           },
-          enemyTeam: {
-            troopId: 1,
-            count: 3,
-          },
-          expectedTTK: {
-            min: 10,
-            max: 20,
-          },
-        },
-      ],
-      metadata: {
-        projectName: 'Test Project',
-        lastModified: Date.now(),
-      },
-    };
+        })));
+      });
 
-    beforeEach(() => {
-      mockedFs.readFile.mockResolvedValue(JSON.stringify(validConfig));
-    });
+      it('should load valid config successfully', async () => {
+        const config = await service.loadConfig(mockProjectPath);
 
-    it('should load valid config successfully', async () => {
-      const config = await service.loadConfig(mockProjectPath);
-
-      expect(mockedFs.readFile).toHaveBeenCalledWith(mockConfigPath, 'utf-8');
-      expect(config.version).toBe('1.0');
-      expect(config.trechos).toHaveLength(1);
-      expect(config.trechos[0]).toBeDefined();
-      expect(config.trechos[0]?.id).toBe('trecho-1');
+        expect(mockedFs.readFile).toHaveBeenCalledWith(mockConfigPath, 'utf-8');
+        expect(config.version).toBe('1.0');
+        expect(config.trechos).toHaveLength(1);
+        expect(config.trechos[0]).toBeDefined();
+        expect(config.trechos[0]?.id).toBe('trecho-1');
+      });
     });
 
     it('should normalize and load old config format', async () => {
-      const oldConfig = {
-        trechos: [], // missing version
-      };
-      mockedFs.readFile.mockResolvedValue(JSON.stringify(oldConfig));
+      mockedFs.readFile.mockResolvedValue(JSON.stringify({ trechos: [] }));
 
       const config = await service.loadConfig(mockProjectPath);
 
@@ -172,8 +204,7 @@ describe('ConfigService', () => {
     });
 
     it('should throw ConfigValidationError if invalid after normalization', async () => {
-      const invalidConfig = {
-        version: '1.0',
+      const invalidConfig = createValidConfig({
         trechos: [
           {
             id: 'trecho-1',
@@ -189,43 +220,30 @@ describe('ConfigService', () => {
             },
           },
         ],
-      };
+      });
       mockedFs.readFile.mockResolvedValue(JSON.stringify(invalidConfig));
 
       await expect(service.loadConfig(mockProjectPath)).rejects.toThrow(ConfigValidationError);
     });
 
     it('should handle migrated maxTurns field', async () => {
-      const legacyConfig = {
-        version: '1.0',
-        maxTurns: 100,
-        trechos: [],
-      };
+      const legacyConfig = { version: '1.0', maxTurns: 100, trechos: [] };
       mockedFs.readFile.mockResolvedValue(JSON.stringify(legacyConfig));
 
       const config = await service.loadConfig(mockProjectPath);
 
       expect(config.version).toBe('1.0');
-      // Note: maxBattleTurns is not in the schema, but normalization adds it
-      // The Zod schema doesn't validate it, but it's preserved in the raw object
     });
   });
 
   describe('saveConfig', () => {
-    const validConfig: UIProjectConfig = {
-      version: '1.0',
-      trechos: [],
-      metadata: {
-        projectName: 'Test Project',
-      },
-    };
-
     beforeEach(() => {
       mockedFs.mkdir.mockResolvedValue(undefined);
       mockedFs.writeFile.mockResolvedValue(undefined);
     });
 
     it('should save config with formatting', async () => {
+      const validConfig = createValidConfig({ metadata: { projectName: 'Test Project' } });
       await service.saveConfig(mockProjectPath, validConfig);
 
       expect(mockedFs.mkdir).toHaveBeenCalledWith(
@@ -256,7 +274,7 @@ describe('ConfigService', () => {
 
     it('should update lastModified timestamp', async () => {
       const beforeTime = Date.now();
-      await service.saveConfig(mockProjectPath, validConfig);
+      await service.saveConfig(mockProjectPath, createValidConfig());
       const afterTime = Date.now();
 
       expect(mockedFs.writeFile.mock.calls[0]).toBeDefined();
@@ -268,24 +286,16 @@ describe('ConfigService', () => {
     });
 
     it('should throw ConfigValidationError for invalid config', async () => {
-      const invalidConfig = {
-        version: '1.0',
+      const invalidConfig = createValidConfig({
         trechos: [
           {
-            id: '',
+            id: '', // Invalid: empty id
             description: 'Test',
-            heroTeam: {
-              level: 5,
-              actors: [],
-              weapons: {},
-              armors: {},
-            },
-            enemyTeam: {
-              troopId: 1,
-            },
+            heroTeam: { level: 5, actors: [], weapons: {}, armors: {} },
+            enemyTeam: { troopId: 1 },
           },
         ],
-      } as unknown as UIProjectConfig;
+      }) as unknown as UIProjectConfig;
 
       await expect(service.saveConfig(mockProjectPath, invalidConfig)).rejects.toThrow(
         ConfigValidationError
@@ -293,12 +303,7 @@ describe('ConfigService', () => {
     });
 
     it('should preserve metadata when not provided', async () => {
-      const configWithoutMetadata: UIProjectConfig = {
-        version: '1.0',
-        trechos: [],
-      };
-
-      await service.saveConfig(mockProjectPath, configWithoutMetadata);
+      await service.saveConfig(mockProjectPath, createValidConfig());
 
       expect(mockedFs.writeFile.mock.calls[0]).toBeDefined();
       const writeCall = mockedFs.writeFile.mock.calls[0];

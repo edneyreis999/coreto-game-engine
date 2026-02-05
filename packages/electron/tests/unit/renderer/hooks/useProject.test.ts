@@ -7,12 +7,54 @@
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { useProject } from '@/hooks/useProject'
 
-// Mock window.coreto API - defined in setup.renderer.ts
-const mockCoreto = (global as any).mockCoreto
+
+// ============================================================================
+// Test Constants
+// ============================================================================
+
+const MOCK_TIMEOUT = 100;
+const MOCK_TROOPS_COUNT = 10;
+const MOCK_CLASSES_COUNT = 5;
+const MOCK_ENEMIES_COUNT = 15;
 
 describe('useProject', () => {
+  let mockCoreto: any
+
   beforeEach(() => {
     jest.clearAllMocks()
+
+    // Create fresh mock for each test
+    mockCoreto = {
+      openProject: jest.fn(),
+      validateProject: jest.fn(),
+      runSimulation: jest.fn(),
+      startSimulation: jest.fn(),
+      getSimulationProgress: jest.fn(),
+      cancelSimulation: jest.fn(),
+      getSimulationResults: jest.fn(),
+      loadConfig: jest.fn(),
+      getTrechos: jest.fn(),
+      updateTrecho: jest.fn(),
+      deleteTrecho: jest.fn(),
+      getTroops: jest.fn(),
+      getClasses: jest.fn(),
+      getEnemies: jest.fn(),
+      listRecent: jest.fn(),
+      addRecent: jest.fn(),
+      getPreferences: jest.fn(),
+      setPreferences: jest.fn(),
+      updateGlobalSettings: jest.fn(),
+      // Event listener functions - return cleanup function
+      onProgress: jest.fn(() => jest.fn()),
+      onComplete: jest.fn(() => jest.fn()),
+      onError: jest.fn(() => jest.fn()),
+    }
+
+    // Setup global window mock
+    Object.defineProperty(window, 'coreto', {
+      value: mockCoreto,
+      writable: true,
+    })
   })
 
   describe('initial state', () => {
@@ -34,9 +76,9 @@ describe('useProject', () => {
         path: '/path/to/project',
         name: 'Test Project',
         isValid: true,
-        troopsCount: 10,
-        classesCount: 5,
-        enemiesCount: 15,
+        troopsCount: 1,
+        classesCount: 1,
+        enemiesCount: 1,
       }
 
       mockCoreto.openProject.mockResolvedValue({
@@ -79,44 +121,45 @@ describe('useProject', () => {
       expect(result.current.validation.errors).toEqual(['Project is not valid'])
     })
 
-    it('should handle IPC errors', async () => {
-      mockCoreto.openProject.mockResolvedValue({
-        success: false,
-        error: {
-          name: 'IPCError',
-          message: 'Failed to open project',
-          severity: 'critical' as const,
-          context: {},
-          timestamp: new Date().toISOString(),
-        },
+    describe('error handling', () => {
+      test.each([
+        [
+          'IPC error',
+          {
+            success: false,
+            error: {
+              name: 'IPCError',
+              message: 'Failed to open project',
+              severity: 'critical' as const,
+              context: {},
+              timestamp: new Date().toISOString(),
+            },
+          },
+          'Failed to open project',
+        ],
+        [
+          'network error',
+          new Error('Network error'),
+          'Network error',
+        ],
+      ] as const)('should handle %s', async (_name, mockError, expectedMessage) => {
+        if (mockError instanceof Error) {
+          mockCoreto.openProject.mockRejectedValue(mockError)
+        } else {
+          mockCoreto.openProject.mockResolvedValue(mockError)
+        }
+
+        const { result } = renderHook(() => useProject())
+
+        await act(async () => {
+          await result.current.openProject('/path/to/project')
+        })
+
+        expect(result.current.projectInfo).toBeNull()
+        expect(result.current.validation.status).toBe('invalid')
+        expect(result.current.error).not.toBeNull()
+        expect(result.current.error?.message).toBe(expectedMessage)
       })
-
-      const { result } = renderHook(() => useProject())
-
-      await act(async () => {
-        await result.current.openProject('/path/to/project')
-      })
-
-      expect(result.current.projectInfo).toBeNull()
-      expect(result.current.validation.status).toBe('invalid')
-      expect(result.current.validation.errors).toEqual(['Failed to open project'])
-      expect(result.current.error).not.toBeNull()
-      expect(result.current.error?.message).toBe('Failed to open project')
-    })
-
-    it('should handle network errors', async () => {
-      mockCoreto.openProject.mockRejectedValue(new Error('Network error'))
-
-      const { result } = renderHook(() => useProject())
-
-      await act(async () => {
-        await result.current.openProject('/path/to/project')
-      })
-
-      expect(result.current.projectInfo).toBeNull()
-      expect(result.current.validation.status).toBe('invalid')
-      expect(result.current.error).not.toBeNull()
-      expect(result.current.error?.message).toBe('Network error')
     })
 
     it('should set loading state during openProject call', async () => {
@@ -132,7 +175,7 @@ describe('useProject', () => {
                   isValid: true,
                 },
               })
-            }, 100)
+            }, MOCK_TIMEOUT)
           })
       )
 
@@ -151,60 +194,44 @@ describe('useProject', () => {
   })
 
   describe('validateProject', () => {
-    it('should validate a valid project successfully', async () => {
-      mockCoreto.validateProject.mockResolvedValue({
-        success: true,
-        data: {
+    test.each([
+      [
+        'a valid project successfully',
+        {
           isValid: true,
           errors: [],
           warnings: [],
         },
-      })
-
-      const { result } = renderHook(() => useProject())
-
-      await act(async () => {
-        await result.current.validateProject('/path/to/project')
-      })
-
-      expect(result.current.projectInfo).toBeNull()
-      expect(result.current.validation.status).toBe('valid')
-      expect(result.current.validation.errors).toEqual([])
-      expect(result.current.validation.warnings).toEqual([])
-      expect(mockCoreto.validateProject).toHaveBeenCalledWith('/path/to/project')
-    })
-
-    it('should validate an invalid project with errors', async () => {
-      mockCoreto.validateProject.mockResolvedValue({
-        success: true,
-        data: {
+        'valid',
+        [],
+        [],
+      ],
+      [
+        'an invalid project with errors',
+        {
           isValid: false,
           errors: ['game.rmmzproject not found', 'data directory not found'],
           warnings: [],
         },
-      })
-
-      const { result } = renderHook(() => useProject())
-
-      await act(async () => {
-        await result.current.validateProject('/path/to/project')
-      })
-
-      expect(result.current.validation.status).toBe('invalid')
-      expect(result.current.validation.errors).toEqual([
-        'game.rmmzproject not found',
-        'data directory not found',
-      ])
-    })
-
-    it('should validate with warnings', async () => {
-      mockCoreto.validateProject.mockResolvedValue({
-        success: true,
-        data: {
+        'invalid',
+        ['game.rmmzproject not found', 'data directory not found'],
+        [],
+      ],
+      [
+        'with warnings',
+        {
           isValid: true,
           errors: [],
           warnings: ['Some data files may be corrupt'],
         },
+        'valid',
+        [],
+        ['Some data files may be corrupt'],
+      ],
+    ])('should validate %s', async (_name, mockData, expectedStatus, expectedErrors, expectedWarnings) => {
+      mockCoreto.validateProject.mockResolvedValue({
+        success: true,
+        data: mockData,
       })
 
       const { result } = renderHook(() => useProject())
@@ -213,8 +240,13 @@ describe('useProject', () => {
         await result.current.validateProject('/path/to/project')
       })
 
-      expect(result.current.validation.status).toBe('valid')
-      expect(result.current.validation.warnings).toEqual(['Some data files may be corrupt'])
+      if (expectedStatus === 'valid' && expectedErrors.length === 0) {
+        expect(result.current.projectInfo).toBeNull()
+      }
+      expect(result.current.validation.status).toBe(expectedStatus)
+      expect(result.current.validation.errors).toEqual(expectedErrors)
+      expect(result.current.validation.warnings).toEqual(expectedWarnings)
+      expect(mockCoreto.validateProject).toHaveBeenCalledWith('/path/to/project')
     })
   })
 

@@ -20,21 +20,34 @@ import { ReportStorageService } from '../../services/report-storage.js';
 import { registerHistoryHandlers } from '../history-handlers.js';
 import type { ReportData } from '../types.js';
 
+
+// ============================================================================
+// Test Constants
+// ============================================================================
+
+const MOCK_LIMIT = 10;
+const EXPECTED_SIM_COUNT = 2;
+const EXPECTED_ONE_SIM = 1;
+const EXPECTED_NO_SIM = 0;
+const UUID_REGEX_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 // ============================================================================
 // Test Helpers
 // ============================================================================
 
 /**
- * Creates a mock ReportData for testing.
+ * Creates a minimal mock ReportData for testing.
+ * Only includes fields that are actually used by tests.
+ * Accepts partial overrides to customize specific fields.
  */
-function createMockReportData(): ReportData {
-  return {
+function createMockReportData(overrides?: Partial<ReportData>): ReportData {
+  const defaultData: ReportData = {
     trechos: [
       {
         id: 'trecho-1',
         name: 'Trecho 1',
         passed: true,
-        battleCount: 100,
+        battleCount: 1,
         avgTtkTurns: 5,
         avgTtkActions: 10,
         p95TtkTurns: 8,
@@ -44,7 +57,7 @@ function createMockReportData(): ReportData {
           {
             troopId: 1,
             troopName: 'Test Troop',
-            outcome: 'victory',
+            outcome: 'victory' as const,
             ttkTurns: 5,
             ttkActions: 10,
             durationMs: 1000,
@@ -62,9 +75,11 @@ function createMockReportData(): ReportData {
         ],
       },
     ],
-    totalBattles: 100,
+    totalBattles: 1,
     timestamp: new Date().toISOString(),
   };
+
+  return { ...defaultData, ...overrides };
 }
 
 /**
@@ -157,10 +172,10 @@ describe('History IPC Handlers', () => {
       await service.storeSimulation(sim1, '/project/a', createMockReportData(), 'SUCCESS');
       await service.storeSimulation(sim2, '/project/b', createMockReportData(), 'SUCCESS');
 
-      const result = await invokeHandler('history:list', { limit: 10 });
+      const result = await invokeHandler('history:list', { limit: MOCK_LIMIT });
 
       expect(result.success).toBe(true);
-      expect(result.data?.simulations).toHaveLength(2);
+      expect(result.data?.simulations).toHaveLength(EXPECTED_SIM_COUNT);
     });
 
     it('should filter by project path', async () => {
@@ -173,7 +188,7 @@ describe('History IPC Handlers', () => {
       const result = await invokeHandler('history:list', { projectPath: '/project/a' });
 
       expect(result.success).toBe(true);
-      expect(result.data?.simulations).toHaveLength(1);
+      expect(result.data?.simulations).toHaveLength(EXPECTED_ONE_SIM);
       expect(result.data?.simulations[0]?.projectPath).toBe('/project/a');
     });
 
@@ -190,7 +205,7 @@ describe('History IPC Handlers', () => {
       const result = await invokeHandler('history:generateId', {});
 
       expect(result.success).toBe(true);
-      expect(result.data?.simulationId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+      expect(result.data?.simulationId).toMatch(UUID_REGEX_PATTERN);
     });
 
     it('should generate unique IDs', async () => {
@@ -231,7 +246,7 @@ describe('History IPC Handlers', () => {
       // Verify exists
       let stmt = db.prepare('SELECT COUNT(*) as count FROM simulation_history_v2 WHERE id = ?');
       let row = stmt.get(simId) as { count: number };
-      expect(row.count).toBe(1);
+      expect(row.count).toBe(EXPECTED_ONE_SIM);
 
       // Delete
       const result = await invokeHandler('history:delete', { simulationId: simId });
@@ -241,7 +256,7 @@ describe('History IPC Handlers', () => {
       // Verify gone
       stmt = db.prepare('SELECT COUNT(*) as count FROM simulation_history_v2 WHERE id = ?');
       row = stmt.get(simId) as { count: number };
-      expect(row.count).toBe(0);
+      expect(row.count).toBe(EXPECTED_NO_SIM);
     });
 
     it('should return error for invalid UUID', async () => {

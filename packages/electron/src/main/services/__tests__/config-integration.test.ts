@@ -87,7 +87,7 @@ describe('ConfigService Integration', () => {
       });
 
       // Verify pretty-printed formatting (human-readable)
-      expect(fileContent).toContain('\n  '); // indented
+      expect(fileContent).toContain('\n  ');
     });
 
     it('should load config saved by CLI', async () => {

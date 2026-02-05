@@ -38,14 +38,37 @@ jest.mock('node:crypto', () => ({
   randomUUID: jest.fn(() => 'mock-uuid-1234'),
 }));
 
+
+// ============================================================================
+// Test Constants
+// ============================================================================
+
+const MOCK_DURATION = 5000;
+const MOCK_SEED = 12345;
+const MOCK_CURRENT_PROGRESS = 50;
+const MOCK_TOTAL_PROGRESS = 100;
+const MOCK_PERCENTAGE = 50;
+
 describe('IPC Event Streaming Integration', () => {
   let mockWindow: jest.Mocked<BrowserWindow>;
-   
   let mockWorker: any;
   let messageHandler: ((message: WorkerToMainMessage) => void) | undefined;
+  // Capture handlers by channel name for order-independent testing
+  let handlers: Map<string, (event: Electron.IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>>;
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Set up handler map to capture registered handlers
+    handlers = new Map();
+
+    // Mock ipcMain.handle to capture handlers
+    (ipcMain.handle as jest.Mock).mockImplementation((
+      channel: string,
+      handler: (event: Electron.IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>
+    ) => {
+      handlers.set(channel, handler);
+    });
 
     // Create mock window
     mockWindow = {
@@ -88,6 +111,7 @@ describe('IPC Event Streaming Integration', () => {
   afterEach(() => {
     // Cleanup controller state
     simulationController.cleanup();
+    handlers.clear();
   });
 
   describe('Event Forwarding via SimulationController', () => {
@@ -107,10 +131,10 @@ describe('IPC Event Streaming Integration', () => {
         type: 'progress',
         payload: {
           stage: 'battle',
-          current: 50,
-          total: 100,
-          percentage: 50,
-          message: 'Battle 50/100',
+          current: MOCK_CURRENT_PROGRESS,
+          total: MOCK_TOTAL_PROGRESS,
+          percentage: MOCK_PERCENTAGE,
+          message: `Battle ${MOCK_CURRENT_PROGRESS}/${MOCK_TOTAL_PROGRESS}`,
           timestamp: Date.now(),
         },
       };
@@ -139,8 +163,8 @@ describe('IPC Event Streaming Integration', () => {
           projectPath: '/path/to/project',
            
           report: {} as any,
-          duration: 5000,
-          seed: 12345,
+          duration: MOCK_DURATION,
+          seed: MOCK_SEED,
         },
       };
 
@@ -217,10 +241,10 @@ describe('IPC Event Streaming Integration', () => {
         type: 'progress',
         payload: {
           stage: 'battle',
-          current: 50,
-          total: 100,
-          percentage: 50,
-          message: 'Battle 50/100',
+          current: MOCK_CURRENT_PROGRESS,
+          total: MOCK_TOTAL_PROGRESS,
+          percentage: MOCK_PERCENTAGE,
+          message: `Battle ${MOCK_CURRENT_PROGRESS}/${MOCK_TOTAL_PROGRESS}`,
           timestamp: Date.now(),
         },
       };
@@ -244,10 +268,10 @@ describe('IPC Event Streaming Integration', () => {
         type: 'progress',
         payload: {
           stage: 'battle',
-          current: 50,
-          total: 100,
-          percentage: 50,
-          message: 'Battle 50/100',
+          current: MOCK_CURRENT_PROGRESS,
+          total: MOCK_TOTAL_PROGRESS,
+          percentage: MOCK_PERCENTAGE,
+          message: `Battle ${MOCK_CURRENT_PROGRESS}/${MOCK_TOTAL_PROGRESS}`,
           timestamp: Date.now(),
         },
       };
@@ -262,51 +286,36 @@ describe('IPC Event Streaming Integration', () => {
     it('should register simulation:start handler', () => {
       registerSimulationHandlers();
 
-      expect(ipcMain.handle).toHaveBeenCalledWith(
-        'simulation:start',
-        expect.any(Function)
-      );
+      expect(handlers.has('simulation:start')).toBe(true);
+      expect(handlers.get('simulation:start')).toBeInstanceOf(Function);
     });
 
     it('should register simulation:cancel handler', () => {
       registerSimulationHandlers();
 
-      expect(ipcMain.handle).toHaveBeenCalledWith(
-        'simulation:cancel',
-        expect.any(Function)
-      );
+      expect(handlers.has('simulation:cancel')).toBe(true);
+      expect(handlers.get('simulation:cancel')).toBeInstanceOf(Function);
     });
   });
 
   describe('Polling Elimination', () => {
     it('should not use getSimulationProgress calls', () => {
-      const ipcInvokeSpy = jest.spyOn(ipcMain, 'handle');
-
       registerSimulationHandlers();
 
-      // Get all registered handler channels
-       
-      const handlerChannels = ipcInvokeSpy.mock.calls.map(
-        (call: any[]) => call[0]
-      );
-
       // Assert no polling handler exists
-      expect(handlerChannels).not.toContain('simulation:getProgress');
+      expect(handlers.has('simulation:getProgress')).toBe(false);
     });
 
     it('should use events instead of polling for progress updates', async () => {
       registerSimulationHandlers();
 
-      // Start simulation via IPC handler
-       
-      const startHandler = (ipcMain.handle as jest.Mock).mock.calls.find(
-        (call: any[]) => call[0] === 'simulation:start'
-      )?.[1];
-
+      // Get the start handler directly from the map
+      const startHandler = handlers.get('simulation:start');
       expect(startHandler).toBeDefined();
 
-      // Invoke the handler
-      await startHandler({}, {
+      // Invoke the handler with proper mock event
+      const mockEvent = {} as Electron.IpcMainInvokeEvent;
+      await startHandler!(mockEvent, {
         projectPath: '/path/to/project',
         configPath: '/path/to/project/temp/test-config.json',
       });
@@ -316,10 +325,10 @@ describe('IPC Event Streaming Integration', () => {
         type: 'progress',
         payload: {
           stage: 'battle',
-          current: 50,
-          total: 100,
-          percentage: 50,
-          message: 'Battle 50/100',
+          current: MOCK_CURRENT_PROGRESS,
+          total: MOCK_TOTAL_PROGRESS,
+          percentage: MOCK_PERCENTAGE,
+          message: `Battle ${MOCK_CURRENT_PROGRESS}/${MOCK_TOTAL_PROGRESS}`,
           timestamp: Date.now(),
         },
       };

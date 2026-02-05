@@ -8,9 +8,6 @@ import { renderHook, waitFor, act } from '@testing-library/react'
 import { useSimulationResults } from '@/hooks/useSimulationResults'
 import type { ReportData } from '@coreto/electron/main/ipc/types.js'
 
-// Mock window.coreto API - defined in setup.renderer.ts
-const mockCoreto = (global as any).mockCoreto
-
 const mockReportData: ReportData = {
   trechos: [
     {
@@ -32,8 +29,43 @@ const mockReportData: ReportData = {
 }
 
 describe('useSimulationResults', () => {
+  let mockCoreto: any
+
   beforeEach(() => {
     jest.clearAllMocks()
+
+    // Create fresh mock for each test
+    mockCoreto = {
+      openProject: jest.fn(),
+      validateProject: jest.fn(),
+      runSimulation: jest.fn(),
+      startSimulation: jest.fn(),
+      getSimulationProgress: jest.fn(),
+      cancelSimulation: jest.fn(),
+      getSimulationResults: jest.fn(),
+      loadConfig: jest.fn(),
+      getTrechos: jest.fn(),
+      updateTrecho: jest.fn(),
+      deleteTrecho: jest.fn(),
+      getTroops: jest.fn(),
+      getClasses: jest.fn(),
+      getEnemies: jest.fn(),
+      listRecent: jest.fn(),
+      addRecent: jest.fn(),
+      getPreferences: jest.fn(),
+      setPreferences: jest.fn(),
+      updateGlobalSettings: jest.fn(),
+      // Event listener functions - return cleanup function
+      onProgress: jest.fn(() => jest.fn()),
+      onComplete: jest.fn(() => jest.fn()),
+      onError: jest.fn(() => jest.fn()),
+    }
+
+    // Setup global window mock
+    Object.defineProperty(window, 'coreto', {
+      value: mockCoreto,
+      writable: true,
+    })
 
     // Setup default mock response
     mockCoreto.getSimulationResults.mockResolvedValue({
@@ -82,42 +114,45 @@ describe('useSimulationResults', () => {
       expect(result.current.error).toBe(null)
     })
 
-    it('should return error state when IPC call fails', async () => {
-      const mockError = new Error('Failed to get results')
-      mockCoreto.getSimulationResults.mockResolvedValue({
-        success: false,
-        error: {
-          name: 'IPCError',
-          message: mockError.message,
-          severity: 'critical',
-          context: {},
-          timestamp: new Date().toISOString(),
-        },
+    describe('error handling', () => {
+      test.each([
+        [
+          'IPC error',
+          {
+            success: false,
+            error: {
+              name: 'IPCError',
+              message: 'Failed to get results',
+              severity: 'critical' as const,
+              context: {},
+              timestamp: new Date().toISOString(),
+            },
+          },
+          'Failed to get results',
+        ],
+        [
+          'network error',
+          new Error('Network error'),
+          'Network error',
+        ],
+      ] as const)('should handle %s', async (_name, mockError, expectedMessage) => {
+        if (mockError instanceof Error) {
+          mockCoreto.getSimulationResults.mockRejectedValue(mockError)
+        } else {
+          mockCoreto.getSimulationResults.mockResolvedValue(mockError)
+        }
+
+        const { result } = renderHook(() => useSimulationResults())
+
+        await waitFor(() => {
+          expect(result.current.isLoading).toBe(false)
+        })
+
+        expect(result.current.report).toBe(null)
+        expect(result.current.hasResults).toBe(false)
+        expect(result.current.error).toBeInstanceOf(Error)
+        expect(result.current.error?.message).toBe(expectedMessage)
       })
-
-      const { result } = renderHook(() => useSimulationResults())
-
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false)
-      })
-
-      expect(result.current.report).toBe(null)
-      expect(result.current.hasResults).toBe(false)
-      expect(result.current.error).toBeInstanceOf(Error)
-      expect(result.current.error?.message).toBe(mockError.message)
-    })
-
-    it('should handle network errors', async () => {
-      mockCoreto.getSimulationResults.mockRejectedValue(new Error('Network error'))
-
-      const { result } = renderHook(() => useSimulationResults())
-
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false)
-      })
-
-      expect(result.current.error).toBeInstanceOf(Error)
-      expect(result.current.error?.message).toBe('Network error')
     })
   })
 
@@ -238,17 +273,32 @@ describe('useSimulationResults', () => {
   })
 
   describe('hasResults flag', () => {
-    it('should return false when report is null', async () => {
-      mockCoreto.getSimulationResults.mockResolvedValueOnce({
-        success: false,
-        error: {
-          name: 'IPCError',
-          message: 'No results',
-          severity: 'critical',
-          context: {},
-          timestamp: new Date().toISOString(),
+    test.each([
+      [
+        'false when report is null',
+        () => {
+          mockCoreto.getSimulationResults.mockResolvedValueOnce({
+            success: false,
+            error: {
+              name: 'IPCError',
+              message: 'No results',
+              severity: 'critical',
+              context: {},
+              timestamp: new Date().toISOString(),
+            },
+          })
         },
-      })
+        false,
+      ],
+      [
+        'true when report exists',
+        () => {
+          // Use default mock (already set in beforeEach)
+        },
+        true,
+      ],
+    ])('should return %s', async (_name, setupFn, expectedValue) => {
+      setupFn()
 
       const { result } = renderHook(() => useSimulationResults())
 
@@ -256,17 +306,7 @@ describe('useSimulationResults', () => {
         expect(result.current.isLoading).toBe(false)
       })
 
-      expect(result.current.hasResults).toBe(false)
-    })
-
-    it('should return true when report exists', async () => {
-      const { result } = renderHook(() => useSimulationResults())
-
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false)
-      })
-
-      expect(result.current.hasResults).toBe(true)
+      expect(result.current.hasResults).toBe(expectedValue)
     })
   })
 })

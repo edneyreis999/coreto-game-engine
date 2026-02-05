@@ -7,13 +7,50 @@
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { useIpc, useIpcWithArg } from '@/hooks/useIpc'
 
-// Mock window.coreto API - defined in setup.renderer.ts
-const mockCoreto = (global as any).mockCoreto
+
+// ============================================================================
+// Test Constants
+// ============================================================================
 
 describe('useIpc', () => {
+  let mockCoreto: any
+
   beforeEach(() => {
     jest.clearAllMocks()
     jest.useFakeTimers()
+
+    // Create fresh mock for each test
+    mockCoreto = {
+      openProject: jest.fn(),
+      validateProject: jest.fn(),
+      runSimulation: jest.fn(),
+      startSimulation: jest.fn(),
+      getSimulationProgress: jest.fn(),
+      cancelSimulation: jest.fn(),
+      getSimulationResults: jest.fn(),
+      loadConfig: jest.fn(),
+      getTrechos: jest.fn(),
+      updateTrecho: jest.fn(),
+      deleteTrecho: jest.fn(),
+      getTroops: jest.fn(),
+      getClasses: jest.fn(),
+      getEnemies: jest.fn(),
+      listRecent: jest.fn(),
+      addRecent: jest.fn(),
+      getPreferences: jest.fn(),
+      setPreferences: jest.fn(),
+      updateGlobalSettings: jest.fn(),
+      // Event listener functions - return cleanup function
+      onProgress: jest.fn(() => jest.fn()),
+      onComplete: jest.fn(() => jest.fn()),
+      onError: jest.fn(() => jest.fn()),
+    }
+
+    // Setup global window mock
+    Object.defineProperty(window, 'coreto', {
+      value: mockCoreto,
+      writable: true,
+    })
   })
 
   afterEach(() => {
@@ -65,45 +102,46 @@ describe('useIpc', () => {
       expect(result.current.error).toBeNull()
     })
 
-    it('should handle IPC errors', async () => {
-      mockCoreto.getPreferences.mockResolvedValue({
-        success: false,
-        error: {
-          name: 'IPCError',
-          message: 'Failed to get preferences',
-          severity: 'critical' as const,
-          context: {},
-          timestamp: new Date().toISOString(),
-        },
+    describe('error handling', () => {
+      test.each([
+        [
+          'IPC error',
+          {
+            success: false,
+            error: {
+              name: 'IPCError',
+              message: 'Failed to get preferences',
+              severity: 'critical' as const,
+              context: {},
+              timestamp: new Date().toISOString(),
+            },
+          },
+          'Failed to get preferences',
+        ],
+        [
+          'network error',
+          new Error('Network error'),
+          'Network error',
+        ],
+      ] as const)('should handle %s', async (_name, mockError, expectedMessage) => {
+        if (mockError instanceof Error) {
+          mockCoreto.getPreferences.mockRejectedValue(mockError)
+        } else {
+          mockCoreto.getPreferences.mockResolvedValue(mockError)
+        }
+
+        const { result } = renderHook(() =>
+          useIpc(() => mockCoreto.getPreferences(), { invokeOnMount: true })
+        )
+
+        await waitFor(() => {
+          expect(result.current.isLoading).toBe(false)
+        })
+
+        expect(result.current.data).toBeNull()
+        expect(result.current.error).not.toBeNull()
+        expect(result.current.error?.message).toBe(expectedMessage)
       })
-
-      const { result } = renderHook(() =>
-        useIpc(() => mockCoreto.getPreferences(), { invokeOnMount: true })
-      )
-
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false)
-      })
-
-      expect(result.current.data).toBeNull()
-      expect(result.current.error).not.toBeNull()
-      expect(result.current.error?.message).toBe('Failed to get preferences')
-    })
-
-    it('should handle network errors', async () => {
-      mockCoreto.getPreferences.mockRejectedValue(new Error('Network error'))
-
-      const { result } = renderHook(() =>
-        useIpc(() => mockCoreto.getPreferences(), { invokeOnMount: true })
-      )
-
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false)
-      })
-
-      expect(result.current.data).toBeNull()
-      expect(result.current.error).not.toBeNull()
-      expect(result.current.error?.message).toBe('Network error')
     })
   })
 
@@ -197,9 +235,9 @@ describe('useIpcWithArg', () => {
         path: '/path/to/project',
         name: 'Test Project',
         isValid: true,
-        troopsCount: 10,
-        classesCount: 5,
-        enemiesCount: 15,
+        troopsCount: 1,
+        classesCount: 1,
+        enemiesCount: 1,
       }
 
       mockCoreto.openProject.mockResolvedValue({

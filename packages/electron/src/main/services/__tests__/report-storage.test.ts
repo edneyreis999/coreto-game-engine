@@ -29,35 +29,50 @@ import type { ReportData } from '../../ipc/types.js';
 import { app } from 'electron';
 
 // ============================================================================
+// Test Constants
+// ============================================================================
+
+const SUMMARY_SIZE_BYTES = 2048;
+const EXPECTED_TRECHO_COUNT = 2;
+const MOCK_TOTAL_SIMULATIONS = 3;
+const MOCK_HISTORY_LIMIT = 2;
+const EXPECTED_RECORD_COUNT = 1;
+const EXPECTED_NO_RECORD_COUNT = 0;
+
+// ============================================================================
 // Test Helpers
 // ============================================================================
 
 /**
- * Creates a mock ReportData for testing.
+ * Creates a minimal mock ReportData for testing.
+ * Only includes fields that are actually used by tests.
+ * Accepts partial overrides to customize specific fields.
  */
-function createMockReportData(_overrides?: Partial<ReportData>): ReportData {
-  return {
+function createMockReportData(overrides?: Partial<ReportData>): ReportData {
+  const defaultData: ReportData = {
     trechos: [
       {
         id: 'trecho-1',
         name: 'Trecho 1',
         passed: true,
-        battleCount: 100,
+        battleCount: 1,
         avgTtkTurns: 5,
         avgTtkActions: 10,
         p95TtkTurns: 8,
         p95TtkActions: 15,
         successRate: 1.0,
-        battles: Array.from({ length: 100 }, (_, i) => ({
-          troopId: 1,
-          troopName: `Troop ${i}`,
-          outcome: 'victory' as const,
-          ttkTurns: 5,
-          ttkActions: 10,
-          durationMs: 1000,
-          seed: 12345,
-          expGained: 100,
-        })),
+        battles: [
+          {
+            troopId: 1,
+            troopName: 'Test Troop',
+            outcome: 'victory' as const,
+            ttkTurns: 5,
+            ttkActions: 10,
+            durationMs: 1000,
+            seed: 12345,
+            expGained: 100,
+          },
+        ],
         warnings: [
           {
             type: 'test-warning',
@@ -71,22 +86,24 @@ function createMockReportData(_overrides?: Partial<ReportData>): ReportData {
         id: 'trecho-2',
         name: 'Trecho 2',
         passed: false,
-        battleCount: 50,
+        battleCount: 1,
         avgTtkTurns: 10,
         avgTtkActions: 20,
         p95TtkTurns: 15,
         p95TtkActions: 25,
         successRate: 0.5,
-        battles: Array.from({ length: 50 }, (_, i) => ({
-          troopId: 2,
-          troopName: `Troop ${i + 100}`,
-          outcome: i % 2 === 0 ? ('victory' as const) : ('defeat' as const),
-          ttkTurns: 10,
-          ttkActions: 20,
-          durationMs: 2000,
-          seed: 12345,
-          expGained: 200,
-        })),
+        battles: [
+          {
+            troopId: 2,
+            troopName: 'Troop 2',
+            outcome: 'defeat' as const,
+            ttkTurns: 10,
+            ttkActions: 20,
+            durationMs: 2000,
+            seed: 12345,
+            expGained: 200,
+          },
+        ],
         warnings: [
           {
             type: 'critical-warning',
@@ -97,9 +114,11 @@ function createMockReportData(_overrides?: Partial<ReportData>): ReportData {
         ],
       },
     ],
-    totalBattles: 150,
+    totalBattles: 2,
     timestamp: new Date().toISOString(),
   };
+
+  return { ...defaultData, ...overrides };
 }
 
 /**
@@ -161,11 +180,6 @@ describe('ReportStorageService', () => {
     mockGetPath.mockRestore();
   });
 
-  afterEach(async () => {
-    db.close();
-    await rimraf(tempDir);
-  });
-
   describe('generateSimulationId', () => {
     it('should generate a valid UUID', () => {
       const id = generateSimulationId();
@@ -207,8 +221,8 @@ describe('ReportStorageService', () => {
 
       // Verify summary JSON can be parsed
       const summary = JSON.parse(row!.summary_json) as SimulationSummary;
-      expect(summary.trechos).toHaveLength(2);
-      expect(summary.totalBattles).toBe(150);
+      expect(summary.trechos).toHaveLength(EXPECTED_TRECHO_COUNT);
+      expect(summary.totalBattles).toBe(2);
     });
 
     it('should extract lightweight summary from full result', async () => {
@@ -222,22 +236,22 @@ describe('ReportStorageService', () => {
       const summary = JSON.parse(row!.summary_json) as SimulationSummary;
 
       // Verify summary structure
-      expect(summary.trechos).toHaveLength(2);
+      expect(summary.trechos).toHaveLength(EXPECTED_TRECHO_COUNT);
       expect(summary.trechos[0]!).toEqual({
         id: 'trecho-1',
         description: 'Trecho 1',
         avgTTK: 5,
         maxTTK: 8,
         minTTK: 2, // Estimated
-        battleCount: 100,
+        battleCount: 1,
         status: 'SUCCESS',
       });
 
       // Verify aggregated metrics
-      expect(summary.totalBattles).toBe(150);
+      expect(summary.totalBattles).toBe(2);
       expect(summary.overallTTK).toBeGreaterThan(0);
       expect(summary.warningCount).toBe(2);
-      expect(summary.criticalWarningCount).toBe(1);
+      expect(summary.criticalWarningCount).toBe(EXPECTED_RECORD_COUNT);
     });
 
     it('should produce summary <2KB', async () => {
@@ -250,7 +264,7 @@ describe('ReportStorageService', () => {
       const row = stmt.get(simulationId) as { summary_json: string } | undefined;
       const summarySize = row!.summary_json.length;
 
-      expect(summarySize).toBeLessThan(2048); // <2KB
+      expect(summarySize).toBeLessThan(SUMMARY_SIZE_BYTES); // <2KB
     });
   });
 
@@ -328,7 +342,7 @@ describe('ReportStorageService', () => {
       expect(report).not.toBeNull();
       expect(report?.metadata.id).toBe(simulationId);
       expect(report?.summary).toBeDefined();
-      expect(report?.trechos).toHaveLength(2);
+      expect(report?.trechos).toHaveLength(EXPECTED_TRECHO_COUNT);
     });
 
     it('should return null if file does not exist', async () => {
@@ -369,20 +383,20 @@ describe('ReportStorageService', () => {
     it('should return all simulations when no project filter', async () => {
       const history = await service.getHistory();
 
-      expect(history).toHaveLength(3);
+      expect(history).toHaveLength(MOCK_TOTAL_SIMULATIONS);
     });
 
     it('should filter by project path', async () => {
       const history = await service.getHistory('/project/a');
 
-      expect(history).toHaveLength(2);
+      expect(history).toHaveLength(EXPECTED_TRECHO_COUNT);
       expect(history.every((h) => h.projectPath === '/project/a')).toBe(true);
     });
 
     it('should respect limit parameter', async () => {
-      const history = await service.getHistory(undefined, 2);
+      const history = await service.getHistory(undefined, MOCK_HISTORY_LIMIT);
 
-      expect(history).toHaveLength(2);
+      expect(history).toHaveLength(MOCK_HISTORY_LIMIT);
     });
 
     it('should order by timestamp DESC', async () => {
@@ -413,7 +427,7 @@ describe('ReportStorageService', () => {
       // Verify record exists
       let stmt = db.prepare('SELECT COUNT(*) as count FROM simulation_history_v2 WHERE id = ?');
       let row = stmt.get(simulationId) as { count: number };
-      expect(row.count).toBe(1);
+      expect(row.count).toBe(EXPECTED_RECORD_COUNT);
 
       // Delete
       await service.deleteSimulation(simulationId);
@@ -421,7 +435,7 @@ describe('ReportStorageService', () => {
       // Verify record is gone
       stmt = db.prepare('SELECT COUNT(*) as count FROM simulation_history_v2 WHERE id = ?');
       row = stmt.get(simulationId) as { count: number };
-      expect(row.count).toBe(0);
+      expect(row.count).toBe(EXPECTED_NO_RECORD_COUNT);
     });
 
     it('should delete report file if exists', async () => {

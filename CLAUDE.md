@@ -104,7 +104,7 @@ pnpm --filter @coreto/electron build  # Build electron
 
 **Never** use subpath imports (`@coreto/core/infrastructure/X`) — they fail in `tsc` even if Jest resolves them. Always import from `@coreto/core` directly. New modules must be barrel-exported in `packages/core/src/index.ts`.
 
-**Naming:** Domain = no suffix (`Warning`), Zod types = `*DTO` (`WarningDTO`), Schemas = `*Schema`. See `IMPORT_GUIDE.md` for full details.
+**Naming:** Domain = no suffix (`Warning`), Zod types = `*DTO` (`WarningDTO`), Schemas = `*Schema`.
 
 ### Core Package Requires Rebuild After Changes
 
@@ -113,6 +113,7 @@ pnpm --filter @coreto/electron build  # Build electron
 **Cause:** electron-vite bundles `@coreto/core` into `out/main/`. Source changes to core aren't reflected until rebuild.
 
 **Fix:** Rebuild core after modifying its public API:
+
 ```bash
 pnpm --filter @coreto/core build
 ```

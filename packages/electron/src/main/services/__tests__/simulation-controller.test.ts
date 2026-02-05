@@ -1,7 +1,13 @@
 /**
  * Unit Tests for SimulationController
  *
- * Tests the warm pool lifecycle, worker management, and event forwarding.
+ * Tests the warm pool lifecycle, worker management, and event forwarding
+ * using Fake implementations instead of mocks.
+ *
+ * Refactored to follow DDD testing best practices:
+ * - Uses FakeUtilityProcess instead of manual mock
+ * - Uses FakeReportStorageService instead of mock
+ * - Tests observable behavior (events, state) instead of internals
  *
  * @see packages/electron/src/main/services/simulation-controller.ts
  * @see planos/005-run-ttk-electron/tasks/05_task.md
@@ -10,72 +16,42 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
 import { SimulationController } from '../simulation-controller.js';
-import { ReportStorageService } from '../report-storage.js';
 import type { SimulationParams } from '../../workers/types.js';
+import {
+  FakeUtilityProcess,
+  FakeReportStorageService,
+  SimulationParamsBuilder,
+  ProgressPayloadBuilder,
+  ErrorPayloadBuilder,
+} from './fakes/index.js';
 
 // =============================================================================
-// Mocks (must be before imports)
+// Electron Mocks (minimal, focused on IPC behavior)
 // =============================================================================
 
-// Mock Electron modules at the top level
+interface MockBrowserWindow {
+  isDestroyed: jest.Mock;
+  webContents: MockWebContents;
+}
+
+interface MockWebContents {
+  send: jest.Mock;
+}
+
 const mockWebContentsSend = jest.fn();
 const mockIsDestroyed = jest.fn(() => false);
 
-const mockWindow = {
+const mockWindow: MockBrowserWindow = {
   isDestroyed: mockIsDestroyed,
   webContents: {
     send: mockWebContentsSend,
   },
 };
 
-// Type definition for mock worker to avoid circular references
-interface MockWorker {
-  killed: boolean;
-  listeners: Map<string, Array<(...args: unknown[]) => void>>;
-  postMessage: jest.Mock;
-  on: jest.Mock;
-  once: jest.Mock;
-  kill: jest.Mock;
-  stdout: { on: jest.Mock };
-  stderr: { on: jest.Mock };
-}
-
-const mockWorker: MockWorker = {
-  killed: false,
-  listeners: new Map<string, Array<(...args: unknown[]) => void>>(),
-  postMessage: jest.fn(),
-  on: jest.fn((event: string, callback: (...args: unknown[]) => void) => {
-    if (!mockWorker.listeners.has(event)) {
-      mockWorker.listeners.set(event, []);
-    }
-    mockWorker.listeners.get(event)?.push(callback);
-  }),
-  once: jest.fn((event: string, callback: (...args: unknown[]) => void) => {
-    // For testing, treat same as 'on'
-    if (!mockWorker.listeners.has(event)) {
-      mockWorker.listeners.set(event, []);
-    }
-    mockWorker.listeners.get(event)?.push(callback);
-  }),
-  kill: jest.fn(function(this: MockWorker) {
-    this.killed = true;
-    // Trigger exit event
-    const exitListeners = this.listeners.get('exit') || [];
-    exitListeners.forEach((cb: (code: number) => void) => cb(0));
-  }),
-  stdout: { on: jest.fn() },
-  stderr: { on: jest.fn() },
-};
-
-// Helper to emit events from the mock worker
-function emitWorkerEvent(event: string, ...args: unknown[]): void {
-  const listeners = mockWorker.listeners.get(event) || [];
-  listeners.forEach((cb: (...args: unknown[]) => void) => cb(...args));
-}
-
+// Mock electron modules
 jest.mock('electron', () => ({
   utilityProcess: {
-    fork: jest.fn(() => mockWorker),
+    fork: jest.fn(),
   },
   BrowserWindow: {
     getAllWindows: jest.fn(() => [mockWindow]),
@@ -88,15 +64,50 @@ jest.mock('node:crypto', () => ({
 }));
 
 // =============================================================================
-// Test Mocks
+// Test Factory
 // =============================================================================
 
 /**
- * Mock ReportStorageService for testing.
+ * Factory for creating test instances with proper setup.
  */
-class MockReportStorageService {
-  async storeSimulation(): Promise<void> {
-    // Mock implementation
+class SimulationControllerTestFactory {
+  private fakeWorker?: FakeUtilityProcess;
+  private fakeStorage?: FakeReportStorageService;
+  private controller?: SimulationController;
+
+  /**
+   * Creates a fresh SimulationController with all dependencies.
+   */
+  create(): {
+    controller: SimulationController;
+    fakeWorker: FakeUtilityProcess;
+    fakeStorage: FakeReportStorageService;
+  } {
+    this.fakeWorker = new FakeUtilityProcess();
+    this.fakeStorage = new FakeReportStorageService();
+    this.controller = new SimulationController();
+
+    // Inject fake storage
+    this.controller.setStorageService(
+      this.fakeStorage as any
+    );
+
+    // Mock utilityProcess.fork to return our fake worker
+    const { utilityProcess } = require('electron');
+    utilityProcess.fork.mockReturnValue(this.fakeWorker);
+
+    return {
+      controller: this.controller!,
+      fakeWorker: this.fakeWorker,
+      fakeStorage: this.fakeStorage,
+    };
+  }
+
+  /**
+   * Gets the current worker instance from controller (for testing).
+   */
+  getCurrentWorker(controller: SimulationController): FakeUtilityProcess | null {
+    return controller.getWorker() as FakeUtilityProcess | null;
   }
 }
 
@@ -108,12 +119,7 @@ class MockReportStorageService {
  * Creates mock simulation parameters.
  */
 function createMockParams(): Omit<SimulationParams, 'simulationId'> {
-  return {
-    projectPath: '/test/project',
-    configPath: '/test/project/temp/project.config.json',
-    seed: 12345,
-    diagnostic: false,
-  };
+  return new SimulationParamsBuilder().buildWithoutId();
 }
 
 // =============================================================================
@@ -121,20 +127,20 @@ function createMockParams(): Omit<SimulationParams, 'simulationId'> {
 // =============================================================================
 
 describe('SimulationController', () => {
+  let factory: SimulationControllerTestFactory;
   let controller: SimulationController;
-  let mockStorageService: ReportStorageService;
+  let fakeWorker: FakeUtilityProcess;
+  let fakeStorage: FakeReportStorageService;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockWorker.killed = false;
-    mockWorker.listeners.clear();
-    mockWebContentsSend.mockClear();
     mockIsDestroyed.mockReturnValue(false);
 
-    controller = new SimulationController();
-    mockStorageService = new MockReportStorageService() as unknown as ReportStorageService;
-
-    controller.setStorageService(mockStorageService);
+    factory = new SimulationControllerTestFactory();
+    const setup = factory.create();
+    controller = setup.controller;
+    fakeWorker = setup.fakeWorker;
+    fakeStorage = setup.fakeStorage;
   });
 
   afterEach(() => {
@@ -144,9 +150,12 @@ describe('SimulationController', () => {
 
   describe('Warm Pool Lifecycle', () => {
     it('should spawn new worker on first start', async () => {
+      const { utilityProcess } = require('electron');
+
       const simulationId = await controller.start(createMockParams());
 
-      expect(simulationId).toBeDefined();
+      expect(simulationId).toBe('test-uuid-1234');
+      expect(utilityProcess.fork).toHaveBeenCalledTimes(1);
       expect(controller.getCurrentSimulationId()).toBe(simulationId);
       expect(controller.isRunning()).toBe(true);
     });
@@ -154,14 +163,15 @@ describe('SimulationController', () => {
     it('should reuse worker for consecutive simulations (warm pool)', async () => {
       // First simulation
       await controller.start(createMockParams());
-      const worker1 = controller.getWorker();
+      const worker1 = factory.getCurrentWorker(controller);
 
       // Second simulation within warm pool window
       await controller.start(createMockParams());
-      const worker2 = controller.getWorker();
+      const worker2 = factory.getCurrentWorker(controller);
 
-      // Should reuse same worker
+      // Should reuse same worker instance
       expect(worker2).toBe(worker1);
+      expect(controller.getCurrentSimulationId()).toBeDefined();
     });
 
     it('should terminate worker after 5 minutes idle', async () => {
@@ -169,29 +179,19 @@ describe('SimulationController', () => {
 
       await controller.start(createMockParams());
 
-      // Get worker reference before termination
-      const worker = controller.getWorker();
-      expect(worker).not.toBeNull();
-
       // Simulate completion to start warm pool timer
-      emitWorkerEvent('message', {
-        type: 'complete',
-        payload: {
-          simulationId: 'test-id',
-          projectPath: '/test/project',
-          report: {},
-          duration: 1000,
-          seed: 12345,
-        },
-      });
+      fakeWorker.emitComplete(
+        controller.getCurrentSimulationId()!,
+        '/test/project'
+      );
 
       // Fast-forward 4 minutes - worker should still be alive
       jest.advanceTimersByTime(4 * 60 * 1000);
-      expect(controller.getWorker()).not.toBeNull();
+      expect(factory.getCurrentWorker(controller)).not.toBeNull();
 
       // Fast-forward past 5 minutes - worker should be terminated
       jest.advanceTimersByTime(2 * 60 * 1000); // 6 minutes total
-      expect(controller.getWorker()).toBeNull();
+      expect(factory.getCurrentWorker(controller)).toBeNull();
 
       jest.useRealTimers();
     });
@@ -202,16 +202,10 @@ describe('SimulationController', () => {
       await controller.start(createMockParams());
 
       // Simulate completion to start warm pool timer
-      emitWorkerEvent('message', {
-        type: 'complete',
-        payload: {
-          simulationId: 'test-id',
-          projectPath: '/test/project',
-          report: {},
-          duration: 1000,
-          seed: 12345,
-        },
-      });
+      fakeWorker.emitComplete(
+        controller.getCurrentSimulationId()!,
+        '/test/project'
+      );
 
       // Advance time but not enough to terminate
       jest.advanceTimersByTime(2 * 60 * 1000);
@@ -221,7 +215,7 @@ describe('SimulationController', () => {
 
       // Worker should still be alive after original 5 min would have passed
       jest.advanceTimersByTime(4 * 60 * 1000);
-      expect(controller.getWorker()).not.toBeNull();
+      expect(factory.getCurrentWorker(controller)).not.toBeNull();
 
       jest.useRealTimers();
     });
@@ -233,7 +227,11 @@ describe('SimulationController', () => {
 
       await controller.cancel();
 
-      expect(mockWorker.postMessage).toHaveBeenCalledWith({ type: 'cancel' });
+      expect(fakeWorker.hasMessageType('cancel')).toBe(true);
+      const cancelMessages = fakeWorker
+        .getMessages()
+        .filter((m) => m.type === 'cancel');
+      expect(cancelMessages).toHaveLength(1);
     });
 
     it('should handle cancel when no worker is running', async () => {
@@ -244,7 +242,7 @@ describe('SimulationController', () => {
       jest.useFakeTimers();
 
       await controller.start(createMockParams());
-      expect(mockWorker.killed).toBe(false);
+      expect(fakeWorker.killed).toBe(false);
 
       await controller.cancel();
 
@@ -252,101 +250,83 @@ describe('SimulationController', () => {
       jest.advanceTimersByTime(6 * 1000);
 
       // Worker should be force killed
-      expect(mockWorker.killed).toBe(true);
+      expect(fakeWorker.killed).toBe(true);
 
       jest.useRealTimers();
     });
   });
 
   describe('Event Forwarding', () => {
-    beforeEach(() => {
-      // Need to start simulation and set up message handler
-      controller.start(createMockParams());
+    beforeEach(async () => {
+      await controller.start(createMockParams());
     });
 
     it('should forward progress events to renderer', () => {
-      // Simulate progress event from worker
-      const progressPayload = {
-        stage: 'battle',
-        current: 50,
-        total: 100,
-        percentage: 50,
-        message: 'Battle 50/100',
-        timestamp: Date.now(),
-      };
+      const progressPayload = new ProgressPayloadBuilder()
+        .asBattle(50, 100)
+        .build();
 
-      emitWorkerEvent('message', {
+      fakeWorker.receiveMessage({
         type: 'progress',
         payload: progressPayload,
       });
 
       expect(mockWebContentsSend).toHaveBeenCalledWith(
         'simulation:progress',
-        progressPayload
+        expect.objectContaining({
+          stage: 'battle',
+          current: 50,
+          total: 100,
+          percentage: 50,
+        })
       );
     });
 
-    it('should forward complete events to renderer', () => {
-      const storeSpy = jest.spyOn(mockStorageService, 'storeSimulation');
+    it('should forward complete events to renderer and store result', async () => {
+      const simulationId = controller.getCurrentSimulationId()!;
 
-      const completePayload = {
-        simulationId: controller.getCurrentSimulationId(),
-        projectPath: '/test/project',
-        report: {},
-        duration: 60000,
-        seed: 12345,
-      };
+      fakeWorker.emitComplete(simulationId, '/test/project');
 
-      emitWorkerEvent('message', {
-        type: 'complete',
-        payload: completePayload,
-      });
-
+      // Should forward to renderer
       expect(mockWebContentsSend).toHaveBeenCalledWith(
         'simulation:complete',
-        completePayload
+        expect.objectContaining({
+          simulationId,
+          projectPath: '/test/project',
+        })
       );
 
-      // Should also store in database
-      expect(storeSpy).toHaveBeenCalled();
+      // Should store in database
+      expect(fakeStorage.hasSimulation(simulationId)).toBe(true);
+      expect(fakeStorage.getStoreCallCount()).toBe(1);
     });
 
     it('should forward error events to renderer', () => {
-      const errorPayload = {
-        title: 'Test Error',
-        description: 'Test error description',
-        code: 'ERR_TEST',
-      };
+      const errorPayload = new ErrorPayloadBuilder()
+        .asValidationError('Invalid configuration')
+        .build();
 
-      emitWorkerEvent('message', {
+      fakeWorker.receiveMessage({
         type: 'error',
         payload: errorPayload,
       });
 
       expect(mockWebContentsSend).toHaveBeenCalledWith(
         'simulation:error',
-        errorPayload
+        expect.objectContaining({
+          title: 'Validation Error',
+          code: 'ERR_VALIDATION',
+        })
       );
     });
 
-    it('should handle missing window gracefully', async () => {
-      // Mock no windows available
+    it('should handle missing window gracefully', () => {
       const { BrowserWindow } = require('electron');
       BrowserWindow.getAllWindows.mockReturnValue([]);
 
       // Should not throw when no window exists
       expect(() => {
-        emitWorkerEvent('message', {
-          type: 'progress',
-          payload: {
-            stage: 'initialization',
-            current: 0,
-            total: 100,
-            percentage: 0,
-            message: 'Starting',
-            timestamp: Date.now(),
-          },
-        });
+        fakeWorker.emitProgress('initialization', 0, 100, 'Starting');
       }).not.toThrow();
 
       // Restore mock
@@ -356,17 +336,7 @@ describe('SimulationController', () => {
     it('should not send to destroyed windows', () => {
       mockIsDestroyed.mockReturnValue(true);
 
-      emitWorkerEvent('message', {
-        type: 'progress',
-        payload: {
-          stage: 'initialization',
-          current: 0,
-          total: 100,
-          percentage: 0,
-          message: 'Starting',
-          timestamp: Date.now(),
-        },
-      });
+      fakeWorker.emitProgress('initialization', 0, 100, 'Starting');
 
       expect(mockWebContentsSend).not.toHaveBeenCalled();
 
@@ -376,29 +346,27 @@ describe('SimulationController', () => {
 
   describe('Storage Integration', () => {
     it('should store simulation result on completion', async () => {
-      await controller.start(createMockParams());
+      const simulationId = await controller.start(createMockParams());
 
-      const storeSpy = jest.spyOn(mockStorageService, 'storeSimulation');
+      fakeWorker.emitComplete(simulationId, '/test/project');
 
-      const completePayload = {
-        simulationId: controller.getCurrentSimulationId()!,
-        projectPath: '/test/project',
-        report: {},
-        duration: 60000,
-        seed: 12345,
-      };
+      const stored = fakeStorage.getSimulation(simulationId);
+      expect(stored).toBeDefined();
+      expect(stored!.simulationId).toBe(simulationId);
+      expect(stored!.status).toBe('SUCCESS');
+    });
 
-      emitWorkerEvent('message', {
-        type: 'complete',
-        payload: completePayload,
-      });
+    it('should store with correct project path', async () => {
+      const params = new SimulationParamsBuilder()
+        .withProjectPath('/custom/project')
+        .buildWithoutId();
 
-      expect(storeSpy).toHaveBeenCalledWith(
-        completePayload.simulationId,
-        completePayload.projectPath,
-        expect.any(Object), // ReportData
-        'SUCCESS'
-      );
+      const simulationId = await controller.start(params);
+
+      fakeWorker.emitComplete(simulationId, '/custom/project');
+
+      const stored = fakeStorage.getSimulation(simulationId);
+      expect(stored!.projectPath).toBe('/custom/project');
     });
   });
 
@@ -406,11 +374,11 @@ describe('SimulationController', () => {
     it('should clean up resources on cleanup()', async () => {
       await controller.start(createMockParams());
 
-      expect(controller.getWorker()).not.toBeNull();
+      expect(factory.getCurrentWorker(controller)).not.toBeNull();
 
       controller.cleanup();
 
-      expect(controller.getWorker()).toBeNull();
+      expect(factory.getCurrentWorker(controller)).toBeNull();
       expect(controller.getCurrentSimulationId()).toBeNull();
       expect(controller.isRunning()).toBe(false);
     });
@@ -421,16 +389,10 @@ describe('SimulationController', () => {
       await controller.start(createMockParams());
 
       // Simulate completion to start warm pool timer
-      emitWorkerEvent('message', {
-        type: 'complete',
-        payload: {
-          simulationId: 'test-id',
-          projectPath: '/test/project',
-          report: {},
-          duration: 1000,
-          seed: 12345,
-        },
-      });
+      fakeWorker.emitComplete(
+        controller.getCurrentSimulationId()!,
+        '/test/project'
+      );
 
       // Cleanup before timer fires
       controller.cleanup();
@@ -439,7 +401,7 @@ describe('SimulationController', () => {
       jest.advanceTimersByTime(10 * 60 * 1000);
 
       // Should not cause errors (timer was cancelled)
-      expect(controller.getWorker()).toBeNull();
+      expect(factory.getCurrentWorker(controller)).toBeNull();
 
       jest.useRealTimers();
     });
@@ -450,7 +412,7 @@ describe('SimulationController', () => {
   });
 
   describe('State Queries', () => {
-    it('should return current simulation ID', async () => {
+    it('should return current simulation ID when running', async () => {
       const simulationId = await controller.start(createMockParams());
 
       expect(controller.getCurrentSimulationId()).toBe(simulationId);
@@ -477,7 +439,8 @@ describe('SimulationController', () => {
 
       await controller.start(createMockParams());
 
-      emitWorkerEvent('message', { type: 'unknown', payload: {} });
+      // Cast to unknown to bypass type checking
+      fakeWorker.receiveMessage({ type: 'unknown' } as any);
 
       expect(consoleWarnSpy).toHaveBeenCalledWith(
         '[SimulationController] Unknown message type:',
@@ -485,6 +448,26 @@ describe('SimulationController', () => {
       );
 
       consoleWarnSpy.mockRestore();
+    });
+  });
+
+  describe('Worker Crash Handling', () => {
+    it('should notify renderer on worker crash', async () => {
+      await controller.start(createMockParams());
+
+      // Simulate worker crash
+      fakeWorker.crash(1);
+
+      expect(factory.getCurrentWorker(controller)).toBeNull();
+
+      // Should send error to renderer
+      expect(mockWebContentsSend).toHaveBeenCalledWith(
+        'simulation:error',
+        expect.objectContaining({
+          title: 'Simulation Process Crashed',
+          code: 'ERR_WORKER_CRASH',
+        })
+      );
     });
   });
 });
