@@ -54,7 +54,6 @@
     },
 
     // Advanced Options
-    "skipLibCheck": true,
     "allowUnusedLabels": false,
     "allowUnreachableCode": false,
     "exactOptionalPropertyTypes": true
