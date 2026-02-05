@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.web.json",
+  "compilerOptions": {
+    "types": ["node", "jest"]
+  },
+  "include": [
+    "src/renderer/**/*",
+    "src/renderer/**/*.d.ts",
+    "src/renderer/src/types/**/*.d.ts",
+    "tests/unit/renderer/**/*"
+  ]
+}
