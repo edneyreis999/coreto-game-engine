@@ -45,99 +45,100 @@ describe('validateTrechoForm', () => {
     expect(result.errors).toEqual({});
   });
 
-  it('should reject empty ID', () => {
-    const invalidData = { ...validTrecho, id: '' };
-    const result = validateTrechoForm(invalidData);
-    expect(result.isValid).toBe(false);
-    expect(result.errors.id?.message).toBeTruthy();
-  });
-
-  it('should reject ID with invalid characters', () => {
-    const invalidData = { ...validTrecho, id: 'Invalid ID!' };
-    const result = validateTrechoForm(invalidData);
-    expect(result.isValid).toBe(false);
-    expect(result.errors.id?.message).toContain('lowercase letters');
-  });
-
-  it('should reject level range with min > max', () => {
-    const invalidData = { ...validTrecho, anchorLevelMin: 10, anchorLevelMax: 5 };
-    const result = validateTrechoForm(invalidData);
-    expect(result.isValid).toBe(false);
-    expect(result.errors.anchorLevelMax?.message).toContain('greater than or equal');
-  });
-
-  it('should reject level range with min < 1', () => {
-    const invalidData = { ...validTrecho, anchorLevelMin: 0 };
-    const result = validateTrechoForm(invalidData);
-    expect(result.isValid).toBe(false);
-    expect(result.errors.anchorLevelMin?.message).toContain('at least 1');
-  });
-
-  it('should reject level range with max > 99', () => {
-    const invalidData = { ...validTrecho, anchorLevelMax: 100 };
-    const result = validateTrechoForm(invalidData);
-    expect(result.isValid).toBe(false);
-    expect(result.errors.anchorLevelMax?.message).toContain('cannot exceed 99');
-  });
-
-  it('should reject non-positive TTK turns', () => {
-    const invalidData = { ...validTrecho, targetTtkTurns: 0 };
-    const result = validateTrechoForm(invalidData);
-    expect(result.isValid).toBe(false);
-    expect(result.errors.targetTtkTurns?.message).toContain('positive');
-  });
-
-  it('should reject non-positive TTK actions', () => {
-    const invalidData = { ...validTrecho, targetTtkActions: -1 };
-    const result = validateTrechoForm(invalidData);
-    expect(result.isValid).toBe(false);
-    expect(result.errors.targetTtkActions?.message).toContain('positive');
-  });
-
-  it('should reject tolerance < 0', () => {
-    const invalidData = { ...validTrecho, tolerancePercent: -1 };
-    const result = validateTrechoForm(invalidData);
-    expect(result.isValid).toBe(false);
-    expect(result.errors.tolerancePercent?.message).toContain('at least 0');
-  });
-
-  it('should reject tolerance > 100', () => {
-    const invalidData = { ...validTrecho, tolerancePercent: 101 };
-    const result = validateTrechoForm(invalidData);
-    expect(result.isValid).toBe(false);
-    expect(result.errors.tolerancePercent?.message).toContain('cannot exceed 100');
-  });
-
-  it('should reject empty troop IDs', () => {
-    const invalidData = { ...validTrecho, troopIds: [] };
-    const result = validateTrechoForm(invalidData);
-    expect(result.isValid).toBe(false);
-    expect(result.errors.troopIds?.message).toBeTruthy();
-  });
-
-  it('should reject empty party members', () => {
-    const invalidData = { ...validTrecho, party: { members: [] } };
-    const result = validateTrechoForm(invalidData);
-    expect(result.isValid).toBe(false);
-    expect(result.errors['party.members']?.message).toBeTruthy();
-  });
-
-  it('should reject party with more than 4 members', () => {
-    const invalidData = {
-      ...validTrecho,
-      party: {
-        members: [
-          { classId: 1, level: 1 },
-          { classId: 1, level: 1 },
-          { classId: 1, level: 1 },
-          { classId: 1, level: 1 },
-          { classId: 1, level: 1 },
-        ],
-      },
-    };
-    const result = validateTrechoForm(invalidData);
-    expect(result.isValid).toBe(false);
-    expect(result.errors['party.members']?.message).toContain('more than 4');
+  describe('invalid input rejection', () => {
+    test.each([
+      [
+        'empty ID',
+        { ...validTrecho, id: '' },
+        'id',
+        undefined,
+      ],
+      [
+        'ID with invalid characters',
+        { ...validTrecho, id: 'Invalid ID!' },
+        'id',
+        'lowercase letters',
+      ],
+      [
+        'level range with min > max',
+        { ...validTrecho, anchorLevelMin: 10, anchorLevelMax: 5 },
+        'anchorLevelMax',
+        'greater than or equal',
+      ],
+      [
+        'level range with min < 1',
+        { ...validTrecho, anchorLevelMin: 0 },
+        'anchorLevelMin',
+        'at least 1',
+      ],
+      [
+        'level range with max > 99',
+        { ...validTrecho, anchorLevelMax: 100 },
+        'anchorLevelMax',
+        'cannot exceed 99',
+      ],
+      [
+        'non-positive TTK turns',
+        { ...validTrecho, targetTtkTurns: 0 },
+        'targetTtkTurns',
+        'positive',
+      ],
+      [
+        'non-positive TTK actions',
+        { ...validTrecho, targetTtkActions: -1 },
+        'targetTtkActions',
+        'positive',
+      ],
+      [
+        'tolerance < 0',
+        { ...validTrecho, tolerancePercent: -1 },
+        'tolerancePercent',
+        'at least 0',
+      ],
+      [
+        'tolerance > 100',
+        { ...validTrecho, tolerancePercent: 101 },
+        'tolerancePercent',
+        'cannot exceed 100',
+      ],
+      [
+        'empty troop IDs',
+        { ...validTrecho, troopIds: [] },
+        'troopIds',
+        undefined,
+      ],
+      [
+        'empty party members',
+        { ...validTrecho, party: { members: [] } },
+        'party.members',
+        undefined,
+      ],
+      [
+        'party with more than 4 members',
+        {
+          ...validTrecho,
+          party: {
+            members: [
+              { classId: 1, level: 1 },
+              { classId: 1, level: 1 },
+              { classId: 1, level: 1 },
+              { classId: 1, level: 1 },
+              { classId: 1, level: 1 },
+            ],
+          },
+        },
+        'party.members',
+        'more than 4',
+      ],
+    ] as const)('should reject %s', (_name, invalidData, errorField, expectedMessage) => {
+      const result = validateTrechoForm(invalidData);
+      expect(result.isValid).toBe(false);
+      if (expectedMessage === undefined) {
+        expect(result.errors[errorField]?.message).toBeTruthy();
+      } else {
+        expect(result.errors[errorField]?.message).toContain(expectedMessage);
+      }
+    });
   });
 });
 
@@ -157,25 +158,31 @@ describe('validatePartyMemberForm', () => {
     expect(result.errors).toEqual({});
   });
 
-  it('should reject non-positive classId', () => {
-    const invalidMember = { ...validMember, classId: 0 };
-    const result = validatePartyMemberForm(invalidMember);
-    expect(result.isValid).toBe(false);
-    expect(result.errors.classId?.message).toContain('positive');
-  });
-
-  it('should reject level < 1', () => {
-    const invalidMember = { ...validMember, level: 0 };
-    const result = validatePartyMemberForm(invalidMember);
-    expect(result.isValid).toBe(false);
-    expect(result.errors.level?.message).toContain('at least 1');
-  });
-
-  it('should reject level > 99', () => {
-    const invalidMember = { ...validMember, level: 100 };
-    const result = validatePartyMemberForm(invalidMember);
-    expect(result.isValid).toBe(false);
-    expect(result.errors.level?.message).toContain('cannot exceed 99');
+  describe('invalid input rejection', () => {
+    test.each([
+      [
+        'non-positive classId',
+        { ...validMember, classId: 0 },
+        'classId',
+        'positive',
+      ],
+      [
+        'level < 1',
+        { ...validMember, level: 0 },
+        'level',
+        'at least 1',
+      ],
+      [
+        'level > 99',
+        { ...validMember, level: 100 },
+        'level',
+        'cannot exceed 99',
+      ],
+    ] as const)('should reject %s', (_name, invalidMember, errorField, expectedMessage) => {
+      const result = validatePartyMemberForm(invalidMember);
+      expect(result.isValid).toBe(false);
+      expect(result.errors[errorField]?.message).toContain(expectedMessage);
+    });
   });
 });
 
@@ -202,18 +209,25 @@ describe('validateGlobalSettingsForm', () => {
     expect(result.errors).toEqual({});
   });
 
-  it('should reject non-positive seed', () => {
-    const invalidSettings = { ...validSettings, seed: 0 };
-    const result = validateGlobalSettingsForm(invalidSettings);
-    expect(result.isValid).toBe(false);
-    expect(result.errors.seed?.message).toContain('positive');
-  });
-
-  it('should reject non-positive maxBattleTurns', () => {
-    const invalidSettings = { ...validSettings, maxBattleTurns: -1 };
-    const result = validateGlobalSettingsForm(invalidSettings);
-    expect(result.isValid).toBe(false);
-    expect(result.errors.maxBattleTurns?.message).toContain('positive');
+  describe('invalid input rejection', () => {
+    test.each([
+      [
+        'non-positive seed',
+        { ...validSettings, seed: 0 },
+        'seed',
+        'positive',
+      ],
+      [
+        'non-positive maxBattleTurns',
+        { ...validSettings, maxBattleTurns: -1 },
+        'maxBattleTurns',
+        'positive',
+      ],
+    ] as const)('should reject %s', (_name, invalidSettings, errorField, expectedMessage) => {
+      const result = validateGlobalSettingsForm(invalidSettings);
+      expect(result.isValid).toBe(false);
+      expect(result.errors[errorField]?.message).toContain(expectedMessage);
+    });
   });
 });
 

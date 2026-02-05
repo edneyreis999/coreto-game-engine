@@ -1,7 +1,10 @@
 {
   "extends": "./tsconfig.web.json",
   "compilerOptions": {
-    "types": ["node", "jest"]
+    "types": ["node", "jest"],
+    "paths": {
+      "@/*": ["./src/renderer/src/*"]
+    }
   },
   "include": [
     "src/renderer/**/*",
