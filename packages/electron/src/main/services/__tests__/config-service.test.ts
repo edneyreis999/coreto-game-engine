@@ -12,7 +12,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { ConfigService, ConfigNotFoundError, ConfigValidationError } from '../config-service.js';
 import { ProjectConfigSchema, CURRENT_SCHEMA_VERSION } from '../schemas.js';
-import type { ProjectConfig } from '../schemas.js';
+import type { UIProjectConfig } from '../schemas.js';
 
 // Mock fs module
 jest.mock('node:fs/promises');
@@ -109,7 +109,7 @@ describe('ConfigService', () => {
   });
 
   describe('loadConfig', () => {
-    const validConfig: ProjectConfig = {
+    const validConfig: UIProjectConfig = {
       version: '1.0',
       trechos: [
         {
@@ -212,7 +212,7 @@ describe('ConfigService', () => {
   });
 
   describe('saveConfig', () => {
-    const validConfig: ProjectConfig = {
+    const validConfig: UIProjectConfig = {
       version: '1.0',
       trechos: [],
       metadata: {
@@ -285,7 +285,7 @@ describe('ConfigService', () => {
             },
           },
         ],
-      } as unknown as ProjectConfig;
+      } as unknown as UIProjectConfig;
 
       await expect(service.saveConfig(mockProjectPath, invalidConfig)).rejects.toThrow(
         ConfigValidationError
@@ -293,7 +293,7 @@ describe('ConfigService', () => {
     });
 
     it('should preserve metadata when not provided', async () => {
-      const configWithoutMetadata: ProjectConfig = {
+      const configWithoutMetadata: UIProjectConfig = {
         version: '1.0',
         trechos: [],
       };

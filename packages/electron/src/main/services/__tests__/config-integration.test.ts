@@ -11,7 +11,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { ConfigService } from '../config-service.js';
-import type { ProjectConfig } from '../schemas.js';
+import type { UIProjectConfig } from '../schemas.js';
 
 describe('ConfigService Integration', () => {
   let service: ConfigService;
@@ -41,7 +41,7 @@ describe('ConfigService Integration', () => {
   });
 
   describe('CLI-GUI Compatibility', () => {
-    const cliCompatibleConfig: ProjectConfig = {
+    const cliCompatibleConfig: UIProjectConfig = {
       version: '1.0',
       trechos: [
         {
@@ -170,7 +170,7 @@ describe('ConfigService Integration', () => {
     });
 
     it('should preserve version field when saving', async () => {
-      const config: ProjectConfig = {
+      const config: UIProjectConfig = {
         version: '1.0',
         trechos: [],
       };
@@ -186,7 +186,7 @@ describe('ConfigService Integration', () => {
 
   describe('Round-Trip Tests', () => {
     it('should preserve data through load-save cycle', async () => {
-      const originalConfig: ProjectConfig = {
+      const originalConfig: UIProjectConfig = {
         version: '1.0',
         trechos: [
           {
