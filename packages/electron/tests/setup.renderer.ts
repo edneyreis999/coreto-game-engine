@@ -7,6 +7,7 @@
 
 // Reference global type declarations (CoretoAPI for source files)
 /// <reference path="../src/renderer/src/types/preload.d.ts" />
+/// <reference path="../src/renderer/src/window.coreto.d.ts" />
 
 // Import jest-dom matchers
 import '@testing-library/jest-dom'
