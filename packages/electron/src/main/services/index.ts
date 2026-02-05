@@ -12,4 +12,6 @@ export { ConfigService, configService } from './config-service.js';
 
 // Type exports
 export type { SimulationSummary, SimulationReport, TrechoSummary } from './types.js';
-export type { ProjectConfig, TrechoConfig } from './schemas.js';
+// Note: Renamed from ProjectConfig/TrechoConfig to UIProjectConfig/UITrechoConfig
+// to avoid naming collision with @coreto/core's types
+export type { UIProjectConfig, UITrechoConfig } from './schemas.js';

@@ -52,15 +52,29 @@ export const ProjectConfigSchema = z.object({
 
 /**
  * TypeScript type inferred from ProjectConfigSchema.
- * Represents a valid project configuration after Zod validation.
+ * Represents a valid UI project configuration after Zod validation.
+ *
+ * NOTE: Renamed from ProjectConfig to UIProjectConfig to avoid
+ * naming collision with @coreto/core's ProjectConfig port interface.
+ * This type represents the UI-facing config format (with version,
+ * metadata) while Core's format is execution-ready (with projectPath,
+ * reportOutputPath, trechos).
+ *
+ * @see packages/core/src/core/ports/IConfigLoader.ts
+ * @see IMPORT_GUIDE.md
  */
-export type ProjectConfig = z.infer<typeof ProjectConfigSchema>;
+export type UIProjectConfig = z.infer<typeof ProjectConfigSchema>;
 
 /**
  * TypeScript type inferred from TrechoConfigSchema.
- * Represents a valid trecho configuration after Zod validation.
+ * Represents a valid UI trecho configuration after Zod validation.
+ *
+ * NOTE: Renamed from TrechoConfig to UITrechoConfig to avoid
+ * naming collision with Core's TrechoDTO type.
+ *
+ * @see packages/core/src/infrastructure/config/schemas.ts
  */
-export type TrechoConfig = z.infer<typeof TrechoConfigSchema>;
+export type UITrechoConfig = z.infer<typeof TrechoConfigSchema>;
 
 /**
  * Schema version for normalization support.
@@ -83,7 +97,7 @@ export const LEGACY_SCHEMA_VERSIONS: string[] = [];
  * @returns Validated and normalized ProjectConfig
  * @throws {z.ZodError} If validation fails after normalization
  */
-export function validateAndNormalizeConfig(raw: unknown): ProjectConfig {
+export function validateAndNormalizeConfig(raw: unknown): UIProjectConfig {
   // Import normalizeSchema dynamically to avoid circular dependency
   const { ConfigService } = require('./config-service.js');
   const service = new ConfigService();
