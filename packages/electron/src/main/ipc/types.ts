@@ -14,14 +14,46 @@
 import { z } from 'zod';
 
 // ============================================================================
-// Domain Type Imports
+// Domain Type Re-exports
 // ============================================================================
 
 /**
- * Re-export core domain types for IPC serialization.
- * These types are used in IPC responses and must be JSON-serializable.
+ * Re-export core domain types from the domain layer.
+ * These types are framework-agnostic and used across IPC boundaries.
+ *
+ * @see packages/electron/src/domain/types
  */
+export type {
+  BattleOutcome,
+  BattleResultData,
+  ReportBattleResult,
+  WarningData,
+  TrechoSummaryData,
+  ReportData,
+  ValidationResult,
+  SimulationConfig,
+  SimulationProgress,
+  SimulationResult,
+  SimulationSummary,
+  SimulationHistoryEntry,
+  SimulationReport,
+} from '../../domain/types/index.js';
 
+/**
+ * Import domain types for use within this file (e.g., in response types).
+ */
+import type {
+  SimulationHistoryEntry,
+  SimulationReport,
+  ValidationResult,
+  SimulationResult,
+  ReportData,
+} from '../../domain/types/index.js';
+
+/**
+ * IPC-specific types that are not part of the domain layer.
+ * These types are used for IPC serialization and are specific to the main process.
+ */
 export type PartyMemberData = {
   classId: number;
   level: number;
@@ -29,19 +61,6 @@ export type PartyMemberData = {
 
 export type PartyConfigData = {
   members: PartyMemberData[];
-};
-
-export type BattleOutcome = 'victory' | 'defeat' | 'timeout';
-
-export type BattleResultData = {
-  troopId: number;
-  troopName: string;
-  outcome: BattleOutcome;
-  ttkTurns: number;
-  ttkActions: number;
-  durationMs: number;
-  seed: number;
-  expGained: number;
 };
 
 export type TrechoData = {
@@ -147,14 +166,7 @@ export const ProjectOpenPayloadSchema = z.object({
 
 export type ProjectOpenPayload = z.infer<typeof ProjectOpenPayloadSchema>;
 
-/**
- * Response format for project:validate handler.
- */
-export interface ValidationResult {
-  isValid: boolean;
-  errors: string[];
-  warnings: string[];
-}
+// ValidationResult is now exported from domain/types/index.js
 
 /**
  * Zod schema for project:validate payload.
@@ -167,17 +179,7 @@ export type ProjectValidatePayload = z.infer<typeof ProjectValidatePayloadSchema
 // Simulation Handlers
 // ============================================================================
 
-/**
- * Payload format for simulation:run handler.
- */
-export interface SimulationConfig {
-  projectPath: string;
-  configPath?: string;
-  trechoId?: string;
-  troopId?: number;
-  seed?: number;
-  maxTurns?: number;
-}
+// SimulationConfig is now exported from domain/types/index.js
 
 /**
  * Zod schema for simulation:run payload.
@@ -196,79 +198,8 @@ export const SimulationRunPayloadSchema = z.object({
 
 export type SimulationRunPayload = z.infer<typeof SimulationRunPayloadSchema>;
 
-/**
- * Response format for simulation:run handler.
- */
-export interface SimulationResult {
-  trechoId: string;
-  troopId: number;
-  troopName: string;
-  battleResult: BattleResultData;
-  passed: boolean;
-  warnings: string[];
-}
-
-/**
- * Progress state for simulation tracking.
- */
-export interface SimulationProgress {
-  current: number;
-  total: number;
-  percentage: number;
-  isRunning: boolean;
-  currentTrecho?: string;
-  currentTroop?: number;
-}
-
-/**
- * Warning data structure for Report.
- */
-export interface WarningData {
-  type: string;
-  severity: 'critical' | 'warning' | 'info';
-  message: string;
-  context: Record<string, unknown>;
-}
-
-/**
- * Battle result data in Report format.
- */
-export interface ReportBattleResult {
-  troopId: number;
-  troopName: string;
-  outcome: BattleOutcome;
-  ttkTurns: number;
-  ttkActions: number;
-  durationMs: number;
-  seed: number;
-  expGained: number;
-}
-
-/**
- * Trecho summary data in Report format.
- */
-export interface TrechoSummaryData {
-  id: string;
-  name: string;
-  passed: boolean;
-  battleCount: number;
-  avgTtkTurns: number;
-  avgTtkActions: number;
-  p95TtkTurns: number;
-  p95TtkActions: number;
-  successRate: number;
-  battles: ReportBattleResult[];
-  warnings: WarningData[];
-}
-
-/**
- * Report data structure returned by simulation:getResults handler.
- */
-export interface ReportData {
-  trechos: TrechoSummaryData[];
-  totalBattles: number;
-  timestamp: string;
-}
+// SimulationResult, SimulationProgress are now exported from domain/types/index.js
+// WarningData, ReportBattleResult, TrechoSummaryData, ReportData are now exported from domain/types/index.js
 
 // ============================================================================
 // Configuration Handlers
@@ -567,6 +498,8 @@ export type RecentListResponse = RecentProject[];
  */
 export type RecentAddResponse = RecentProject;
 
+// SimulationSummary, SimulationHistoryEntry, SimulationReport are now exported from domain/types/index.js
+
 // ============================================================================
 // Preferences Handlers
 // ============================================================================
@@ -627,39 +560,17 @@ export type OpenDirectoryResponse = OpenDirectoryResult;
 // History Handlers
 // ============================================================================
 
-/**
- * Simulation summary for history list.
- * Lightweight data (~1KB) stored in SQLite.
- */
-export interface SimulationSummary {
-  trechos: Array<{
-    id: string;
-    description: string;
-    avgTTK: number;
-    maxTTK: number;
-    minTTK: number;
-    battleCount: number;
-    status: 'SUCCESS' | 'FAILED';
-  }>;
-  overallTTK: number;
-  totalBattles: number;
-  warningCount: number;
-  criticalWarningCount: number;
-  duration: number;
-  seed?: number;
-}
+// SimulationSummary, SimulationHistoryEntry, SimulationReport are now exported from domain/types/index.js
 
 /**
- * Simulation history entry.
+ * Zod schema for history:list payload.
  */
-export interface SimulationHistoryEntry {
-  id: string;
-  projectPath: string;
-  timestamp: number;
-  status: 'SUCCESS' | 'FAILED' | 'CANCELLED';
-  summary: SimulationSummary;
-  hasReport: boolean;
-}
+export const HistoryListPayloadSchema = z.object({
+  projectPath: z.string().optional(),
+  limit: z.number().int().positive().optional(),
+});
+
+export type HistoryListPayload = z.infer<typeof HistoryListPayloadSchema>;
 
 /**
  * Response format for history:list handler.
@@ -669,35 +580,13 @@ export interface HistoryListResponse {
 }
 
 /**
- * Full simulation report (detailed, ~500KB).
+ * Zod schema for history:loadReport payload.
  */
-export interface SimulationReport {
-  metadata: {
-    id: string;
-    timestamp: number;
-    projectPath: string;
-    version: string;
-  };
-  summary: SimulationSummary;
-  trechos: Array<{
-    id: string;
-    description: string;
-    battles: Array<{
-      battleId: string;
-      turns: number;
-      ttk: number;
-      winner: 'heroes' | 'enemies';
-      heroes: Array<{ actorId: number; hp: number; damage: number }>;
-      enemies: Array<{ enemyId: number; hp: number; damage: number }>;
-    }>;
-  }>;
-  warnings: Array<{
-    type: string;
-    severity: 'critical' | 'warning' | 'info';
-    message: string;
-    context: Record<string, unknown>;
-  }>;
-}
+export const HistoryLoadReportPayloadSchema = z.object({
+  simulationId: z.string().uuid(),
+});
+
+export type HistoryLoadReportPayload = z.infer<typeof HistoryLoadReportPayloadSchema>;
 
 /**
  * Response format for history:loadReport handler.
@@ -707,11 +596,31 @@ export interface HistoryLoadReportResponse {
 }
 
 /**
+ * Zod schema for history:export payload.
+ */
+export const HistoryExportPayloadSchema = z.object({
+  simulationId: z.string().uuid(),
+  result: z.any(), // TODO: Should be ReportData schema
+  projectPath: z.string().min(1),
+});
+
+export type HistoryExportPayload = z.infer<typeof HistoryExportPayloadSchema>;
+
+/**
  * Response format for history:export handler.
  */
 export interface HistoryExportResponse {
   filePath: string;
 }
+
+/**
+ * Zod schema for history:delete payload.
+ */
+export const HistoryDeletePayloadSchema = z.object({
+  simulationId: z.string().uuid(),
+});
+
+export type HistoryDeletePayload = z.infer<typeof HistoryDeletePayloadSchema>;
 
 /**
  * Response format for history:delete handler.
@@ -726,45 +635,6 @@ export interface HistoryDeleteResponse {
 export interface HistoryGenerateIdResponse {
   simulationId: string;
 }
-
-/**
- * Zod schema for history:list payload.
- */
-export const HistoryListPayloadSchema = z.object({
-  projectPath: z.string().optional(),
-  limit: z.number().int().positive().optional(),
-});
-
-export type HistoryListPayload = z.infer<typeof HistoryListPayloadSchema>;
-
-/**
- * Zod schema for history:loadReport payload.
- */
-export const HistoryLoadReportPayloadSchema = z.object({
-  simulationId: z.string().uuid(),
-});
-
-export type HistoryLoadReportPayload = z.infer<typeof HistoryLoadReportPayloadSchema>;
-
-/**
- * Zod schema for history:export payload.
- */
-export const HistoryExportPayloadSchema = z.object({
-  simulationId: z.string().uuid(),
-  result: z.any(), // ReportData
-  projectPath: z.string().min(1),
-});
-
-export type HistoryExportPayload = z.infer<typeof HistoryExportPayloadSchema>;
-
-/**
- * Zod schema for history:delete payload.
- */
-export const HistoryDeletePayloadSchema = z.object({
-  simulationId: z.string().uuid(),
-});
-
-export type HistoryDeletePayload = z.infer<typeof HistoryDeletePayloadSchema>;
 
 // No payload for history:generateId
 
