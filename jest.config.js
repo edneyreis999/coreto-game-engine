@@ -68,6 +68,8 @@ export default {
         '^@coreto/core/(.+)$': '<rootDir>/packages/core/src/$1.ts',
         '^@coreto/core/tests/fakes$': '<rootDir>/packages/core/tests/fakes/index.ts',
         '^@coreto/core/tests/fakes/(.+)$': '<rootDir>/packages/core/tests/fakes/$1.ts',
+        '^@coreto/electron/domain$': '<rootDir>/packages/electron/src/domain/index.ts',
+        '^@coreto/electron/domain/(.+)$': '<rootDir>/packages/electron/src/domain/$1/index.ts',
         '^@coreto/electron/(.*)\\.js$': '<rootDir>/packages/electron/src/$1.ts',
         '^@coreto/electron/(.+)$': '<rootDir>/packages/electron/src/$1.ts',
         '^(\\.{1,2}/.*)\\.js$': '$1',

@@ -77,15 +77,22 @@ import {
   ConfigUpdateGlobalSettingsPayloadSchema,
 } from './types.js';
 import { getDatabase } from '../database/index.js';
-import { listRecentProjects, addRecentProject } from '../database/index.js';
 import { getUserPreferences, updateUserPreferences } from '../database/index.js';
 import { CONFIG_IPC_HANDLERS } from './config-handlers.js';
 import { HISTORY_IPC_HANDLERS } from './history-handlers.js';
 import { wrapHandler } from './ipc-response.js';
+import { validateTrecho } from '@coreto/electron/domain/use-cases';
+import { createRecentProjectsRepository } from '../database/repositories/sqlite-recent-projects-repository.js';
 
 // ============================================================================
 // Progress State Management
 // ============================================================================
+
+/**
+ * Module-level repository instances (DI via factory functions).
+ * Consistent with the existing getDatabase() pattern.
+ */
+const recentProjectsRepo = createRecentProjectsRepository();
 
 /**
  * Global progress state for running simulations.
@@ -657,50 +664,12 @@ async function handleConfigUpdateTrecho(
 
     logger.info(`[IPC] Updating trecho: ${trecho.id}`);
 
-    // For MVP, validate using the Trecho domain entity
-    // This ensures the trecho data is valid before accepting it
-    try {
-      // Import Trecho from core package for validation
-      const { Trecho, PartyConfig } = await import('@coreto/core');
+    // Validate using the domain use case
+    const result = validateTrecho(trecho);
 
-      // Convert form data to domain entities
-      const party = new PartyConfig(trecho.party.members);
-
-      // Validate trecho (will throw if invalid)
-       
-      new Trecho({
-        id: trecho.id,
-        name: trecho.name ?? trecho.id,
-        anchorLevelMin: trecho.anchorLevelMin,
-        anchorLevelMax: trecho.anchorLevelMax,
-        targetTtkTurns: trecho.targetTtkTurns,
-        targetTtkActions: trecho.targetTtkActions,
-        tolerancePercent: trecho.tolerancePercent,
-        troopIds: trecho.troopIds,
-        party,
-      });
-
-      // TODO: Persist to database in future iteration
-      // For MVP, just return the validated trecho
-      return {
-        trecho: {
-          id: trecho.id,
-          name: trecho.name ?? trecho.id,
-          anchorLevelMin: trecho.anchorLevelMin,
-          anchorLevelMax: trecho.anchorLevelMax,
-          targetTtkTurns: trecho.targetTtkTurns,
-          targetTtkActions: trecho.targetTtkActions,
-          tolerancePercent: trecho.tolerancePercent,
-          troopIds: trecho.troopIds,
-          party: trecho.party,
-        },
-      };
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(`Trecho validation failed: ${error.message}`);
-      }
-      throw error;
-    }
+    // TODO: Persist to database in future iteration
+    // For MVP, just return the validated trecho
+    return result;
   });
 }
 
@@ -917,15 +886,7 @@ async function handleRecentList(
     validatePayload('recent:list', payload, RecentListPayloadSchema);
 
     const limit = payload?.limit ?? 10;
-    const db = getDatabase();
-    const recentProjectsDb = listRecentProjects(db, limit);
-
-    // Convert database format to IPC response format
-    return recentProjectsDb.map((rp) => ({
-      path: rp.path,
-      name: rp.name,
-      lastOpened: new Date(rp.last_opened_at).toISOString(),
-    }));
+    return recentProjectsRepo.list(limit);
   });
 }
 
@@ -942,14 +903,7 @@ async function handleRecentAdd(
     validatePayload('recent:add', payload, RecentAddPayloadSchema);
 
     const { path, name } = payload;
-    const db = getDatabase();
-    const recentProjectDb = addRecentProject(db, path, name);
-
-    return {
-      path: recentProjectDb.path,
-      name: recentProjectDb.name,
-      lastOpened: new Date(recentProjectDb.last_opened_at).toISOString(),
-    };
+    return recentProjectsRepo.add(path, name);
   });
 }
 
