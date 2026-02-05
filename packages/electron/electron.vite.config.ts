@@ -15,6 +15,17 @@ import { resolve } from 'node:path'
 export default defineConfig({
   main: {
     plugins: [externalizeDepsPlugin()],
+    resolve: {
+      alias: {
+      '@coreto/electron/domain': resolve(__dirname, 'src/domain'),
+      '@coreto/electron/domain/use-cases': resolve(__dirname, 'src/domain/use-cases/index.ts'),
+      '@coreto/electron/domain/repositories': resolve(__dirname, 'src/domain/repositories/index.ts'),
+      '@coreto/electron/domain/services': resolve(__dirname, 'src/domain/services/index.ts'),
+      '@coreto/electron/domain/validation': resolve(__dirname, 'src/domain/validation/index.ts'),
+      '@coreto/electron/domain/types': resolve(__dirname, 'src/domain/types/index.ts'),
+      '@coreto/electron/domain/schemas': resolve(__dirname, 'src/domain/schemas/index.ts'),
+      }
+    },
     build: {
       rollupOptions: {
         input: {
