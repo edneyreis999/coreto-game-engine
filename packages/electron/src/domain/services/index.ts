@@ -15,3 +15,12 @@ export {
 export {
   validateAndNormalizeConfig,
 } from './config-validator.js';
+
+export {
+  extractProjectName,
+} from './project-metadata.js';
+
+export {
+  mapToSimulationConfig,
+  type SimulationConfigData,
+} from './config-mapper.js';

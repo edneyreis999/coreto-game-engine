@@ -42,35 +42,11 @@ import {
 
 /**
  * Configuration data passed from Configuration Panel.
+ * This type is now defined in the domain layer and re-exported here for backward compatibility.
+ *
+ * @see @coreto/electron/domain/services/config-mapper
  */
-export interface SimulationConfigData {
-  /**
-   * Absolute path to the RPG Maker MZ project.
-   */
-  projectPath: string;
-
-  /**
-   * Path to the configuration file (optional).
-   */
-  configPath?: string;
-
-  /**
-   * Trechos to validate.
-   */
-  trechos: Array<{
-    id: string;
-    name: string;
-    troopIds: number[];
-  }>;
-
-  /**
-   * Global settings.
-   */
-  globalSettings: {
-    seed?: number;
-    maxBattleTurns?: number;
-  };
-}
+export type { SimulationConfigData } from '@coreto/electron/domain/services';
 
 /**
  * Props for ExecutionPanel component.

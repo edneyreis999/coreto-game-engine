@@ -1,7 +1,8 @@
 import React, { useState, useCallback } from 'react'
 import { ProjectSelectionPanel, ConfigurationPanel, ExecutionPanel, ResultsPanel } from '@/components'
-import type { SimulationConfigData } from '@/components/ExecutionPanel'
 import type { ProjectConfigFormData } from '@/components/ConfigurationPanel'
+import type { SimulationConfigData } from '@coreto/electron/domain/services'
+import { extractProjectName, mapToSimulationConfig } from '@coreto/electron/domain/services'
 
 /**
  * Root App Component
@@ -40,7 +41,7 @@ export default function App(): React.ReactElement {
         trechos: config.trechos,
         globalSettings: config.globalSettings,
         metadata: {
-          projectName: config.projectPath.split('/').filter(Boolean).pop(),
+          projectName: extractProjectName(config.projectPath),
           lastModified: Date.now(),
         },
       })
@@ -49,17 +50,17 @@ export default function App(): React.ReactElement {
 
       if (response.success) {
         console.log('[App] Configuration saved successfully:', response.data.configPath)
-        // Convert to SimulationConfigData for Execution Panel
-        const simConfig: SimulationConfigData = {
-          projectPath: config.projectPath,
-          configPath: response.data.configPath,
-          trechos: config.trechos.map(t => ({
+        // Convert to SimulationConfigData using domain mapper
+        const simConfig = mapToSimulationConfig(
+          config.projectPath,
+          response.data.configPath,
+          config.trechos.map(t => ({
             id: t.id,
             name: t.name,
             troopIds: t.troopIds,
           })),
-          globalSettings: config.globalSettings,
-        }
+          config.globalSettings
+        )
         console.log('[App] Setting simulation config:', simConfig)
         setSimulationConfig(simConfig)
         console.log('[App] simulationConfig state updated')
