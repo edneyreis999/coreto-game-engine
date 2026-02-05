@@ -13,12 +13,13 @@
  */
 
 import { ipcMain, IpcMainInvokeEvent } from 'electron';
+import path from 'node:path';
+import fs from 'node:fs/promises';
 import {
   configService,
   ConfigNotFoundError,
   ConfigValidationError,
 } from '../services/config-service.js';
-import type { UIProjectConfig } from '../services/schemas.js';
 import type {
   IPCResponse,
   IPCResult,
@@ -144,7 +145,7 @@ function tolerancePercentToDecimal(percent: number): number {
  * Handler: config:save
  *
  * Saves a project configuration to temp/project.config.json.
- * Transforms ConfigurationPanel format to UIProjectConfig format.
+ * Transforms ConfigurationPanel format to Core package ProjectConfig format.
  */
 async function handleConfigSave(
   _event: IpcMainInvokeEvent,
@@ -164,42 +165,47 @@ async function handleConfigSave(
       trechosCount: config.trechos.length,
     });
 
-    // Transform ConfigurationPanel format to UIProjectConfig format
-    // UIProjectConfig uses: description, heroTeam, enemyTeam, expectedTTK
-    const uiConfig: UIProjectConfig = {
-      version: config.version,
-      trechos: config.trechos.map(t => ({
-        id: t.id,
-        description: t.name,
-        heroTeam: {
-          level: Math.max(t.anchorLevelMin, t.anchorLevelMax),
-          actors: t.party.members.map(m => m.classId),
-          weapons: {},
-          armors: {},
-        },
-        enemyTeam: {
-          troopId: t.troopIds[0] ?? 1,
-          count: 1,
-        },
-        expectedTTK: {
-          min: Math.floor(t.targetTtkTurns * (1 - tolerancePercentToDecimal(t.tolerancePercent))),
-          max: Math.ceil(t.targetTtkTurns * (1 + tolerancePercentToDecimal(t.tolerancePercent))),
-        },
-      })),
-      metadata: {
-        projectName: config.metadata?.projectName,
-        lastModified: Date.now(),
+    // Transform ConfigurationPanel format to Core ProjectConfig format
+    // Core schema uses: anchorLevelRange {min, max}, ttkTarget {turns, actions, tolerance}
+    const trechos = config.trechos.map(t => ({
+      id: t.id,
+      name: t.name,
+      anchorLevelRange: {
+        min: t.anchorLevelMin,
+        max: t.anchorLevelMax,
       },
+      ttkTarget: {
+        turns: t.targetTtkTurns,
+        actions: t.targetTtkActions,
+        tolerance: tolerancePercentToDecimal(t.tolerancePercent),
+      },
+      troopIds: t.troopIds,
+      party: t.party,
+    }));
+
+    const projectConfig = {
+      projectPath,
+      reportOutputPath: 'temp/reports',
+      seed: config.globalSettings?.seed ?? 12345,
+      maxBattleTurns: config.globalSettings?.maxBattleTurns,
+      trechos,
     };
 
-    console.log('[config:save] UI config to save:', JSON.stringify(uiConfig, null, 2));
+    console.log('[config:save] Project config to save:', JSON.stringify(projectConfig, null, 2));
 
-    // Save config using ConfigService with UI schema
-    await configService.saveConfig(projectPath, uiConfig);
+    // Save config directly to filesystem in Core format
+    // Bypasses ConfigService UI schema validation since Core needs different format
+    const configPath = path.join(projectPath, 'temp', 'project.config.json');
+    const tempDir = path.dirname(configPath);
+
+    await fs.mkdir(tempDir, { recursive: true });
+    await fs.writeFile(configPath, JSON.stringify(projectConfig, null, 2), 'utf-8');
+
+    console.log('[config:save] Config saved successfully to:', configPath);
 
     return {
       success: true,
-      configPath: `${projectPath}/temp/project.config.json`,
+      configPath,
     };
   });
 }
