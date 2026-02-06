@@ -4,8 +4,20 @@
     "composite": true,
     "outDir": "./dist",
     "rootDir": "./src",
-    "tsBuildInfoFile": "./dist/.tsbuildinfo"
+    "tsBuildInfoFile": "./dist/.tsbuildinfo",
+    "baseUrl": "./src",
+    "paths": {
+      "@coreto/core/domain": ["core/domain/index.ts"],
+      "@coreto/core/domain/*": ["core/domain/*"],
+      "@coreto/core/ports": ["core/ports/index.ts"],
+      "@coreto/core/ports/*": ["core/ports/*"],
+      "@coreto/core/errors": ["core/errors/index.ts"],
+      "@coreto/core/errors/*": ["core/errors/*"],
+      "@coreto/core/use-cases": ["core/use-cases/index.ts"],
+      "@coreto/core/use-cases/*": ["core/use-cases/*"],
+      "@coreto/core/infrastructure/*": ["infrastructure/*"]
+    }
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
+  "include": ["src/**/*", "src/index.test.ts"],
+  "exclude": ["node_modules", "dist", "**/*.spec.ts", "src/**/*.test.ts", "!src/index.test.ts"]
 }

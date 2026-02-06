@@ -1,19 +1,25 @@
 {
   "name": "@coreto/core",
-  "version": "0.1.0",
+  "version": "3.0.0",
   "description": "Core game engine logic for TTK validation - shared between CLI and Electron apps",
   "author": "Coreto Team",
   "license": "UNLICENSED",
   "private": true,
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./testing": {
+      "types": "./dist/index.test.d.ts",
+      "import": "./dist/index.test.js",
+      "default": "./dist/index.test.js"
     }
   },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc",
     "type-check": "tsc --noEmit",

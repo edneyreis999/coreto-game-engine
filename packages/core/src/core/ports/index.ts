@@ -26,3 +26,6 @@ export type { IReporter, Warning, WarningType, WarningSeverity } from './IReport
 
 // Headless Runtime Port
 export type { IHeadlessRuntime } from './IHeadlessRuntime.js';
+
+// Clock Port
+export type { IClock } from './IClock.js';
