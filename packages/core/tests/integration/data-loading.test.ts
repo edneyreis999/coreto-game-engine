@@ -10,7 +10,8 @@ import { NodeFileSystem } from '@coreto/core';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const PROJECT_PATH = '/tmp/fake-mz-project-qa';
+// Use unique path per test file to avoid isolation issues when running all tests together
+const PROJECT_PATH = '/tmp/fake-mz-project-qa-integration';
 
 // Helper to setup fake MZ project
 function setupFakeProject(): void {

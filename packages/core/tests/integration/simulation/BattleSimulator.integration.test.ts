@@ -1,18 +1,11 @@
-import type {
-  ClassData,
-  EnemyData,
-  ItemData,
-  RmmzDatabase,
-  SkillData,
-  TroopData,
-  ILogger,
-} from '@coreto/core';
+import type { RmmzDatabase, ILogger } from '@coreto/core';
 import {
   BattleTimeoutError,
   HeadlessBattleSimulator,
   PartyConfig,
   ValidationError,
 } from '@coreto/core';
+import { RmmzDatabaseFakeBuilder } from '../../fakes';
 
 // Mock SyncWarpLoop to prevent actual loop execution during tests
 jest.mock('@coreto/core/infrastructure/runtime/simulation/SyncWarpLoop.js', () => {
@@ -41,130 +34,6 @@ jest.mock('@coreto/core/infrastructure/runtime/HeadlessRuntimeBootstrapper.js', 
 });
 
 /**
- * Create a minimal valid ClassData mock
- */
-function createMockClassData(id: number, name: string): ClassData {
-  return {
-    id,
-    name,
-    expParams: [30, 20, 30, 30],
-    traits: [],
-    learnings: [],
-    note: '',
-    params: [
-      Array(100).fill(500), // MaxHP
-      Array(100).fill(100), // MaxMP
-      Array(100).fill(50), // ATK
-      Array(100).fill(50), // DEF
-      Array(100).fill(50), // MAT
-      Array(100).fill(50), // MDF
-      Array(100).fill(50), // AGI
-      Array(100).fill(50), // LUK
-    ],
-  };
-}
-
-/**
- * Create a minimal valid SkillData mock
- */
-function createMockSkillData(id: number, name: string): SkillData {
-  return {
-    id,
-    name,
-    description: '',
-    iconIndex: 0,
-    mpCost: 0,
-    tpCost: 0,
-    tpGain: 0,
-    message1: '',
-    message2: '',
-    messageType: 1,
-    note: '',
-    occasion: 1,
-    repeats: 1,
-    requiredWtypeId1: 0,
-    requiredWtypeId2: 0,
-    scope: 1,
-    speed: 0,
-    stypeId: 1,
-    successRate: 100,
-    hitType: 0,
-    animationId: 0,
-    damage: {
-      critical: false,
-      elementId: 0,
-      formula: '0',
-      type: 0,
-      variance: 0,
-    },
-    effects: [],
-  };
-}
-
-/**
- * Create a minimal valid EnemyData mock
- */
-function createMockEnemyData(id: number, name: string): EnemyData {
-  return {
-    id,
-    name,
-    battlerHue: 0,
-    battlerName: '',
-    dropItems: [],
-    exp: 100,
-    traits: [],
-    actions: [],
-    gold: 50,
-    note: '',
-    params: [100, 50, 50, 50, 50, 50, 50, 50], // HP, MP, ATK, DEF, MAT, MDF, AGI, LUK
-  };
-}
-
-/**
- * Create a minimal valid TroopData mock
- */
-function createMockTroopData(id: number, name: string): TroopData {
-  return {
-    id,
-    name,
-    members: [{ enemyId: 1, x: 100, y: 100, hidden: false }],
-    pages: [],
-  };
-}
-
-/**
- * Create a minimal valid ItemData mock
- */
-function createMockItemData(id: number, name: string): ItemData {
-  return {
-    id,
-    name,
-    description: '',
-    iconIndex: 0,
-    price: 0,
-    consumable: false,
-    note: '',
-    occasion: 0,
-    repeats: 1,
-    scope: 0,
-    speed: 0,
-    successRate: 100,
-    hitType: 0,
-    animationId: 0,
-    damage: {
-      critical: false,
-      elementId: 0,
-      formula: '0',
-      type: 0,
-      variance: 0,
-    },
-    effects: [],
-    itypeId: 1,
-    tpGain: 0,
-  };
-}
-
-/**
  * Integration tests for HeadlessBattleSimulator.
  *
  * These tests verify the full battle execution flow with mocked but complete RMMZ setup.
@@ -187,19 +56,11 @@ describe('HeadlessBattleSimulator Integration', () => {
 
     simulator = new HeadlessBattleSimulator(mockLogger);
 
-    // Mock database with proper types
-    mockDatabase = {
-      $dataActors: [null, { id: 1, name: 'Actor1' }] as any,
-      $dataClasses: [null as any, createMockClassData(1, 'Warrior')],
-      $dataSkills: [null as any, createMockSkillData(1, 'Attack')],
-      $dataItems: [null as any, createMockItemData(1, 'Potion')],
-      $dataWeapons: [null],
-      $dataArmors: [null],
-      $dataEnemies: [null as any, createMockEnemyData(1, 'Slime')],
-      $dataTroops: [null as any, createMockTroopData(1, 'Slime Pack')],
-      $dataStates: [null],
-      $dataSystem: { gameTitle: 'Test Game' } as any,
-    };
+    // Mock database with proper types using RmmzDatabaseFakeBuilder
+    mockDatabase = new RmmzDatabaseFakeBuilder().withMinimalValidDatabase().build();
+
+    // Add actors (not covered by withMinimalValidDatabase)
+    (mockDatabase.$dataActors as any) = [null, { id: 1, name: 'Actor1' }];
 
     // Mock RMMZ globals
     mockGlobal = global as any;
@@ -319,7 +180,7 @@ describe('HeadlessBattleSimulator Integration', () => {
       const result = await simulator.executeBattle(setup);
 
       expect(result.troopId).toBe(1);
-      expect(result.troopName).toBe('Slime Pack');
+      expect(result.troopName).toBe('Goblin Pack');
       expect(result.outcome).toBe('victory');
       expect(result.ttkTurns).toBe(5);
       expect(result.ttkActions).toBeGreaterThanOrEqual(0);

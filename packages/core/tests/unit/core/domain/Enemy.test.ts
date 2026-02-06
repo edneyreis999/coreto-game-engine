@@ -1,28 +1,10 @@
-import { Enemy, type EnemyEntityData } from '../../../../src/core/domain/Enemy.js';
 import { ValidationError } from '../../../../src/core/errors/ValidationError.js';
-import { TEST_ENEMY_STATS } from '../../../fixtures/test-constants.js';
+import { EnemyFakeBuilder } from '../../../fakes';
 
 describe('Enemy', () => {
-  const createValidEnemyData = (): EnemyEntityData => ({
-    id: 1,
-    name: 'Goblin',
-    params: TEST_ENEMY_STATS.BASIC_GOBLIN,
-    actions: [
-      { skillId: 1, rating: 5, conditionType: 0 },
-      { skillId: 2, rating: 3, conditionType: 1 },
-    ],
-    dropItems: [
-      { kind: 0, dataId: 1, denominator: 2 },
-      { kind: 1, dataId: 5, denominator: 4 },
-    ],
-    exp: 10,
-    gold: 5,
-  });
-
   describe('constructor', () => {
     it('should create enemy with valid data', () => {
-      const data = createValidEnemyData();
-      const enemy = new Enemy(data);
+      const enemy = new EnemyFakeBuilder().build();
 
       expect(enemy.id).toBe(1);
       expect(enemy.name).toBe('Goblin');
@@ -34,140 +16,165 @@ describe('Enemy', () => {
     });
 
     it('should throw ValidationError when id is 0', () => {
-      const data = createValidEnemyData();
-      data.id = 0;
-
-      expect(() => new Enemy(data)).toThrow(ValidationError);
-      expect(() => new Enemy(data)).toThrow('Enemy ID must be >= 1');
+      expect(() => new EnemyFakeBuilder().withId(0).build()).toThrow(ValidationError);
+      expect(() => new EnemyFakeBuilder().withId(0).build()).toThrow('Enemy ID must be >= 1');
     });
 
     it('should throw ValidationError when id is negative', () => {
-      const data = createValidEnemyData();
-      data.id = -1;
-
-      expect(() => new Enemy(data)).toThrow(ValidationError);
-      expect(() => new Enemy(data)).toThrow('Enemy ID must be >= 1');
+      expect(() => new EnemyFakeBuilder().withId(-1).build()).toThrow(ValidationError);
+      expect(() => new EnemyFakeBuilder().withId(-1).build()).toThrow('Enemy ID must be >= 1');
     });
 
     it('should throw ValidationError when name is empty', () => {
-      const data = createValidEnemyData();
-      data.name = '';
-
-      expect(() => new Enemy(data)).toThrow(ValidationError);
-      expect(() => new Enemy(data)).toThrow('Enemy name cannot be empty');
+      expect(() => new EnemyFakeBuilder().withName('').build()).toThrow(ValidationError);
+      expect(() => new EnemyFakeBuilder().withName('').build()).toThrow('Enemy name cannot be empty');
     });
 
     it('should throw ValidationError when name is whitespace only', () => {
-      const data = createValidEnemyData();
-      data.name = '   ';
-
-      expect(() => new Enemy(data)).toThrow(ValidationError);
-      expect(() => new Enemy(data)).toThrow('Enemy name cannot be empty');
+      expect(() => new EnemyFakeBuilder().withName('   ').build()).toThrow(ValidationError);
+      expect(() => new EnemyFakeBuilder().withName('   ').build()).toThrow('Enemy name cannot be empty');
     });
 
     it('should throw ValidationError when params length is not 8', () => {
-      const data = createValidEnemyData();
-      data.params = [50, 0, 10] as any;
-
-      expect(() => new Enemy(data)).toThrow(ValidationError);
-      expect(() => new Enemy(data)).toThrow('Enemy params must have exactly 8 values');
+      expect(() =>
+        new EnemyFakeBuilder()
+          .withParams([50, 0, 10] as any)
+          .build(),
+      ).toThrow(ValidationError);
+      expect(() =>
+        new EnemyFakeBuilder()
+          .withParams([50, 0, 10] as any)
+          .build(),
+      ).toThrow('Enemy params must have exactly 8 values');
     });
 
     it('should throw ValidationError when any param is negative', () => {
-      const data = createValidEnemyData();
-      data.params = [50, 0, -10, 5, 3, 3, 4, 4];
-
-      expect(() => new Enemy(data)).toThrow(ValidationError);
-      expect(() => new Enemy(data)).toThrow('Enemy param[2] cannot be negative');
+      expect(() =>
+        new EnemyFakeBuilder()
+          .withParams([50, 0, -10, 5, 3, 3, 4, 4])
+          .build(),
+      ).toThrow(ValidationError);
+      expect(() =>
+        new EnemyFakeBuilder()
+          .withParams([50, 0, -10, 5, 3, 3, 4, 4])
+          .build(),
+      ).toThrow('Enemy param[2] cannot be negative');
     });
 
     it('should throw ValidationError when MaxHP is 0', () => {
-      const data = createValidEnemyData();
-      data.params = [0, 0, 10, 5, 3, 3, 4, 4];
-
-      expect(() => new Enemy(data)).toThrow(ValidationError);
-      expect(() => new Enemy(data)).toThrow('Enemy MaxHP must be >= 1');
+      expect(() =>
+        new EnemyFakeBuilder()
+          .withParams([0, 0, 10, 5, 3, 3, 4, 4])
+          .build(),
+      ).toThrow(ValidationError);
+      expect(() =>
+        new EnemyFakeBuilder()
+          .withParams([0, 0, 10, 5, 3, 3, 4, 4])
+          .build(),
+      ).toThrow('Enemy MaxHP must be >= 1');
     });
 
     it('should accept zero params (valid for MP)', () => {
-      const data = createValidEnemyData();
-      data.params = [50, 0, 10, 5, 0, 0, 4, 4];
-
-      const enemy = new Enemy(data);
+      const enemy = new EnemyFakeBuilder()
+        .withParams([50, 0, 10, 5, 0, 0, 4, 4])
+        .build();
       expect(enemy.maxMp).toBe(0);
       expect(enemy.magicAttack).toBe(0);
     });
 
     it('should throw ValidationError when action skillId is 0', () => {
-      const data = createValidEnemyData();
-      data.actions = [{ skillId: 0, rating: 5, conditionType: 0 }];
-
-      expect(() => new Enemy(data)).toThrow(ValidationError);
-      expect(() => new Enemy(data)).toThrow('Enemy action skillId must be >= 1');
+      expect(() =>
+        new EnemyFakeBuilder()
+          .withActions([{ skillId: 0, rating: 5, conditionType: 0 }])
+          .build(),
+      ).toThrow(ValidationError);
+      expect(() =>
+        new EnemyFakeBuilder()
+          .withActions([{ skillId: 0, rating: 5, conditionType: 0 }])
+          .build(),
+      ).toThrow('Enemy action skillId must be >= 1');
     });
 
     it('should throw ValidationError when action rating is below 1', () => {
-      const data = createValidEnemyData();
-      data.actions = [{ skillId: 1, rating: 0, conditionType: 0 }];
-
-      expect(() => new Enemy(data)).toThrow(ValidationError);
-      expect(() => new Enemy(data)).toThrow('Enemy action rating must be 1-10');
+      expect(() =>
+        new EnemyFakeBuilder()
+          .withActions([{ skillId: 1, rating: 0, conditionType: 0 }])
+          .build(),
+      ).toThrow(ValidationError);
+      expect(() =>
+        new EnemyFakeBuilder()
+          .withActions([{ skillId: 1, rating: 0, conditionType: 0 }])
+          .build(),
+      ).toThrow('Enemy action rating must be 1-10');
     });
 
     it('should throw ValidationError when action rating exceeds 10', () => {
-      const data = createValidEnemyData();
-      data.actions = [{ skillId: 1, rating: 11, conditionType: 0 }];
-
-      expect(() => new Enemy(data)).toThrow(ValidationError);
-      expect(() => new Enemy(data)).toThrow('Enemy action rating must be 1-10');
+      expect(() =>
+        new EnemyFakeBuilder()
+          .withActions([{ skillId: 1, rating: 11, conditionType: 0 }])
+          .build(),
+      ).toThrow(ValidationError);
+      expect(() =>
+        new EnemyFakeBuilder()
+          .withActions([{ skillId: 1, rating: 11, conditionType: 0 }])
+          .build(),
+      ).toThrow('Enemy action rating must be 1-10');
     });
 
     it('should throw ValidationError when drop item kind is invalid', () => {
-      const data = createValidEnemyData();
-      data.dropItems = [{ kind: 3, dataId: 1, denominator: 2 }];
-
-      expect(() => new Enemy(data)).toThrow(ValidationError);
-      expect(() => new Enemy(data)).toThrow('Drop item kind must be 0-2');
+      expect(() =>
+        new EnemyFakeBuilder()
+          .withDropItems([{ kind: 3, dataId: 1, denominator: 2 }])
+          .build(),
+      ).toThrow(ValidationError);
+      expect(() =>
+        new EnemyFakeBuilder()
+          .withDropItems([{ kind: 3, dataId: 1, denominator: 2 }])
+          .build(),
+      ).toThrow('Drop item kind must be 0-2');
     });
 
     it('should throw ValidationError when drop item dataId is negative', () => {
-      const data = createValidEnemyData();
-      data.dropItems = [{ kind: 0, dataId: -1, denominator: 2 }];
-
-      expect(() => new Enemy(data)).toThrow(ValidationError);
-      expect(() => new Enemy(data)).toThrow('Drop item dataId cannot be negative');
+      expect(() =>
+        new EnemyFakeBuilder()
+          .withDropItems([{ kind: 0, dataId: -1, denominator: 2 }])
+          .build(),
+      ).toThrow(ValidationError);
+      expect(() =>
+        new EnemyFakeBuilder()
+          .withDropItems([{ kind: 0, dataId: -1, denominator: 2 }])
+          .build(),
+      ).toThrow('Drop item dataId cannot be negative');
     });
 
     it('should throw ValidationError when drop item denominator is below 1', () => {
-      const data = createValidEnemyData();
-      data.dropItems = [{ kind: 0, dataId: 1, denominator: 0 }];
-
-      expect(() => new Enemy(data)).toThrow(ValidationError);
-      expect(() => new Enemy(data)).toThrow('Drop item denominator must be >= 1');
+      expect(() =>
+        new EnemyFakeBuilder()
+          .withDropItems([{ kind: 0, dataId: 1, denominator: 0 }])
+          .build(),
+      ).toThrow(ValidationError);
+      expect(() =>
+        new EnemyFakeBuilder()
+          .withDropItems([{ kind: 0, dataId: 1, denominator: 0 }])
+          .build(),
+      ).toThrow('Drop item denominator must be >= 1');
     });
 
     it('should throw ValidationError when EXP is negative', () => {
-      const data = createValidEnemyData();
-      data.exp = -10;
-
-      expect(() => new Enemy(data)).toThrow(ValidationError);
-      expect(() => new Enemy(data)).toThrow('Enemy EXP cannot be negative');
+      expect(() => new EnemyFakeBuilder().withExp(-10).build()).toThrow(ValidationError);
+      expect(() => new EnemyFakeBuilder().withExp(-10).build()).toThrow('Enemy EXP cannot be negative');
     });
 
     it('should throw ValidationError when gold is negative', () => {
-      const data = createValidEnemyData();
-      data.gold = -5;
-
-      expect(() => new Enemy(data)).toThrow(ValidationError);
-      expect(() => new Enemy(data)).toThrow('Enemy gold cannot be negative');
+      expect(() => new EnemyFakeBuilder().withGold(-5).build()).toThrow(ValidationError);
+      expect(() => new EnemyFakeBuilder().withGold(-5).build()).toThrow('Enemy gold cannot be negative');
     });
 
     it('should accept zero EXP and gold', () => {
-      const data = createValidEnemyData();
-      data.exp = 0;
-      data.gold = 0;
-
-      const enemy = new Enemy(data);
+      const enemy = new EnemyFakeBuilder()
+        .withExp(0)
+        .withGold(0)
+        .build();
       expect(enemy.exp).toBe(0);
       expect(enemy.gold).toBe(0);
     });
@@ -175,65 +182,65 @@ describe('Enemy', () => {
 
   describe('parameter getters', () => {
     it('should return correct maxHp', () => {
-      const data = createValidEnemyData();
-      data.params = [100, 0, 10, 5, 3, 3, 4, 4];
-      const enemy = new Enemy(data);
+      const enemy = new EnemyFakeBuilder()
+        .withParams([100, 0, 10, 5, 3, 3, 4, 4])
+        .build();
 
       expect(enemy.maxHp).toBe(100);
     });
 
     it('should return correct maxMp', () => {
-      const data = createValidEnemyData();
-      data.params = [50, 20, 10, 5, 3, 3, 4, 4];
-      const enemy = new Enemy(data);
+      const enemy = new EnemyFakeBuilder()
+        .withParams([50, 20, 10, 5, 3, 3, 4, 4])
+        .build();
 
       expect(enemy.maxMp).toBe(20);
     });
 
     it('should return correct attack', () => {
-      const data = createValidEnemyData();
-      data.params = [50, 0, 15, 5, 3, 3, 4, 4];
-      const enemy = new Enemy(data);
+      const enemy = new EnemyFakeBuilder()
+        .withParams([50, 0, 15, 5, 3, 3, 4, 4])
+        .build();
 
       expect(enemy.attack).toBe(15);
     });
 
     it('should return correct defense', () => {
-      const data = createValidEnemyData();
-      data.params = [50, 0, 10, 8, 3, 3, 4, 4];
-      const enemy = new Enemy(data);
+      const enemy = new EnemyFakeBuilder()
+        .withParams([50, 0, 10, 8, 3, 3, 4, 4])
+        .build();
 
       expect(enemy.defense).toBe(8);
     });
 
     it('should return correct magicAttack', () => {
-      const data = createValidEnemyData();
-      data.params = [50, 0, 10, 5, 12, 3, 4, 4];
-      const enemy = new Enemy(data);
+      const enemy = new EnemyFakeBuilder()
+        .withParams([50, 0, 10, 5, 12, 3, 4, 4])
+        .build();
 
       expect(enemy.magicAttack).toBe(12);
     });
 
     it('should return correct magicDefense', () => {
-      const data = createValidEnemyData();
-      data.params = [50, 0, 10, 5, 3, 9, 4, 4];
-      const enemy = new Enemy(data);
+      const enemy = new EnemyFakeBuilder()
+        .withParams([50, 0, 10, 5, 3, 9, 4, 4])
+        .build();
 
       expect(enemy.magicDefense).toBe(9);
     });
 
     it('should return correct agility', () => {
-      const data = createValidEnemyData();
-      data.params = [50, 0, 10, 5, 3, 3, 7, 4];
-      const enemy = new Enemy(data);
+      const enemy = new EnemyFakeBuilder()
+        .withParams([50, 0, 10, 5, 3, 3, 7, 4])
+        .build();
 
       expect(enemy.agility).toBe(7);
     });
 
     it('should return correct luck', () => {
-      const data = createValidEnemyData();
-      data.params = [50, 0, 10, 5, 3, 3, 4, 6];
-      const enemy = new Enemy(data);
+      const enemy = new EnemyFakeBuilder()
+        .withParams([50, 0, 10, 5, 3, 3, 4, 6])
+        .build();
 
       expect(enemy.luck).toBe(6);
     });
@@ -241,29 +248,27 @@ describe('Enemy', () => {
 
   describe('canUseSkill', () => {
     it('should return true when enemy has the skill', () => {
-      const data = createValidEnemyData();
-      data.actions = [
-        { skillId: 1, rating: 5, conditionType: 0 },
-        { skillId: 2, rating: 3, conditionType: 1 },
-      ];
-      const enemy = new Enemy(data);
+      const enemy = new EnemyFakeBuilder()
+        .withActions([
+          { skillId: 1, rating: 5, conditionType: 0 },
+          { skillId: 2, rating: 3, conditionType: 1 },
+        ])
+        .build();
 
       expect(enemy.canUseSkill(1)).toBe(true);
       expect(enemy.canUseSkill(2)).toBe(true);
     });
 
     it('should return false when enemy does not have the skill', () => {
-      const data = createValidEnemyData();
-      data.actions = [{ skillId: 1, rating: 5, conditionType: 0 }];
-      const enemy = new Enemy(data);
+      const enemy = new EnemyFakeBuilder()
+        .withActions([{ skillId: 1, rating: 5, conditionType: 0 }])
+        .build();
 
       expect(enemy.canUseSkill(99)).toBe(false);
     });
 
     it('should return false when enemy has no actions', () => {
-      const data = createValidEnemyData();
-      data.actions = [];
-      const enemy = new Enemy(data);
+      const enemy = new EnemyFakeBuilder().withNoActions().build();
 
       expect(enemy.canUseSkill(1)).toBe(false);
     });
@@ -271,30 +276,28 @@ describe('Enemy', () => {
 
   describe('getAvailableSkillIds', () => {
     it('should return unique skill IDs', () => {
-      const data = createValidEnemyData();
-      data.actions = [
-        { skillId: 1, rating: 5, conditionType: 0 },
-        { skillId: 2, rating: 3, conditionType: 1 },
-        { skillId: 1, rating: 4, conditionType: 2 }, // Duplicate
-      ];
-      const enemy = new Enemy(data);
+      const enemy = new EnemyFakeBuilder()
+        .withActions([
+          { skillId: 1, rating: 5, conditionType: 0 },
+          { skillId: 2, rating: 3, conditionType: 1 },
+          { skillId: 1, rating: 4, conditionType: 2 }, // Duplicate
+        ])
+        .build();
 
       const skillIds = enemy.getAvailableSkillIds();
       expect(skillIds).toEqual([1, 2]);
     });
 
     it('should return empty array when enemy has no actions', () => {
-      const data = createValidEnemyData();
-      data.actions = [];
-      const enemy = new Enemy(data);
+      const enemy = new EnemyFakeBuilder().withNoActions().build();
 
       expect(enemy.getAvailableSkillIds()).toEqual([]);
     });
 
     it('should return frozen array', () => {
-      const data = createValidEnemyData();
-      data.actions = [{ skillId: 1, rating: 5, conditionType: 0 }];
-      const enemy = new Enemy(data);
+      const enemy = new EnemyFakeBuilder()
+        .withActions([{ skillId: 1, rating: 5, conditionType: 0 }])
+        .build();
 
       const skillIds = enemy.getAvailableSkillIds();
       expect(Object.isFrozen(skillIds)).toBe(true);
@@ -303,13 +306,13 @@ describe('Enemy', () => {
 
   describe('getDropChance', () => {
     it('should return correct drop probability', () => {
-      const data = createValidEnemyData();
-      data.dropItems = [
-        { kind: 0, dataId: 1, denominator: 2 }, // 50%
-        { kind: 1, dataId: 5, denominator: 4 }, // 25%
-        { kind: 2, dataId: 10, denominator: 10 }, // 10%
-      ];
-      const enemy = new Enemy(data);
+      const enemy = new EnemyFakeBuilder()
+        .withDropItems([
+          { kind: 0, dataId: 1, denominator: 2 }, // 50%
+          { kind: 1, dataId: 5, denominator: 4 }, // 25%
+          { kind: 2, dataId: 10, denominator: 10 }, // 10%
+        ])
+        .build();
 
       expect(enemy.getDropChance(0)).toBe(0.5);
       expect(enemy.getDropChance(1)).toBe(0.25);
@@ -317,9 +320,9 @@ describe('Enemy', () => {
     });
 
     it('should return 0 for invalid drop index', () => {
-      const data = createValidEnemyData();
-      data.dropItems = [{ kind: 0, dataId: 1, denominator: 2 }];
-      const enemy = new Enemy(data);
+      const enemy = new EnemyFakeBuilder()
+        .withDropItems([{ kind: 0, dataId: 1, denominator: 2 }])
+        .build();
 
       expect(enemy.getDropChance(-1)).toBe(0);
       expect(enemy.getDropChance(1)).toBe(0);
@@ -327,17 +330,15 @@ describe('Enemy', () => {
     });
 
     it('should return 0 when enemy has no drop items', () => {
-      const data = createValidEnemyData();
-      data.dropItems = [];
-      const enemy = new Enemy(data);
+      const enemy = new EnemyFakeBuilder().withNoDropItems().build();
 
       expect(enemy.getDropChance(0)).toBe(0);
     });
 
     it('should handle denominator of 1 (100% drop)', () => {
-      const data = createValidEnemyData();
-      data.dropItems = [{ kind: 0, dataId: 1, denominator: 1 }];
-      const enemy = new Enemy(data);
+      const enemy = new EnemyFakeBuilder()
+        .withDropItems([{ kind: 0, dataId: 1, denominator: 1 }])
+        .build();
 
       expect(enemy.getDropChance(0)).toBe(1);
     });
@@ -345,30 +346,21 @@ describe('Enemy', () => {
 
   describe('equals', () => {
     it('should return true for enemies with same ID', () => {
-      const data1 = createValidEnemyData();
-      const data2 = createValidEnemyData();
-      data2.name = 'Different Name'; // Different name but same ID
-
-      const enemy1 = new Enemy(data1);
-      const enemy2 = new Enemy(data2);
+      const enemy1 = new EnemyFakeBuilder().build();
+      const enemy2 = new EnemyFakeBuilder().withName('Different Name').build();
 
       expect(enemy1.equals(enemy2)).toBe(true);
     });
 
     it('should return false for enemies with different IDs', () => {
-      const data1 = createValidEnemyData();
-      const data2 = createValidEnemyData();
-      data2.id = 2;
-
-      const enemy1 = new Enemy(data1);
-      const enemy2 = new Enemy(data2);
+      const enemy1 = new EnemyFakeBuilder().build();
+      const enemy2 = new EnemyFakeBuilder().withId(2).build();
 
       expect(enemy1.equals(enemy2)).toBe(false);
     });
 
     it('should support reflexive equality', () => {
-      const data = createValidEnemyData();
-      const enemy = new Enemy(data);
+      const enemy = new EnemyFakeBuilder().build();
 
       expect(enemy.equals(enemy)).toBe(true);
     });
@@ -376,16 +368,13 @@ describe('Enemy', () => {
 
   describe('toString', () => {
     it('should format enemy correctly', () => {
-      const data = createValidEnemyData();
-      const enemy = new Enemy(data);
+      const enemy = new EnemyFakeBuilder().build();
 
       expect(enemy.toString()).toBe('Enemy #1: Goblin');
     });
 
     it('should handle spaces in name', () => {
-      const data = createValidEnemyData();
-      data.name = 'Red Goblin';
-      const enemy = new Enemy(data);
+      const enemy = new EnemyFakeBuilder().withName('Red Goblin').build();
 
       expect(enemy.toString()).toBe('Enemy #1: Red Goblin');
     });
@@ -393,36 +382,31 @@ describe('Enemy', () => {
 
   describe('immutability', () => {
     it('should be frozen', () => {
-      const data = createValidEnemyData();
-      const enemy = new Enemy(data);
+      const enemy = new EnemyFakeBuilder().build();
 
       expect(Object.isFrozen(enemy)).toBe(true);
     });
 
     it('should have frozen params array', () => {
-      const data = createValidEnemyData();
-      const enemy = new Enemy(data);
+      const enemy = new EnemyFakeBuilder().build();
 
       expect(Object.isFrozen(enemy.params)).toBe(true);
     });
 
     it('should have frozen actions array', () => {
-      const data = createValidEnemyData();
-      const enemy = new Enemy(data);
+      const enemy = new EnemyFakeBuilder().build();
 
       expect(Object.isFrozen(enemy.actions)).toBe(true);
     });
 
     it('should have frozen dropItems array', () => {
-      const data = createValidEnemyData();
-      const enemy = new Enemy(data);
+      const enemy = new EnemyFakeBuilder().build();
 
       expect(Object.isFrozen(enemy.dropItems)).toBe(true);
     });
 
     it('should not allow modification of params', () => {
-      const data = createValidEnemyData();
-      const enemy = new Enemy(data);
+      const enemy = new EnemyFakeBuilder().build();
 
       expect(() => {
         (enemy.params as any)[0] = 999;
@@ -430,8 +414,7 @@ describe('Enemy', () => {
     });
 
     it('should not allow modification of actions', () => {
-      const data = createValidEnemyData();
-      const enemy = new Enemy(data);
+      const enemy = new EnemyFakeBuilder().build();
 
       expect(() => {
         (enemy.actions as any).push({ skillId: 99, rating: 5, conditionType: 0 });
@@ -439,34 +422,36 @@ describe('Enemy', () => {
     });
 
     it('should not share reference with input params', () => {
-      const data = createValidEnemyData();
-      const originalParams = [...data.params];
-      const enemy = new Enemy(data);
+      const enemy = new EnemyFakeBuilder()
+        .withParams([50, 0, 10, 5, 3, 3, 4, 4])
+        .build();
 
-      // Create new data to test immutability
-      const newData = { ...data, params: [999, 0, 10, 5, 3, 3, 4, 4] as const };
+      const enemy2 = new EnemyFakeBuilder()
+        .withParams([999, 0, 10, 5, 3, 3, 4, 4])
+        .build();
 
-      expect(enemy.params).toEqual(originalParams);
-      expect(newData.params[0]).toBe(999);
+      expect(enemy.params).toEqual([50, 0, 10, 5, 3, 3, 4, 4]);
+      expect(enemy2.params[0]).toBe(999);
     });
 
     it('should not share reference with input actions', () => {
-      const data = createValidEnemyData();
-      const originalActions = [...data.actions];
-      const enemy = new Enemy(data);
+      const enemy = new EnemyFakeBuilder()
+        .withActions([
+          { skillId: 1, rating: 5, conditionType: 0 },
+          { skillId: 2, rating: 3, conditionType: 1 },
+        ])
+        .build();
 
-      // Create new data to test immutability
-      const newData = {
-        ...data,
-        actions: [
-          ...data.actions,
+      const enemy2 = new EnemyFakeBuilder()
+        .withActions([
+          { skillId: 1, rating: 5, conditionType: 0 },
+          { skillId: 2, rating: 3, conditionType: 1 },
           { skillId: 99, rating: 5, conditionType: 0 },
-        ],
-      };
+        ])
+        .build();
 
-      expect(enemy.actions).toEqual(originalActions);
       expect(enemy.actions).toHaveLength(2);
-      expect(newData.actions).toHaveLength(3);
+      expect(enemy2.actions).toHaveLength(3);
     });
   });
 });

@@ -28,6 +28,8 @@ export { TtkTargetFakeBuilder } from './TtkTargetFakeBuilder';
 export { PartyConfigFakeBuilder } from './PartyConfigFakeBuilder';
 export { WarningFakeBuilder } from './WarningFakeBuilder';
 export { BattleResultFakeBuilder } from './BattleResultFakeBuilder';
+export { EnemyFakeBuilder } from './EnemyFakeBuilder.js';
+export { SkillFakeBuilder } from './SkillFakeBuilder.js';
 export { TrechoFakeBuilder } from './TrechoFakeBuilder';
 export { ReportFakeBuilder } from './ReportFakeBuilder';
 

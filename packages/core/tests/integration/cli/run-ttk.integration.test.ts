@@ -1,8 +1,11 @@
 /**
- * E2E Tests - Full Pipeline Validation
+ * Integration Tests - Full Pipeline Validation
  *
  * Tests the complete pipeline: Config → Loader → Runtime → Simulation → Reporter
  * Validates CA-007 (Determinism), CA-012-015 (Performance), CA-021 (Read-Only Guard)
+ *
+ * NOTE: These were originally E2E tests but use mocked components (HeadlessRuntimeBootstrapper,
+ * SyncWarpLoop), so they are more accurately classified as integration tests.
  *
  * @see planos/002-implementacao-mvp/tasks/33_task.md
  * @see planos/002-implementacao-mvp/FDD-001-mvp-implementation.md
@@ -186,7 +189,7 @@ async function executePipeline(configPath: string, seed?: number) {
  * 2. Use manual QA with real RMMZ projects (tests/qa/MANUAL_QA_GUIDE.md)
  * 3. Run `npm run cli run-ttk -- --config <path>` with real project
  */
-describe('E2E: Full Pipeline - run-ttk command', () => {
+describe('Integration: Full Pipeline - run-ttk command', () => {
   let setup: E2EProjectSetup;
   let initialSnapshot: Map<string, number>;
 

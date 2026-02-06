@@ -1,32 +1,10 @@
-import { Skill, type SkillEntityData } from '../../../../src/core/domain/Skill.js';
 import { ValidationError } from '../../../../src/core/errors/ValidationError.js';
-import { TEST_SKILL } from '../../../fixtures/test-constants.js';
+import { SkillFakeBuilder } from '../../../fakes';
 
 describe('Skill', () => {
-  const createValidSkillData = (): SkillEntityData => ({
-    id: 1,
-    name: 'Fireball',
-    description: 'Deals fire damage to one enemy',
-    damage: {
-      type: 'hp_damage',
-      elementId: 2,
-      formula: 'a.mat * 4 - b.mdf * 2',
-      variance: 20,
-      critical: true,
-    },
-    hitType: 'magical',
-    scope: 'one_enemy',
-    mpCost: 5,
-    tpCost: 0,
-    successRate: TEST_SKILL.GUARANTEED_SUCCESS_RATE,
-    repeats: 1,
-    speed: 0,
-  });
-
   describe('constructor', () => {
     it('should create skill with valid data', () => {
-      const data = createValidSkillData();
-      const skill = new Skill(data);
+      const skill = new SkillFakeBuilder().build();
 
       expect(skill.id).toBe(1);
       expect(skill.name).toBe('Fireball');
@@ -42,140 +20,100 @@ describe('Skill', () => {
     });
 
     it('should throw ValidationError when id is 0', () => {
-      const data = createValidSkillData();
-      data.id = 0;
-
-      expect(() => new Skill(data)).toThrow(ValidationError);
-      expect(() => new Skill(data)).toThrow('Skill ID must be >= 1');
+      expect(() => new SkillFakeBuilder().withId(0).build()).toThrow(ValidationError);
+      expect(() => new SkillFakeBuilder().withId(0).build()).toThrow('Skill ID must be >= 1');
     });
 
     it('should throw ValidationError when id is negative', () => {
-      const data = createValidSkillData();
-      data.id = -1;
-
-      expect(() => new Skill(data)).toThrow(ValidationError);
-      expect(() => new Skill(data)).toThrow('Skill ID must be >= 1');
+      expect(() => new SkillFakeBuilder().withId(-1).build()).toThrow(ValidationError);
+      expect(() => new SkillFakeBuilder().withId(-1).build()).toThrow('Skill ID must be >= 1');
     });
 
     it('should throw ValidationError when name is empty', () => {
-      const data = createValidSkillData();
-      data.name = '';
-
-      expect(() => new Skill(data)).toThrow(ValidationError);
-      expect(() => new Skill(data)).toThrow('Skill name cannot be empty');
+      expect(() => new SkillFakeBuilder().withName('').build()).toThrow(ValidationError);
+      expect(() => new SkillFakeBuilder().withName('').build()).toThrow('Skill name cannot be empty');
     });
 
     it('should throw ValidationError when name is whitespace only', () => {
-      const data = createValidSkillData();
-      data.name = '   ';
-
-      expect(() => new Skill(data)).toThrow(ValidationError);
-      expect(() => new Skill(data)).toThrow('Skill name cannot be empty');
+      expect(() => new SkillFakeBuilder().withName('   ').build()).toThrow(ValidationError);
+      expect(() => new SkillFakeBuilder().withName('   ').build()).toThrow('Skill name cannot be empty');
     });
 
     it('should throw ValidationError when MP cost is negative', () => {
-      const data = createValidSkillData();
-      data.mpCost = -5;
-
-      expect(() => new Skill(data)).toThrow(ValidationError);
-      expect(() => new Skill(data)).toThrow('Skill MP cost cannot be negative');
+      expect(() => new SkillFakeBuilder().withMpCost(-5).build()).toThrow(ValidationError);
+      expect(() => new SkillFakeBuilder().withMpCost(-5).build()).toThrow('Skill MP cost cannot be negative');
     });
 
     it('should throw ValidationError when TP cost is negative', () => {
-      const data = createValidSkillData();
-      data.tpCost = -10;
-
-      expect(() => new Skill(data)).toThrow(ValidationError);
-      expect(() => new Skill(data)).toThrow('Skill TP cost cannot be negative');
+      expect(() => new SkillFakeBuilder().withTpCost(-10).build()).toThrow(ValidationError);
+      expect(() => new SkillFakeBuilder().withTpCost(-10).build()).toThrow('Skill TP cost cannot be negative');
     });
 
     it('should accept zero MP and TP costs', () => {
-      const data = createValidSkillData();
-      data.mpCost = 0;
-      data.tpCost = 0;
-
-      const skill = new Skill(data);
+      const skill = new SkillFakeBuilder()
+        .withMpCost(0)
+        .withTpCost(0)
+        .build();
       expect(skill.mpCost).toBe(0);
       expect(skill.tpCost).toBe(0);
     });
 
     it('should throw ValidationError when success rate is below 0', () => {
-      const data = createValidSkillData();
-      data.successRate = -1;
-
-      expect(() => new Skill(data)).toThrow(ValidationError);
-      expect(() => new Skill(data)).toThrow('Skill success rate must be 0-100');
+      expect(() => new SkillFakeBuilder().withSuccessRate(-1).build()).toThrow(ValidationError);
+      expect(() => new SkillFakeBuilder().withSuccessRate(-1).build()).toThrow('Skill success rate must be 0-100');
     });
 
     it('should throw ValidationError when success rate exceeds 100', () => {
-      const data = createValidSkillData();
-      data.successRate = 101;
-
-      expect(() => new Skill(data)).toThrow(ValidationError);
-      expect(() => new Skill(data)).toThrow('Skill success rate must be 0-100');
+      expect(() => new SkillFakeBuilder().withSuccessRate(101).build()).toThrow(ValidationError);
+      expect(() => new SkillFakeBuilder().withSuccessRate(101).build()).toThrow('Skill success rate must be 0-100');
     });
 
     it('should throw ValidationError when repeats is below 1', () => {
-      const data = createValidSkillData();
-      data.repeats = 0;
-
-      expect(() => new Skill(data)).toThrow(ValidationError);
-      expect(() => new Skill(data)).toThrow('Skill repeats must be >= 1');
+      expect(() => new SkillFakeBuilder().withRepeats(0).build()).toThrow(ValidationError);
+      expect(() => new SkillFakeBuilder().withRepeats(0).build()).toThrow('Skill repeats must be >= 1');
     });
 
     it('should throw ValidationError when damage formula is empty', () => {
-      const data = createValidSkillData();
-      data.damage.formula = '';
-
-      expect(() => new Skill(data)).toThrow(ValidationError);
-      expect(() => new Skill(data)).toThrow('Skill damage formula cannot be empty');
+      expect(() => new SkillFakeBuilder().withFormula('').build()).toThrow(ValidationError);
+      expect(() => new SkillFakeBuilder().withFormula('').build()).toThrow('Skill damage formula cannot be empty');
     });
 
     it('should throw ValidationError when damage formula is whitespace only', () => {
-      const data = createValidSkillData();
-      data.damage.formula = '   ';
-
-      expect(() => new Skill(data)).toThrow(ValidationError);
-      expect(() => new Skill(data)).toThrow('Skill damage formula cannot be empty');
+      expect(() => new SkillFakeBuilder().withFormula('   ').build()).toThrow(ValidationError);
+      expect(() => new SkillFakeBuilder().withFormula('   ').build()).toThrow('Skill damage formula cannot be empty');
     });
 
     it('should throw ValidationError when damage variance is below 0', () => {
-      const data = createValidSkillData();
-      data.damage.variance = -1;
-
-      expect(() => new Skill(data)).toThrow(ValidationError);
-      expect(() => new Skill(data)).toThrow('Skill damage variance must be 0-100');
+      expect(() => new SkillFakeBuilder().withVariance(-1).build()).toThrow(ValidationError);
+      expect(() => new SkillFakeBuilder().withVariance(-1).build()).toThrow('Skill damage variance must be 0-100');
     });
 
     it('should throw ValidationError when damage variance exceeds 100', () => {
-      const data = createValidSkillData();
-      data.damage.variance = 101;
-
-      expect(() => new Skill(data)).toThrow(ValidationError);
-      expect(() => new Skill(data)).toThrow('Skill damage variance must be 0-100');
+      expect(() => new SkillFakeBuilder().withVariance(101).build()).toThrow(ValidationError);
+      expect(() => new SkillFakeBuilder().withVariance(101).build()).toThrow('Skill damage variance must be 0-100');
     });
 
     it('should accept boundary values for success rate', () => {
-      const data1 = createValidSkillData();
-      data1.successRate = 0;
-      const skill1 = new Skill(data1);
+      const skill1 = new SkillFakeBuilder()
+        .withSuccessRate(0)
+        .build();
       expect(skill1.successRate).toBe(0);
 
-      const data2 = createValidSkillData();
-      data2.successRate = 100;
-      const skill2 = new Skill(data2);
+      const skill2 = new SkillFakeBuilder()
+        .withSuccessRate(100)
+        .build();
       expect(skill2.successRate).toBe(100);
     });
 
     it('should accept boundary values for variance', () => {
-      const data1 = createValidSkillData();
-      data1.damage.variance = 0;
-      const skill1 = new Skill(data1);
+      const skill1 = new SkillFakeBuilder()
+        .withVariance(0)
+        .build();
       expect(skill1.damage.variance).toBe(0);
 
-      const data2 = createValidSkillData();
-      data2.damage.variance = 100;
-      const skill2 = new Skill(data2);
+      const skill2 = new SkillFakeBuilder()
+        .withVariance(100)
+        .build();
       expect(skill2.damage.variance).toBe(100);
     });
   });
@@ -189,9 +127,9 @@ describe('Skill', () => {
       ['mp_recover', false, 'MP recover skill'],
       ['none', false, 'no damage type'],
     ])('should return %p for damage type %s', (damageType, expected, _description) => {
-      const data = createValidSkillData();
-      (data.damage.type as any) = damageType;
-      const skill = new Skill(data);
+      const skill = new SkillFakeBuilder()
+        .withDamageType(damageType as any)
+        .build();
 
       expect(skill.isDamageSkill()).toBe(expected);
     });
@@ -206,9 +144,9 @@ describe('Skill', () => {
       ['mp_drain', false, 'MP drain skill'],
       ['none', false, 'no damage type'],
     ])('should return %p for damage type %s', (damageType, expected, _description) => {
-      const data = createValidSkillData();
-      (data.damage.type as any) = damageType;
-      const skill = new Skill(data);
+      const skill = new SkillFakeBuilder()
+        .withDamageType(damageType as any)
+        .build();
 
       expect(skill.isHealingSkill()).toBe(expected);
     });
@@ -216,37 +154,34 @@ describe('Skill', () => {
 
   describe('hasCost', () => {
     it('should return true when MP cost is greater than 0', () => {
-      const data = createValidSkillData();
-      data.mpCost = 10;
-      data.tpCost = 0;
-      const skill = new Skill(data);
+      const skill = new SkillFakeBuilder()
+        .withMpCost(10)
+        .withTpCost(0)
+        .build();
 
       expect(skill.hasCost()).toBe(true);
     });
 
     it('should return true when TP cost is greater than 0', () => {
-      const data = createValidSkillData();
-      data.mpCost = 0;
-      data.tpCost = 50;
-      const skill = new Skill(data);
+      const skill = new SkillFakeBuilder()
+        .withMpCost(0)
+        .withTpCost(50)
+        .build();
 
       expect(skill.hasCost()).toBe(true);
     });
 
     it('should return true when both MP and TP costs are greater than 0', () => {
-      const data = createValidSkillData();
-      data.mpCost = 5;
-      data.tpCost = 25;
-      const skill = new Skill(data);
+      const skill = new SkillFakeBuilder()
+        .withMpCost(5)
+        .withTpCost(25)
+        .build();
 
       expect(skill.hasCost()).toBe(true);
     });
 
     it('should return false when both costs are 0', () => {
-      const data = createValidSkillData();
-      data.mpCost = 0;
-      data.tpCost = 0;
-      const skill = new Skill(data);
+      const skill = new SkillFakeBuilder().withNoCost().build();
 
       expect(skill.hasCost()).toBe(false);
     });
@@ -254,19 +189,16 @@ describe('Skill', () => {
 
   describe('getTotalCost', () => {
     it('should return correct cost object', () => {
-      const data = createValidSkillData();
-      data.mpCost = 15;
-      data.tpCost = 30;
-      const skill = new Skill(data);
+      const skill = new SkillFakeBuilder()
+        .withMpCost(15)
+        .withTpCost(30)
+        .build();
 
       expect(skill.getTotalCost()).toEqual({ mp: 15, tp: 30 });
     });
 
     it('should return zero costs when skill is free', () => {
-      const data = createValidSkillData();
-      data.mpCost = 0;
-      data.tpCost = 0;
-      const skill = new Skill(data);
+      const skill = new SkillFakeBuilder().withNoCost().build();
 
       expect(skill.getTotalCost()).toEqual({ mp: 0, tp: 0 });
     });
@@ -274,25 +206,19 @@ describe('Skill', () => {
 
   describe('canMiss', () => {
     it('should return true for physical hit type', () => {
-      const data = createValidSkillData();
-      data.hitType = 'physical';
-      const skill = new Skill(data);
+      const skill = new SkillFakeBuilder().withPhysical().build();
 
       expect(skill.canMiss()).toBe(true);
     });
 
     it('should return true for magical hit type', () => {
-      const data = createValidSkillData();
-      data.hitType = 'magical';
-      const skill = new Skill(data);
+      const skill = new SkillFakeBuilder().withMagical().build();
 
       expect(skill.canMiss()).toBe(true);
     });
 
     it('should return false for certain hit type', () => {
-      const data = createValidSkillData();
-      data.hitType = 'certain';
-      const skill = new Skill(data);
+      const skill = new SkillFakeBuilder().withCertain().build();
 
       expect(skill.canMiss()).toBe(false);
     });
@@ -300,33 +226,33 @@ describe('Skill', () => {
 
   describe('targetsEnemies', () => {
     it('should return true for one_enemy scope', () => {
-      const data = createValidSkillData();
-      data.scope = 'one_enemy';
-      const skill = new Skill(data);
+      const skill = new SkillFakeBuilder()
+        .withScope('one_enemy')
+        .build();
 
       expect(skill.targetsEnemies()).toBe(true);
     });
 
     it('should return true for all_enemies scope', () => {
-      const data = createValidSkillData();
-      data.scope = 'all_enemies';
-      const skill = new Skill(data);
+      const skill = new SkillFakeBuilder()
+        .withScope('all_enemies')
+        .build();
 
       expect(skill.targetsEnemies()).toBe(true);
     });
 
     it('should return false for one_ally scope', () => {
-      const data = createValidSkillData();
-      data.scope = 'one_ally';
-      const skill = new Skill(data);
+      const skill = new SkillFakeBuilder()
+        .withScope('one_ally')
+        .build();
 
       expect(skill.targetsEnemies()).toBe(false);
     });
 
     it('should return false for user scope', () => {
-      const data = createValidSkillData();
-      data.scope = 'user';
-      const skill = new Skill(data);
+      const skill = new SkillFakeBuilder()
+        .withScope('user')
+        .build();
 
       expect(skill.targetsEnemies()).toBe(false);
     });
@@ -334,33 +260,33 @@ describe('Skill', () => {
 
   describe('targetsAllies', () => {
     it('should return true for one_ally scope', () => {
-      const data = createValidSkillData();
-      data.scope = 'one_ally';
-      const skill = new Skill(data);
+      const skill = new SkillFakeBuilder()
+        .withScope('one_ally')
+        .build();
 
       expect(skill.targetsAllies()).toBe(true);
     });
 
     it('should return true for all_allies scope', () => {
-      const data = createValidSkillData();
-      data.scope = 'all_allies';
-      const skill = new Skill(data);
+      const skill = new SkillFakeBuilder()
+        .withScope('all_allies')
+        .build();
 
       expect(skill.targetsAllies()).toBe(true);
     });
 
     it('should return true for user scope', () => {
-      const data = createValidSkillData();
-      data.scope = 'user';
-      const skill = new Skill(data);
+      const skill = new SkillFakeBuilder()
+        .withScope('user')
+        .build();
 
       expect(skill.targetsAllies()).toBe(true);
     });
 
     it('should return false for one_enemy scope', () => {
-      const data = createValidSkillData();
-      data.scope = 'one_enemy';
-      const skill = new Skill(data);
+      const skill = new SkillFakeBuilder()
+        .withScope('one_enemy')
+        .build();
 
       expect(skill.targetsAllies()).toBe(false);
     });
@@ -368,41 +294,41 @@ describe('Skill', () => {
 
   describe('isAoe', () => {
     it('should return true for all_enemies scope', () => {
-      const data = createValidSkillData();
-      data.scope = 'all_enemies';
-      const skill = new Skill(data);
+      const skill = new SkillFakeBuilder()
+        .withScope('all_enemies')
+        .build();
 
       expect(skill.isAoe()).toBe(true);
     });
 
     it('should return true for all_allies scope', () => {
-      const data = createValidSkillData();
-      data.scope = 'all_allies';
-      const skill = new Skill(data);
+      const skill = new SkillFakeBuilder()
+        .withScope('all_allies')
+        .build();
 
       expect(skill.isAoe()).toBe(true);
     });
 
     it('should return false for one_enemy scope', () => {
-      const data = createValidSkillData();
-      data.scope = 'one_enemy';
-      const skill = new Skill(data);
+      const skill = new SkillFakeBuilder()
+        .withScope('one_enemy')
+        .build();
 
       expect(skill.isAoe()).toBe(false);
     });
 
     it('should return false for one_ally scope', () => {
-      const data = createValidSkillData();
-      data.scope = 'one_ally';
-      const skill = new Skill(data);
+      const skill = new SkillFakeBuilder()
+        .withScope('one_ally')
+        .build();
 
       expect(skill.isAoe()).toBe(false);
     });
 
     it('should return false for user scope', () => {
-      const data = createValidSkillData();
-      data.scope = 'user';
-      const skill = new Skill(data);
+      const skill = new SkillFakeBuilder()
+        .withScope('user')
+        .build();
 
       expect(skill.isAoe()).toBe(false);
     });
@@ -410,37 +336,37 @@ describe('Skill', () => {
 
   describe('canCrit', () => {
     it('should return true for physical with critical enabled', () => {
-      const data = createValidSkillData();
-      data.hitType = 'physical';
-      data.damage.critical = true;
-      const skill = new Skill(data);
+      const skill = new SkillFakeBuilder()
+        .withPhysical()
+        .withCritical(true)
+        .build();
 
       expect(skill.canCrit()).toBe(true);
     });
 
     it('should return true for magical with critical enabled', () => {
-      const data = createValidSkillData();
-      data.hitType = 'magical';
-      data.damage.critical = true;
-      const skill = new Skill(data);
+      const skill = new SkillFakeBuilder()
+        .withMagical()
+        .withCritical(true)
+        .build();
 
       expect(skill.canCrit()).toBe(true);
     });
 
     it('should return false when critical is disabled', () => {
-      const data = createValidSkillData();
-      data.hitType = 'physical';
-      data.damage.critical = false;
-      const skill = new Skill(data);
+      const skill = new SkillFakeBuilder()
+        .withPhysical()
+        .withCritical(false)
+        .build();
 
       expect(skill.canCrit()).toBe(false);
     });
 
     it('should return false for certain hit type', () => {
-      const data = createValidSkillData();
-      data.hitType = 'certain';
-      data.damage.critical = true;
-      const skill = new Skill(data);
+      const skill = new SkillFakeBuilder()
+        .withCertain()
+        .withCritical(true)
+        .build();
 
       expect(skill.canCrit()).toBe(false);
     });
@@ -448,30 +374,21 @@ describe('Skill', () => {
 
   describe('equals', () => {
     it('should return true for skills with same ID', () => {
-      const data1 = createValidSkillData();
-      const data2 = createValidSkillData();
-      data2.name = 'Different Name'; // Different name but same ID
-
-      const skill1 = new Skill(data1);
-      const skill2 = new Skill(data2);
+      const skill1 = new SkillFakeBuilder().build();
+      const skill2 = new SkillFakeBuilder().withName('Different Name').build();
 
       expect(skill1.equals(skill2)).toBe(true);
     });
 
     it('should return false for skills with different IDs', () => {
-      const data1 = createValidSkillData();
-      const data2 = createValidSkillData();
-      data2.id = 2;
-
-      const skill1 = new Skill(data1);
-      const skill2 = new Skill(data2);
+      const skill1 = new SkillFakeBuilder().build();
+      const skill2 = new SkillFakeBuilder().withId(2).build();
 
       expect(skill1.equals(skill2)).toBe(false);
     });
 
     it('should support reflexive equality', () => {
-      const data = createValidSkillData();
-      const skill = new Skill(data);
+      const skill = new SkillFakeBuilder().build();
 
       expect(skill.equals(skill)).toBe(true);
     });
@@ -479,16 +396,13 @@ describe('Skill', () => {
 
   describe('toString', () => {
     it('should format skill correctly', () => {
-      const data = createValidSkillData();
-      const skill = new Skill(data);
+      const skill = new SkillFakeBuilder().build();
 
       expect(skill.toString()).toBe('Skill #1: Fireball');
     });
 
     it('should handle spaces in name', () => {
-      const data = createValidSkillData();
-      data.name = 'Great Fireball';
-      const skill = new Skill(data);
+      const skill = new SkillFakeBuilder().withName('Great Fireball').build();
 
       expect(skill.toString()).toBe('Skill #1: Great Fireball');
     });
@@ -496,22 +410,19 @@ describe('Skill', () => {
 
   describe('immutability', () => {
     it('should be frozen', () => {
-      const data = createValidSkillData();
-      const skill = new Skill(data);
+      const skill = new SkillFakeBuilder().build();
 
       expect(Object.isFrozen(skill)).toBe(true);
     });
 
     it('should have frozen damage object', () => {
-      const data = createValidSkillData();
-      const skill = new Skill(data);
+      const skill = new SkillFakeBuilder().build();
 
       expect(Object.isFrozen(skill.damage)).toBe(true);
     });
 
     it('should not allow modification of damage', () => {
-      const data = createValidSkillData();
-      const skill = new Skill(data);
+      const skill = new SkillFakeBuilder().build();
 
       expect(() => {
         (skill.damage as any).type = 'hp_recover';
@@ -519,13 +430,13 @@ describe('Skill', () => {
     });
 
     it('should not share reference with input damage', () => {
-      const data = createValidSkillData();
-      const originalType = data.damage.type;
-      const skill = new Skill(data);
+      const skill1 = new SkillFakeBuilder().build();
+      const skill2 = new SkillFakeBuilder()
+        .withDamageType('hp_recover')
+        .build();
 
-      data.damage.type = 'hp_recover';
-
-      expect(skill.damage.type).toBe(originalType);
+      expect(skill1.damage.type).toBe('hp_damage');
+      expect(skill2.damage.type).toBe('hp_recover');
     });
   });
 });
