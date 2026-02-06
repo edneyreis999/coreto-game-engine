@@ -59,9 +59,7 @@ export function normalizeSchema(raw: unknown): unknown {
 
   // Normalize each trecho
   if (Array.isArray(config.trechos)) {
-    config.trechos = config.trechos.map((trecho: unknown) =>
-      normalizeTrechoSchema(trecho)
-    );
+    config.trechos = config.trechos.map((trecho: unknown) => normalizeTrechoSchema(trecho));
   }
 
   return config;

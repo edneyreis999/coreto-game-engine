@@ -31,10 +31,12 @@ export const TrechoConfigSchema = z.object({
     troopId: z.number().int().positive('Troop ID must be positive'),
     count: z.number().int().positive().optional(),
   }),
-  expectedTTK: z.object({
-    min: z.number().int().nonnegative('Minimum TTK cannot be negative'),
-    max: z.number().int().nonnegative('Maximum TTK cannot be negative'),
-  }).optional(),
+  expectedTTK: z
+    .object({
+      min: z.number().int().nonnegative('Minimum TTK cannot be negative'),
+      max: z.number().int().nonnegative('Maximum TTK cannot be negative'),
+    })
+    .optional(),
 });
 
 /**
@@ -46,10 +48,12 @@ export const TrechoConfigSchema = z.object({
 export const ProjectConfigSchema = z.object({
   version: z.string().default('1.0'),
   trechos: z.array(TrechoConfigSchema).default([]),
-  metadata: z.object({
-    projectName: z.string().optional(),
-    lastModified: z.number().int().nonnegative().optional(),
-  }).optional(),
+  metadata: z
+    .object({
+      projectName: z.string().optional(),
+      lastModified: z.number().int().nonnegative().optional(),
+    })
+    .optional(),
 });
 
 /**

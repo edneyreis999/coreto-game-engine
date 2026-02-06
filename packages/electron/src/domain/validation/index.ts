@@ -5,11 +5,7 @@
  */
 
 // Types
-export type {
-  FieldError,
-  FormErrors,
-  FormValidation,
-} from './types';
+export type { FieldError, FormErrors, FormValidation } from './types';
 
 // Trecho Validation
 export {

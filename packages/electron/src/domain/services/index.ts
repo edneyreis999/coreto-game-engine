@@ -7,20 +7,10 @@
  * import { normalizeSchema, validateAndNormalizeConfig } from '@/domain/services';
  */
 
-export {
-  normalizeSchema,
-  normalizeTrechoSchema,
-} from './config-migrator.js';
+export { normalizeSchema, normalizeTrechoSchema } from './config-migrator.js';
 
-export {
-  validateAndNormalizeConfig,
-} from './config-validator.js';
+export { validateAndNormalizeConfig } from './config-validator.js';
 
-export {
-  extractProjectName,
-} from './project-metadata.js';
+export { extractProjectName } from './project-metadata.js';
 
-export {
-  mapToSimulationConfig,
-  type SimulationConfigData,
-} from './config-mapper.js';
+export { mapToSimulationConfig, type SimulationConfigData } from './config-mapper.js';
