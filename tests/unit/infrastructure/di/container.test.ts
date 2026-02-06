@@ -358,21 +358,21 @@ describe('DI Container', () => {
     });
 
     it('should maintain singleton behavior for all registered services', () => {
-      const services = [
-        { token: ILoggerToken, name: 'ILogger' },
-        { token: IFileSystemToken, name: 'IFileSystem' },
-        { token: IConfigLoaderToken, name: 'IConfigLoader' },
-        { token: IDataLoaderToken, name: 'IDataLoader' },
-        { token: IBattleSimulatorToken, name: 'IBattleSimulator' },
-        { token: IReporterToken, name: 'IReporter' },
-        { token: IHeadlessRuntimeToken, name: 'IHeadlessRuntime' },
-      ];
-
-      services.forEach(({ token }) => {
+      // Helper function to test singleton behavior - type-safe for each token type
+      function assertSingletonBehavior<T>(token: symbol & { __type: T }): void {
         const instance1 = resolve(token);
         const instance2 = resolve(token);
         expect(instance1).toBe(instance2);
-      });
+      }
+
+      // Test each service individually with full type safety
+      assertSingletonBehavior(ILoggerToken);
+      assertSingletonBehavior(IFileSystemToken);
+      assertSingletonBehavior(IConfigLoaderToken);
+      assertSingletonBehavior(IDataLoaderToken);
+      assertSingletonBehavior(IBattleSimulatorToken);
+      assertSingletonBehavior(IReporterToken);
+      assertSingletonBehavior(IHeadlessRuntimeToken);
     });
   });
 
