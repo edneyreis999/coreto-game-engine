@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import type { RecentProject } from '@coreto/electron/preload/index.js';
+import type { RecentProject } from '@coreto/electron/domain/types';
 
 // ============================================================================
 // Hook State
@@ -109,7 +109,7 @@ export function useRecentProjects(
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      const result = await window.coreto.listRecent(limit);
+      const result = await window.coreto.recent.list(limit);
 
       if (result.success) {
         setState({
@@ -141,7 +141,7 @@ export function useRecentProjects(
       setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
       try {
-        const result = await window.coreto.addRecent(path, name);
+        const result = await window.coreto.recent.add(path, name);
 
         if (result.success) {
           // Refresh the list after adding

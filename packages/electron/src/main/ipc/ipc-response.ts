@@ -5,6 +5,16 @@ import type {
   IPCSuccessResponse,
   IPCErrorResponse,
 } from './types.js';
+import { getLogger } from '../di/container.js';
+
+// Lazy initialization to avoid calling getLogger() before DI container is ready
+let logger: ReturnType<typeof getLogger> | null = null;
+function ensureLogger() {
+  if (!logger) {
+    logger = getLogger();
+  }
+  return logger;
+}
 
 /**
  * Creates a successful IPC response with literal type 'success: true'
@@ -59,11 +69,11 @@ export function wrapHandler<T extends IPCResponse>(
 ): Promise<IPCResult<T>> {
   return handler()
     .then((data) => {
-      console.log('[wrapHandler] Success, data:', data);
+      ensureLogger().debug('[wrapHandler] Success, data: ' + JSON.stringify(data));
       return success<T>(data);
     })
     .catch((error: unknown) => {
-      console.error('[wrapHandler] Error caught:', error);
+      ensureLogger().error('[wrapHandler] Error caught: ' + String(error));
       return failure(serializeError(error));
     });
 }

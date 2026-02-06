@@ -10,21 +10,40 @@ import { resolve } from 'node:path'
  * - preload: Isolated context bridge script
  * - renderer: React application with Vite
  *
+ * Module Aliases:
+ * - Domain aliases are shared across main and renderer (DRY via sharedDomainAliases)
+ * - Renderer has additional '@/*' alias for React components
+ * - See packages/electron/CLAUDE.md for import conventions
+ *
  * @see https://electron-vite.org/config/
  */
+
+/**
+ * Shared domain layer aliases.
+ * Used by both main and renderer processes for cross-layer imports.
+ *
+ * IMPORTANT: Keep in sync with:
+ * - tsconfig.json (TypeScript resolution)
+ * - jest.config.js (test module resolution)
+ *
+ * Convention: Point to directories (not index.ts) to allow Vite to resolve subpaths
+ */
+const sharedDomainAliases = {
+  '@coreto/electron/domain/use-cases': resolve(__dirname, 'src/domain/use-cases'),
+  '@coreto/electron/domain/repositories': resolve(__dirname, 'src/domain/repositories'),
+  '@coreto/electron/domain/services': resolve(__dirname, 'src/domain/services'),
+  '@coreto/electron/domain/validation': resolve(__dirname, 'src/domain/validation'),
+  '@coreto/electron/domain/types': resolve(__dirname, 'src/domain/types'),
+  '@coreto/electron/domain/schemas': resolve(__dirname, 'src/domain/schemas'),
+  '@coreto/electron/domain/ports': resolve(__dirname, 'src/domain/ports'),
+  '@coreto/electron/domain': resolve(__dirname, 'src/domain'),
+}
+
 export default defineConfig({
   main: {
     plugins: [externalizeDepsPlugin()],
     resolve: {
-      alias: {
-      '@coreto/electron/domain': resolve(__dirname, 'src/domain'),
-      '@coreto/electron/domain/use-cases': resolve(__dirname, 'src/domain/use-cases/index.ts'),
-      '@coreto/electron/domain/repositories': resolve(__dirname, 'src/domain/repositories/index.ts'),
-      '@coreto/electron/domain/services': resolve(__dirname, 'src/domain/services/index.ts'),
-      '@coreto/electron/domain/validation': resolve(__dirname, 'src/domain/validation/index.ts'),
-      '@coreto/electron/domain/types': resolve(__dirname, 'src/domain/types/index.ts'),
-      '@coreto/electron/domain/schemas': resolve(__dirname, 'src/domain/schemas/index.ts'),
-      }
+      alias: sharedDomainAliases
     },
     build: {
       rollupOptions: {
@@ -45,6 +64,9 @@ export default defineConfig({
   },
   preload: {
     plugins: [externalizeDepsPlugin()],
+    resolve: {
+      alias: sharedDomainAliases
+    },
     build: {
       rollupOptions: {
         output: {
@@ -60,14 +82,7 @@ export default defineConfig({
     resolve: {
       alias: {
         '@': resolve(__dirname, 'src/renderer/src'),
-        '@coreto/electron/domain': resolve(__dirname, 'src/domain'),
-        '@coreto/electron/domain/use-cases': resolve(__dirname, 'src/domain/use-cases/index.ts'),
-        '@coreto/electron/domain/repositories': resolve(__dirname, 'src/domain/repositories/index.ts'),
-        '@coreto/electron/domain/services': resolve(__dirname, 'src/domain/services/index.ts'),
-        '@coreto/electron/domain/validation': resolve(__dirname, 'src/domain/validation/index.ts'),
-        '@coreto/electron/domain/types': resolve(__dirname, 'src/domain/types/index.ts'),
-        '@coreto/electron/domain/schemas': resolve(__dirname, 'src/domain/schemas/index.ts'),
-        '@coreto/electron/domain/validation/types': resolve(__dirname, 'src/domain/validation/types.ts'),
+        ...sharedDomainAliases
       }
     },
     build: {

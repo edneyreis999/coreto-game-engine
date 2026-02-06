@@ -9,7 +9,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import type { IPCResult } from '@coreto/electron/preload/index.js';
+import type { IPCResult } from '@coreto/electron/domain/types';
+import { useLogger } from './useLogger.js';
 
 // ============================================================================
 // Hook State
@@ -114,7 +115,7 @@ function createIpcError(ipcError: {
  *
  * @example
  * const { data, error, isLoading, invoke } = useIpc(
- *   (path) => window.coreto.openProject(path),
+ *   (path) => window.coreto.project.open(path),
  *   { invokeOnMount: false }
  * );
  *
@@ -232,7 +233,7 @@ export function useIpc<T>(
  *
  * @example
  * const { data, error, isLoading, invoke } = useIpcWithArg(
- *   (path: string) => window.coreto.openProject(path)
+ *   (path: string) => window.coreto.project.open(path)
  * );
  *
  * await invoke('/path/to/project');
@@ -241,6 +242,7 @@ export function useIpcWithArg<T, A>(
   ipcFn: (arg: A) => Promise<IPCResult<T>>,
   _options: UseIpcOptions = {}
 ): IpcReturnWithArg<T, A> {
+  const logger = useLogger();
   const [state, setState] = useState<IpcState<T>>({
     data: null,
     error: null,
@@ -260,7 +262,7 @@ export function useIpcWithArg<T, A>(
 
   const invoke = useCallback(
     async (arg: A) => {
-      console.log('[useIpcWithArg] invoke called with arg:', arg);
+      logger.debug(`[useIpcWithArg] invoke called with arg: ${JSON.stringify(arg)}`);
       // Cancel any pending request
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
@@ -271,27 +273,27 @@ export function useIpcWithArg<T, A>(
       abortControllerRef.current = abortController;
 
       setState((prev) => {
-        console.log('[useIpcWithArg] Setting isLoading: true');
+        logger.debug('[useIpcWithArg] Setting isLoading: true');
         return { ...prev, isLoading: true, error: null };
       });
 
       try {
-        console.log('[useIpcWithArg] Calling ipcFn...');
+        logger.debug('[useIpcWithArg] Calling ipcFn...');
         const result = await ipcFn(arg);
-        console.log('[useIpcWithArg] ipcFn returned:', result);
+        logger.debug(`[useIpcWithArg] ipcFn returned: ${JSON.stringify(result)}`);
 
         // Only skip setState if the request was actively aborted (not unmounted)
         // This allows data to be set even after unmount for debugging
         if (abortController.signal.aborted) {
-          console.log('[useIpcWithArg] Request was aborted');
+          logger.debug('[useIpcWithArg] Request was aborted');
           return;
         }
 
         if (result.success) {
-          console.log('[useIpcWithArg] Result successful, setting data:', result.data);
+          logger.debug(`[useIpcWithArg] Result successful, setting data: ${JSON.stringify(result.data)}`);
           setState({ data: result.data, error: null, isLoading: false });
         } else {
-          console.log('[useIpcWithArg] Result failed:', result.error);
+          logger.warn(`[useIpcWithArg] Result failed: ${JSON.stringify(result.error)}`);
           setState({
             data: null,
             error: createIpcError(result.error),
@@ -299,7 +301,7 @@ export function useIpcWithArg<T, A>(
           });
         }
       } catch (error) {
-        console.log('[useIpcWithArg] Exception caught:', error);
+        logger.error(`[useIpcWithArg] Exception caught: ${String(error)}`);
         setState({
           data: null,
           error: error instanceof Error ? error : new Error(String(error)),
@@ -309,7 +311,7 @@ export function useIpcWithArg<T, A>(
         abortControllerRef.current = null;
       }
     },
-    [ipcFn]
+    [ipcFn, logger]
   );
 
   useEffect(() => {

@@ -1,6 +1,34 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import { electronAPI } from '@electron-toolkit/preload';
-import type { ProgressPayload, ErrorPayload, SimulationResultPayload } from '../main/workers/types';
+import type {
+  // IPC Types
+  ProjectInfo,
+  ValidationResult,
+  BattleResultData,
+  SimulationResult,
+  WarningData,
+  ReportBattleResult,
+  TrechoSummaryData,
+  ReportData,
+  ProjectConfigResponse,
+  TrechoData,
+  TroopData,
+  ClassData,
+  EnemyData,
+  RecentProject,
+  UserPreferences,
+  SimulationSummary,
+  HistoryEntry,
+  SimulationReport,
+  IPCError,
+  IPCSuccessResponse,
+  IPCErrorResponse,
+  IPCResult,
+  // Worker Communication Types
+  ProgressPayload,
+  ErrorPayload,
+  SimulationResultPayload,
+} from '../domain/types/index.js';
 
 // LOG INICIAL PARA VERIFICAR VERSÃO
 console.log('🚀 PRELOAD CARREGADO - Versão com logs de debug');
@@ -25,272 +53,30 @@ console.log('📍 Timestamp:', new Date().toISOString());
  */
 
 // ============================================================================
-// Type Definitions (for internal reference)
+// Type Definitions
 // ============================================================================
 
 /**
- * Project info returned by project:open handler.
+ * All IPC types are imported from the domain layer.
+ * @see packages/electron/src/domain/types
  */
-interface ProjectInfo {
-  path: string;
-  name: string;
-  isValid: boolean;
-  troopsCount?: number;
-  classesCount?: number;
-  enemiesCount?: number;
-}
-
-/**
- * Validation result returned by project:validate handler.
- */
-interface ValidationResult {
-  isValid: boolean;
-  errors: string[];
-  warnings: string[];
-}
-
-/**
- * Battle result data structure.
- */
-interface BattleResultData {
-  troopId: number;
-  troopName: string;
-  outcome: 'victory' | 'defeat' | 'timeout';
-  ttkTurns: number;
-  ttkActions: number;
-  durationMs: number;
-  seed: number;
-  expGained: number;
-}
-
-/**
- * Simulation result returned by simulation:run handler.
- */
-interface SimulationResult {
-  trechoId: string;
-  troopId: number;
-  troopName: string;
-  battleResult: BattleResultData;
-  passed: boolean;
-  warnings: string[];
-}
-
-/**
- * Warning data structure.
- */
-interface WarningData {
-  type: string;
-  severity: 'critical' | 'warning' | 'info';
-  message: string;
-  context: Record<string, unknown>;
-}
-
-/**
- * Battle result data in Report format.
- */
-interface ReportBattleResult {
-  troopId: number;
-  troopName: string;
-  outcome: 'victory' | 'defeat' | 'timeout';
-  ttkTurns: number;
-  ttkActions: number;
-  durationMs: number;
-  seed: number;
-  expGained: number;
-}
-
-/**
- * Trecho summary data in Report format.
- */
-interface TrechoSummaryData {
-  id: string;
-  name: string;
-  passed: boolean;
-  battleCount: number;
-  avgTtkTurns: number;
-  avgTtkActions: number;
-  p95TtkTurns: number;
-  p95TtkActions: number;
-  successRate: number;
-  battles: ReportBattleResult[];
-  warnings: WarningData[];
-}
-
-/**
- * Report data structure returned by simulation:getResults handler.
- */
-interface ReportData {
-  trechos: TrechoSummaryData[];
-  totalBattles: number;
-  timestamp: string;
-}
-
-/**
- * Project config response returned by config:load handler.
- */
-interface ProjectConfigResponse {
-  projectPath: string;
-  reportOutputPath: string;
-  seed: number;
-  maxBattleTurns?: number;
-  trechos: TrechoData[];
-}
-
-/**
- * Trecho data structure.
- */
-interface TrechoData {
-  id: string;
-  name: string;
-  anchorLevelMin: number;
-  anchorLevelMax: number;
-  targetTtkTurns: number;
-  targetTtkActions: number;
-  tolerancePercent: number;
-  troopIds: number[];
-  party: {
-    members: Array<{ classId: number; level: number }>;
-  };
-}
-
-/**
- * Troop data structure.
- */
-interface TroopData {
-  id: number;
-  name: string;
-  members: Array<{
-    enemyId: number;
-    x: number;
-    y: number;
-    hidden: boolean;
-  }>;
-}
-
-/**
- * Class data structure.
- */
-interface ClassData {
-  id: number;
-  name: string;
-  expTable: number[];
-}
-
-/**
- * Enemy data structure.
- */
-interface EnemyData {
-  id: number;
-  name: string;
-  params: number[];
-  dropItems: Array<{ kind: number; dataId: number; denominator: number }>;
-}
-
-/**
- * Recent project data structure.
- */
-interface RecentProject {
-  path: string;
-  name: string;
-  lastOpened: string;
-}
-
-/**
- * User preferences data structure.
- */
-interface UserPreferences {
-  theme: 'light' | 'dark' | 'system';
-  lastProjectPath: string | null;
-}
-
-/**
- * Simulation summary data for history entries.
- */
-interface SimulationSummary {
-  totalBattles: number;
-  trechosCount: number;
-  passedCount: number;
-  failedCount: number;
-  timestamp: string;
-}
-
-/**
- * History entry data structure.
- */
-interface HistoryEntry {
-  id: string;
-  projectPath: string;
-  timestamp: number;
-  status: 'SUCCESS' | 'FAILED' | 'CANCELLED';
-  summary: SimulationSummary;
-  hasReport: boolean;
-}
-
-/**
- * Detailed simulation report data structure.
- */
-interface SimulationReport {
-  simulationId: string;
-  projectPath: string;
-  timestamp: number;
-  status: 'SUCCESS' | 'FAILED' | 'CANCELLED';
-  summary: SimulationSummary;
-  reportData: ReportData;
-}
-
-/**
- * IPC error structure.
- */
-interface IPCError {
-  name: string;
-  message: string;
-  severity: 'critical' | 'warning' | 'info';
-  context: Record<string, unknown>;
-  timestamp: string;
-}
-
-/**
- * Success response wrapper.
- */
-interface IPCSuccessResponse<T> {
-  success: true;
-  data: T;
-}
-
-/**
- * Error response wrapper.
- */
-interface IPCErrorResponse {
-  success: false;
-  error: IPCError;
-}
-
-/**
- * Union type for all IPC responses.
- */
-type IPCResult<T> = IPCSuccessResponse<T> | IPCErrorResponse;
 
 // ============================================================================
-// Coreto API - Exposed to Renderer
+// Coreto API - Exposed to Renderer (Domain-Segregated)
 // ============================================================================
 
 /**
- * Coreto-specific IPC API exposed to the renderer process.
+ * Project Management API
  *
- * All methods use ipcRenderer.invoke() for request-response communication.
- * Errors from the main process are re-thrown for proper error handling in React.
+ * Handles RPG Maker MZ project operations (open, validate).
  */
-const coretoAPI = {
-  /**
-   * Project Handlers
-   */
-
+const projectAPI = {
   /**
    * Opens an RPG Maker MZ project and returns basic project info.
    * @param path - Absolute path to the project directory
    * @returns Project information including validation status
    */
-  openProject: (path: string): Promise<IPCResult<ProjectInfo>> =>
+  open: (path: string): Promise<IPCResult<ProjectInfo>> =>
     ipcRenderer.invoke('project:open', { path }),
 
   /**
@@ -298,21 +84,25 @@ const coretoAPI = {
    * @param path - Absolute path to the project directory
    * @returns Validation result with errors and warnings
    */
-  validateProject: (path: string): Promise<IPCResult<ValidationResult>> =>
+  validate: (path: string): Promise<IPCResult<ValidationResult>> =>
     ipcRenderer.invoke('project:validate', { path }),
+};
 
+/**
+ * Simulation Execution API
+ *
+ * Handles TTK simulation lifecycle (start, cancel, progress, results).
+ * Uses Event Streaming Pattern for real-time updates.
+ *
+ * @see planos/005-run-ttk-electron/TECHSPEC.md Section 2.1
+ */
+const simulationAPI = {
   /**
-   * Simulation Handlers
-   */
-
-  /**
-   * Simulation Event Listeners (Event Streaming Pattern)
+   * Event Listeners (Event Streaming Pattern)
    *
    * These listeners provide real-time updates from the worker process
    * via IPC events. Each listener returns a cleanup function that must
    * be called to remove the listener and prevent memory leaks.
-   *
-   * @see planos/005-run-ttk-electron/TECHSPEC.md Section 2.1
    */
 
   /**
@@ -321,7 +111,7 @@ const coretoAPI = {
    * @returns Cleanup function to remove listener
    *
    * @example
-   * const cleanup = window.coreto.onProgress((payload) => {
+   * const cleanup = window.coreto.simulation.onProgress((payload) => {
    *   console.log(`Progress: ${payload.percentage}% - ${payload.message}`);
    * });
    * // Call cleanup() when done to prevent memory leaks
@@ -332,7 +122,6 @@ const coretoAPI = {
     };
     ipcRenderer.on('simulation:progress', listener);
 
-    // Return cleanup function
     return () => {
       ipcRenderer.removeListener('simulation:progress', listener);
     };
@@ -344,7 +133,7 @@ const coretoAPI = {
    * @returns Cleanup function to remove listener
    *
    * @example
-   * const cleanup = window.coreto.onComplete((result) => {
+   * const cleanup = window.coreto.simulation.onComplete((result) => {
    *   console.log('Simulation complete:', result.report);
    * });
    */
@@ -365,7 +154,7 @@ const coretoAPI = {
    * @returns Cleanup function to remove listener
    *
    * @example
-   * const cleanup = window.coreto.onError((error) => {
+   * const cleanup = window.coreto.simulation.onError((error) => {
    *   console.error('Simulation failed:', error.title);
    * });
    */
@@ -388,7 +177,7 @@ const coretoAPI = {
    * @returns Promise resolving to simulation ID
    *
    * @example
-   * const response = await window.coreto.startSimulation({
+   * const response = await window.coreto.simulation.start({
    *   projectPath: '/path/to/project',
    *   configPath: '/path/to/config.json',
    *   seed: 12345
@@ -397,7 +186,7 @@ const coretoAPI = {
    *   console.log('Simulation ID:', response.data.simulationId);
    * }
    */
-  startSimulation: (params: {
+  start: (params: {
     projectPath: string;
     configPath: string;
     seed?: number;
@@ -411,15 +200,30 @@ const coretoAPI = {
    * @returns Promise that resolves when cancellation is requested
    *
    * @example
-   * await window.coreto.cancelSimulation();
+   * await window.coreto.simulation.cancel();
    */
-  cancelSimulation: (): Promise<IPCResult<void>> => ipcRenderer.invoke('simulation:cancel'),
+  cancel: (): Promise<IPCResult<void>> => ipcRenderer.invoke('simulation:cancel'),
 
   /**
-   * Legacy simulation handler (deprecated - use startSimulation + event listeners).
-   * @deprecated Use startSimulation with onProgress/onComplete/onError event listeners
+   * Gets the simulation results Report.
+   * @returns Report data containing all trecho summaries
    */
-  runSimulation: (config: {
+  getResults: (): Promise<IPCResult<ReportData>> =>
+    ipcRenderer.invoke('simulation:getResults'),
+
+  /**
+   * Gets the current simulation progress (0-100).
+   * @deprecated Use onProgress event listener instead
+   * @returns Progress percentage
+   */
+  getProgress: (): Promise<IPCResult<number>> =>
+    ipcRenderer.invoke('simulation:getProgress'),
+
+  /**
+   * Legacy simulation handler (deprecated - use start + event listeners).
+   * @deprecated Use start with onProgress/onComplete/onError event listeners
+   */
+  run: (config: {
     projectPath: string;
     configPath?: string;
     trechoId?: string;
@@ -427,26 +231,14 @@ const coretoAPI = {
     seed?: number;
     maxTurns?: number;
   }): Promise<IPCResult<SimulationResult>> => ipcRenderer.invoke('simulation:run', config),
+};
 
-  /**
-   * Gets the current simulation progress (0-100).
-   * @deprecated Use onProgress event listener instead
-   * @returns Progress percentage
-   */
-  getSimulationProgress: (): Promise<IPCResult<number>> =>
-    ipcRenderer.invoke('simulation:getProgress'),
-
-  /**
-   * Gets the simulation results Report.
-   * @returns Report data containing all trecho summaries
-   */
-  getSimulationResults: (): Promise<IPCResult<ReportData>> =>
-    ipcRenderer.invoke('simulation:getResults'),
-
-  /**
-   * Configuration Handlers
-   */
-
+/**
+ * Configuration Management API
+ *
+ * Handles project configuration CRUD operations (save, load, update trechos).
+ */
+const configAPI = {
   /**
    * Saves a project configuration.
    * Accepts ConfigurationPanel format (TrechoFormData).
@@ -455,14 +247,12 @@ const coretoAPI = {
    * @returns Success status and config file path
    *
    * @example
-   * const response = await window.coreto.saveConfig('/path/to/project', {
-   *   config: {
-   *     trechos: [...],
-   *     globalSettings: { seed: 12345, maxBattleTurns: 50 }
-   *   }
+   * const response = await window.coreto.config.save('/path/to/project', {
+   *   trechos: [...],
+   *   globalSettings: { seed: 12345, maxBattleTurns: 50 }
    * });
    */
-  saveConfig: (
+  save: (
     projectPath: string,
     config: {
       version?: string;
@@ -496,7 +286,7 @@ const coretoAPI = {
    * @param configPath - Absolute path to the config file
    * @returns Project configuration with all trechos
    */
-  loadConfig: (configPath: string): Promise<IPCResult<ProjectConfigResponse>> =>
+  load: (configPath: string): Promise<IPCResult<ProjectConfigResponse>> =>
     ipcRenderer.invoke('config:load', { configPath }),
 
   /**
@@ -547,11 +337,14 @@ const coretoAPI = {
       maxBattleTurns?: number;
     }>
   > => ipcRenderer.invoke('config:updateGlobalSettings', { projectPath, ...settings }),
+};
 
-  /**
-   * Data Handlers
-   */
-
+/**
+ * RPG Maker Data Access API
+ *
+ * Provides read access to RPG Maker MZ project data (troops, classes, enemies).
+ */
+const dataAPI = {
   /**
    * Gets all troops from the RPG Maker MZ project.
    * @param projectPath - Absolute path to the project directory
@@ -575,17 +368,20 @@ const coretoAPI = {
    */
   getEnemies: (projectPath: string): Promise<IPCResult<EnemyData[]>> =>
     ipcRenderer.invoke('data:getEnemies', { projectPath }),
+};
 
-  /**
-   * Recent Projects Handlers
-   */
-
+/**
+ * Recent Projects API
+ *
+ * Manages recent project history (list, add).
+ */
+const recentAPI = {
   /**
    * Lists recent projects from the database.
    * @param limit - Maximum number of projects to return (default: 10)
    * @returns Array of recent projects
    */
-  listRecent: (limit?: number): Promise<IPCResult<RecentProject[]>> =>
+  list: (limit?: number): Promise<IPCResult<RecentProject[]>> =>
     ipcRenderer.invoke('recent:list', limit ? { limit } : undefined),
 
   /**
@@ -594,40 +390,46 @@ const coretoAPI = {
    * @param name - Project name
    * @returns The added or updated recent project
    */
-  addRecent: (path: string, name: string): Promise<IPCResult<RecentProject>> =>
+  add: (path: string, name: string): Promise<IPCResult<RecentProject>> =>
     ipcRenderer.invoke('recent:add', { path, name }),
+};
 
-  /**
-   * Preferences Handlers
-   */
-
+/**
+ * User Preferences API
+ *
+ * Manages user application preferences (theme, last project).
+ */
+const preferencesAPI = {
   /**
    * Gets user preferences from the database.
    * @returns User preferences
    */
-  getPreferences: (): Promise<IPCResult<UserPreferences>> => ipcRenderer.invoke('preferences:get'),
+  get: (): Promise<IPCResult<UserPreferences>> => ipcRenderer.invoke('preferences:get'),
 
   /**
    * Updates user preferences in the database.
    * @param preferences - Preferences to update
    * @returns The updated preferences
    */
-  setPreferences: (preferences: {
+  set: (preferences: {
     theme?: 'light' | 'dark' | 'system';
     lastProjectPath?: string | null;
   }): Promise<IPCResult<UserPreferences>> => ipcRenderer.invoke('preferences:set', preferences),
+};
 
-  /**
-   * History Handlers
-   */
-
+/**
+ * Simulation History API
+ *
+ * Manages simulation history persistence (list, load report, export, delete).
+ */
+const historyAPI = {
   /**
    * Lists simulation history from the database.
    * @param projectPath - Optional filter by project path
    * @param limit - Maximum number of entries to return (default: 50)
    * @returns Array of history entries
    */
-  listHistory: (
+  list: (
     projectPath?: string,
     limit?: number
   ): Promise<IPCResult<{ simulations: HistoryEntry[] }>> =>
@@ -638,9 +440,7 @@ const coretoAPI = {
    * @param simulationId - UUID of the simulation
    * @returns Simulation report or null if not found
    */
-  loadHistoryReport: (
-    simulationId: string
-  ): Promise<IPCResult<{ report: SimulationReport | null }>> =>
+  loadReport: (simulationId: string): Promise<IPCResult<{ report: SimulationReport | null }>> =>
     ipcRenderer.invoke('history:loadReport', { simulationId }),
 
   /**
@@ -650,7 +450,7 @@ const coretoAPI = {
    * @param projectPath - Project path for file organization
    * @returns File path of exported report
    */
-  exportHistoryReport: (
+  exportReport: (
     simulationId: string,
     result: ReportData,
     projectPath: string
@@ -662,20 +462,59 @@ const coretoAPI = {
    * @param simulationId - UUID of the simulation to delete
    * @returns The deleted simulation ID
    */
-  deleteHistoryEntry: (simulationId: string): Promise<IPCResult<{ deletedId: string }>> =>
+  delete: (simulationId: string): Promise<IPCResult<{ deletedId: string }>> =>
     ipcRenderer.invoke('history:delete', { simulationId }),
 
   /**
    * Generates a unique simulation ID for a new simulation.
    * @returns Unique simulation UUID
    */
-  generateSimulationId: (): Promise<IPCResult<{ simulationId: string }>> =>
+  generateId: (): Promise<IPCResult<{ simulationId: string }>> =>
     ipcRenderer.invoke('history:generateId', undefined),
 };
 
 // ============================================================================
 // Context Bridge Exposure
 // ============================================================================
+
+/**
+ * Coreto API - Domain-Segregated Interface
+ *
+ * Organizes API methods by domain concern for better discoverability and maintainability.
+ * Each API group represents a cohesive set of operations.
+ *
+ * @example
+ * // Project operations
+ * await window.coreto.project.open('/path/to/project');
+ *
+ * // Simulation operations
+ * await window.coreto.simulation.start({ projectPath, configPath });
+ * window.coreto.simulation.onProgress((progress) => { ... });
+ *
+ * // Configuration management
+ * await window.coreto.config.save(projectPath, config);
+ *
+ * // Data access
+ * const troops = await window.coreto.data.getTroops(projectPath);
+ *
+ * // History operations
+ * await window.coreto.history.list();
+ *
+ * // User preferences
+ * await window.coreto.preferences.set({ theme: 'dark' });
+ *
+ * // Recent projects
+ * await window.coreto.recent.add(path, name);
+ */
+const coretoAPI = {
+  project: projectAPI,
+  simulation: simulationAPI,
+  config: configAPI,
+  data: dataAPI,
+  history: historyAPI,
+  preferences: preferencesAPI,
+  recent: recentAPI,
+};
 
 /**
  * Initializes the preload script by exposing APIs to the renderer process.
@@ -685,7 +524,7 @@ const coretoAPI = {
  *
  * The renderer process can access:
  * - window.electron: Standard Electron APIs (via @electron-toolkit/preload)
- * - window.coreto: Coreto-specific IPC APIs
+ * - window.coreto: Coreto-specific IPC APIs (domain-segregated)
  *
  * @example
  * ```typescript
@@ -704,7 +543,7 @@ export function initializePreload(): void {
     try {
       contextBridge.exposeInMainWorld('electron', electronAPI);
       contextBridge.exposeInMainWorld('coreto', coretoAPI);
-      console.log('[Preload] Successfully exposed electron and coreto APIs');
+      console.log('[Preload] Successfully exposed electron and coreto APIs (domain-segregated)');
     } catch (error) {
       console.error('[Preload] Failed to expose context bridge APIs:', error);
     }
@@ -735,36 +574,3 @@ if (typeof contextBridge !== 'undefined') {
  * Exported for type-safe testing and TypeScript definitions.
  */
 export type CoretoAPI = typeof coretoAPI;
-
-/**
- * Export types for TypeScript definitions.
- * These will be referenced in src/renderer/src/types/preload.d.ts
- */
-export type {
-  ProjectInfo,
-  ValidationResult,
-  BattleResultData,
-  SimulationResult,
-  WarningData,
-  ReportBattleResult,
-  TrechoSummaryData,
-  ReportData,
-  ProjectConfigResponse,
-  TrechoData,
-  TroopData,
-  ClassData,
-  EnemyData,
-  RecentProject,
-  UserPreferences,
-  SimulationSummary,
-  HistoryEntry,
-  SimulationReport,
-  IPCError,
-  IPCSuccessResponse,
-  IPCErrorResponse,
-  IPCResult,
-  // Worker types (re-exported for renderer)
-  ProgressPayload,
-  ErrorPayload,
-  SimulationResultPayload,
-};

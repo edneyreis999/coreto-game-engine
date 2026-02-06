@@ -18,7 +18,8 @@
     "noUncheckedIndexedAccess": true,
     "composite": true,
     "paths": {
-      "@/*": ["./src/renderer/src/*"]
+      "@/*": ["./src/renderer/src/*"],
+      "@coreto/electron/domain/*": ["./src/domain/*"]
     }
   },
   "include": [],

@@ -16,11 +16,12 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { useLogger } from './useLogger.js';
 import type {
   ProgressPayload,
   ErrorPayload,
   SimulationResultPayload,
-} from '@coreto/electron/preload/index.js';
+} from '@coreto/electron/domain/types';
 
 // ============================================================================
 // Type Definitions
@@ -217,6 +218,7 @@ const initialProgress: SimulationProgressState = {
  * });
  */
 export function useSimulationProgress(): UseSimulationProgressReturn {
+  const logger = useLogger();
   // State for progress tracking
   const [progress, setProgressState] = useState<SimulationProgressState>(initialProgress);
   const [progressDetail, setProgressDetail] = useState<ProgressPayload | null>(null);
@@ -230,7 +232,7 @@ export function useSimulationProgress(): UseSimulationProgressReturn {
    */
   useEffect(() => {
     // Progress events
-    const cleanupProgress = window.coreto.onProgress((payload: ProgressPayload) => {
+    const cleanupProgress = window.coreto.simulation.onProgress((payload: ProgressPayload) => {
       setProgressState({
         percentage: payload.percentage,
         currentIndex: payload.current,
@@ -245,7 +247,7 @@ export function useSimulationProgress(): UseSimulationProgressReturn {
     });
 
     // Completion events
-    const cleanupComplete = window.coreto.onComplete(
+    const cleanupComplete = window.coreto.simulation.onComplete(
       (simulationResult: SimulationResultPayload) => {
         setResult(simulationResult);
         setStatus('completed');
@@ -259,7 +261,7 @@ export function useSimulationProgress(): UseSimulationProgressReturn {
     );
 
     // Error events
-    const cleanupError = window.coreto.onError((errorPayload: ErrorPayload) => {
+    const cleanupError = window.coreto.simulation.onError((errorPayload: ErrorPayload) => {
       setError(errorPayload);
       setStatus('error');
       setProgressState((prev) => ({
@@ -306,7 +308,7 @@ export function useSimulationProgress(): UseSimulationProgressReturn {
 
       try {
         const coretoAPI = window.coreto;
-        const response = await coretoAPI.startSimulation(params);
+        const response = await coretoAPI.simulation.start(params);
 
         if (!response.success) {
           setStatus('error');
@@ -349,7 +351,7 @@ export function useSimulationProgress(): UseSimulationProgressReturn {
 
       try {
         const coretoAPI = window.coreto;
-        const response = await coretoAPI.runSimulation(config);
+        const response = await coretoAPI.simulation.run(config);
 
         if (response.success) {
           const simulationResult = response.data;
@@ -400,12 +402,12 @@ export function useSimulationProgress(): UseSimulationProgressReturn {
   const cancelSimulation = useCallback(async (): Promise<void> => {
     try {
       const coretoAPI = window.coreto;
-      await coretoAPI.cancelSimulation();
+      await coretoAPI.simulation.cancel();
       setStatus('cancelled');
       setProgressState({ ...initialProgress, isRunning: false });
       setProgressDetail(null);
     } catch (err) {
-      console.error('Error cancelling simulation:', err);
+      logger.error(`Error cancelling simulation: ${String(err)}`);
       setError({
         title: 'Cancellation Failed',
         description: err instanceof Error ? err.message : 'Failed to cancel simulation',

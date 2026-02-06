@@ -9,7 +9,8 @@
 
 import { useCallback, useState } from 'react';
 
-import type { ProjectInfo } from '@coreto/electron/preload/index.js';
+import type { ProjectInfo } from '@coreto/electron/domain/types';
+import { useLogger } from './useLogger.js';
 
 // ============================================================================
 // Validation Status
@@ -138,6 +139,7 @@ function createIpcError(ipcError: {
  * }
  */
 export function useProject(): ProjectReturn {
+  const logger = useLogger();
   const [state, setState] = useState<ProjectState>(initialState);
 
   /**
@@ -152,7 +154,7 @@ export function useProject(): ProjectReturn {
    * Updates state with project info and validation results.
    */
   const openProject = useCallback(async (projectPath: string) => {
-    console.log('[useProject] openProject called with:', projectPath);
+    logger.debug(`[useProject] openProject called with: ${projectPath}`);
     setState({
       projectInfo: null,
       validation: { status: 'validating', errors: [], warnings: [] },
@@ -161,13 +163,13 @@ export function useProject(): ProjectReturn {
     });
 
     try {
-      console.log('[useProject] Calling window.coreto.openProject...');
-      const result = await window.coreto.openProject(projectPath);
-      console.log('[useProject] openProject result:', result);
+      logger.debug('[useProject] Calling window.coreto.project.open...');
+      const result = await window.coreto.project.open(projectPath);
+      logger.debug(`[useProject] openProject result: ${JSON.stringify(result)}`);
 
       if (result.success) {
         const info = result.data;
-        console.log('[useProject] Project is valid, info:', info);
+        logger.debug(`[useProject] Project is valid, info: ${JSON.stringify(info)}`);
         setState({
           projectInfo: info,
           validation: {
@@ -179,7 +181,7 @@ export function useProject(): ProjectReturn {
           error: null,
         });
       } else {
-        console.log('[useProject] Project is invalid, error:', result.error);
+        logger.warn(`[useProject] Project is invalid, error: ${JSON.stringify(result.error)}`);
         setState({
           projectInfo: null,
           validation: {
@@ -192,7 +194,7 @@ export function useProject(): ProjectReturn {
         });
       }
     } catch (error) {
-      console.error('[useProject] Exception during openProject:', error);
+      logger.error(`[useProject] Exception during openProject: ${String(error)}`);
       setState({
         projectInfo: null,
         validation: {
@@ -204,7 +206,7 @@ export function useProject(): ProjectReturn {
         error: error instanceof Error ? error : new Error(String(error)),
       });
     }
-  }, []);
+  }, [logger]);
 
   /**
    * Validates a project by path without opening it.
@@ -219,7 +221,7 @@ export function useProject(): ProjectReturn {
     }));
 
     try {
-      const result = await window.coreto.validateProject(projectPath);
+      const result = await window.coreto.project.validate(projectPath);
 
       if (result.success) {
         const validationData = result.data;

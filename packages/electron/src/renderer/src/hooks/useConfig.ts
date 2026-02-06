@@ -87,7 +87,7 @@ export function useConfig(): ConfigReturn {
     isLoading: isLoadingTrechos,
     invoke: loadTrechos,
     reset: resetTrechos,
-  } = useIpcWithArg<TrechoData[]>(() => window.coreto.getTrechos());
+  } = useIpcWithArg<TrechoData[]>(() => window.coreto.config.getTrechos());
 
   /**
    * Adds or updates a trecho configuration.
@@ -96,7 +96,7 @@ export function useConfig(): ConfigReturn {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      const result = await window.coreto.updateTrecho(projectPath, trecho);
+      const result = await window.coreto.config.updateTrecho(projectPath, trecho);
 
       if (result.success) {
         // Update local state with the returned trecho
@@ -142,7 +142,7 @@ export function useConfig(): ConfigReturn {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      const result = await window.coreto.deleteTrecho(projectPath, trechoId);
+      const result = await window.coreto.config.deleteTrecho(projectPath, trechoId);
 
       if (result.success) {
         // Remove trecho from local state

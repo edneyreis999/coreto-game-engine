@@ -11,7 +11,7 @@
 import { useCallback } from 'react';
 
 import { useIpc } from './useIpc';
-import type { ReportData } from '@coreto/electron/preload/index.js';
+import type { ReportData } from '@coreto/electron/domain/types';
 
 // ============================================================================
 // Hook State
@@ -76,7 +76,7 @@ export function useSimulationResults(): SimulationResultsState & {
   refresh: () => Promise<void>;
 } {
   const { data, error, isLoading, invoke } = useIpc<ReportData>(
-    () => window.coreto.getSimulationResults(),
+    () => window.coreto.simulation.getResults(),
     { invokeOnMount: true }
   );
 

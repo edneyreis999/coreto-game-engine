@@ -3,8 +3,13 @@
  *
  * Re-exports domain schemas for backward compatibility.
  *
+ * TODO: Refactor to use module alias for domain imports (CLAUDE-ARCH-CONVENTION)
+ * - Change: export { ... } from '../../domain/schemas/project-config.schema.js'
+ * - To: export { ... } from '@coreto/electron/domain/schemas'
+ *
  * @module main/services/schemas
  * @see packages/electron/src/domain/schemas/project-config.schema.ts
+ * @see packages/electron/CLAUDE.md (Import Conventions)
  *
  * @deprecated Import from @coreto/electron/domain instead.
  * This file is kept for backward compatibility during the domain extraction.

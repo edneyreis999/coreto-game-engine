@@ -26,6 +26,16 @@ import type {
 } from '../workers/types.js';
 import type { ReportData } from '../ipc/types.js';
 import { ReportStorageService } from './report-storage.js';
+import { getLogger } from '../di/container.js';
+
+// Lazy initialization to avoid calling getLogger() before DI container is ready
+let logger: ReturnType<typeof getLogger> | null = null;
+function ensureLogger() {
+  if (!logger) {
+    logger = getLogger();
+  }
+  return logger;
+}
 
 // =============================================================================
 // Simulation Controller
@@ -118,7 +128,7 @@ export class SimulationController {
     // Force kill after timeout
     const forceKillTimer = setTimeout(() => {
       if (this.worker) {
-        console.warn('[SimulationController] Force killing unresponsive worker');
+        ensureLogger().warn('Force killing unresponsive worker');
         this.worker.kill();
         this.worker = null;
       }
@@ -144,7 +154,7 @@ export class SimulationController {
     this.cancelTermination();
 
     if (!this.worker) {
-      console.log('[SimulationController] Spawning new worker process');
+      ensureLogger().info('Spawning new worker process');
 
       this.worker = utilityProcess.fork(
         path.join(__dirname, '../workers/simulation.worker.js'),
@@ -160,7 +170,7 @@ export class SimulationController {
         try {
           this.handleWorkerMessage(message);
         } catch (error) {
-          console.error('[SimulationController] Worker message handler error:', error);
+          ensureLogger().error('Worker message handler error: ' + String(error));
           this.sendToRenderer('simulation:error', {
             title: 'Worker Handler Error',
             description: 'An error occurred while processing the worker message.',
@@ -173,7 +183,7 @@ export class SimulationController {
       // Setup crash handling
       this.worker.on('exit', (code) => {
         if (code !== 0 && code !== null) {
-          console.error(`[SimulationController] Worker crashed with code ${code}`);
+          ensureLogger().error(`Worker crashed with code ${code}`);
           this.worker = null;
 
           // Notify renderer of crash
@@ -188,12 +198,12 @@ export class SimulationController {
 
       // Log worker stdout for debugging
       this.worker.stdout?.on('data', (data: Buffer) => {
-        console.log(`[Worker stdout] ${data.toString()}`);
+        ensureLogger().debug(`[Worker stdout] ${data.toString()}`);
       });
 
       // Log worker stderr for debugging
       this.worker.stderr?.on('data', (data: Buffer) => {
-        console.error(`[Worker stderr] ${data.toString()}`);
+        ensureLogger().error(`[Worker stderr] ${data.toString()}`);
       });
     }
 
@@ -229,7 +239,7 @@ export class SimulationController {
       default: {
         // Type exhaustiveness check
         const _exhaustive: never = message;
-        console.warn('[SimulationController] Unknown message type:', _exhaustive);
+        ensureLogger().warn('Unknown message type: ' + String(_exhaustive));
       }
     }
   }
@@ -260,7 +270,7 @@ export class SimulationController {
       this.storageService
         .storeSimulation(this.currentSimulationId, payload.projectPath, reportData, 'SUCCESS')
         .catch((error) => {
-          console.error('[SimulationController] Failed to store result:', error);
+          ensureLogger().error('Failed to store result: ' + String(error));
         });
     }
 
@@ -333,12 +343,10 @@ export class SimulationController {
     // Clear any existing timeout
     this.clearSimulationTimeout();
 
-    console.log(
-      `[SimulationController] Starting simulation timeout (${this.SIMULATION_TIMEOUT_MS / 1000}s)`
-    );
+    ensureLogger().info(`Starting simulation timeout (${this.SIMULATION_TIMEOUT_MS / 1000}s)`);
 
     this.simulationTimeoutTimer = setTimeout(() => {
-      console.warn('[SimulationController] Simulation timeout reached - killing worker');
+      ensureLogger().warn('Simulation timeout reached - killing worker');
 
       // Send timeout error to renderer
       this.sendToRenderer('simulation:error', {
@@ -381,13 +389,11 @@ export class SimulationController {
   private scheduleTermination(): void {
     this.cancelTermination();
 
-    console.log(
-      `[SimulationController] Scheduling worker termination in ${this.KEEP_ALIVE_MS / 1000}s`
-    );
+    ensureLogger().info(`Scheduling worker termination in ${this.KEEP_ALIVE_MS / 1000}s`);
 
     this.keepAliveTimer = setTimeout(() => {
       if (this.worker) {
-        console.log('[SimulationController] Terminating idle worker');
+        ensureLogger().info('Terminating idle worker');
         this.worker.kill();
         this.worker = null;
       }
@@ -405,12 +411,12 @@ export class SimulationController {
    * Should be called in app 'before-quit' and 'window-all-closed' handlers.
    */
   cleanup(): void {
-    console.log('[SimulationController] Cleanup called');
+    ensureLogger().info('SimulationController cleanup called');
     this.cancelTermination();
     this.clearSimulationTimeout();
 
     if (this.worker) {
-      console.log('[SimulationController] Killing worker on cleanup');
+      ensureLogger().info('Killing worker on cleanup');
       this.worker.kill();
       this.worker = null;
     }

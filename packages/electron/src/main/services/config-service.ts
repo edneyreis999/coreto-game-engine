@@ -10,15 +10,24 @@
  * - Zod validation for type safety
  * - Auto-creates temp directory if missing
  *
+ * Import Convention (CLAUDE-ARCH-CONVENTION):
+ * - Domain imports: Use module aliases (@coreto/electron/domain/*)
+ * - Infrastructure imports: Use relative paths (./schemas.js)
+ *
  * @see planos/005-run-ttk-electron/tasks/04_task.md
  * @see planos/005-run-ttk-electron/TECHSPEC-round2.md (Section 1)
+ * @see packages/electron/CLAUDE.md (Import Conventions)
  */
 
 import path from 'node:path';
 import fs from 'node:fs/promises';
+
+// Domain layer (cross-layer - module aliases)
+import { normalizeSchema } from '@coreto/electron/domain/services';
+import { CURRENT_SCHEMA_VERSION } from '@coreto/electron/domain/schemas';
+
+// Infrastructure layer (same layer - relative imports)
 import { ProjectConfigSchema, type UIProjectConfig } from './schemas.js';
-import { normalizeSchema } from '../../domain/services/config-migrator.js';
-import { CURRENT_SCHEMA_VERSION } from '../../domain/schemas/project-config.schema.js';
 
 /**
  * Error thrown when project config file is not found.

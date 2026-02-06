@@ -73,7 +73,7 @@ export interface UseSimulationHistoryReturn {
    */
   exportReport: (
     simulationId: string,
-    result: Parameters<typeof window.coreto.exportHistoryReport>[1],
+    result: Parameters<typeof window.coreto.history.exportReport>[1],
     projectPath: string
   ) => Promise<string>;
 }
@@ -133,7 +133,7 @@ export function useSimulationHistory(
     setError(null);
 
     try {
-      const response = await window.coreto.listHistory(projectPath, limit);
+      const response = await window.coreto.history.list(projectPath, limit);
 
       if (response.success) {
         setHistory(response.data.simulations);
@@ -152,7 +152,7 @@ export function useSimulationHistory(
    */
   const loadReport = useCallback(async (simulationId: string): Promise<SimulationReport | null> => {
     try {
-      const response = await window.coreto.loadHistoryReport(simulationId);
+      const response = await window.coreto.history.loadReport(simulationId);
 
       if (response.success) {
         return response.data.report;
@@ -174,7 +174,7 @@ export function useSimulationHistory(
     setError(null);
 
     try {
-      const response = await window.coreto.deleteHistoryEntry(simulationId);
+      const response = await window.coreto.history.delete(simulationId);
 
       if (response.success) {
         // Remove from local state
@@ -195,11 +195,11 @@ export function useSimulationHistory(
   const exportReport = useCallback(
     async (
       simulationId: string,
-      result: Parameters<typeof window.coreto.exportHistoryReport>[1],
+      result: Parameters<typeof window.coreto.history.exportReport>[1],
       projectPath: string
     ): Promise<string> => {
       try {
-        const response = await window.coreto.exportHistoryReport(simulationId, result, projectPath);
+        const response = await window.coreto.history.exportReport(simulationId, result, projectPath);
 
         if (response.success) {
           return response.data.filePath;

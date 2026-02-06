@@ -18,3 +18,8 @@ export { useConfig } from './useConfig';
 export { useSimulationProgress } from './useSimulationProgress';
 export { useSimulationHistory } from './useSimulationHistory';
 export { useFieldValidation } from './useFieldValidation';
+export { useLogger, type Logger } from './useLogger';
+export {
+  useConfigurationManager,
+  type UseConfigurationManagerReturn,
+} from './useConfigurationManager';

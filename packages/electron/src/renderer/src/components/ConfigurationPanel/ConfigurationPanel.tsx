@@ -25,7 +25,8 @@ import {
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
-import { useIpcWithArg } from '@/hooks/useIpc';
+import { useIpcWithArg, useConfigurationManager } from '@/hooks';
+import { buildProjectConfig, transformToDropdownOptions } from '@/lib';
 import type {
   TroopData,
   ClassData,
@@ -81,9 +82,17 @@ export const ConfigurationPanel: FC<ConfigurationPanelProps> = ({
   });
 
   /**
-   * Currently configured trechos.
+   * Configuration manager for trecho CRUD operations.
    */
-  const [trechos, setTrechos] = useState<TrechoFormData[]>([]);
+  const {
+    trechos,
+    editingIndex,
+    saveTrecho,
+    deleteTrecho,
+    startEdit,
+    cancelEdit,
+    getEditingTrecho,
+  } = useConfigurationManager();
 
   /**
    * Global settings (seed, maxBattleTurns).
@@ -97,18 +106,6 @@ export const ConfigurationPanel: FC<ConfigurationPanelProps> = ({
    */
   const [isFormOpen, setIsFormOpen] = useState(false);
 
-  /**
-   * Trecho being edited (null when in create mode).
-   */
-  const [editingTrecho, setEditingTrecho] = useState<TrechoFormData | null>(
-    null
-  );
-
-  /**
-   * Index of the trecho being edited (for updating the array).
-   */
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
-
   // ========================================================================
   // IPC Hooks
   // ========================================================================
@@ -118,7 +115,7 @@ export const ConfigurationPanel: FC<ConfigurationPanelProps> = ({
    * ipcFn wrapped in useCallback for stability.
    */
   const getClassesIpcFn = useCallback((projectPath: string) =>
-    window.coreto.getClasses(projectPath),
+    window.coreto.data.getClasses(projectPath),
     []
   );
 
@@ -134,7 +131,7 @@ export const ConfigurationPanel: FC<ConfigurationPanelProps> = ({
    * ipcFn wrapped in useCallback for stability.
    */
   const getTroopsIpcFn = useCallback((projectPath: string) =>
-    window.coreto.getTroops(projectPath),
+    window.coreto.data.getTroops(projectPath),
     []
   );
 
@@ -164,8 +161,8 @@ export const ConfigurationPanel: FC<ConfigurationPanelProps> = ({
   useEffect(() => {
     if (classesData && troopsData) {
       setProjectData({
-        classes: classesData.map((c) => ({ value: c.id, label: c.name })),
-        troops: troopsData.map((t) => ({ value: t.id, label: t.name })),
+        classes: transformToDropdownOptions(classesData),
+        troops: transformToDropdownOptions(troopsData),
       });
     }
   }, [classesData, troopsData]);
@@ -178,8 +175,6 @@ export const ConfigurationPanel: FC<ConfigurationPanelProps> = ({
    * Opens the trecho form in create mode.
    */
   const handleAddTrecho = useCallback(() => {
-    setEditingTrecho(null);
-    setEditingIndex(null);
     setIsFormOpen(true);
   }, []);
 
@@ -187,54 +182,38 @@ export const ConfigurationPanel: FC<ConfigurationPanelProps> = ({
    * Opens the trecho form in edit mode.
    */
   const handleEditTrecho = useCallback((index: number) => {
-    setEditingTrecho(trechos[index]);
-    setEditingIndex(index);
+    startEdit(index);
     setIsFormOpen(true);
-  }, [trechos]);
+  }, [startEdit]);
 
   /**
    * Deletes a trecho from the configuration.
    */
   const handleDeleteTrecho = useCallback((index: number) => {
-    setTrechos((prev) => prev.filter((_, i) => i !== index));
-  }, []);
+    deleteTrecho(index);
+  }, [deleteTrecho]);
 
   /**
    * Saves a trecho (create or update).
    */
   const handleSaveTrecho = useCallback((data: TrechoFormData) => {
-    if (editingIndex !== null) {
-      // Update existing trecho
-      setTrechos((prev) =>
-        prev.map((t, i) => (i === editingIndex ? data : t))
-      );
-    } else {
-      // Add new trecho
-      setTrechos((prev) => [...prev, data]);
-    }
+    saveTrecho(data);
     setIsFormOpen(false);
-    setEditingTrecho(null);
-    setEditingIndex(null);
-  }, [editingIndex]);
+  }, [saveTrecho]);
 
   /**
    * Cancels trecho form editing.
    */
   const handleCancelForm = useCallback(() => {
+    cancelEdit();
     setIsFormOpen(false);
-    setEditingTrecho(null);
-    setEditingIndex(null);
-  }, []);
+  }, [cancelEdit]);
 
   /**
    * Saves the complete configuration.
    */
   const handleSaveConfig = useCallback(() => {
-    const config: ProjectConfigFormData = {
-      projectPath,
-      trechos,
-      globalSettings,
-    };
+    const config = buildProjectConfig(projectPath, trechos, globalSettings);
     onConfigSaved?.(config);
   }, [projectPath, trechos, globalSettings, onConfigSaved]);
 
@@ -330,8 +309,8 @@ export const ConfigurationPanel: FC<ConfigurationPanelProps> = ({
           {/* Trechos List or Form */}
           {isFormOpen ? (
             <TrechoForm
-              mode={editingTrecho ? 'edit' : 'create'}
-              initialData={editingTrecho ?? undefined}
+              mode={editingIndex !== null ? 'edit' : 'create'}
+              initialData={getEditingTrecho() ?? undefined}
               classes={projectData.classes}
               troops={projectData.troops}
               onSubmit={handleSaveTrecho}

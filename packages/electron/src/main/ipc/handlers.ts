@@ -13,14 +13,21 @@
  * - Long-running simulations store progress in main process state
  * - Progress can be polled via simulation:getProgress
  *
+ * Import Convention (CLAUDE-ARCH-CONVENTION):
+ * - @coreto/core imports: external package (standard)
+ * - @coreto/electron/domain/* imports: cross-layer (domain use cases, ports, types)
+ * - Relative imports: same layer (infrastructure - adapters, database, ipc)
+ *
  * @see packages/electron/src/main/ipc/types.ts
  * @see packages/electron/src/main/ipc/index.ts
+ * @see packages/electron/CLAUDE.md (Import Conventions)
  */
 
 import { ipcMain, IpcMainInvokeEvent, dialog, BrowserWindow, BaseWindow } from 'electron';
 import { z } from 'zod';
 import * as path from 'path';
 
+// External dependencies (@coreto/core)
 import type {
   ILogger,
   IFileSystem,
@@ -39,6 +46,13 @@ import {
 } from '@coreto/core';
 import type { Trecho } from '@coreto/core';
 
+// Infrastructure layer (same layer - relative imports)
+import { createProjectValidator, createGameDataLoader } from '../adapters/index.js';
+
+// Domain layer (cross-layer - module aliases)
+import { validateTrecho } from '@coreto/electron/domain/use-cases';
+
+// Infrastructure layer (same layer - relative imports)
 import type {
   IPCChannel,
   IPCResult,
@@ -81,7 +95,6 @@ import { getUserPreferences, updateUserPreferences } from '../database/index.js'
 import { CONFIG_IPC_HANDLERS } from './config-handlers.js';
 import { HISTORY_IPC_HANDLERS } from './history-handlers.js';
 import { wrapHandler } from './ipc-response.js';
-import { validateTrecho } from '@coreto/electron/domain/use-cases';
 import { createRecentProjectsRepository } from '../database/repositories/sqlite-recent-projects-repository.js';
 
 // ============================================================================
@@ -182,7 +195,7 @@ function getRegistryHandler<K extends IPCChannel>(
  * Handler: project:open
  *
  * Opens an RPG Maker MZ project and returns basic project info.
- * Validates that the project directory exists and contains required files.
+ * Thin adapter - delegates to domain use case.
  */
 async function handleProjectOpen(
   _event: IpcMainInvokeEvent,
@@ -194,75 +207,13 @@ async function handleProjectOpen(
     const { path: projectPath } = payload;
     const logger = resolve<ILogger>(ILoggerToken);
     const fs = resolve<IFileSystem>(IFileSystemToken);
+    const dataLoader = resolve<IDataLoader>(IDataLoaderToken);
 
     logger.info(`[IPC] Opening project: ${projectPath}`);
 
-    // Validate project path using IFileSystem.validateProjectPath
-    try {
-      fs.validateProjectPath(projectPath);
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(`Invalid RPG Maker MZ project: ${error.message}`);
-      }
-      throw error;
-    }
-
-    // Check if project directory exists
-    if (!fs.exists(projectPath)) {
-      throw new Error(`Project directory does not exist: ${projectPath}`);
-    }
-
-    // Check for game.rmmzproject marker file
-    const markerPath = path.join(projectPath, 'game.rmmzproject');
-    if (!fs.exists(markerPath)) {
-      throw new Error('Invalid RPG Maker MZ project: game.rmmzproject not found');
-    }
-
-    // Check for data directory
-    const dataDir = path.join(projectPath, 'data');
-    if (!fs.exists(dataDir)) {
-      throw new Error('Invalid RPG Maker MZ project: data directory not found');
-    }
-
-    // Get project name from directory name
-    const name = path.basename(projectPath);
-
-    // Count data files if possible
-    let troopsCount = 0;
-    let classesCount = 0;
-    let enemiesCount = 0;
-
-    try {
-      const troopsPath = path.join(dataDir, 'Troops.json');
-      const classesPath = path.join(dataDir, 'Classes.json');
-      const enemiesPath = path.join(dataDir, 'Enemies.json');
-
-      if (fs.exists(troopsPath)) {
-        const troopsData = JSON.parse(fs.readFileSync(troopsPath));
-        troopsCount = troopsData.length ?? 0;
-      }
-
-      if (fs.exists(classesPath)) {
-        const classesData = JSON.parse(fs.readFileSync(classesPath));
-        classesCount = classesData.length ?? 0;
-      }
-
-      if (fs.exists(enemiesPath)) {
-        const enemiesData = JSON.parse(fs.readFileSync(enemiesPath));
-        enemiesCount = enemiesData.length ?? 0;
-      }
-    } catch {
-      // File reading failed, but project is still valid
-    }
-
-    return {
-      path: projectPath,
-      name,
-      isValid: true,
-      troopsCount,
-      classesCount,
-      enemiesCount,
-    };
+    // Delegate to adapter
+    const validator = createProjectValidator(fs, dataLoader, logger);
+    return validator.getProjectInfo(projectPath);
   });
 }
 
@@ -270,7 +221,7 @@ async function handleProjectOpen(
  * Handler: project:validate
  *
  * Validates an RPG Maker MZ project structure and data integrity.
- * Returns validation errors and warnings.
+ * Thin adapter - delegates to domain use case.
  */
 async function handleProjectValidate(
   _event: IpcMainInvokeEvent,
@@ -286,66 +237,9 @@ async function handleProjectValidate(
 
     logger.info(`[IPC] Validating project: ${projectPath}`);
 
-    const errors: string[] = [];
-    const warnings: string[] = [];
-
-    // Check project directory
-    if (!fs.exists(projectPath)) {
-      errors.push('Project directory does not exist');
-      return { isValid: false, errors, warnings };
-    }
-
-    // Check for marker file
-    const markerPath = path.join(projectPath, 'game.rmmzproject');
-    if (!fs.exists(markerPath)) {
-      errors.push('game.rmmzproject not found - not a valid RPG Maker MZ project');
-    }
-
-    // Check data directory
-    const dataDir = path.join(projectPath, 'data');
-    if (!fs.exists(dataDir)) {
-      errors.push('data directory not found');
-    } else {
-      // Validate required data files
-      const requiredFiles = [
-        'System.json',
-        'Actors.json',
-        'Classes.json',
-        'Skills.json',
-        'Items.json',
-        'Weapons.json',
-        'Armors.json',
-        'Enemies.json',
-        'Troops.json',
-        'States.json',
-        'Animations.json',
-        'Troops.json',
-      ];
-
-      for (const file of requiredFiles) {
-        const filePath = path.join(dataDir, file);
-        if (!fs.exists(filePath)) {
-          errors.push(`Required data file missing: ${file}`);
-        }
-      }
-    }
-
-    // Try to load data to validate integrity
-    if (errors.length === 0) {
-      try {
-        await dataLoader.loadDatabase(projectPath);
-      } catch (error) {
-        if (error instanceof Error) {
-          warnings.push(`Data validation warning: ${error.message}`);
-        }
-      }
-    }
-
-    return {
-      isValid: errors.length === 0,
-      errors,
-      warnings,
-    };
+    // Delegate to adapter
+    const validator = createProjectValidator(fs, dataLoader, logger);
+    return validator.validate({ projectPath });
   });
 }
 
@@ -736,6 +630,7 @@ async function handleConfigUpdateGlobalSettings(
  * Handler: data:getTroops
  *
  * Returns all troops from the RPG Maker MZ project.
+ * Thin adapter - delegates to domain use case.
  */
 async function handleDataGetTroops(
   _event: IpcMainInvokeEvent,
@@ -750,34 +645,9 @@ async function handleDataGetTroops(
 
     logger.info(`[IPC] Getting troops data from: ${projectPath}`);
 
-    const troopsPath = path.join(projectPath, 'data', 'Troops.json');
-
-    const troopsJson = fs.readFileSync(troopsPath);
-    const troopsData = JSON.parse(troopsJson) as Array<{
-      id: number;
-      name: string;
-      members: Array<{
-        enemyId: number;
-        x: number;
-        y: number;
-        hidden: boolean;
-      }>;
-    } | null>;
-
-    logger.info(`[IPC] Parsed ${troopsData.length} entries (including nulls)`);
-
-    // Filter out null entries (empty slots in RPG Maker)
-    const validTroops = troopsData.filter((t) => t !== null);
-    logger.info(`[IPC] Found ${validTroops.length} valid troops`);
-
-    const result = validTroops.map((t) => ({
-      id: t.id,
-      name: t.name,
-      members: t.members,
-    }));
-
-    logger.info(`[IPC] Returning ${result.length} troops`);
-    return result;
+    // Delegate to adapter
+    const dataLoader = createGameDataLoader(fs, logger);
+    return dataLoader.loadTroops(projectPath);
   });
 }
 
@@ -785,6 +655,7 @@ async function handleDataGetTroops(
  * Handler: data:getClasses
  *
  * Returns all classes from the RPG Maker MZ project.
+ * Thin adapter - delegates to domain use case.
  */
 async function handleDataGetClasses(
   _event: IpcMainInvokeEvent,
@@ -799,30 +670,9 @@ async function handleDataGetClasses(
 
     logger.info(`[IPC] Getting classes data from: ${projectPath}`);
 
-    const classesPath = path.join(projectPath, 'data', 'Classes.json');
-    logger.info(`[IPC] Classes path: ${classesPath}, exists: ${fs.exists(classesPath)}`);
-
-    const classesJson = fs.readFileSync(classesPath);
-    const classesData = JSON.parse(classesJson) as Array<{
-      id: number;
-      name: string;
-      expTable: number[];
-    } | null>;
-
-    logger.info(`[IPC] Parsed ${classesData.length} entries (including nulls)`);
-
-    // Filter out null entries (empty slots in RPG Maker)
-    const validClasses = classesData.filter((c) => c !== null);
-    logger.info(`[IPC] Found ${validClasses.length} valid classes`);
-
-    const result = validClasses.map((c) => ({
-      id: c.id,
-      name: c.name,
-      expTable: c.expTable,
-    }));
-
-    logger.info(`[IPC] Returning ${result.length} classes`);
-    return result;
+    // Delegate to adapter
+    const dataLoader = createGameDataLoader(fs, logger);
+    return dataLoader.loadClasses(projectPath);
   });
 }
 
@@ -830,6 +680,7 @@ async function handleDataGetClasses(
  * Handler: data:getEnemies
  *
  * Returns all enemies from the RPG Maker MZ project.
+ * Thin adapter - delegates to domain use case.
  */
 async function handleDataGetEnemies(
   _event: IpcMainInvokeEvent,
@@ -844,21 +695,9 @@ async function handleDataGetEnemies(
 
     logger.info(`[IPC] Getting enemies data from: ${projectPath}`);
 
-    const enemiesPath = path.join(projectPath, 'data', 'Enemies.json');
-    const enemiesJson = fs.readFileSync(enemiesPath);
-    const enemiesData = JSON.parse(enemiesJson) as Array<{
-      id: number;
-      name: string;
-      params: number[];
-      dropItems: Array<{ kind: number; dataId: number; denominator: number }>;
-    }>;
-
-    return enemiesData.map((e) => ({
-      id: e.id,
-      name: e.name,
-      params: e.params,
-      dropItems: e.dropItems,
-    }));
+    // Delegate to adapter
+    const dataLoader = createGameDataLoader(fs, logger);
+    return dataLoader.loadEnemies(projectPath);
   });
 }
 

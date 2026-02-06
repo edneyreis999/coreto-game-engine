@@ -20,6 +20,7 @@ import {
 import { cn } from '@/lib/utils';
 import { formatDateRelative, truncate } from '@/lib/utils';
 import { useRecentProjects } from '@/hooks/useRecentProjects';
+import { useLogger } from '@/hooks/useLogger';
 import {
   useProject,
   getValidationMessage,
@@ -69,6 +70,7 @@ export const ProjectSelectionPanel: FC<ProjectSelectionPanelProps> = ({
   onProjectSelected,
   className,
 }) => {
+  const logger = useLogger();
   const {
     projectInfo,
     validation,
@@ -107,9 +109,9 @@ export const ProjectSelectionPanel: FC<ProjectSelectionPanelProps> = ({
       const projectPath = filePaths[0];
       await openProject(projectPath);
     } catch (error) {
-      console.error('[ProjectSelectionPanel] Failed to open file picker:', error);
+      logger.error(`Failed to open file picker: ${String(error)}`);
     }
-  }, [openProject]);
+  }, [openProject, logger]);
 
   /**
    * Handles clicking on a recent project item.
@@ -121,7 +123,7 @@ export const ProjectSelectionPanel: FC<ProjectSelectionPanelProps> = ({
         // Update the last opened timestamp
         await addRecent(project.path, project.name);
       } catch (error) {
-        console.error('Failed to open recent project:', error);
+        logger.error(`Failed to open recent project: ${String(error)}`);
       }
     },
     [openProject, addRecent]

@@ -3,6 +3,7 @@ import { ProjectSelectionPanel, ConfigurationPanel, ExecutionPanel, ResultsPanel
 import type { ProjectConfigFormData } from '@/components/ConfigurationPanel'
 import type { SimulationConfigData } from '@coreto/electron/domain/services'
 import { extractProjectName, mapToSimulationConfig } from '@coreto/electron/domain/services'
+import { useLogger } from '@/hooks'
 
 /**
  * Root App Component
@@ -16,6 +17,7 @@ import { extractProjectName, mapToSimulationConfig } from '@coreto/electron/doma
  */
 
 export default function App(): React.ReactElement {
+  const logger = useLogger()
   const [selectedProjectPath, setSelectedProjectPath] = useState<string | null>(null)
   const [simulationConfig, setSimulationConfig] = useState<SimulationConfigData | null>(null)
   const [simulationCompleted, setSimulationCompleted] = useState<boolean>(false)
@@ -33,7 +35,7 @@ export default function App(): React.ReactElement {
   const handleConfigSaved = useCallback(async (config: ProjectConfigFormData): Promise<void> => {
     try {
       // Call IPC to save config with the full trecho data
-      const response = await window.coreto.saveConfig(config.projectPath, {
+      const response = await window.coreto.config.save(config.projectPath, {
         version: '1.0',
         trechos: config.trechos,
         globalSettings: config.globalSettings,
@@ -57,12 +59,12 @@ export default function App(): React.ReactElement {
         )
         setSimulationConfig(simConfig)
       } else {
-        console.error('[App] Failed to save configuration:', response.error)
+        logger.error(`Failed to save configuration: ${JSON.stringify(response.error)}`)
       }
     } catch (error) {
-      console.error('[App] Error saving configuration:', error)
+      logger.error(`Error saving configuration: ${String(error)}`)
     }
-  }, [])
+  }, [logger])
 
   const handleSimulationComplete = (result: unknown): void => {
     // Show Results Panel after simulation completes

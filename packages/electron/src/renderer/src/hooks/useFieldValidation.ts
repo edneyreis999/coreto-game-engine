@@ -20,9 +20,10 @@ import { useCallback, useEffect, useState, useRef } from 'react';
 // ============================================================================
 
 /**
- * Validation result.
+ * Field validation result.
+ * Used for real-time form field validation feedback.
  */
-export interface ValidationResult {
+export interface FieldValidationResult {
   isValid: boolean;
   message?: string;
   severity?: 'error' | 'warning' | 'info';
@@ -31,7 +32,7 @@ export interface ValidationResult {
 /**
  * Validation function type.
  */
-export type ValidationFunction = (value: string) => ValidationResult | Promise<ValidationResult>;
+export type ValidationFunction = (value: string) => FieldValidationResult | Promise<FieldValidationResult>;
 
 /**
  * Return type for useFieldValidation hook.

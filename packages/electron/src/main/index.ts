@@ -6,6 +6,7 @@ import { initDatabase, closeDatabase, setDatabasePath } from './database/index.j
 import { simulationController } from './services/index.js';
 import { createWindowConfig, getWindowUrl } from './window-config.js';
 import type { WorkerToMainMessage } from './workers/types.js';
+import { registerMainDependencies, getLogger } from './di/container.js';
 
 /**
  * Main Process Entry Point
@@ -111,12 +112,20 @@ export function registerAppLifecycleHandlers(): void {
  */
 export async function startApp(): Promise<void> {
   await app.whenReady();
+
+  // Initialize DI container first
+  registerMainDependencies();
+  const logger = getLogger();
+  logger.info('Electron app starting...');
+
   const dbPath = path.join(app.getPath('userData'), 'coreto.db');
   setDatabasePath(dbPath);
   initDatabase();
   setupIpcHandlers();
   createWindow();
   registerAppLifecycleHandlers();
+
+  logger.info('Electron app started successfully');
 }
 
 /**
@@ -127,7 +136,8 @@ export async function startApp(): Promise<void> {
  */
 if (process.env.NODE_ENV !== 'test') {
   startApp().catch((error) => {
-    console.error('Failed to start Electron app:', error);
+    // Use console.error here since DI container isn't initialized yet
+    console.error('[ERROR] Failed to start Electron app:', error);
     process.exit(1);
   });
 }
@@ -155,27 +165,29 @@ export function spawnWorker(): UtilityProcess {
     stdio: 'pipe',
   });
 
+  const logger = getLogger();
+
   // Handle messages from worker
   worker.on('message', (message: WorkerToMainMessage) => {
-    console.log('[Main] Received from worker:', message.type);
+    logger.info(`Received from worker: ${message.type}`);
     // TODO: Forward to renderer (Task 02 - IPC Layer)
   });
 
   // Handle worker crashes
   worker.on('exit', (code) => {
     if (code !== 0 && code !== null) {
-      console.error(`[Main] Worker crashed with code ${code}`);
+      logger.error(`Worker crashed with code ${code}`);
     }
   });
 
   // Log worker stdout for debugging
   worker.stdout?.on('data', (data: Buffer) => {
-    console.log(`[Worker stdout] ${data.toString()}`);
+    logger.debug(`[Worker stdout] ${data.toString()}`);
   });
 
   // Log worker stderr for debugging
   worker.stderr?.on('data', (data: Buffer) => {
-    console.error(`[Worker stderr] ${data.toString()}`);
+    logger.error(`[Worker stderr] ${data.toString()}`);
   });
 
   return worker;

@@ -23,6 +23,17 @@ import type {
 import { mapErrorToUserMessage } from './error-mapper.js';
 
 /**
+ * Simple logger for worker process.
+ * Worker runs in isolated process, so we use direct console.* calls.
+ */
+const logger = {
+  info: (msg: string) => console.log(`[INFO] [SimulationWorker] ${msg}`),
+  warn: (msg: string) => console.warn(`[WARN] [SimulationWorker] ${msg}`),
+  error: (msg: string) => console.error(`[ERROR] [SimulationWorker] ${msg}`),
+  debug: (msg: string) => console.debug(`[DEBUG] [SimulationWorker] ${msg}`),
+};
+
+/**
  * Validates that worker is running as UtilityProcess.
  * parentPort is only available in UtilityProcess context.
  */
@@ -35,7 +46,7 @@ if (!parentPort) {
  * Called once on worker startup.
  */
 function setupContainer(): void {
-  console.log('[SimulationWorker] Setting up DI container');
+  logger.info('Setting up DI container');
   registerDependencies();
 }
 
@@ -69,7 +80,7 @@ function sendProgress(payload: ProgressPayload): void {
  * Exits worker process cleanly with exit code 0.
  */
 function handleCancellation(): void {
-  console.log('[SimulationWorker] Graceful shutdown requested');
+  logger.info('Graceful shutdown requested');
   process.exit(0);
 }
 
@@ -92,7 +103,7 @@ async function handleSimulation(params: SimulationParams): Promise<void> {
   const startTime = Date.now();
 
   try {
-    console.log(`[SimulationWorker] Starting simulation ${params.simulationId}`);
+    logger.info(`Starting simulation ${params.simulationId}`);
 
     // 1. Initialization event
     sendProgress({
@@ -181,9 +192,9 @@ async function handleSimulation(params: SimulationParams): Promise<void> {
       },
     });
 
-    console.log(`[SimulationWorker] Simulation ${params.simulationId} completed in ${duration}ms`);
+    logger.info(`Simulation ${params.simulationId} completed in ${duration}ms`);
   } catch (error) {
-    console.error(`[SimulationWorker] Simulation ${params.simulationId} failed:`, error);
+    logger.error(`Simulation ${params.simulationId} failed: ${String(error)}`);
 
     // Map error to user-friendly message
     const mappedError = mapErrorToUserMessage(error);
@@ -195,7 +206,7 @@ async function handleSimulation(params: SimulationParams): Promise<void> {
   } finally {
     // CRITICAL: Cleanup child container to prevent memory leaks
     childContainer.clearInstances();
-    console.log(`[SimulationWorker] Child container cleared for simulation ${params.simulationId}`);
+    logger.debug(`Child container cleared for simulation ${params.simulationId}`);
   }
 }
 
@@ -218,7 +229,7 @@ parentPort.on('message', async (event: { data: MainToWorkerMessage }) => {
     default: {
       // Type exhaustiveness check
       const _exhaustive: never = message;
-      console.warn('[SimulationWorker] Unknown message type:', _exhaustive);
+      logger.warn('Unknown message type: ' + String(_exhaustive));
     }
   }
 });
@@ -231,4 +242,4 @@ setupContainer();
 /**
  * Log worker startup for debugging.
  */
-console.log('[SimulationWorker] Worker initialized and ready for messages');
+logger.info('Worker initialized and ready for messages');

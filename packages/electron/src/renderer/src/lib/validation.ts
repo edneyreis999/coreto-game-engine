@@ -7,7 +7,7 @@
  * @see Task 08 - Real-time Validation
  */
 
-import type { ValidationResult } from '../hooks/useFieldValidation';
+import type { FieldValidationResult } from '../hooks/useFieldValidation';
 
 // ============================================================================
 // Common Validators
@@ -18,7 +18,7 @@ import type { ValidationResult } from '../hooks/useFieldValidation';
  * @param fieldName - Name of the field for error message
  * @returns Validation function
  */
-export function required(fieldName: string): (value: string) => ValidationResult {
+export function required(fieldName: string): (value: string) => FieldValidationResult {
   return (value: string) => {
     if (!value || value.trim().length === 0) {
       return {
@@ -38,7 +38,7 @@ export function required(fieldName: string): (value: string) => ValidationResult
  * @param fieldName - Name of the field for error message
  * @returns Validation function
  */
-export function min(min: number, fieldName: string): (value: string) => ValidationResult {
+export function min(min: number, fieldName: string): (value: string) => FieldValidationResult {
   return (value: string) => {
     const num = parseInt(value, 10);
 
@@ -68,7 +68,7 @@ export function min(min: number, fieldName: string): (value: string) => Validati
  * @param fieldName - Name of the field for error message
  * @returns Validation function
  */
-export function max(max: number, fieldName: string): (value: string) => ValidationResult {
+export function max(max: number, fieldName: string): (value: string) => FieldValidationResult {
   return (value: string) => {
     const num = parseInt(value, 10);
 
@@ -103,7 +103,7 @@ export function range(
   min: number,
   max: number,
   fieldName: string
-): (value: string) => ValidationResult {
+): (value: string) => FieldValidationResult {
   return (value: string) => {
     const num = parseInt(value, 10);
 
@@ -138,7 +138,7 @@ export function maxGreaterThanMin(
   minFieldName: string,
   maxFieldName: string,
   minValue: number
-): (value: string) => ValidationResult {
+): (value: string) => FieldValidationResult {
   return (value: string) => {
     const num = parseInt(value, 10);
 
@@ -168,7 +168,7 @@ export function maxGreaterThanMin(
  * @param availableTroopIds - List of valid troop IDs
  * @returns Validation function
  */
-export function troopId(availableTroopIds: number[]): (value: string) => ValidationResult {
+export function troopId(availableTroopIds: number[]): (value: string) => FieldValidationResult {
   return (value: string) => {
     const id = parseInt(value, 10);
 
@@ -219,7 +219,7 @@ export function nonEmptyArray<T>(fieldName: string): (value: T[]) => ValidationR
  */
 export function compose(
   ...validators: Array<(value: string) => ValidationResult>
-): (value: string) => ValidationResult {
+): (value: string) => FieldValidationResult {
   return (value: string) => {
     for (const validator of validators) {
       const result = validator(value);

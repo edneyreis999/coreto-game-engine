@@ -24,6 +24,20 @@ import type { IPCResponse, IPCResult, ConfigSaveResponse, ConfigExistsResponse }
 import type { IPCError } from './types.js';
 import type { ConfigSavePayload, ConfigExistsPayload } from './types.js';
 import { ConfigSavePayloadSchema, ConfigExistsPayloadSchema } from './types.js';
+import { getLogger } from '../di/container.js';
+import { loadProjectConfig } from '@coreto/electron/domain/use-cases';
+import { createFileConfigStorage } from '../adapters/file-config-storage-adapter.js';
+import { normalizeSchema } from '@coreto/electron/domain/services';
+import { ProjectConfigSchema, CURRENT_SCHEMA_VERSION, type UIProjectConfig } from '@coreto/electron/domain/schemas';
+
+// Lazy initialization to avoid calling getLogger() before DI container is ready
+let logger: ReturnType<typeof getLogger> | null = null;
+function ensureLogger() {
+  if (!logger) {
+    logger = getLogger();
+  }
+  return logger;
+}
 
 // ============================================================================
 // Error Serialization
@@ -129,7 +143,7 @@ function validateConfigPayload<T>(
 }
 
 // ============================================================================
-// Config Handlers
+// Config Helpers
 // ============================================================================
 
 /**
@@ -137,6 +151,87 @@ function validateConfigPayload<T>(
  */
 function tolerancePercentToDecimal(percent: number): number {
   return Math.max(0, Math.min(1, percent / 100));
+}
+
+/**
+ * Creates a default project configuration.
+ * Used when no config file exists for a project.
+ */
+function createDefaultConfig(): UIProjectConfig {
+  return {
+    version: CURRENT_SCHEMA_VERSION,
+    trechos: [],
+    metadata: {
+      projectName: 'New Project',
+      lastModified: Date.now(),
+    },
+  };
+}
+
+/**
+ * Validates schema using Zod and returns typed config.
+ * Throws descriptive error if validation fails.
+ */
+function validateSchema(data: unknown): UIProjectConfig {
+  const result = ProjectConfigSchema.safeParse(data);
+
+  if (!result.success) {
+    const errors = result.error.errors.map((e) => `${e.path.join('.')}: ${e.message}`);
+    throw new ConfigValidationError(errors);
+  }
+
+  return result.data;
+}
+
+// ============================================================================
+// Config Handlers
+// ============================================================================
+
+/**
+ * Handler: config:load
+ *
+ * Loads a project configuration from temp/project.config.json.
+ * Uses domain use case for Clean Architecture compliance.
+ *
+ * NEW HANDLER: Demonstrates Clean Architecture pattern with use cases.
+ * Use this pattern for new handlers instead of direct ConfigService usage.
+ */
+async function handleConfigLoad(
+  _event: IpcMainInvokeEvent,
+  payload: unknown
+): Promise<IPCResult<{ config: UIProjectConfig; needsMigration: boolean }>> {
+  return withConfigErrorHandling(async () => {
+    const validated = validateConfigPayload<ConfigExistsPayload>(
+      'config:load',
+      payload,
+      ConfigExistsPayloadSchema // Reuse exists payload (only needs projectPath)
+    );
+
+    const { projectPath } = validated;
+
+    ensureLogger().info('[config:load] Loading config', { projectPath });
+
+    // Use domain use case with injected dependencies
+    const storage = createFileConfigStorage();
+    const result = await loadProjectConfig(
+      { projectPath },
+      {
+        storage,
+        normalizeSchema,
+        validateSchema,
+        createDefaultConfig,
+      }
+    );
+
+    if (result.needsMigration) {
+      ensureLogger().info('[config:load] Config migrated from old version', {
+        projectPath,
+        version: result.config.version,
+      });
+    }
+
+    return result;
+  });
 }
 
 /**
@@ -158,7 +253,7 @@ async function handleConfigSave(
 
     const { projectPath, config } = validated;
 
-    console.log('[config:save] Saving config:', {
+    ensureLogger().info('[config:save] Saving config', {
       projectPath,
       trechosCount: config.trechos.length,
     });
@@ -189,7 +284,7 @@ async function handleConfigSave(
       trechos,
     };
 
-    console.log('[config:save] Project config to save:', JSON.stringify(projectConfig, null, 2));
+    ensureLogger().debug('[config:save] Project config to save: ' + JSON.stringify(projectConfig, null, 2));
 
     // Save config directly to filesystem in Core format
     // Bypasses ConfigService UI schema validation since Core needs different format
@@ -199,7 +294,7 @@ async function handleConfigSave(
     await fs.mkdir(tempDir, { recursive: true });
     await fs.writeFile(configPath, JSON.stringify(projectConfig, null, 2), 'utf-8');
 
-    console.log('[config:save] Config saved successfully to:', configPath);
+    ensureLogger().info('[config:save] Config saved successfully', { configPath });
 
     return {
       success: true,
@@ -213,6 +308,8 @@ async function handleConfigSave(
  *
  * Checks if a project config file exists.
  * Returns true if temp/project.config.json exists.
+ *
+ * Uses domain use case for Clean Architecture compliance.
  */
 async function handleConfigExists(
   _event: IpcMainInvokeEvent,
@@ -227,6 +324,8 @@ async function handleConfigExists(
 
     const { projectPath } = validated;
 
+    // Use ConfigService for now (maintains backward compatibility)
+    // TODO: Consider using IConfigStorage directly if needed
     const exists = await configService.configExists(projectPath);
 
     return {
@@ -247,6 +346,7 @@ export const CONFIG_IPC_HANDLERS: Record<
   string,
   (event: IpcMainInvokeEvent, payload: unknown) => Promise<IPCResult>
 > = {
+  'config:load': handleConfigLoad,
   'config:save': handleConfigSave,
   'config:exists': handleConfigExists,
 };

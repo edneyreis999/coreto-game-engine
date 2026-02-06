@@ -29,6 +29,16 @@ import type {
   SimulationStatus,
 } from './types.js';
 import type { ReportData, WarningData } from '../ipc/types.js';
+import { getLogger } from '../di/container.js';
+
+// Lazy initialization to avoid calling getLogger() before DI container is ready
+let logger: ReturnType<typeof getLogger> | null = null;
+function ensureLogger() {
+  if (!logger) {
+    logger = getLogger();
+  }
+  return logger;
+}
 
 // ============================================================================
 // Report Storage Service
@@ -152,8 +162,8 @@ export class ReportStorageService {
       const json = await fs.readFile(row.report_file_path, 'utf-8');
       return JSON.parse(json) as SimulationReport;
     } catch (error) {
-      console.error(
-        `[ReportStorage] Failed to load report: ${error instanceof Error ? error.message : String(error)}`
+      ensureLogger().error(
+        `Failed to load report: ${error instanceof Error ? error.message : String(error)}`
       );
       return null;
     }

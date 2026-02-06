@@ -7,8 +7,13 @@
  * This file defines the contract between renderer and main processes,
  * ensuring type safety across the IPC boundary.
  *
+ * TODO: Refactor to use module alias for domain imports (CLAUDE-ARCH-CONVENTION)
+ * - Change: export/import type { ... } from '../../domain/types/index.js'
+ * - To: export/import type { ... } from '@coreto/electron/domain/types'
+ *
  * @see packages/electron/src/main/ipc/handlers.ts
  * @see packages/electron/src/preload/index.ts
+ * @see packages/electron/CLAUDE.md (Import Conventions)
  */
 
 import { z } from 'zod';
@@ -48,48 +53,45 @@ import type {
   ValidationResult,
   SimulationResult,
   ReportData,
+  TrechoData,
+  ProjectConfigResponse,
+  ProjectInfo,
+  TroopData,
+  ClassData,
+  EnemyData,
+  RecentProject,
+  UserPreferences,
 } from '../../domain/types/index.js';
 
 /**
- * IPC-specific types that are not part of the domain layer.
- * These types are used for IPC serialization and are specific to the main process.
+ * IPC-specific types that are also exported from domain layer.
+ * Re-export them here for convenience.
  */
-export type PartyMemberData = {
-  classId: number;
-  level: number;
-};
-
-export type PartyConfigData = {
-  members: PartyMemberData[];
-};
-
-export type TrechoData = {
-  id: string;
-  name: string;
-  anchorLevelMin: number;
-  anchorLevelMax: number;
-  targetTtkTurns: number;
-  targetTtkActions: number;
-  tolerancePercent: number;
-  troopIds: number[];
-  party: PartyConfigData;
-};
+export type {
+  PartyMemberData,
+  PartyConfigData,
+  TrechoData,
+  ProjectInfo,
+  ProjectConfigResponse,
+  TroopData,
+  ClassData,
+  EnemyData,
+  RecentProject,
+  UserPreferences,
+  IPCError,
+  IPCSuccessResponse,
+  IPCErrorResponse,
+  IPCResult,
+} from '../../domain/types/index.js';
 
 // ============================================================================
 // Error Serialization
 // ============================================================================
 
 /**
- * Serialized error format for IPC responses.
- * Errors are converted to this safe format before sending across IPC.
+ * Import IPCError from domain layer (already re-exported above).
  */
-export interface IPCError {
-  name: string;
-  message: string;
-  severity: 'critical' | 'warning' | 'info';
-  context: Record<string, unknown>;
-  timestamp: string;
-}
+import type { IPCError } from '../../domain/types/index.js';
 
 /**
  * Zod schema for validating IPC error format.
@@ -143,18 +145,8 @@ export type IPCChannel =
 // ============================================================================
 
 /**
- * Response format for project:open handler.
- */
-export interface ProjectInfo {
-  path: string;
-  name: string;
-  isValid: boolean;
-  troopsCount?: number;
-  classesCount?: number;
-  enemiesCount?: number;
-}
-
-/**
+ * ProjectInfo is re-exported from domain layer above.
+ *
  * Zod schema for project:open payload.
  */
 export const ProjectOpenPayloadSchema = z.object({
@@ -218,18 +210,10 @@ export const ConfigLoadPayloadSchema = z.object({
 export type ConfigLoadPayload = z.infer<typeof ConfigLoadPayloadSchema>;
 
 /**
- * Response format for config:load handler.
- * Returns the loaded project configuration with all trechos.
+ * ProjectConfigResponse is re-exported from domain layer above.
+ *
+ * No payload for config:getTrechos (takes no parameters)
  */
-export interface ProjectConfigResponse {
-  projectPath: string;
-  reportOutputPath: string;
-  seed: number;
-  maxBattleTurns?: number;
-  trechos: TrechoData[];
-}
-
-// No payload for config:getTrechos (takes no parameters)
 
 /**
  * Zod schema for config:save payload.
@@ -401,39 +385,8 @@ export interface ConfigUpdateGlobalSettingsResponse {
 // ============================================================================
 
 /**
- * Troop data from RPG Maker MZ Troops.json.
- */
-export interface TroopData {
-  id: number;
-  name: string;
-  members: Array<{
-    enemyId: number;
-    x: number;
-    y: number;
-    hidden: boolean;
-  }>;
-}
-
-/**
- * Class data from RPG Maker MZ Classes.json.
- */
-export interface ClassData {
-  id: number;
-  name: string;
-  expTable: number[];
-}
-
-/**
- * Enemy data from RPG Maker MZ Enemies.json.
- */
-export interface EnemyData {
-  id: number;
-  name: string;
-  params: number[]; // MHP, MMP, ATK, DEF, AGI, LUK
-  dropItems: Array<{ kind: number; dataId: number; denominator: number }>;
-}
-
-/**
+ * TroopData, ClassData, EnemyData are re-exported from domain layer above.
+ *
  * Zod schema for data:getTroops payload.
  */
 export const DataGetTroopsPayloadSchema = z.object({
@@ -464,15 +417,8 @@ export type DataGetEnemiesPayload = z.infer<typeof DataGetEnemiesPayloadSchema>;
 // ============================================================================
 
 /**
- * Recent project response format.
- */
-export interface RecentProject {
-  path: string;
-  name: string;
-  lastOpened: string;
-}
-
-/**
+ * RecentProject is re-exported from domain layer above.
+ *
  * Zod schema for recent:list payload.
  */
 export const RecentListPayloadSchema = z
@@ -513,14 +459,8 @@ export type RecentAddResponse = RecentProject;
 // ============================================================================
 
 /**
- * User preferences format.
- */
-export interface UserPreferences {
-  theme: 'light' | 'dark' | 'system';
-  lastProjectPath: string | null;
-}
-
-/**
+ * UserPreferences is re-exported from domain layer above.
+ *
  * Zod schema for preferences:set payload.
  */
 export const PreferencesSetPayloadSchema = z.object({
@@ -724,25 +664,9 @@ export type IPCResponse =
   | HistoryGenerateIdResponse;
 
 /**
- * Error response format for all IPC handlers.
+ * IPCErrorResponse, IPCSuccessResponse, IPCResult are re-exported from domain layer above.
+ * Note: IPCResult is already typed with generic parameter in domain layer.
  */
-export interface IPCErrorResponse {
-  success: false;
-  error: IPCError;
-}
-
-/**
- * Success response format for all IPC handlers.
- */
-export interface IPCSuccessResponse<T = IPCResponse> {
-  success: true;
-  data: T;
-}
-
-/**
- * Union type for all IPC responses (success or error).
- */
-export type IPCResult<T = IPCResponse> = IPCSuccessResponse<T> | IPCErrorResponse;
 
 // ============================================================================
 // Channel-to-Payload Mapping

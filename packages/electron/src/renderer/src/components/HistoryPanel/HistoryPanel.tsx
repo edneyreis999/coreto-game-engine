@@ -27,6 +27,7 @@ import {
   XCircle,
   RotateCw,
 } from 'lucide-react';
+import { useLogger } from '@/hooks/useLogger';
 
 import { cn } from '@/lib/utils';
 import { useSimulationHistory } from '@/hooks/useSimulationHistory';
@@ -202,6 +203,7 @@ export const HistoryPanel: FC<HistoryPanelProps> = ({
   onLoadReport,
   className,
 }) => {
+  const logger = useLogger();
   const [exportingId, setExportingId] = useState<string | null>(null);
 
   const {
@@ -248,13 +250,13 @@ export const HistoryPanel: FC<HistoryPanelProps> = ({
 
       // Then export it
       const filePath = await exportReport(entry.id, report.reportData, entry.projectPath);
-      console.log('Exported to:', filePath);
+      logger.info(`Exported to: ${filePath}`);
     } catch (err) {
-      console.error('Export failed:', err);
+      logger.error(`Export failed: ${String(err)}`);
     } finally {
       setExportingId(null);
     }
-  }, [loadReport, exportReport]);
+  }, [loadReport, exportReport, logger]);
 
   /**
    * Handle delete button click.

@@ -5,3 +5,7 @@
  */
 
 export * from './validate-trecho';
+export * from './validate-project';
+export * from './load-game-data';
+export * from './load-project-config';
+export * from './save-project-config';
