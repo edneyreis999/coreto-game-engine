@@ -31,7 +31,8 @@ describe('Config Save-Load Integration', () => {
     // Setup DI container
     container.clearInstances();
     container.register(IFileSystemToken, { useClass: NodeFileSystem });
-    configLoader = container.resolve(ZodConfigLoader);
+    // Create ZodConfigLoader directly - it's not a @injectable() class
+    configLoader = new ZodConfigLoader(container.resolve(IFileSystemToken));
 
     // Use temp directory for test
     testProjectPath = path.join(__dirname, '..', '..', 'temp', 'test-project');

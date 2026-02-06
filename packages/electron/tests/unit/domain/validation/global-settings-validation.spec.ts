@@ -6,21 +6,17 @@
  * @see packages/electron/src/domain/validation/global-settings-validation.ts
  */
 
-import { describe, it, expect } from 'vitest';
 import {
   validateGlobalSettingsForm,
   GlobalSettingsFormSchema,
   getDefaultGlobalSettingsFormData,
 } from '@/domain/validation/global-settings-validation';
+import { GlobalSettingsFormBuilder } from '@tests/helpers/builders/domain';
 
 describe('GlobalSettingsFormSchema', () => {
   describe('parse()', () => {
-    const validSettings = {
-      seed: 12345,
-      maxBattleTurns: 100,
-    };
-
     it('should accept valid global settings', () => {
+      const validSettings = GlobalSettingsFormBuilder.create().withDeterministicSeed().build();
       const result = GlobalSettingsFormSchema.safeParse(validSettings);
       expect(result.success).toBe(true);
     });
@@ -38,13 +34,13 @@ describe('GlobalSettingsFormSchema', () => {
     });
 
     it('should reject zero seed', () => {
-      const settings = { seed: 0 };
+      const settings = GlobalSettingsFormBuilder.create().withDeterministicSeed().withSeed(0).build();
       const result = GlobalSettingsFormSchema.safeParse(settings);
       expect(result.success).toBe(false);
     });
 
     it('should reject negative seed', () => {
-      const settings = { seed: -1 };
+      const settings = GlobalSettingsFormBuilder.create().withDeterministicSeed().withSeed(-1).build();
       const result = GlobalSettingsFormSchema.safeParse(settings);
       expect(result.success).toBe(false);
     });
@@ -56,13 +52,13 @@ describe('GlobalSettingsFormSchema', () => {
     });
 
     it('should reject zero maxBattleTurns', () => {
-      const settings = { seed: 12345, maxBattleTurns: 0 };
+      const settings = GlobalSettingsFormBuilder.create().withDeterministicSeed().withMaxBattleTurns(0).build();
       const result = GlobalSettingsFormSchema.safeParse(settings);
       expect(result.success).toBe(false);
     });
 
     it('should reject negative maxBattleTurns', () => {
-      const settings = { seed: 12345, maxBattleTurns: -1 };
+      const settings = GlobalSettingsFormBuilder.create().withDeterministicSeed().withMaxBattleTurns(-1).build();
       const result = GlobalSettingsFormSchema.safeParse(settings);
       expect(result.success).toBe(false);
     });
@@ -76,12 +72,8 @@ describe('GlobalSettingsFormSchema', () => {
 });
 
 describe('validateGlobalSettingsForm()', () => {
-  const validSettings = {
-    seed: 12345,
-    maxBattleTurns: 100,
-  };
-
   it('should return isValid: true for valid settings', () => {
+    const validSettings = GlobalSettingsFormBuilder.create().withDeterministicSeed().build();
     const result = validateGlobalSettingsForm(validSettings);
     expect(result.isValid).toBe(true);
     expect(result.errors).toEqual({});
@@ -95,21 +87,21 @@ describe('validateGlobalSettingsForm()', () => {
   });
 
   it('should return isValid: false with errors for invalid settings', () => {
-    const invalidSettings = { seed: -1 };
+    const invalidSettings = GlobalSettingsFormBuilder.create().withDeterministicSeed().withSeed(-1).build();
     const result = validateGlobalSettingsForm(invalidSettings);
     expect(result.isValid).toBe(false);
     expect(Object.keys(result.errors).length).toBeGreaterThan(0);
   });
 
   it('should include error messages for invalid seed', () => {
-    const invalidSettings = { seed: 0 };
+    const invalidSettings = GlobalSettingsFormBuilder.create().withDeterministicSeed().withSeed(0).build();
     const result = validateGlobalSettingsForm(invalidSettings);
     expect(result.isValid).toBe(false);
     expect(result.errors['seed']).toBeDefined();
   });
 
   it('should include error messages for invalid maxBattleTurns', () => {
-    const invalidSettings = { seed: 12345, maxBattleTurns: -1 };
+    const invalidSettings = GlobalSettingsFormBuilder.create().withDeterministicSeed().withMaxBattleTurns(-1).build();
     const result = validateGlobalSettingsForm(invalidSettings);
     expect(result.isValid).toBe(false);
     expect(result.errors['maxBattleTurns']).toBeDefined();

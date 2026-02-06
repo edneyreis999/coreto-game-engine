@@ -6,7 +6,6 @@
  * @see packages/electron/src/domain/validation/trecho-validation.ts
  */
 
-import { describe, it, expect } from 'vitest';
 import {
   validateTrechoForm,
   validateTrechoField,
@@ -16,6 +15,7 @@ import {
   getFieldError,
 } from '@/domain/validation/trecho-validation';
 import type { FormErrors } from '@/domain/validation/types';
+import { TrechoFormBuilder, PartyConfigFormBuilder, PartyMemberFormBuilder } from '@tests/helpers/builders/domain';
 
 describe('TroopIdsFormSchema', () => {
   describe('parse()', () => {
@@ -53,134 +53,105 @@ describe('TroopIdsFormSchema', () => {
 
 describe('TrechoFormSchema', () => {
   describe('parse()', () => {
-    const validTrecho = {
-      id: 'ato1-nivel1-10',
-      name: 'Test Trecho',
-      anchorLevelMin: 1,
-      anchorLevelMax: 10,
-      targetTtkTurns: 3,
-      targetTtkActions: 8,
-      tolerancePercent: 15,
-      troopIds: [1, 2],
-      party: {
-        members: [
-          { classId: 1, level: 5 },
-          { classId: 2, level: 6 },
-        ],
-      },
-    };
-
     it('should accept valid trecho data', () => {
+      const validTrecho = TrechoFormBuilder.create().withValidDefaults().build();
       const result = TrechoFormSchema.safeParse(validTrecho);
       expect(result.success).toBe(true);
     });
 
     it('should accept optional name field', () => {
-      const trechoWithoutName = { ...validTrecho, name: undefined };
+      const trechoWithoutName = TrechoFormBuilder.create().withValidDefaults().withName(undefined as any).build();
       const result = TrechoFormSchema.safeParse(trechoWithoutName);
       expect(result.success).toBe(true);
     });
 
-    it('should reject empty id', () => {
-      const trecho = { ...validTrecho, id: '' };
-      const result = TrechoFormSchema.safeParse(trecho);
-      expect(result.success).toBe(false);
-    });
-
-    it('should reject id with invalid characters (uppercase)', () => {
-      const trecho = { ...validTrecho, id: 'Ato1-Nivel1-10' };
-      const result = TrechoFormSchema.safeParse(trecho);
-      expect(result.success).toBe(false);
-    });
-
-    it('should reject id with spaces', () => {
-      const trecho = { ...validTrecho, id: 'ato 1 nivel 1' };
+    it.each([
+      ['', 'empty string'],
+      ['Ato1-Nivel1-10', 'uppercase characters'],
+      ['ato 1 nivel 1', 'spaces'],
+    ])('should reject invalid id: %s', (id, description) => {
+      const trecho = TrechoFormBuilder.create().withValidDefaults().withId(id).build();
       const result = TrechoFormSchema.safeParse(trecho);
       expect(result.success).toBe(false);
     });
 
     it('should reject inverted anchor levels (max < min)', () => {
-      const trecho = { ...validTrecho, anchorLevelMin: 50, anchorLevelMax: 10 };
+      const trecho = TrechoFormBuilder.create().withValidDefaults().withAnchorLevels(50, 10).build();
       const result = TrechoFormSchema.safeParse(trecho);
       expect(result.success).toBe(false);
     });
 
     it('should accept equal anchor levels', () => {
-      const trecho = { ...validTrecho, anchorLevelMin: 10, anchorLevelMax: 10 };
+      const trecho = TrechoFormBuilder.create().withValidDefaults().withAnchorLevels(10, 10).build();
       const result = TrechoFormSchema.safeParse(trecho);
       expect(result.success).toBe(true);
     });
 
     it('should reject anchor level below 1', () => {
-      const trecho = { ...validTrecho, anchorLevelMin: 0 };
+      const trecho = TrechoFormBuilder.create().withValidDefaults().withAnchorLevels(0, 10).build();
       const result = TrechoFormSchema.safeParse(trecho);
       expect(result.success).toBe(false);
     });
 
     it('should reject anchor level above 99', () => {
-      const trecho = { ...validTrecho, anchorLevelMax: 100 };
+      const trecho = TrechoFormBuilder.create().withValidDefaults().withAnchorLevels(10, 100).build();
       const result = TrechoFormSchema.safeParse(trecho);
       expect(result.success).toBe(false);
     });
 
     it('should reject negative target TTK turns', () => {
-      const trecho = { ...validTrecho, targetTtkTurns: -1 };
+      const trecho = TrechoFormBuilder.create().withValidDefaults().withTtkTargets(-1, 10).build();
       const result = TrechoFormSchema.safeParse(trecho);
       expect(result.success).toBe(false);
     });
 
     it('should reject zero target TTK turns', () => {
-      const trecho = { ...validTrecho, targetTtkTurns: 0 };
+      const trecho = TrechoFormBuilder.create().withValidDefaults().withTtkTargets(0, 10).build();
       const result = TrechoFormSchema.safeParse(trecho);
       expect(result.success).toBe(false);
     });
 
     it('should reject tolerance below 0', () => {
-      const trecho = { ...validTrecho, tolerancePercent: -1 };
+      const trecho = TrechoFormBuilder.create().withValidDefaults().withTolerance(-1).build();
       const result = TrechoFormSchema.safeParse(trecho);
       expect(result.success).toBe(false);
     });
 
     it('should reject tolerance above 100', () => {
-      const trecho = { ...validTrecho, tolerancePercent: 101 };
+      const trecho = TrechoFormBuilder.create().withValidDefaults().withTolerance(101).build();
       const result = TrechoFormSchema.safeParse(trecho);
       expect(result.success).toBe(false);
     });
 
     it('should reject empty troopIds array', () => {
-      const trecho = { ...validTrecho, troopIds: [] };
+      const trecho = TrechoFormBuilder.create().withValidDefaults().withTroopIds([]).build();
       const result = TrechoFormSchema.safeParse(trecho);
       expect(result.success).toBe(false);
     });
 
     it('should reject party with no members', () => {
-      const trecho = { ...validTrecho, party: { members: [] } };
+      const party = PartyConfigFormBuilder.create().withMembers([]).build();
+      const trecho = TrechoFormBuilder.create().withValidDefaults().withParty(party).build();
       const result = TrechoFormSchema.safeParse(trecho);
       expect(result.success).toBe(false);
     });
 
     it('should reject party with more than 4 members', () => {
-      const trecho = {
-        ...validTrecho,
-        party: {
-          members: [
-            { classId: 1, level: 5 },
-            { classId: 2, level: 6 },
-            { classId: 3, level: 7 },
-            { classId: 4, level: 8 },
-            { classId: 5, level: 9 },
-          ],
-        },
-      };
+      const party = PartyConfigFormBuilder.create().withCustomParty([
+        { classId: 1, level: 5 },
+        { classId: 2, level: 6 },
+        { classId: 3, level: 7 },
+        { classId: 4, level: 8 },
+        { classId: 5, level: 9 },
+      ]).build();
+      const trecho = TrechoFormBuilder.create().withValidDefaults().withParty(party).build();
       const result = TrechoFormSchema.safeParse(trecho);
       expect(result.success).toBe(false);
     });
 
     it('should reject party member with invalid level', () => {
-      const trecho = {
-        ...validTrecho,
-        party: { members: [{ classId: 1, level: 0 }] },
-      };
+      const party = PartyConfigFormBuilder.create().withCustomParty([{ classId: 1, level: 0 }]).build();
+      const trecho = TrechoFormBuilder.create().withValidDefaults().withParty(party).build();
       const result = TrechoFormSchema.safeParse(trecho);
       expect(result.success).toBe(false);
     });
@@ -188,38 +159,32 @@ describe('TrechoFormSchema', () => {
 });
 
 describe('validateTrechoForm()', () => {
-  const validTrecho = {
-    id: 'ato1-nivel1-10',
-    name: 'Test Trecho',
-    anchorLevelMin: 1,
-    anchorLevelMax: 10,
-    targetTtkTurns: 3,
-    targetTtkActions: 8,
-    tolerancePercent: 15,
-    troopIds: [1, 2],
-    party: {
-      members: [
-        { classId: 1, level: 5 },
-        { classId: 2, level: 6 },
-      ],
-    },
-  };
-
   it('should return isValid: true for valid trecho', () => {
+    const validTrecho = TrechoFormBuilder.create().withValidDefaults().build();
     const result = validateTrechoForm(validTrecho);
     expect(result.isValid).toBe(true);
     expect(result.errors).toEqual({});
   });
 
   it('should return isValid: false with errors for invalid trecho', () => {
-    const invalidTrecho = { id: '', name: '', anchorLevelMin: 0, anchorLevelMax: 100, targetTtkTurns: -1, targetTtkActions: 0, tolerancePercent: 101, troopIds: [], party: { members: [] } };
+    const invalidTrecho = {
+      id: '',
+      name: '',
+      anchorLevelMin: 0,
+      anchorLevelMax: 100,
+      targetTtkTurns: -1,
+      targetTtkActions: 0,
+      tolerancePercent: 101,
+      troopIds: [],
+      party: { members: [] },
+    };
     const result = validateTrechoForm(invalidTrecho);
     expect(result.isValid).toBe(false);
     expect(Object.keys(result.errors).length).toBeGreaterThan(0);
   });
 
   it('should include error messages for each invalid field', () => {
-    const invalidTrecho = { ...validTrecho, id: '', anchorLevelMin: 0 };
+    const invalidTrecho = TrechoFormBuilder.create().withValidDefaults().withId('').withAnchorLevels(0, 10).build();
     const result = validateTrechoForm(invalidTrecho);
     expect(result.isValid).toBe(false);
     expect(result.errors['id']).toBeDefined();

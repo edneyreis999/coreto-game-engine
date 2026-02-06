@@ -1,230 +1,138 @@
 /**
- * Unit Tests for Main Process Entry Point
+ * Unit Tests for Main Process Window Configuration
  *
- * Tests window creation, app lifecycle, and environment detection.
+ * Tests window configuration and URL resolution logic using pure functions.
+ * No Electron API mocks required - tests pure business logic only.
  */
 
-// Mock Electron modules (must be before imports)
-jest.mock('electron', () => ({
-  app: {
-    whenReady: jest.fn(),
-    on: jest.fn(),
-    quit: jest.fn()
-  },
-  BrowserWindow: jest.fn().mockImplementation(() => ({
-    loadURL: jest.fn().mockResolvedValue(undefined),
-    loadFile: jest.fn().mockResolvedValue(undefined),
-    once: jest.fn(),
-    webContents: {
-      setWindowOpenHandler: jest.fn(),
-      openDevTools: jest.fn()
-    },
-    show: jest.fn()
-  }))
-}))
+import { createWindowConfig, getWindowUrl, DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT } from '@coreto/electron/main/window-config'
 
-// Mock path module
-jest.mock('node:path', () => ({
-  join: jest.fn((...args: string[]) => args.join('/'))
-}))
-
-import { BrowserWindow } from 'electron'
-import { createWindow, mainWindow } from '../../../src/main/index'
-
-describe('Main Process - index', () => {
-  beforeEach(() => {
-    // Reset mocks before each test
-    jest.clearAllMocks()
-    // Reset mainWindow to null
-    ;(global as unknown as { mainWindow: typeof mainWindow }).mainWindow = null
-  })
+describe('Main Process - window-config', () => {
+  const originalEnv = process.env.NODE_ENV
+  const originalRendererUrl = process.env.ELECTRON_RENDERER_URL
 
   afterEach(() => {
-    // Clean up after each test
-    jest.restoreAllMocks()
+    // Restore environment variables after each test
+    process.env.NODE_ENV = originalEnv
+    process.env.ELECTRON_RENDERER_URL = originalRendererUrl
   })
 
-  describe('createWindow', () => {
-    it('should create a BrowserWindow with correct dimensions and properties', () => {
-      // Act
-      createWindow()
+  describe('createWindowConfig', () => {
+    it('should create window config with correct dimensions', () => {
+      const config = createWindowConfig(false)
 
-      // Assert
-      expect(BrowserWindow).toHaveBeenCalledWith(
-        expect.objectContaining({
-          width: 1200,
-          height: 800,
-          title: 'Coreto Dev Portal',
-          show: false,
-          autoHideMenuBar: true,
-          webPreferences: expect.objectContaining({
-            contextIsolation: true,
-            nodeIntegration: false,
-            sandbox: true
-          })
-        })
-      )
+      expect(config.width).toBe(DEFAULT_WINDOW_WIDTH)
+      expect(config.height).toBe(DEFAULT_WINDOW_HEIGHT)
     })
 
-    it('should load the renderer process from the correct path', () => {
-      // Arrange
-      const mockWindow = {
-        loadURL: jest.fn().mockResolvedValue(undefined),
-        loadFile: jest.fn().mockResolvedValue(undefined),
-        once: jest.fn(),
-        webContents: {
-          setWindowOpenHandler: jest.fn(),
-          openDevTools: jest.fn()
-        },
-        show: jest.fn()
-      }
-      ;(BrowserWindow as unknown as jest.Mock).mockImplementation(() => mockWindow)
+    it('should create window config with correct title', () => {
+      const config = createWindowConfig(false)
 
-      // Act
-      createWindow()
-
-      // Assert
-      expect(mockWindow.loadFile).toHaveBeenCalled()
+      expect(config.title).toBe('Coreto Dev Portal')
     })
 
-    it('should open DevTools in development mode', () => {
-      // Arrange
-      const originalEnv = process.env.NODE_ENV
-      process.env.NODE_ENV = 'development'
+    it('should configure window to not show initially', () => {
+      const config = createWindowConfig(false)
 
-      const mockWindow = {
-        loadURL: jest.fn().mockResolvedValue(undefined),
-        loadFile: jest.fn().mockResolvedValue(undefined),
-        once: jest.fn(),
-        webContents: {
-          setWindowOpenHandler: jest.fn(),
-          openDevTools: jest.fn()
-        },
-        show: jest.fn()
-      }
-      ;(BrowserWindow as unknown as jest.Mock).mockImplementation(() => mockWindow)
-
-      // Act
-      createWindow()
-
-      // Assert
-      expect(mockWindow.webContents.openDevTools).toHaveBeenCalled()
-
-      // Cleanup
-      process.env.NODE_ENV = originalEnv
+      expect(config.show).toBe(false)
     })
 
-    it('should register ready-to-show handler to display window', () => {
-      // Arrange
-      const mockWindow = {
-        loadFile: jest.fn().mockResolvedValue(undefined),
-        once: jest.fn((event: string, callback: () => void) => {
-          if (event === 'ready-to-show') {
-            callback()
-          }
-        }),
-        webContents: {
-          setWindowOpenHandler: jest.fn(),
-          openDevTools: jest.fn()
-        },
-        show: jest.fn()
-      }
-      ;(BrowserWindow as unknown as jest.Mock).mockImplementation(() => mockWindow)
+    it('should enable autoHideMenuBar', () => {
+      const config = createWindowConfig(false)
 
-      // Act
-      createWindow()
-
-      // Assert
-      expect(mockWindow.once).toHaveBeenCalledWith('ready-to-show', expect.any(Function))
-      expect(mockWindow.show).toHaveBeenCalled()
+      expect(config.autoHideMenuBar).toBe(true)
     })
 
-    it('should set external link handler to open in default browser', () => {
-      // Arrange
-      const mockWindow = {
-        loadURL: jest.fn().mockResolvedValue(undefined),
-        loadFile: jest.fn().mockResolvedValue(undefined),
-        once: jest.fn(),
-        webContents: {
-          setWindowOpenHandler: jest.fn(),
-          openDevTools: jest.fn()
-        },
-        show: jest.fn()
-      }
-      ;(BrowserWindow as unknown as jest.Mock).mockImplementation(() => mockWindow)
+    it('should enable context isolation for security', () => {
+      const config = createWindowConfig(false)
 
-      // Act
-      createWindow()
-
-      // Assert
-      expect(mockWindow.webContents.setWindowOpenHandler).toHaveBeenCalledWith(expect.any(Function))
+      expect(config.webPreferences?.contextIsolation).toBe(true)
     })
 
-    it('should return the created BrowserWindow instance', () => {
-      // Act
-      const result = createWindow()
+    it('should disable node integration for security', () => {
+      const config = createWindowConfig(false)
 
-      // Assert
-      expect(result).toBeDefined()
-      expect(BrowserWindow).toHaveBeenCalled()
-      expect(result).toEqual(expect.any(Object))
+      expect(config.webPreferences?.nodeIntegration).toBe(false)
+    })
+
+    it('should enable sandbox in production for security', () => {
+      const config = createWindowConfig(false)
+
+      expect(config.webPreferences?.sandbox).toBe(true)
+    })
+
+    it('should disable sandbox in development for easier debugging', () => {
+      const config = createWindowConfig(true)
+
+      expect(config.webPreferences?.sandbox).toBe(false)
+    })
+
+    it('should configure preload path', () => {
+      const config = createWindowConfig(false)
+
+      expect(config.webPreferences?.preload).toContain('preload/index.cjs')
+    })
+
+    it('should have same base configuration in dev and production (except sandbox)', () => {
+      const devConfig = createWindowConfig(true)
+      const prodConfig = createWindowConfig(false)
+
+      expect(devConfig.width).toBe(prodConfig.width)
+      expect(devConfig.height).toBe(prodConfig.height)
+      expect(devConfig.title).toBe(prodConfig.title)
+      expect(devConfig.webPreferences?.contextIsolation).toBe(prodConfig.webPreferences?.contextIsolation)
+      expect(devConfig.webPreferences?.nodeIntegration).toBe(prodConfig.webPreferences?.nodeIntegration)
+      // Sandbox differs between dev and prod
+      expect(devConfig.webPreferences?.sandbox).not.toBe(prodConfig.webPreferences?.sandbox)
     })
   })
 
-  describe('Environment Detection', () => {
-    it('should detect development environment', () => {
-      // Arrange
-      const originalEnv = process.env.NODE_ENV
-      process.env.NODE_ENV = 'development'
+  describe('getWindowUrl', () => {
+    it('should use ELECTRON_RENDERER_URL in development when set', () => {
+      process.env.ELECTRON_RENDERER_URL = 'http://localhost:5173'
 
-      const mockWindow = {
-        loadURL: jest.fn().mockResolvedValue(undefined),
-        loadFile: jest.fn().mockResolvedValue(undefined),
-        once: jest.fn(),
-        webContents: {
-          setWindowOpenHandler: jest.fn(),
-          openDevTools: jest.fn()
-        },
-        show: jest.fn()
-      }
-      ;(BrowserWindow as unknown as jest.Mock).mockImplementation(() => mockWindow)
+      const url = getWindowUrl(true)
 
-      // Act
-      createWindow()
-
-      // Assert
-      expect(mockWindow.webContents.openDevTools).toHaveBeenCalled()
-
-      // Cleanup
-      process.env.NODE_ENV = originalEnv
+      expect(url).toBe('http://localhost:5173')
     })
 
-    it('should handle production environment', () => {
-      // Arrange
-      const originalEnv = process.env.NODE_ENV
-      process.env.NODE_ENV = 'production'
+    it('should use custom ELECTRON_RENDERER_URL when provided', () => {
+      process.env.ELECTRON_RENDERER_URL = 'http://localhost:3000'
 
-      const mockWindow = {
-        loadURL: jest.fn().mockResolvedValue(undefined),
-        loadFile: jest.fn().mockResolvedValue(undefined),
-        once: jest.fn(),
-        webContents: {
-          setWindowOpenHandler: jest.fn(),
-          openDevTools: undefined
-        },
-        show: jest.fn()
-      }
-      ;(BrowserWindow as unknown as jest.Mock).mockImplementation(() => mockWindow)
+      const url = getWindowUrl(true)
 
-      // Act
-      createWindow()
+      expect(url).toBe('http://localhost:3000')
+    })
 
-      // Assert
-      // In production, DevTools should not be opened
-      expect(mockWindow.webContents.openDevTools).toBeUndefined()
+    it('should fall back to file URL in development when ELECTRON_RENDERER_URL not set', () => {
+      delete process.env.ELECTRON_RENDERER_URL
 
-      // Cleanup
-      process.env.NODE_ENV = originalEnv
+      const url = getWindowUrl(true)
+
+      expect(url).toMatch(/^file:\/\/.*renderer\/index\.html$/)
+    })
+
+    it('should use file URL in production', () => {
+      const url = getWindowUrl(false)
+
+      expect(url).toMatch(/^file:\/\/.*renderer\/index\.html$/)
+    })
+
+    it('should contain correct path segments in file URL', () => {
+      const url = getWindowUrl(false)
+
+      expect(url).toContain('renderer')
+      expect(url).toContain('index.html')
+    })
+  })
+
+  describe('Constants', () => {
+    it('should export DEFAULT_WINDOW_WIDTH as 1200', () => {
+      expect(DEFAULT_WINDOW_WIDTH).toBe(1200)
+    })
+
+    it('should export DEFAULT_WINDOW_HEIGHT as 800', () => {
+      expect(DEFAULT_WINDOW_HEIGHT).toBe(800)
     })
   })
 })

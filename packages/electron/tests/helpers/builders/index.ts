@@ -21,3 +21,4 @@ export * from './warning.builder';
 export * from './trecho-summary.builder';
 export * from './report-data.builder';
 export * from './ui-project-config.builder';
+export * from './domain';

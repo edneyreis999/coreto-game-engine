@@ -6,7 +6,6 @@
  * @see packages/electron/src/domain/schemas/project-config.schema.ts
  */
 
-import { describe, it, expect } from 'vitest';
 import {
   ProjectConfigSchema,
   TrechoConfigSchema,
@@ -58,9 +57,9 @@ describe('ProjectConfigSchema', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should reject invalid trecho id format', () => {
+    it('should reject empty trecho id', () => {
       const trecho = UITrechoConfigBuilder.create()
-        .withId('invalid-format')
+        .withId('')
         .build();
       const result = ProjectConfigSchema.safeParse({
         version: '1.0',

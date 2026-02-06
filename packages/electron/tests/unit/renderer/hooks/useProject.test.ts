@@ -6,6 +6,7 @@
 
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { useProject } from '@/hooks/useProject'
+import { createMinimalCoretoMock } from '@/tests/helpers/factories'
 
 
 // ============================================================================
@@ -18,47 +19,15 @@ const MOCK_CLASSES_COUNT = 5;
 const MOCK_ENEMIES_COUNT = 15;
 
 describe('useProject', () => {
-  let mockCoreto: any
-
-  beforeEach(() => {
-    jest.clearAllMocks()
-
-    // Create fresh mock for each test
-    mockCoreto = {
-      openProject: jest.fn(),
-      validateProject: jest.fn(),
-      runSimulation: jest.fn(),
-      startSimulation: jest.fn(),
-      getSimulationProgress: jest.fn(),
-      cancelSimulation: jest.fn(),
-      getSimulationResults: jest.fn(),
-      loadConfig: jest.fn(),
-      getTrechos: jest.fn(),
-      updateTrecho: jest.fn(),
-      deleteTrecho: jest.fn(),
-      getTroops: jest.fn(),
-      getClasses: jest.fn(),
-      getEnemies: jest.fn(),
-      listRecent: jest.fn(),
-      addRecent: jest.fn(),
-      getPreferences: jest.fn(),
-      setPreferences: jest.fn(),
-      updateGlobalSettings: jest.fn(),
-      // Event listener functions - return cleanup function
-      onProgress: jest.fn(() => jest.fn()),
-      onComplete: jest.fn(() => jest.fn()),
-      onError: jest.fn(() => jest.fn()),
-    }
-
-    // Setup global window mock
-    Object.defineProperty(window, 'coreto', {
-      value: mockCoreto,
-      writable: true,
-    })
-  })
-
   describe('initial state', () => {
     it('should return initial idle state', () => {
+      const mockCoreto = createMinimalCoretoMock()
+
+      Object.defineProperty(window, 'coreto', {
+        value: mockCoreto,
+        writable: true,
+      })
+
       const { result } = renderHook(() => useProject())
 
       expect(result.current.projectInfo).toBeNull()
@@ -81,9 +50,16 @@ describe('useProject', () => {
         enemiesCount: 1,
       }
 
-      mockCoreto.openProject.mockResolvedValue({
-        success: true,
-        data: mockProjectInfo,
+      const mockCoreto = createMinimalCoretoMock({
+        openProject: jest.fn().mockResolvedValue({
+          success: true,
+          data: mockProjectInfo,
+        }),
+      })
+
+      Object.defineProperty(window, 'coreto', {
+        value: mockCoreto,
+        writable: true,
       })
 
       const { result } = renderHook(() => useProject())
@@ -101,13 +77,20 @@ describe('useProject', () => {
     })
 
     it('should handle invalid project', async () => {
-      mockCoreto.openProject.mockResolvedValue({
-        success: true,
-        data: {
-          path: '/path/to/project',
-          name: 'Invalid Project',
-          isValid: false,
-        },
+      const mockCoreto = createMinimalCoretoMock({
+        openProject: jest.fn().mockResolvedValue({
+          success: true,
+          data: {
+            path: '/path/to/project',
+            name: 'Invalid Project',
+            isValid: false,
+          },
+        }),
+      })
+
+      Object.defineProperty(window, 'coreto', {
+        value: mockCoreto,
+        writable: true,
       })
 
       const { result } = renderHook(() => useProject())
@@ -143,11 +126,18 @@ describe('useProject', () => {
           'Network error',
         ],
       ] as const)('should handle %s', async (_name, mockError, expectedMessage) => {
+        const mockCoreto = createMinimalCoretoMock()
+
         if (mockError instanceof Error) {
           mockCoreto.openProject.mockRejectedValue(mockError)
         } else {
           mockCoreto.openProject.mockResolvedValue(mockError)
         }
+
+        Object.defineProperty(window, 'coreto', {
+          value: mockCoreto,
+          writable: true,
+        })
 
         const { result } = renderHook(() => useProject())
 
@@ -163,21 +153,28 @@ describe('useProject', () => {
     })
 
     it('should set loading state during openProject call', async () => {
-      mockCoreto.openProject.mockImplementation(
-        () =>
-          new Promise((resolve) => {
-            setTimeout(() => {
-              resolve({
-                success: true,
-                data: {
-                  path: '/path/to/project',
-                  name: 'Test Project',
-                  isValid: true,
-                },
-              })
-            }, MOCK_TIMEOUT)
-          })
-      )
+      const mockCoreto = createMinimalCoretoMock({
+        openProject: jest.fn().mockImplementation(
+          () =>
+            new Promise((resolve) => {
+              setTimeout(() => {
+                resolve({
+                  success: true,
+                  data: {
+                    path: '/path/to/project',
+                    name: 'Test Project',
+                    isValid: true,
+                  },
+                })
+              }, MOCK_TIMEOUT)
+            })
+        ),
+      })
+
+      Object.defineProperty(window, 'coreto', {
+        value: mockCoreto,
+        writable: true,
+      })
 
       const { result } = renderHook(() => useProject())
 
@@ -229,9 +226,16 @@ describe('useProject', () => {
         ['Some data files may be corrupt'],
       ],
     ])('should validate %s', async (_name, mockData, expectedStatus, expectedErrors, expectedWarnings) => {
-      mockCoreto.validateProject.mockResolvedValue({
-        success: true,
-        data: mockData,
+      const mockCoreto = createMinimalCoretoMock({
+        validateProject: jest.fn().mockResolvedValue({
+          success: true,
+          data: mockData,
+        }),
+      })
+
+      Object.defineProperty(window, 'coreto', {
+        value: mockCoreto,
+        writable: true,
       })
 
       const { result } = renderHook(() => useProject())
@@ -252,13 +256,20 @@ describe('useProject', () => {
 
   describe('reset', () => {
     it('should reset state to initial values', async () => {
-      mockCoreto.openProject.mockResolvedValue({
-        success: true,
-        data: {
-          path: '/path/to/project',
-          name: 'Test Project',
-          isValid: true,
-        },
+      const mockCoreto = createMinimalCoretoMock({
+        openProject: jest.fn().mockResolvedValue({
+          success: true,
+          data: {
+            path: '/path/to/project',
+            name: 'Test Project',
+            isValid: true,
+          },
+        }),
+      })
+
+      Object.defineProperty(window, 'coreto', {
+        value: mockCoreto,
+        writable: true,
       })
 
       const { result } = renderHook(() => useProject())

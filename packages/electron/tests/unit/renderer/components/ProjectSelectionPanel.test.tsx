@@ -7,6 +7,8 @@
 import React from 'react'
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
 import { ProjectSelectionPanel } from '@/components/ProjectSelectionPanel'
+import { useRecentProjects } from '@/hooks/useRecentProjects'
+import { useProject } from '@/hooks/useProject'
 
 // Mock window.electron.ipcRenderer for dialog:openDirectory
 const mockIpcRenderer = global.window.electron.ipcRenderer as jest.Mocked<typeof global.window.electron.ipcRenderer>
@@ -36,6 +38,33 @@ jest.mock('lucide-react', () => ({
     <svg data-testid="trash" className={className} />
   ),
 }))
+
+// Mock useRecentProjects hook
+jest.mock('@/hooks/useRecentProjects', () => ({
+  useRecentProjects: jest.fn(() => ({
+    recentProjects: [],
+    isLoading: false,
+    refresh: jest.fn(),
+    addRecent: jest.fn(),
+  })),
+}))
+
+// Mock useProject hook
+jest.mock('@/hooks/useProject', () => {
+  const actualModule = jest.requireActual('@/hooks/useProject')
+  return {
+    ...actualModule,
+    useProject: jest.fn(() => ({
+      projectInfo: null,
+      validation: { status: 'idle', errors: [], warnings: [] },
+      isLoading: false,
+      error: null,
+      openProject: jest.fn(),
+      validateProject: jest.fn(),
+      reset: jest.fn(),
+    })),
+  }
+})
 
 describe('ProjectSelectionPanel', () => {
   const mockRecentProjects = [
@@ -83,6 +112,32 @@ describe('ProjectSelectionPanel', () => {
       canceled: false,
       filePaths: ['/path/to/project'],
     })
+
+    // Mock useRecentProjects hook
+    ;(useRecentProjects as jest.Mock).mockReturnValue({
+      recentProjects: mockRecentProjects,
+      isLoading: false,
+      refresh: jest.fn(),
+      addRecent: jest.fn().mockResolvedValue({
+        success: true,
+        data: {
+          path: '/path/to/project',
+          name: 'Test Project',
+          lastOpened: new Date().toISOString(),
+        },
+      }),
+    })
+
+    // Mock useProject hook with default state
+    ;(useProject as jest.Mock).mockReturnValue({
+      projectInfo: null,
+      validation: { status: 'idle', errors: [], warnings: [] },
+      isLoading: false,
+      error: null,
+      openProject: jest.fn().mockResolvedValue(undefined),
+      validateProject: jest.fn().mockResolvedValue(undefined),
+      reset: jest.fn(),
+    })
   })
 
   describe('rendering', () => {
@@ -119,9 +174,12 @@ describe('ProjectSelectionPanel', () => {
     })
 
     it('should show empty state when no recent projects', async () => {
-      mockCoreto.listRecent.mockResolvedValue({
-        success: true,
-        data: [],
+      // Mock useRecentProjects to return empty list
+      ;(useRecentProjects as jest.Mock).mockReturnValue({
+        recentProjects: [],
+        isLoading: false,
+        refresh: jest.fn(),
+        addRecent: jest.fn(),
       })
 
       render(<ProjectSelectionPanel />)
@@ -151,27 +209,64 @@ describe('ProjectSelectionPanel', () => {
     })
 
     it('should open and validate project when file is selected', async () => {
+      const mockOpenProject = jest.fn().mockResolvedValue(undefined)
+
+      // Mock useProject with openProject function
+      ;(useProject as jest.Mock).mockReturnValue({
+        projectInfo: null,
+        validation: { status: 'idle', errors: [], warnings: [] },
+        isLoading: false,
+        error: null,
+        openProject: mockOpenProject,
+        validateProject: jest.fn(),
+        reset: jest.fn(),
+      })
+
+      // Ensure IPC mock returns the correct response
+      mockIpcRenderer.invoke.mockResolvedValue({
+        success: true,
+        data: {
+          canceled: false,
+          filePaths: ['/path/to/project'],
+        },
+      })
+
       render(<ProjectSelectionPanel />)
 
       const button = screen.getByRole('button', {
         name: /Browse for Project Folder/i,
       })
 
+      // Click the button and wait for the IPC call to resolve
       await act(async () => {
         fireEvent.click(button)
       })
 
+      // Wait for the openProject mock to be called
       await waitFor(() => {
-        expect(mockCoreto.openProject).toHaveBeenCalledWith('/path/to/project')
-      })
+        expect(mockOpenProject).toHaveBeenCalledWith('/path/to/project')
+      }, { timeout: 3000 })
     })
 
     it('should not open project when dialog is cancelled', async () => {
+      const mockOpenProject = jest.fn()
+
       mockIpcRenderer.invoke.mockResolvedValue({
         canceled: true,
         filePaths: [],
       })
 
+      // Mock useProject with openProject function
+      ;(useProject as jest.Mock).mockReturnValue({
+        projectInfo: null,
+        validation: { status: 'idle', errors: [], warnings: [] },
+        isLoading: false,
+        error: null,
+        openProject: mockOpenProject,
+        validateProject: jest.fn(),
+        reset: jest.fn(),
+      })
+
       render(<ProjectSelectionPanel />)
 
       const button = screen.getByRole('button', {
@@ -182,70 +277,47 @@ describe('ProjectSelectionPanel', () => {
         fireEvent.click(button)
       })
 
-      expect(mockCoreto.openProject).not.toHaveBeenCalled()
+      expect(mockOpenProject).not.toHaveBeenCalled()
     })
 
     it('should disable button while opening project', async () => {
-      // Mock a slow openProject call
-      mockCoreto.openProject.mockImplementation(
-        () =>
-          new Promise((resolve) => {
-            setTimeout(() => {
-              resolve({
-                success: true,
-                data: {
-                  path: '/path/to/project',
-                  name: 'Test Project',
-                  isValid: true,
-                },
-              })
-            }, 100)
-          })
-      )
+      // Mock useProject with loading state
+      ;(useProject as jest.Mock).mockReturnValue({
+        projectInfo: null,
+        validation: { status: 'idle', errors: [], warnings: [] },
+        isLoading: true,
+        error: null,
+        openProject: jest.fn().mockResolvedValue(undefined),
+        validateProject: jest.fn(),
+        reset: jest.fn(),
+      })
 
       render(<ProjectSelectionPanel />)
 
+      // When isLoading is true, the button shows "Opening Project..." and is disabled
       const button = screen.getByRole('button', {
-        name: /Browse for Project Folder/i,
+        name: /Opening Project/i,
       })
 
-      await act(async () => {
-        fireEvent.click(button)
-      })
-
-      await waitFor(() => {
-        expect(button).toBeDisabled()
-      })
+      // Button should be disabled when isLoading is true
+      expect(button).toBeDisabled()
     })
   })
 
   describe('validation indicator', () => {
     it('should show loading state while validating', async () => {
-      mockCoreto.openProject.mockImplementation(
-        () =>
-          new Promise((resolve) => {
-            setTimeout(() => {
-              resolve({
-                success: true,
-                data: {
-                  path: '/path/to/project',
-                  name: 'Test Project',
-                  isValid: true,
-                },
-              })
-            }, 100)
-          })
-      )
+      // Mock useProject with validating state
+      ;(useProject as jest.Mock).mockReturnValue({
+        projectInfo: null,
+        validation: { status: 'validating', errors: [], warnings: [] },
+        isLoading: false,
+        error: null,
+        openProject: jest.fn(),
+        validateProject: jest.fn(),
+        reset: jest.fn(),
+      })
 
       render(<ProjectSelectionPanel />)
-
-      const button = screen.getByRole('button', {
-        name: /Browse for Project Folder/i,
-      })
-
-      await act(async () => {
-        fireEvent.click(button)
-      })
 
       await waitFor(() => {
         expect(screen.getByText(/Validating/i)).toBeInTheDocument()
@@ -253,27 +325,22 @@ describe('ProjectSelectionPanel', () => {
     })
 
     it('should show success state for valid project', async () => {
-      render(<ProjectSelectionPanel />)
-
-      // Simulate opening a valid project by calling the mock directly
-      mockCoreto.openProject.mockResolvedValue({
-        success: true,
-        data: {
+      // Mock useProject to return valid state
+      ;(useProject as jest.Mock).mockReturnValue({
+        projectInfo: {
           path: '/path/to/project',
           name: 'Test Project',
           isValid: true,
-          troopsCount: 10,
         },
+        validation: { status: 'valid', errors: [], warnings: [] },
+        isLoading: false,
+        error: null,
+        openProject: jest.fn(),
+        validateProject: jest.fn(),
+        reset: jest.fn(),
       })
 
-      // Trigger the validation by simulating the file picker
-      const button = screen.getByRole('button', {
-        name: /Browse for Project Folder/i,
-      })
-
-      await act(async () => {
-        fireEvent.click(button)
-      })
+      render(<ProjectSelectionPanel />)
 
       await waitFor(() => {
         expect(screen.getByText(/is a valid RPG Maker MZ project/)).toBeInTheDocument()
@@ -281,29 +348,28 @@ describe('ProjectSelectionPanel', () => {
     })
 
     it('should show error state for invalid project', async () => {
-      mockCoreto.openProject.mockResolvedValue({
-        success: true,
-        data: {
+      // Mock useProject to return invalid state
+      const mockOpenProject = jest.fn()
+      ;(useProject as jest.Mock).mockReturnValue({
+        projectInfo: {
           path: '/path/to/project',
           name: 'Invalid Project',
           isValid: false,
         },
+        validation: { status: 'invalid', errors: ['Project is not valid'], warnings: [] },
+        isLoading: false,
+        error: null,
+        openProject: mockOpenProject,
+        validateProject: jest.fn(),
+        reset: jest.fn(),
       })
 
       render(<ProjectSelectionPanel />)
 
-      const button = screen.getByRole('button', {
-        name: /Browse for Project Folder/i,
-      })
-
-      await act(async () => {
-        fireEvent.click(button)
-      })
-
       // The error message appears in both the p tag and li tag
       await waitFor(() => {
         expect(screen.getAllByText('Project is not valid')).toHaveLength(2)
-      }, { timeout: 3000 })
+      })
     })
 
     it('should show validation error messages', async () => {
@@ -327,6 +393,35 @@ describe('ProjectSelectionPanel', () => {
 
   describe('recent projects interaction', () => {
     it('should open project when clicking recent project item', async () => {
+      const mockOpenProject = jest.fn()
+      const mockAddRecent = jest.fn().mockResolvedValue({
+        success: true,
+        data: {
+          path: '/path/to/project1',
+          name: 'Project 1',
+          lastOpened: new Date().toISOString(),
+        },
+      })
+
+      // Mock useProject with openProject function
+      ;(useProject as jest.Mock).mockReturnValue({
+        projectInfo: null,
+        validation: { status: 'idle', errors: [], warnings: [] },
+        isLoading: false,
+        error: null,
+        openProject: mockOpenProject,
+        validateProject: jest.fn(),
+        reset: jest.fn(),
+      })
+
+      // Mock useRecentProjects with addRecent function
+      ;(useRecentProjects as jest.Mock).mockReturnValue({
+        recentProjects: mockRecentProjects,
+        isLoading: false,
+        refresh: jest.fn(),
+        addRecent: mockAddRecent,
+      })
+
       render(<ProjectSelectionPanel />)
 
       await waitFor(() => {
@@ -339,8 +434,8 @@ describe('ProjectSelectionPanel', () => {
         fireEvent.click(projectItem!)
       })
 
-      expect(mockCoreto.openProject).toHaveBeenCalledWith('/path/to/project1')
-      expect(mockCoreto.addRecent).toHaveBeenCalledWith(
+      expect(mockOpenProject).toHaveBeenCalledWith('/path/to/project1')
+      expect(mockAddRecent).toHaveBeenCalledWith(
         '/path/to/project1',
         'Project 1'
       )
@@ -351,26 +446,22 @@ describe('ProjectSelectionPanel', () => {
     it('should call onProjectSelected when valid project is opened', async () => {
       const onProjectSelected = jest.fn()
 
-      mockCoreto.openProject.mockResolvedValue({
-        success: true,
-        data: {
+      // Mock useProject to return valid state with projectInfo
+      ;(useProject as jest.Mock).mockReturnValue({
+        projectInfo: {
           path: '/path/to/project',
           name: 'Test Project',
           isValid: true,
-          troopsCount: 10,
         },
+        validation: { status: 'valid', errors: [], warnings: [] },
+        isLoading: false,
+        error: null,
+        openProject: jest.fn(),
+        validateProject: jest.fn(),
+        reset: jest.fn(),
       })
 
       render(<ProjectSelectionPanel onProjectSelected={onProjectSelected} />)
-
-      // Simulate file picker selecting a project
-      const button = screen.getByRole('button', {
-        name: /Browse for Project Folder/i,
-      })
-
-      await act(async () => {
-        fireEvent.click(button)
-      })
 
       await waitFor(() => {
         expect(onProjectSelected).toHaveBeenCalledWith('/path/to/project')
@@ -380,24 +471,22 @@ describe('ProjectSelectionPanel', () => {
     it('should not call onProjectSelected when project is invalid', async () => {
       const onProjectSelected = jest.fn()
 
-      mockCoreto.openProject.mockResolvedValue({
-        success: true,
-        data: {
+      // Mock useProject to return invalid state
+      ;(useProject as jest.Mock).mockReturnValue({
+        projectInfo: {
           path: '/path/to/project',
           name: 'Invalid Project',
           isValid: false,
         },
+        validation: { status: 'invalid', errors: ['Project is not valid'], warnings: [] },
+        isLoading: false,
+        error: null,
+        openProject: jest.fn(),
+        validateProject: jest.fn(),
+        reset: jest.fn(),
       })
 
       render(<ProjectSelectionPanel onProjectSelected={onProjectSelected} />)
-
-      const button = screen.getByRole('button', {
-        name: /Browse for Project Folder/i,
-      })
-
-      await act(async () => {
-        fireEvent.click(button)
-      })
 
       await waitFor(() => {
         expect(onProjectSelected).not.toHaveBeenCalled()
@@ -407,15 +496,12 @@ describe('ProjectSelectionPanel', () => {
 
   describe('error handling', () => {
     it('should handle IPC errors gracefully', async () => {
-      mockCoreto.listRecent.mockResolvedValue({
-        success: false,
-        error: {
-          name: 'IPCError',
-          message: 'Failed to fetch recent projects',
-          severity: 'critical' as const,
-          context: {},
-          timestamp: new Date().toISOString(),
-        },
+      // Mock useRecentProjects to return empty list (error state)
+      ;(useRecentProjects as jest.Mock).mockReturnValue({
+        recentProjects: [],
+        isLoading: false,
+        refresh: jest.fn(),
+        addRecent: jest.fn(),
       })
 
       render(<ProjectSelectionPanel />)
@@ -442,7 +528,7 @@ describe('ProjectSelectionPanel', () => {
       })
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        'Failed to open file picker:',
+        '[ProjectSelectionPanel] Failed to open file picker:',
         expect.any(Error)
       )
 
