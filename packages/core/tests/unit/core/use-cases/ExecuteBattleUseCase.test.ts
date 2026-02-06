@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { ExecuteBattleUseCase, ExecuteBattleInput } from '@coreto/core';
-import { IBattleSimulator, BattleSetup } from '@coreto/core';
+import { IBattleSimulator, BattleSetup, IClock } from '@coreto/core';
 import { BattleTimeoutError } from '@coreto/core';
 
 import { BattleResultFakeBuilder } from '../../../fixtures/builders/BattleResultFakeBuilder';
@@ -10,6 +10,7 @@ import { TEST_CONSTANTS } from '../../../fixtures/test-constants';
 describe('ExecuteBattleUseCase', () => {
   let useCase: ExecuteBattleUseCase;
   let mockSimulator: jest.Mocked<IBattleSimulator>;
+  let mockClock: jest.Mocked<IClock>;
 
   beforeEach(() => {
     // Create mock simulator
@@ -20,8 +21,13 @@ describe('ExecuteBattleUseCase', () => {
       cleanup: jest.fn(),
     };
 
-    // Inject mock simulator
-    useCase = new ExecuteBattleUseCase(mockSimulator);
+    // Create mock clock
+    mockClock = {
+      now: jest.fn(() => Date.now()),
+    };
+
+    // Inject mocks
+    useCase = new ExecuteBattleUseCase(mockSimulator, mockClock);
   });
 
   describe('execute', () => {

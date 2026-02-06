@@ -153,6 +153,13 @@ function setupFakeProject(): void {
 }
 
 function cleanupFakeProject(): void {
+  // Restore any backup directories created during tests (e.g., data-backup/)
+  const backupPath = path.join(PROJECT_PATH, 'data-backup');
+  if (fs.existsSync(backupPath)) {
+    fs.rmSync(backupPath, { recursive: true, force: true });
+  }
+
+  // Remove the entire project directory
   fs.rmSync(PROJECT_PATH, { recursive: true, force: true });
 }
 
