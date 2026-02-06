@@ -88,9 +88,7 @@ class SimulationControllerTestFactory {
     this.controller = new SimulationController();
 
     // Inject fake storage
-    this.controller.setStorageService(
-      this.fakeStorage as any
-    );
+    this.controller.setStorageService(this.fakeStorage as any);
 
     // Mock utilityProcess.fork to return our fake worker
     const { utilityProcess } = require('electron');
@@ -180,10 +178,7 @@ describe('SimulationController', () => {
       await controller.start(createMockParams());
 
       // Simulate completion to start warm pool timer
-      fakeWorker.emitComplete(
-        controller.getCurrentSimulationId()!,
-        '/test/project'
-      );
+      fakeWorker.emitComplete(controller.getCurrentSimulationId()!, '/test/project');
 
       // Fast-forward 4 minutes - worker should still be alive
       jest.advanceTimersByTime(4 * 60 * 1000);
@@ -202,10 +197,7 @@ describe('SimulationController', () => {
       await controller.start(createMockParams());
 
       // Simulate completion to start warm pool timer
-      fakeWorker.emitComplete(
-        controller.getCurrentSimulationId()!,
-        '/test/project'
-      );
+      fakeWorker.emitComplete(controller.getCurrentSimulationId()!, '/test/project');
 
       // Advance time but not enough to terminate
       jest.advanceTimersByTime(2 * 60 * 1000);
@@ -228,9 +220,7 @@ describe('SimulationController', () => {
       await controller.cancel();
 
       expect(fakeWorker.hasMessageType('cancel')).toBe(true);
-      const cancelMessages = fakeWorker
-        .getMessages()
-        .filter((m) => m.type === 'cancel');
+      const cancelMessages = fakeWorker.getMessages().filter((m) => m.type === 'cancel');
       expect(cancelMessages).toHaveLength(1);
     });
 
@@ -262,9 +252,7 @@ describe('SimulationController', () => {
     });
 
     it('should forward progress events to renderer', () => {
-      const progressPayload = new ProgressPayloadBuilder()
-        .asBattle(50, 100)
-        .build();
+      const progressPayload = new ProgressPayloadBuilder().asBattle(50, 100).build();
 
       fakeWorker.receiveMessage({
         type: 'progress',
@@ -389,10 +377,7 @@ describe('SimulationController', () => {
       await controller.start(createMockParams());
 
       // Simulate completion to start warm pool timer
-      fakeWorker.emitComplete(
-        controller.getCurrentSimulationId()!,
-        '/test/project'
-      );
+      fakeWorker.emitComplete(controller.getCurrentSimulationId()!, '/test/project');
 
       // Cleanup before timer fires
       controller.cleanup();

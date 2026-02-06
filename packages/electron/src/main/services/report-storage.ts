@@ -152,7 +152,9 @@ export class ReportStorageService {
       const json = await fs.readFile(row.report_file_path, 'utf-8');
       return JSON.parse(json) as SimulationReport;
     } catch (error) {
-      console.error(`[ReportStorage] Failed to load report: ${error instanceof Error ? error.message : String(error)}`);
+      console.error(
+        `[ReportStorage] Failed to load report: ${error instanceof Error ? error.message : String(error)}`
+      );
       return null;
     }
   }
@@ -165,10 +167,7 @@ export class ReportStorageService {
    * @param limit - Maximum number of entries to return
    * @returns Array of simulation history entries
    */
-  async getHistory(
-    projectPath?: string,
-    limit = 50
-  ): Promise<SimulationHistoryEntry[]> {
+  async getHistory(projectPath?: string, limit = 50): Promise<SimulationHistoryEntry[]> {
     let query = `
       SELECT id, project_path, timestamp, status, summary_json, report_file_path
       FROM simulation_history_v2

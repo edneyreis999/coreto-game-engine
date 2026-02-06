@@ -52,8 +52,7 @@ export class ErrorPayloadBuilder {
    * Creates a file not found error.
    */
   asFileNotFound(path: string): this {
-    return this
-      .withTitle('File Not Found')
+    return this.withTitle('File Not Found')
       .withDescription(`The file ${path} could not be found.`)
       .withCode('ERR_FILE_NOT_FOUND');
   }
@@ -62,18 +61,14 @@ export class ErrorPayloadBuilder {
    * Creates a validation error.
    */
   asValidationError(message: string): this {
-    return this
-      .withTitle('Validation Error')
-      .withDescription(message)
-      .withCode('ERR_VALIDATION');
+    return this.withTitle('Validation Error').withDescription(message).withCode('ERR_VALIDATION');
   }
 
   /**
    * Creates a worker crash error.
    */
   asWorkerCrash(exitCode: number): this {
-    return this
-      .withTitle('Worker Process Crashed')
+    return this.withTitle('Worker Process Crashed')
       .withDescription('The simulation process unexpectedly terminated.')
       .withDetails(`Exit code: ${exitCode}`)
       .withCode('ERR_WORKER_CRASH');

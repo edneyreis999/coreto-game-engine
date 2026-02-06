@@ -143,10 +143,7 @@ describe('ConfigService', () => {
       const service = new ConfigService();
       const config = {
         version: '1.0',
-        trechos: [
-          { id: 'trecho-1' },
-          { id: 'trecho-2', description: 'Test' },
-        ],
+        trechos: [{ id: 'trecho-1' }, { id: 'trecho-2', description: 'Test' }],
       };
       const normalized = service.normalizeSchema(config) as { trechos: unknown[] };
 
@@ -159,11 +156,15 @@ describe('ConfigService', () => {
       const service = new ConfigService();
       const config = {
         version: '1.0',
-        trechos: [{
-          id: 'trecho-1',
-        }],
+        trechos: [
+          {
+            id: 'trecho-1',
+          },
+        ],
       };
-      const normalized = service.normalizeSchema(config) as { trechos: Array<Record<string, unknown>> };
+      const normalized = service.normalizeSchema(config) as {
+        trechos: Array<Record<string, unknown>>;
+      };
 
       const trecho = normalized.trechos[0];
       expect(trecho).toHaveProperty('id', 'trecho-1');

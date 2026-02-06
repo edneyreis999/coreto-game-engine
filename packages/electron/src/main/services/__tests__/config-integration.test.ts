@@ -119,11 +119,7 @@ describe('ConfigService Integration', () => {
         },
       };
 
-      await fs.writeFile(
-        configPath,
-        JSON.stringify(cliConfig, null, 2),
-        'utf-8'
-      );
+      await fs.writeFile(configPath, JSON.stringify(cliConfig, null, 2), 'utf-8');
 
       // Load via GUI (ConfigService)
       const loadedConfig = await service.loadConfig(testProjectPath);
@@ -141,11 +137,7 @@ describe('ConfigService Integration', () => {
         trechos: [],
       };
 
-      await fs.writeFile(
-        configPath,
-        JSON.stringify(legacyConfig),
-        'utf-8'
-      );
+      await fs.writeFile(configPath, JSON.stringify(legacyConfig), 'utf-8');
 
       // Load via GUI (ConfigService) - should normalize
       const loadedConfig = await service.loadConfig(testProjectPath);

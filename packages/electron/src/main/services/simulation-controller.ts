@@ -258,12 +258,7 @@ export class SimulationController {
       const reportData = this.convertToReportData(payload.report, payload);
 
       this.storageService
-        .storeSimulation(
-          this.currentSimulationId,
-          payload.projectPath,
-          reportData,
-          'SUCCESS'
-        )
+        .storeSimulation(this.currentSimulationId, payload.projectPath, reportData, 'SUCCESS')
         .catch((error) => {
           console.error('[SimulationController] Failed to store result:', error);
         });

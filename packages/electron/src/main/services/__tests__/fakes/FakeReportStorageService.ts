@@ -101,10 +101,7 @@ export class FakeReportStorageService {
   /**
    * Gets simulation history from memory.
    */
-  async getHistory(
-    projectPath?: string,
-    limit = 50
-  ): Promise<SimulationHistoryEntry[]> {
+  async getHistory(projectPath?: string, limit = 50): Promise<SimulationHistoryEntry[]> {
     let entries = Array.from(this.simulations.values()).map((sim) => ({
       id: sim.simulationId,
       simulationId: sim.simulationId,

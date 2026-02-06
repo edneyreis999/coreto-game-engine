@@ -1,11 +1,11 @@
-import type { BrowserWindowConstructorOptions } from 'electron'
-import { join } from 'node:path'
+import type { BrowserWindowConstructorOptions } from 'electron';
+import { join } from 'node:path';
 
 /**
  * Default window dimensions matching TechSpec specifications
  */
-export const DEFAULT_WINDOW_WIDTH = 1200
-export const DEFAULT_WINDOW_HEIGHT = 800
+export const DEFAULT_WINDOW_WIDTH = 1200;
+export const DEFAULT_WINDOW_HEIGHT = 800;
 
 /**
  * Creates the BrowserWindow configuration object.
@@ -27,9 +27,9 @@ export function createWindowConfig(isDev: boolean): BrowserWindowConstructorOpti
       preload: join(__dirname, '../preload/index.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: !isDev // Disable sandbox in development for easier debugging
-    }
-  }
+      sandbox: !isDev, // Disable sandbox in development for easier debugging
+    },
+  };
 }
 
 /**
@@ -44,7 +44,7 @@ export function createWindowConfig(isDev: boolean): BrowserWindowConstructorOpti
  */
 export function getWindowUrl(isDev: boolean): string {
   if (isDev && process.env.ELECTRON_RENDERER_URL) {
-    return process.env.ELECTRON_RENDERER_URL
+    return process.env.ELECTRON_RENDERER_URL;
   }
-  return `file://${join(__dirname, '../renderer/index.html')}`
+  return `file://${join(__dirname, '../renderer/index.html')}`;
 }

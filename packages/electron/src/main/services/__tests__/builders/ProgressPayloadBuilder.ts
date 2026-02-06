@@ -72,8 +72,7 @@ export class ProgressPayloadBuilder {
    * Creates battle stage progress.
    */
   asBattle(current: number, total: number): this {
-    return this
-      .withStage('battle')
+    return this.withStage('battle')
       .withProgress(current, total)
       .withMessage(`Battle ${current}/${total}`);
   }

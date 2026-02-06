@@ -205,13 +205,15 @@ describe('ReportStorageService', () => {
 
       // Verify record exists in database
       const stmt = db.prepare('SELECT * FROM simulation_history_v2 WHERE id = ?');
-      const row = stmt.get(simulationId) as {
-        id: string;
-        project_path: string;
-        status: string;
-        summary_json: string;
-        report_file_path: string | null;
-      } | undefined;
+      const row = stmt.get(simulationId) as
+        | {
+            id: string;
+            project_path: string;
+            status: string;
+            summary_json: string;
+            report_file_path: string | null;
+          }
+        | undefined;
 
       expect(row).toBeDefined();
       expect(row?.id).toBe(simulationId);
@@ -309,7 +311,10 @@ describe('ReportStorageService', () => {
       await service.exportReport(simulationId, result, '/test/project');
 
       // Verify directory was created
-      const exists = await fs.access(reportsDir).then(() => true).catch(() => false);
+      const exists = await fs
+        .access(reportsDir)
+        .then(() => true)
+        .catch(() => false);
       expect(exists).toBe(true);
     });
   });
@@ -353,7 +358,15 @@ describe('ReportStorageService', () => {
         INSERT INTO simulation_history_v2 (id, project_path, timestamp, status, summary_json, report_file_path, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?)
       `);
-      stmt.run(simulationId, '/test/project', Date.now(), 'SUCCESS', '{}', '/nonexistent/file.json', Date.now());
+      stmt.run(
+        simulationId,
+        '/test/project',
+        Date.now(),
+        'SUCCESS',
+        '{}',
+        '/nonexistent/file.json',
+        Date.now()
+      );
 
       const report = await service.loadReport(simulationId);
 
@@ -447,14 +460,20 @@ describe('ReportStorageService', () => {
       const filePath = await service.exportReport(simulationId, result, '/test/project');
 
       // Verify file exists
-      let fileExists = await fs.access(filePath).then(() => true).catch(() => false);
+      let fileExists = await fs
+        .access(filePath)
+        .then(() => true)
+        .catch(() => false);
       expect(fileExists).toBe(true);
 
       // Delete
       await service.deleteSimulation(simulationId);
 
       // Verify file is deleted
-      fileExists = await fs.access(filePath).then(() => true).catch(() => false);
+      fileExists = await fs
+        .access(filePath)
+        .then(() => true)
+        .catch(() => false);
       expect(fileExists).toBe(false);
     });
 

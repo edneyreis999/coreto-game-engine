@@ -93,9 +93,7 @@ export class ConfigService {
       const result = ProjectConfigSchema.safeParse(normalized);
 
       if (!result.success) {
-        const errors = result.error.errors.map(
-          (e) => `${e.path.join('.')}: ${e.message}`
-        );
+        const errors = result.error.errors.map((e) => `${e.path.join('.')}: ${e.message}`);
         throw new ConfigValidationError(errors);
       }
 
@@ -138,9 +136,7 @@ export class ConfigService {
     const result = ProjectConfigSchema.safeParse(config);
 
     if (!result.success) {
-      const errors = result.error.errors.map(
-        (e) => `${e.path.join('.')}: ${e.message}`
-      );
+      const errors = result.error.errors.map((e) => `${e.path.join('.')}: ${e.message}`);
       throw new ConfigValidationError(errors);
     }
 
@@ -158,11 +154,7 @@ export class ConfigService {
     };
 
     // Write with formatting for human-readability (CLI-compatible)
-    await fs.writeFile(
-      configPath,
-      JSON.stringify(configToSave, null, 2),
-      'utf-8'
-    );
+    await fs.writeFile(configPath, JSON.stringify(configToSave, null, 2), 'utf-8');
   }
 
   /**
