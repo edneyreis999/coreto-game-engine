@@ -99,7 +99,11 @@ export function max(max: number, fieldName: string): (value: string) => Validati
  * @param fieldName - Name of the field for error message
  * @returns Validation function
  */
-export function range(min: number, max: number, fieldName: string): (value: string) => ValidationResult {
+export function range(
+  min: number,
+  max: number,
+  fieldName: string
+): (value: string) => ValidationResult {
   return (value: string) => {
     const num = parseInt(value, 10);
 
@@ -213,7 +217,9 @@ export function nonEmptyArray<T>(fieldName: string): (value: T[]) => ValidationR
  * @param validators - Array of validation functions
  * @returns Composed validation function
  */
-export function compose(...validators: Array<(value: string) => ValidationResult>): (value: string) => ValidationResult {
+export function compose(
+  ...validators: Array<(value: string) => ValidationResult>
+): (value: string) => ValidationResult {
   return (value: string) => {
     for (const validator of validators) {
       const result = validator(value);
@@ -235,10 +241,7 @@ export function compose(...validators: Array<(value: string) => ValidationResult
  * Validates anchor level range.
  * Ensures min is between 1-99 and max >= min.
  */
-export function validateAnchorLevelRange(
-  minLevel: string,
-  maxLevel: string
-): ValidationResult {
+export function validateAnchorLevelRange(minLevel: string, maxLevel: string): ValidationResult {
   const min = parseInt(minLevel, 10);
   const max = parseInt(maxLevel, 10);
 
@@ -281,10 +284,7 @@ export function validateAnchorLevelRange(
  * Validates TTK target values.
  * Ensures turns and actions are positive numbers.
  */
-export function validateTtkTarget(
-  turns: string,
-  actions: string
-): ValidationResult {
+export function validateTtkTarget(turns: string, actions: string): ValidationResult {
   const ttkTurns = parseInt(turns, 10);
   const ttkActions = parseInt(actions, 10);
 

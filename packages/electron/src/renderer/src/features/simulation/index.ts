@@ -19,7 +19,4 @@ export type { ExecutionPanelProps } from '../../components/ExecutionPanel';
 
 // Hooks - re-export from hooks directory
 export { useSimulationProgress } from '../../hooks/useSimulationProgress';
-export type {
-  SimulationProgressReturn,
-  SimulationConfig,
-} from '../../hooks/useSimulationProgress';
+export type { SimulationProgressReturn, SimulationConfig } from '../../hooks/useSimulationProgress';

@@ -29,7 +29,10 @@ export {
   PartyConfigFormSchema,
   validatePartyMemberForm,
 } from '@coreto/electron/domain/validation/party-validation';
-export type { PartyFormData, PartyMemberFormData } from '@coreto/electron/domain/validation/party-validation';
+export type {
+  PartyFormData,
+  PartyMemberFormData,
+} from '@coreto/electron/domain/validation/party-validation';
 
 export {
   GlobalSettingsFormSchema,
@@ -38,7 +41,4 @@ export {
 } from '@coreto/electron/domain/validation/global-settings-validation';
 export type { GlobalSettingsFormData } from '@coreto/electron/domain/validation/global-settings-validation';
 
-export type {
-  FormErrors,
-  FormValidation,
-} from '@coreto/electron/domain/validation/types';
+export type { FormErrors, FormValidation } from '@coreto/electron/domain/validation/types';

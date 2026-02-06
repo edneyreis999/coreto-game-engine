@@ -6,11 +6,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import type {
-  TrechoFormData,
-  PartyMemberFormData,
-  SelectOption,
-} from '../../types';
+import type { TrechoFormData, PartyMemberFormData, SelectOption } from '../../types';
 import {
   getDefaultTrechoFormData,
   validateTrechoForm,
@@ -28,10 +24,7 @@ export interface UseTrechoFormReturn {
   errors: Record<string, string>;
   hasErrors: boolean;
   isFormValid: boolean;
-  updateField: <K extends keyof TrechoFormData>(
-    field: K,
-    value: TrechoFormData[K]
-  ) => void;
+  updateField: <K extends keyof TrechoFormData>(field: K, value: TrechoFormData[K]) => void;
   updatePartyMember: (index: number, member: PartyMemberFormData) => void;
   addPartyMember: () => void;
   removePartyMember: (index: number) => void;
@@ -40,10 +33,7 @@ export interface UseTrechoFormReturn {
   getSubmitData: () => TrechoFormData;
 }
 
-export function useTrechoForm({
-  initialData,
-  classes,
-}: UseTrechoFormOptions): UseTrechoFormReturn {
+export function useTrechoForm({ initialData, classes }: UseTrechoFormOptions): UseTrechoFormReturn {
   // ========================================================================
   // State
   // ========================================================================
@@ -85,45 +75,34 @@ export function useTrechoForm({
   // Party Handlers
   // ========================================================================
 
-  const updatePartyMember = useCallback(
-    (index: number, member: PartyMemberFormData) => {
-      setFormData((prev) => ({
-        ...prev,
-        party: {
-          ...prev.party,
-          members: prev.party.members.map((m, i) =>
-            i === index ? member : m
-          ),
-        },
-      }));
+  const updatePartyMember = useCallback((index: number, member: PartyMemberFormData) => {
+    setFormData((prev) => ({
+      ...prev,
+      party: {
+        ...prev.party,
+        members: prev.party.members.map((m, i) => (i === index ? member : m)),
+      },
+    }));
 
-      // Validate member
-      const classError = validateTrechoField(
-        `party.members.${index}.classId`,
-        member.classId
-      );
-      const levelError = validateTrechoField(
-        `party.members.${index}.level`,
-        member.level
-      );
+    // Validate member
+    const classError = validateTrechoField(`party.members.${index}.classId`, member.classId);
+    const levelError = validateTrechoField(`party.members.${index}.level`, member.level);
 
-      setErrors((prev) => {
-        const newErrors = { ...prev };
-        if (classError) {
-          newErrors[`party.members.${index}.classId`] = classError;
-        } else {
-          delete newErrors[`party.members.${index}.classId`];
-        }
-        if (levelError) {
-          newErrors[`party.members.${index}.level`] = levelError;
-        } else {
-          delete newErrors[`party.members.${index}.level`];
-        }
-        return newErrors;
-      });
-    },
-    []
-  );
+    setErrors((prev) => {
+      const newErrors = { ...prev };
+      if (classError) {
+        newErrors[`party.members.${index}.classId`] = classError;
+      } else {
+        delete newErrors[`party.members.${index}.classId`];
+      }
+      if (levelError) {
+        newErrors[`party.members.${index}.level`] = levelError;
+      } else {
+        delete newErrors[`party.members.${index}.level`];
+      }
+      return newErrors;
+    });
+  }, []);
 
   const addPartyMember = useCallback(() => {
     setFormData((prev) => {
@@ -134,10 +113,7 @@ export function useTrechoForm({
         ...prev,
         party: {
           ...prev.party,
-          members: [
-            ...prev.party.members,
-            { classId: classes[0]?.value ?? 1, level: 1 },
-          ],
+          members: [...prev.party.members, { classId: classes[0]?.value ?? 1, level: 1 }],
         },
       };
     });
@@ -192,9 +168,7 @@ export function useTrechoForm({
 
     if (!validation.isValid) {
       setErrors(
-        Object.fromEntries(
-          Object.entries(validation.errors).map(([k, v]) => [k, v.message])
-        )
+        Object.fromEntries(Object.entries(validation.errors).map(([k, v]) => [k, v.message]))
       );
       return false;
     }

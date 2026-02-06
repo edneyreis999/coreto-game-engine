@@ -14,10 +14,7 @@
  */
 
 // Project Selection Feature
-export {
-  ProjectSelectionPanel,
-  type ProjectSelectionPanelProps,
-} from './project-selection';
+export { ProjectSelectionPanel, type ProjectSelectionPanelProps } from './project-selection';
 
 // Configuration Feature
 export {

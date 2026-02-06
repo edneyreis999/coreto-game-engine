@@ -13,7 +13,7 @@ import type { IPC } from '@electron-toolkit/preload';
 import type {
   ProgressPayload,
   ErrorPayload,
-  SimulationResultPayload
+  SimulationResultPayload,
 } from '@coreto/electron/preload/index.js';
 
 // ============================================================================
@@ -654,9 +654,7 @@ interface CoretoAPI {
    *   console.log('Report:', result.data.report);
    * }
    */
-  loadHistoryReport(
-    simulationId: string
-  ): Promise<IPCResult<{ report: SimulationReport | null }>>;
+  loadHistoryReport(simulationId: string): Promise<IPCResult<{ report: SimulationReport | null }>>;
 
   /**
    * Exports a simulation report to file.
@@ -688,9 +686,7 @@ interface CoretoAPI {
    *   console.log('Deleted:', result.data.deletedId);
    * }
    */
-  deleteHistoryEntry(
-    simulationId: string
-  ): Promise<IPCResult<{ deletedId: string }>>;
+  deleteHistoryEntry(simulationId: string): Promise<IPCResult<{ deletedId: string }>>;
 
   /**
    * Generates a unique simulation ID for a new simulation.
