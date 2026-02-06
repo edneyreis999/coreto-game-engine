@@ -13,10 +13,7 @@
 
 import type Database from 'better-sqlite3';
 import { CURRENT_SCHEMA_VERSION } from './schema.js';
-import {
-  SIMULATION_HISTORY_V2_TABLE_SQL,
-  SIMULATION_HISTORY_V2_INDEXES_SQL,
-} from './schema.js';
+import { SIMULATION_HISTORY_V2_TABLE_SQL, SIMULATION_HISTORY_V2_INDEXES_SQL } from './schema.js';
 
 /**
  * Migration definition.
@@ -175,9 +172,10 @@ export function applyMigrations(db: Database.Database): number {
 
       // Record migration
       const timestamp = Date.now();
-      db.prepare(
-        'INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?)'
-      ).run(migration.version, timestamp);
+      db.prepare('INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?)').run(
+        migration.version,
+        timestamp
+      );
     });
 
     try {

@@ -5,10 +5,7 @@
  * Uses the existing better-sqlite3 database and query functions.
  */
 
-import type {
-  IRecentProjectsRepository,
-  RecentProject,
-} from '../../../domain/repositories';
+import type { IRecentProjectsRepository, RecentProject } from '../../../domain/repositories';
 import { getDatabase } from '../index';
 import { listRecentProjects, addRecentProject } from '../queries/recent-projects';
 

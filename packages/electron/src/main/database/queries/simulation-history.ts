@@ -167,10 +167,7 @@ export function listSimulationHistoryByTrecho(
  * @param olderThanDays - Delete records older than this many days
  * @returns Number of records deleted
  */
-export function deleteOldSimulationHistory(
-  db: Database.Database,
-  olderThanDays: number
-): number {
+export function deleteOldSimulationHistory(db: Database.Database, olderThanDays: number): number {
   const cutoffTime = Date.now() - olderThanDays * 24 * 60 * 60 * 1000;
 
   const stmt = db.prepare('DELETE FROM simulation_history WHERE executed_at < ?');

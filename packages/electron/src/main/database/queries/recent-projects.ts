@@ -25,11 +25,7 @@ export type RecentProject = Pick<RecentProjectDb, 'path' | 'name' | 'last_opened
  * @param name - Project name
  * @returns The added or updated recent project
  */
-export function addRecentProject(
-  db: Database.Database,
-  path: string,
-  name: string
-): RecentProject {
+export function addRecentProject(db: Database.Database, path: string, name: string): RecentProject {
   const now = Date.now();
 
   // First, try to get existing record
@@ -58,10 +54,7 @@ export function addRecentProject(
  * @param limit - Maximum number of projects to return (default: 10)
  * @returns Array of recent projects
  */
-export function listRecentProjects(
-  db: Database.Database,
-  limit: number = 10
-): RecentProject[] {
+export function listRecentProjects(db: Database.Database, limit: number = 10): RecentProject[] {
   const stmt = db.prepare(`
     SELECT path, name, last_opened_at
     FROM recent_projects
@@ -70,7 +63,9 @@ export function listRecentProjects(
   `);
 
   const rows = stmt.all(limit) as unknown[];
-  return rows.map((row) => RecentProjectDbSchema.pick({ path: true, name: true, last_opened_at: true }).parse(row));
+  return rows.map((row) =>
+    RecentProjectDbSchema.pick({ path: true, name: true, last_opened_at: true }).parse(row)
+  );
 }
 
 /**

@@ -106,12 +106,14 @@ export function setUserPreferences(
   const transaction = db.transaction(() => {
     db.prepare('DELETE FROM user_preferences').run();
 
-    db.prepare(`
+    db.prepare(
+      `
       INSERT INTO user_preferences (
         theme, window_bounds_x, window_bounds_y, window_bounds_width,
         window_bounds_height, last_project_path, updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(
+    `
+    ).run(
       theme,
       window_bounds_x,
       window_bounds_y,
@@ -241,12 +243,14 @@ export function getWindowBounds(db: Database.Database): WindowBounds | undefined
     FROM user_preferences
     LIMIT 1
   `);
-  const row = stmt.get() as {
-    window_bounds_x: number | null;
-    window_bounds_y: number | null;
-    window_bounds_width: number | null;
-    window_bounds_height: number | null;
-  } | undefined;
+  const row = stmt.get() as
+    | {
+        window_bounds_x: number | null;
+        window_bounds_y: number | null;
+        window_bounds_width: number | null;
+        window_bounds_height: number | null;
+      }
+    | undefined;
 
   if (!row) {
     return undefined;
@@ -279,9 +283,11 @@ export function getWindowBounds(db: Database.Database): WindowBounds | undefined
 export function setWindowBounds(db: Database.Database, bounds: WindowBounds): void {
   const now = Date.now();
 
-  db.prepare(`
+  db.prepare(
+    `
     UPDATE user_preferences
     SET window_bounds_x = ?, window_bounds_y = ?,
         window_bounds_width = ?, window_bounds_height = ?, updated_at = ?
-  `).run(bounds.x ?? null, bounds.y ?? null, bounds.width ?? null, bounds.height ?? null, now);
+  `
+  ).run(bounds.x ?? null, bounds.y ?? null, bounds.width ?? null, bounds.height ?? null, now);
 }

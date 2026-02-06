@@ -182,7 +182,9 @@ export async function backupDatabase(backupPath: string): Promise<void> {
   try {
     await db.backup(backupPath);
   } catch (error) {
-    throw new Error(`Database backup failed: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Database backup failed: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
