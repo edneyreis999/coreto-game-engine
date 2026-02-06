@@ -28,32 +28,18 @@ describe('PathSanitizer', () => {
 
   describe('sanitize', () => {
     describe('path traversal protection', () => {
-      it('should reject paths with ".." (single level)', () => {
+      test.each([
+        ['../etc/passwd', 'single level traversal'],
+        ['foo/../bar/../../../secret', 'multiple level traversal'],
+        ['foo/../bar/baz', 'middle traversal'],
+        ['/tmp/foo/../../../etc/passwd', 'absolute path with traversal'],
+      ])('should reject path with ".." (%s)', (inputPath, _description) => {
         expect(() => {
-          PathSanitizer.sanitize('../etc/passwd');
+          PathSanitizer.sanitize(inputPath);
         }).toThrow(ValidationError);
-
         expect(() => {
-          PathSanitizer.sanitize('../etc/passwd');
+          PathSanitizer.sanitize(inputPath);
         }).toThrow('Path traversal detected');
-      });
-
-      it('should reject paths with ".." (multiple levels)', () => {
-        expect(() => {
-          PathSanitizer.sanitize('foo/../bar/../../../secret');
-        }).toThrow(ValidationError);
-      });
-
-      it('should reject paths with ".." in middle', () => {
-        expect(() => {
-          PathSanitizer.sanitize('foo/../bar/baz');
-        }).toThrow(ValidationError);
-      });
-
-      it('should reject absolute paths with ".."', () => {
-        expect(() => {
-          PathSanitizer.sanitize('/tmp/foo/../../../etc/passwd');
-        }).toThrow(ValidationError);
       });
     });
 

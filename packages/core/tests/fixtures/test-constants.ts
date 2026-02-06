@@ -84,3 +84,43 @@ export const TEST_TROOP_NAMES = {
   TROOP_2: 'Troop 2',
   TROOP_3: 'Troop 3',
 } as const;
+
+/**
+ * Constantes de áudio para testes
+ */
+export const TEST_AUDIO = {
+  /**
+   * Sample rate de CD quality (44.1 kHz)
+   * Padrão de áudio digital de alta qualidade
+   */
+  SAMPLE_RATE_CD: 44100,
+} as const;
+
+/**
+ * Constantes de habilidades para testes
+ */
+export const TEST_SKILL = {
+  /**
+   * Taxa de sucesso garantida (100%)
+   */
+  GUARANTEED_SUCCESS_RATE: 100,
+} as const;
+
+/**
+ * Constantes de stats de inimigos para testes
+ */
+export const TEST_ENEMY_STATS = {
+  /**
+   * Stats padrão de um inimigo básico (Goblin)
+   * [HP, MP, ATK, DEF, MAT, MDF, AGI, LUK]
+   */
+  BASIC_GOBLIN: [50, 0, 10, 5, 3, 3, 4, 4],
+  /**
+   * Stats de um inimigo com HP maior
+   */
+  HIGH_HP: [100, 0, 10, 5, 3, 3, 4, 4],
+  /**
+   * Stats com MP mas sem ataque mágico
+   */
+  WITH_MP_ONLY: [50, 20, 10, 5, 0, 0, 4, 4],
+} as const;

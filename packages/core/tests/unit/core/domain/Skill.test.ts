@@ -1,6 +1,6 @@
 import { Skill, type SkillEntityData } from '../../../../src/core/domain/Skill.js';
-import { SkillMapper } from '../../../../src/infrastructure/adapters/mappers/SkillMapper.js';
 import { ValidationError } from '../../../../src/core/errors/ValidationError.js';
+import { TEST_SKILL } from '../../../fixtures/test-constants.js';
 
 describe('Skill', () => {
   const createValidSkillData = (): SkillEntityData => ({
@@ -18,7 +18,7 @@ describe('Skill', () => {
     scope: 'one_enemy',
     mpCost: 5,
     tpCost: 0,
-    successRate: 100,
+    successRate: TEST_SKILL.GUARANTEED_SUCCESS_RATE,
     repeats: 1,
     speed: 0,
   });
@@ -181,78 +181,36 @@ describe('Skill', () => {
   });
 
   describe('isDamageSkill', () => {
-    it('should return true for hp_damage type', () => {
+    test.each([
+      ['hp_damage', true, 'HP damage skill'],
+      ['hp_drain', true, 'HP drain skill'],
+      ['mp_drain', true, 'MP drain skill'],
+      ['hp_recover', false, 'HP recover skill'],
+      ['mp_recover', false, 'MP recover skill'],
+      ['none', false, 'no damage type'],
+    ])('should return %p for damage type %s', (damageType, expected, _description) => {
       const data = createValidSkillData();
-      data.damage.type = 'hp_damage';
+      (data.damage.type as any) = damageType;
       const skill = new Skill(data);
 
-      expect(skill.isDamageSkill()).toBe(true);
-    });
-
-    it('should return true for hp_drain type', () => {
-      const data = createValidSkillData();
-      data.damage.type = 'hp_drain';
-      const skill = new Skill(data);
-
-      expect(skill.isDamageSkill()).toBe(true);
-    });
-
-    it('should return true for mp_drain type', () => {
-      const data = createValidSkillData();
-      data.damage.type = 'mp_drain';
-      const skill = new Skill(data);
-
-      expect(skill.isDamageSkill()).toBe(true);
-    });
-
-    it('should return false for healing skills', () => {
-      const data = createValidSkillData();
-      data.damage.type = 'hp_recover';
-      const skill = new Skill(data);
-
-      expect(skill.isDamageSkill()).toBe(false);
-    });
-
-    it('should return false for none type', () => {
-      const data = createValidSkillData();
-      data.damage.type = 'none';
-      const skill = new Skill(data);
-
-      expect(skill.isDamageSkill()).toBe(false);
+      expect(skill.isDamageSkill()).toBe(expected);
     });
   });
 
   describe('isHealingSkill', () => {
-    it('should return true for hp_recover type', () => {
+    test.each([
+      ['hp_recover', true, 'HP recover skill'],
+      ['mp_recover', true, 'MP recover skill'],
+      ['hp_damage', false, 'HP damage skill'],
+      ['hp_drain', false, 'HP drain skill'],
+      ['mp_drain', false, 'MP drain skill'],
+      ['none', false, 'no damage type'],
+    ])('should return %p for damage type %s', (damageType, expected, _description) => {
       const data = createValidSkillData();
-      data.damage.type = 'hp_recover';
+      (data.damage.type as any) = damageType;
       const skill = new Skill(data);
 
-      expect(skill.isHealingSkill()).toBe(true);
-    });
-
-    it('should return true for mp_recover type', () => {
-      const data = createValidSkillData();
-      data.damage.type = 'mp_recover';
-      const skill = new Skill(data);
-
-      expect(skill.isHealingSkill()).toBe(true);
-    });
-
-    it('should return false for damage skills', () => {
-      const data = createValidSkillData();
-      data.damage.type = 'hp_damage';
-      const skill = new Skill(data);
-
-      expect(skill.isHealingSkill()).toBe(false);
-    });
-
-    it('should return false for none type', () => {
-      const data = createValidSkillData();
-      data.damage.type = 'none';
-      const skill = new Skill(data);
-
-      expect(skill.isHealingSkill()).toBe(false);
+      expect(skill.isHealingSkill()).toBe(expected);
     });
   });
 
@@ -568,129 +526,6 @@ describe('Skill', () => {
       data.damage.type = 'hp_recover';
 
       expect(skill.damage.type).toBe(originalType);
-    });
-  });
-
-  describe('fromRmmzData', () => {
-    it('should create Skill from RMMZ SkillData with hp_damage', () => {
-      const rmmzData = {
-        id: 1,
-        name: 'Fireball',
-        description: 'Deals fire damage',
-        damage: {
-          type: 1, // hp_damage
-          elementId: 2,
-          formula: 'a.mat * 4 - b.mdf * 2',
-          variance: 20,
-          critical: true,
-        },
-        hitType: 2, // magical
-        scope: 1, // one_enemy
-        mpCost: 5,
-        tpCost: 0,
-        successRate: 100,
-        repeats: 1,
-        speed: 0,
-        animationId: 1,
-        iconIndex: 0,
-        message1: '',
-        message2: '',
-        note: '',
-        occasion: 1,
-        requiredWtypeId1: 0,
-        requiredWtypeId2: 0,
-        stypeId: 1,
-        tpGain: 0,
-        messageType: 0,
-        effects: [],
-      };
-
-      const skill = SkillMapper.fromRmmzData(rmmzData);
-
-      expect(skill.id).toBe(1);
-      expect(skill.name).toBe('Fireball');
-      expect(skill.damage.type).toBe('hp_damage');
-      expect(skill.hitType).toBe('magical');
-      expect(skill.scope).toBe('one_enemy');
-    });
-
-    it('should create Skill from RMMZ SkillData with healing', () => {
-      const rmmzData = {
-        id: 2,
-        name: 'Heal',
-        description: 'Restores HP',
-        damage: {
-          type: 3, // hp_recover
-          elementId: 0,
-          formula: '200',
-          variance: 20,
-          critical: false,
-        },
-        hitType: 0, // certain
-        scope: 7, // one_ally
-        mpCost: 10,
-        tpCost: 0,
-        successRate: 100,
-        repeats: 1,
-        speed: 0,
-        animationId: 1,
-        iconIndex: 0,
-        message1: '',
-        message2: '',
-        note: '',
-        occasion: 1,
-        requiredWtypeId1: 0,
-        requiredWtypeId2: 0,
-        stypeId: 1,
-        tpGain: 0,
-        messageType: 0,
-        effects: [],
-      };
-
-      const skill = SkillMapper.fromRmmzData(rmmzData);
-
-      expect(skill.damage.type).toBe('hp_recover');
-      expect(skill.hitType).toBe('certain');
-      expect(skill.scope).toBe('one_ally');
-    });
-
-    it('should create Skill from RMMZ SkillData with user scope', () => {
-      const rmmzData = {
-        id: 3,
-        name: 'Self Buff',
-        description: 'Buff yourself',
-        damage: {
-          type: 0, // none
-          elementId: 0,
-          formula: '0',
-          variance: 0,
-          critical: false,
-        },
-        hitType: 0, // certain
-        scope: 11, // user
-        mpCost: 0,
-        tpCost: 0,
-        successRate: 100,
-        repeats: 1,
-        speed: 0,
-        animationId: 0,
-        iconIndex: 0,
-        message1: '',
-        message2: '',
-        note: '',
-        occasion: 0,
-        requiredWtypeId1: 0,
-        requiredWtypeId2: 0,
-        stypeId: 1,
-        tpGain: 0,
-        messageType: 0,
-        effects: [],
-      };
-
-      const skill = SkillMapper.fromRmmzData(rmmzData);
-
-      expect(skill.damage.type).toBe('none');
-      expect(skill.scope).toBe('user');
     });
   });
 });

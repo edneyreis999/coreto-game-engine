@@ -7,6 +7,7 @@
 
 // Import shim to trigger global injection
 import '@coreto/core/infrastructure/runtime/shims/audio_shim.js';
+import { TEST_AUDIO } from '../../../../fixtures/test-constants.js';
 
 describe('Audio Shim', () => {
   let AudioContext: any;
@@ -40,7 +41,7 @@ describe('Audio Shim', () => {
 
     test('should have sampleRate property', () => {
       const ctx = new AudioContext();
-      expect(ctx.sampleRate).toBe(44100);
+      expect(ctx.sampleRate).toBe(TEST_AUDIO.SAMPLE_RATE_CD);
     });
 
     test('should have state property', () => {
@@ -202,7 +203,7 @@ describe('Audio Shim', () => {
       expect(callbackFired).toBe(true);
       expect(decodedBuffer).toBeDefined();
       expect(decodedBuffer.duration).toBe(1);
-      expect(decodedBuffer.sampleRate).toBe(44100);
+      expect(decodedBuffer.sampleRate).toBe(TEST_AUDIO.SAMPLE_RATE_CD);
     });
 
     test('should handle missing success callback', () => {
