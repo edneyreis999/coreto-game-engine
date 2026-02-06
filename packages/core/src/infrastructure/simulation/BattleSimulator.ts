@@ -9,11 +9,32 @@ import { SyncWarpLoop } from '../runtime/simulation/SyncWarpLoop.js';
 import { HeadlessRuntimeBootstrapper } from '../runtime/HeadlessRuntimeBootstrapper.js';
 import seedrandom from 'seedrandom';
 
+/// <reference path="../../types/rmmz-runtime.d.ts" />
+
 /**
- * Type assertion for accessing global RMMZ objects
+ * Type alias for RNG function returned by seedrandom
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const globalScope = global as any;
+type RandomFunction = {
+  (): number;
+};
+
+/**
+ * Access global RMMZ objects with proper typing
+ */
+const globalScope = global as typeof globalThis & {
+  $gameParty: RMMZ.Game_Party;
+  $gameTroop: RMMZ.Game_Troop;
+  $gameActors: RMMZ.Game_Actors;
+  BattleManager: RMMZ.BattleManager;
+  DataManager: RMMZ.DataManager;
+  SceneManager: RMMZ.SceneManager;
+  Graphics: RMMZ.Graphics;
+  AudioManager: RMMZ.AudioManager;
+  ImageManager: RMMZ.ImageManager;
+  EffectManager: RMMZ.EffectManager;
+  $dataTroops: RMMZ.DataTroop[];
+  $dataEnemies: RMMZ.DataEnemy[];
+};
 
 /**
  * Maximum frames allowed for a battle before timeout.
@@ -216,12 +237,14 @@ export class HeadlessBattleSimulator implements IBattleSimulator {
    */
   private seedRandom(seed: number): void {
     // Create deterministic RNG using seedrandom library
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const rng = seedrandom(seed.toString()) as any;
+    const rng = seedrandom(seed.toString()) as RandomFunction;
 
     // Override Math.random with deterministic version
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (Math as any).random = () => rng();
+    const originalMathRandom = Math.random;
+    Math.random = () => rng();
+
+    // Store original for cleanup if needed
+    (global as typeof globalThis & { _originalMathRandom?: typeof originalMathRandom })._originalMathRandom = originalMathRandom;
 
     console.log(`[BattleSimulator] Seeded RNG with seed: ${seed}`);
   }
@@ -236,8 +259,7 @@ export class HeadlessBattleSimulator implements IBattleSimulator {
    * @throws {ValidationError} If party setup fails
    * @private
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private setupParty(party: any): void {
+  private setupParty(party: { members: ReadonlyArray<{ classId: number; level: number }> }): void {
     const gameParty = globalScope.$gameParty;
 
     if (!gameParty) {
@@ -245,7 +267,8 @@ export class HeadlessBattleSimulator implements IBattleSimulator {
     }
 
     // Log available methods for debugging
-    console.log('[BattleSimulator] $gameParty methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(gameParty)).filter(m => typeof gameParty[m] === 'function'));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    console.log('[BattleSimulator] $gameParty methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(gameParty)).filter((m: string) => typeof (gameParty as any)[m] === 'function'));
 
     // Clear existing party members
     // RMMZ uses different method names depending on version
@@ -256,7 +279,10 @@ export class HeadlessBattleSimulator implements IBattleSimulator {
     } else {
       // Manual clear: remove all members
       while (gameParty.members().length > 0) {
-        gameParty.removeActor(gameParty.members()[0].actorId());
+        const firstMember = gameParty.members()[0];
+        if (firstMember) {
+          gameParty.removeActor?.(firstMember.actorId());
+        }
       }
     }
 
@@ -273,10 +299,12 @@ export class HeadlessBattleSimulator implements IBattleSimulator {
       }
 
       // Set level
-      actor.changeLevel(member.level, false); // false = don't show level up messages
+      if (actor.changeLevel) {
+        actor.changeLevel(member.level, false); // false = don't show level up messages
+      }
 
       // Add to party
-      gameParty.addActor(actorId);
+      gameParty.addActor?.(actorId);
     }
 
     // CA-003: Validate party member count
@@ -311,7 +339,7 @@ export class HeadlessBattleSimulator implements IBattleSimulator {
 
     // Get or create actor with this ID
     const actor = gameActors.actor(actorId);
-    if (actor) {
+    if (actor && actor.changeClass) {
       actor.changeClass(classId, false);
     }
 
@@ -402,10 +430,8 @@ export class HeadlessBattleSimulator implements IBattleSimulator {
    * @private
    */
   private determineBattleOutcome(): 'victory' | 'defeat' | 'timeout' {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const $gameTroop = (global as any).$gameTroop;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const $gameParty = (global as any).$gameParty;
+    const $gameTroop = globalScope.$gameTroop;
+    const $gameParty = globalScope.$gameParty;
 
     // Victory: all enemies dead
     if ($gameTroop && $gameTroop.isAllDead && $gameTroop.isAllDead()) {

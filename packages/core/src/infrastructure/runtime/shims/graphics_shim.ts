@@ -11,22 +11,26 @@
  * - createEffekseerContext(): Stub for Effekseer particle system
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// This file intentionally uses 'any' types to mock external Graphics API
+/// <reference path="../../../types/rmmz-runtime.d.ts" />
 
+/**
+ * Graphics Shim interface
+ */
 interface GraphicsShim {
   frameCount: number;
   width: number;
   height: number;
   boxWidth: number;
   boxHeight: number;
-  _renderer: any;
-  _app: any;
+  _renderer: unknown;
+  _app: unknown;
   initialize(width?: number, height?: number): void;
   render(): void;
   update(): void;
   createEffekseerContext(): void;
   playEffect(): void;
+  startLoading(): void;
+  endLoading(): void;
 }
 
 const Graphics: GraphicsShim = {
@@ -42,7 +46,7 @@ const Graphics: GraphicsShim = {
    * Initializes Graphics subsystem.
    * In headless mode, this is a no-op.
    */
-  initialize(width: number = 816, height: number = 624): void {
+  initialize(width = 816, height = 624): void {
     this.width = width;
     this.height = height;
     this.boxWidth = width;
@@ -82,9 +86,18 @@ const Graphics: GraphicsShim = {
   playEffect(): void {
     // Stub: no visual effects in headless
   },
+
+  startLoading(): void {
+    // No-op: no loading in headless mode
+  },
+
+  endLoading(): void {
+    // No-op: no loading in headless mode
+  },
 };
 
 // Inject into global scope
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (global as any).Graphics = Graphics;
 
 export { Graphics };

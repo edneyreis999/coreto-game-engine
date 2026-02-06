@@ -24,8 +24,13 @@
  * Task 22.5: Headless Overrides
  */
 
+/// <reference path="../../../types/rmmz-runtime.d.ts" />
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// This file intentionally uses 'any' types to override RPG Maker MZ runtime APIs
+// This file intentionally uses 'any' types to override RPG Maker MZ runtime APIs.
+// These overrides are applied AFTER the core scripts are loaded, so we must match
+// their dynamic property shapes. The RMMZ types above provide documentation
+// but runtime access is intentionally flexible to handle version differences.
 export class HeadlessOverrides {
   /**
    * Aplica todos os overrides: busy state + input neutralization.
