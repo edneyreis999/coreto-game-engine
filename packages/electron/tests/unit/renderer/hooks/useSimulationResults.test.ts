@@ -7,7 +7,7 @@
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { useSimulationResults } from '@/hooks/useSimulationResults'
 import type { ReportData } from '@coreto/electron/main/ipc/types.js'
-import { createMinimalCoretoMock } from '@/tests/helpers/factories'
+import { createMinimalCoretoMock } from '@/tests/helpers/mocks/coreto-mock.factory'
 
 const mockReportData: ReportData = {
   trechos: [
@@ -33,10 +33,11 @@ describe('useSimulationResults', () => {
   describe('initial state', () => {
     it('should start with loading state', () => {
       const mockCoreto = createMinimalCoretoMock({
-        getSimulationResults: jest.fn().mockResolvedValue({
+        simulation: { getResults: jest.fn().mockResolvedValue({
           success: true,
           data: mockReportData,
         }),
+        },
       })
 
       Object.defineProperty(window, 'coreto', {
@@ -54,10 +55,11 @@ describe('useSimulationResults', () => {
 
     it('should have refresh function available', () => {
       const mockCoreto = createMinimalCoretoMock({
-        getSimulationResults: jest.fn().mockResolvedValue({
+        simulation: { getResults: jest.fn().mockResolvedValue({
           success: true,
           data: mockReportData,
         }),
+        },
       })
 
       Object.defineProperty(window, 'coreto', {
@@ -74,10 +76,11 @@ describe('useSimulationResults', () => {
   describe('fetching results', () => {
     it('should fetch results on mount', async () => {
       const mockCoreto = createMinimalCoretoMock({
-        getSimulationResults: jest.fn().mockResolvedValue({
+        simulation: { getResults: jest.fn().mockResolvedValue({
           success: true,
           data: mockReportData,
         }),
+        },
       })
 
       Object.defineProperty(window, 'coreto', {
@@ -91,15 +94,16 @@ describe('useSimulationResults', () => {
         expect(result.current.isLoading).toBe(false)
       })
 
-      expect(mockCoreto.getSimulationResults).toHaveBeenCalledTimes(1)
+      expect(mockCoreto.simulation.getResults).toHaveBeenCalledTimes(1)
     })
 
     it('should return report data when IPC call succeeds', async () => {
       const mockCoreto = createMinimalCoretoMock({
-        getSimulationResults: jest.fn().mockResolvedValue({
+        simulation: { getResults: jest.fn().mockResolvedValue({
           success: true,
           data: mockReportData,
         }),
+        },
       })
 
       Object.defineProperty(window, 'coreto', {
@@ -143,9 +147,9 @@ describe('useSimulationResults', () => {
         const mockCoreto = createMinimalCoretoMock()
 
         if (mockError instanceof Error) {
-          mockCoreto.getSimulationResults.mockRejectedValue(mockError)
+          mockCoreto.simulation.getResults.mockRejectedValue(mockError)
         } else {
-          mockCoreto.getSimulationResults.mockResolvedValue(mockError)
+          mockCoreto.simulation.getResults.mockResolvedValue(mockError)
         }
 
         Object.defineProperty(window, 'coreto', {
@@ -170,10 +174,11 @@ describe('useSimulationResults', () => {
   describe('manual refresh', () => {
     it('should refetch results when refresh is called', async () => {
       const mockCoreto = createMinimalCoretoMock({
-        getSimulationResults: jest.fn().mockResolvedValue({
+        simulation: { getResults: jest.fn().mockResolvedValue({
           success: true,
           data: mockReportData,
         }),
+        },
       })
 
       Object.defineProperty(window, 'coreto', {
@@ -188,7 +193,7 @@ describe('useSimulationResults', () => {
         expect(result.current.isLoading).toBe(false)
       })
 
-      const initialCallCount = mockCoreto.getSimulationResults.mock.calls.length
+      const initialCallCount = mockCoreto.simulation.getResults.mock.calls.length
 
       // Call refresh
       await act(async () => {
@@ -199,15 +204,16 @@ describe('useSimulationResults', () => {
         expect(result.current.isLoading).toBe(false)
       })
 
-      expect(mockCoreto.getSimulationResults).toHaveBeenCalledTimes(initialCallCount + 1)
+      expect(mockCoreto.simulation.getResults).toHaveBeenCalledTimes(initialCallCount + 1)
     })
 
     it('should update report data after refresh', async () => {
       const mockCoreto = createMinimalCoretoMock({
-        getSimulationResults: jest.fn().mockResolvedValue({
+        simulation: { getResults: jest.fn().mockResolvedValue({
           success: true,
           data: mockReportData,
         }),
+        },
       })
 
       Object.defineProperty(window, 'coreto', {
@@ -244,7 +250,7 @@ describe('useSimulationResults', () => {
         totalBattles: 8,
       }
 
-      mockCoreto.getSimulationResults.mockResolvedValue({
+      mockCoreto.simulation.getResults.mockResolvedValue({
         success: true,
         data: updatedReport,
       })
@@ -268,7 +274,7 @@ describe('useSimulationResults', () => {
       const mockCoreto = createMinimalCoretoMock()
 
       // Initial call fails
-      mockCoreto.getSimulationResults.mockResolvedValueOnce({
+      mockCoreto.simulation.getResults.mockResolvedValueOnce({
         success: false,
         error: {
           name: 'IPCError',
@@ -294,7 +300,7 @@ describe('useSimulationResults', () => {
       expect(result.current.error).not.toBe(null)
 
       // Setup successful response for refresh
-      mockCoreto.getSimulationResults.mockResolvedValueOnce({
+      mockCoreto.simulation.getResults.mockResolvedValueOnce({
         success: true,
         data: mockReportData,
       })
@@ -320,7 +326,7 @@ describe('useSimulationResults', () => {
         'false when report is null',
         () => {
           const mockCoreto = createMinimalCoretoMock()
-          mockCoreto.getSimulationResults.mockResolvedValueOnce({
+          mockCoreto.simulation.getResults.mockResolvedValueOnce({
             success: false,
             error: {
               name: 'IPCError',
@@ -338,10 +344,12 @@ describe('useSimulationResults', () => {
         'true when report exists',
         () => {
           return createMinimalCoretoMock({
-            getSimulationResults: jest.fn().mockResolvedValue({
-              success: true,
-              data: mockReportData,
-            }),
+            simulation: {
+              getResults: jest.fn().mockResolvedValue({
+                success: true,
+                data: mockReportData,
+              }),
+            },
           })
         },
         true,

@@ -49,11 +49,12 @@ describe('useRecentProjects', () => {
     jest.clearAllMocks()
 
     // Create fresh mock for each test using factory
-    mockCoreto = createMinimalCoretoMock({
-      listRecent: jest.fn().mockResolvedValue({
-        success: true,
-        data: mockRecentProjects,
-      }),
+    mockCoreto = createMinimalCoretoMock();
+
+    // Override recent.list with test data
+    mockCoreto.recent.list = jest.fn().mockResolvedValue({
+      success: true,
+      data: mockRecentProjects,
     });
 
     // Setup global window mock
@@ -69,7 +70,7 @@ describe('useRecentProjects', () => {
       ['idle state when autoFetch is false', false, false],
     ])('should return initial %s', (_name, autoFetch, expectedLoading) => {
       if (autoFetch) {
-        mockCoreto.listRecent.mockResolvedValue({
+        mockCoreto.recent.list.mockResolvedValue({
           success: true,
           data: mockRecentProjects,
         })
@@ -85,7 +86,7 @@ describe('useRecentProjects', () => {
 
   describe('auto-fetch on mount', () => {
     it('should fetch recent projects on mount when autoFetch is true', async () => {
-      mockCoreto.listRecent.mockResolvedValue({
+      mockCoreto.recent.list.mockResolvedValue({
         success: true,
         data: mockRecentProjects,
       })
@@ -97,11 +98,11 @@ describe('useRecentProjects', () => {
       })
 
       expect(result.current.recentProjects).toEqual(mockRecentProjects)
-      expect(mockCoreto.listRecent).toHaveBeenCalledWith(DEFAULT_LIMIT)
+      expect(mockCoreto.recent.list).toHaveBeenCalledWith(DEFAULT_LIMIT)
     })
 
     it('should handle empty recent projects list', async () => {
-      mockCoreto.listRecent.mockResolvedValue({
+      mockCoreto.recent.list.mockResolvedValue({
         success: true,
         data: [],
       })
@@ -138,9 +139,9 @@ describe('useRecentProjects', () => {
         ],
       ] as const)('should handle %s', async (_name, mockError, expectedMessage) => {
         if (mockError instanceof Error) {
-          mockCoreto.listRecent.mockRejectedValue(mockError)
+          mockCoreto.recent.list.mockRejectedValue(mockError)
         } else {
-          mockCoreto.listRecent.mockResolvedValue(mockError)
+          mockCoreto.recent.list.mockResolvedValue(mockError)
         }
 
         const { result } = renderHook(() => useRecentProjects(DEFAULT_LIMIT, true))
@@ -158,7 +159,7 @@ describe('useRecentProjects', () => {
 
   describe('addRecent', () => {
     it('should add a project to recent projects', async () => {
-      mockCoreto.addRecent.mockResolvedValue({
+      mockCoreto.recent.add.mockResolvedValue({
         success: true,
         data: {
           path: '/path/to/new-project',
@@ -168,7 +169,7 @@ describe('useRecentProjects', () => {
       })
 
       // Mock listRecent to return updated list
-      mockCoreto.listRecent.mockResolvedValue({
+      mockCoreto.recent.list.mockResolvedValue({
         success: true,
         data: [
           ...mockRecentProjects,
@@ -186,12 +187,12 @@ describe('useRecentProjects', () => {
         await result.current.addRecent('/path/to/new-project', 'New Project')
       })
 
-      expect(mockCoreto.addRecent).toHaveBeenCalledWith('/path/to/new-project', 'New Project')
-      expect(mockCoreto.listRecent).toHaveBeenCalled()
+      expect(mockCoreto.recent.add).toHaveBeenCalledWith('/path/to/new-project', 'New Project')
+      expect(mockCoreto.recent.list).toHaveBeenCalled()
     })
 
     it('should handle errors when adding recent project', async () => {
-      mockCoreto.addRecent.mockResolvedValue({
+      mockCoreto.recent.add.mockResolvedValue({
         success: false,
         error: {
           name: 'IPCError',
@@ -215,7 +216,7 @@ describe('useRecentProjects', () => {
 
   describe('refresh', () => {
     it('should refresh the recent projects list', async () => {
-      mockCoreto.listRecent.mockResolvedValue({
+      mockCoreto.recent.list.mockResolvedValue({
         success: true,
         data: mockRecentProjects,
       })
@@ -227,13 +228,13 @@ describe('useRecentProjects', () => {
       })
 
       expect(result.current.recentProjects).toEqual(mockRecentProjects)
-      expect(mockCoreto.listRecent).toHaveBeenCalledWith(DEFAULT_LIMIT)
+      expect(mockCoreto.recent.list).toHaveBeenCalledWith(DEFAULT_LIMIT)
     })
   })
 
   describe('reset', () => {
     it('should reset state to initial values', async () => {
-      mockCoreto.listRecent.mockResolvedValue({
+      mockCoreto.recent.list.mockResolvedValue({
         success: true,
         data: mockRecentProjects,
       })

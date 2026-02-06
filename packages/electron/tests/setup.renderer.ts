@@ -32,31 +32,66 @@ Object.defineProperty(global.window, 'electron', {
   configurable: true,
 })
 
-// Mock window.coreto API
+// Mock window.coreto API with segregated structure (matches Task #8 refactoring)
 const mockCoretoAPI = {
-  openProject: jest.fn(),
-  validateProject: jest.fn(),
-  runSimulation: jest.fn(),
-  startSimulation: jest.fn(),
-  getSimulationProgress: jest.fn(),
-  cancelSimulation: jest.fn(),
-  getSimulationResults: jest.fn(),
-  loadConfig: jest.fn(),
-  getTrechos: jest.fn(),
-  updateTrecho: jest.fn(),
-  deleteTrecho: jest.fn(),
-  getTroops: jest.fn(),
-  getClasses: jest.fn(),
-  getEnemies: jest.fn(),
-  listRecent: jest.fn(),
-  addRecent: jest.fn(),
-  getPreferences: jest.fn(),
-  setPreferences: jest.fn(),
-  updateGlobalSettings: jest.fn(),
-  // Event listener functions - return cleanup function
-  onProgress: jest.fn(() => jest.fn()),
-  onComplete: jest.fn(() => jest.fn()),
-  onError: jest.fn(() => jest.fn()),
+  // Project API
+  project: {
+    open: jest.fn(),
+    validate: jest.fn(),
+  },
+
+  // Simulation API
+  simulation: {
+    // Event listener functions - return cleanup function
+    onProgress: jest.fn(() => jest.fn()),
+    onComplete: jest.fn(() => jest.fn()),
+    onError: jest.fn(() => jest.fn()),
+
+    // Commands
+    start: jest.fn(),
+    cancel: jest.fn(),
+    getResults: jest.fn(),
+    getProgress: jest.fn(),
+    run: jest.fn(), // Legacy
+  },
+
+  // Config API
+  config: {
+    save: jest.fn(),
+    load: jest.fn(),
+    getTrechos: jest.fn(),
+    updateTrecho: jest.fn(),
+    deleteTrecho: jest.fn(),
+    updateGlobalSettings: jest.fn(),
+  },
+
+  // Data API
+  data: {
+    getTroops: jest.fn(),
+    getClasses: jest.fn(),
+    getEnemies: jest.fn(),
+  },
+
+  // Recent Projects API
+  recent: {
+    list: jest.fn(),
+    add: jest.fn(),
+  },
+
+  // Preferences API
+  preferences: {
+    get: jest.fn(),
+    set: jest.fn(),
+  },
+
+  // History API
+  history: {
+    list: jest.fn(),
+    loadReport: jest.fn(),
+    exportReport: jest.fn(),
+    delete: jest.fn(),
+    generateId: jest.fn(),
+  },
 }
 
 Object.defineProperty(global.window, 'coreto', {

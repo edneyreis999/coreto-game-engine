@@ -27,28 +27,30 @@ import type {
 // Mock window.coreto API with event-based methods
 type CleanupFn = () => void;
 
-// Create the mock object
+// Create the mock object with nested API structure
 const createMockCoreto = () => {
   const mockCoreto: any = {
-    // Event listener methods
-    onProgress: jest.fn((callback: (payload: any) => void): CleanupFn => {
-      // Store callback for test to trigger
-      mockCoreto._progressCallback = callback;
-      return jest.fn();
-    }),
-    onComplete: jest.fn((callback: (payload: any) => void): CleanupFn => {
-      mockCoreto._completeCallback = callback;
-      return jest.fn();
-    }),
-    onError: jest.fn((callback: (payload: any) => void): CleanupFn => {
-      mockCoreto._errorCallback = callback;
-      return jest.fn();
-    }),
+    simulation: {
+      // Event listener methods
+      onProgress: jest.fn((callback: (payload: any) => void): CleanupFn => {
+        // Store callback for test to trigger
+        mockCoreto.simulation._progressCallback = callback;
+        return jest.fn();
+      }),
+      onComplete: jest.fn((callback: (payload: any) => void): CleanupFn => {
+        mockCoreto.simulation._completeCallback = callback;
+        return jest.fn();
+      }),
+      onError: jest.fn((callback: (payload: any) => void): CleanupFn => {
+        mockCoreto.simulation._errorCallback = callback;
+        return jest.fn();
+      }),
 
-    // IPC invoke methods
-    startSimulation: jest.fn(),
-    runSimulation: jest.fn(),
-    cancelSimulation: jest.fn(),
+      // IPC invoke methods
+      start: jest.fn(),
+      run: jest.fn(),
+      cancel: jest.fn(),
+    },
   };
 
   return mockCoreto;
@@ -127,9 +129,9 @@ describe('useSimulationProgress (Event Streaming)', () => {
     it('should setup event listeners on mount', () => {
       renderHook(() => useSimulationProgress());
 
-      expect(mockCoretoAPI.onProgress).toHaveBeenCalledTimes(1);
-      expect(mockCoretoAPI.onComplete).toHaveBeenCalledTimes(1);
-      expect(mockCoretoAPI.onError).toHaveBeenCalledTimes(1);
+      expect(mockCoretoAPI.simulation.onProgress).toHaveBeenCalledTimes(1);
+      expect(mockCoretoAPI.simulation.onComplete).toHaveBeenCalledTimes(1);
+      expect(mockCoretoAPI.simulation.onError).toHaveBeenCalledTimes(1);
     });
 
     it('should cleanup listeners on unmount', () => {
@@ -137,9 +139,9 @@ describe('useSimulationProgress (Event Streaming)', () => {
       const cleanupComplete = jest.fn();
       const cleanupError = jest.fn();
 
-      mockCoretoAPI.onProgress.mockReturnValue(cleanupProgress);
-      mockCoretoAPI.onComplete.mockReturnValue(cleanupComplete);
-      mockCoretoAPI.onError.mockReturnValue(cleanupError);
+      mockCoretoAPI.simulation.onProgress.mockReturnValue(cleanupProgress);
+      mockCoretoAPI.simulation.onComplete.mockReturnValue(cleanupComplete);
+      mockCoretoAPI.simulation.onError.mockReturnValue(cleanupError);
 
       const { unmount } = renderHook(() => useSimulationProgress());
       unmount();
@@ -164,7 +166,7 @@ describe('useSimulationProgress (Event Streaming)', () => {
     it('should update progress state on progress event', async () => {
       let progressCallback: (payload: ProgressPayload) => void;
 
-      mockCoretoAPI.onProgress.mockImplementation((callback: (payload: ProgressPayload) => void) => {
+      mockCoretoAPI.simulation.onProgress.mockImplementation((callback: (payload: ProgressPayload) => void) => {
         progressCallback = callback;
         return jest.fn();
       });
@@ -198,7 +200,7 @@ describe('useSimulationProgress (Event Streaming)', () => {
     it('should store detailed progress payload', async () => {
       let progressCallback: (payload: ProgressPayload) => void;
 
-      mockCoretoAPI.onProgress.mockImplementation((callback: (payload: ProgressPayload) => void) => {
+      mockCoretoAPI.simulation.onProgress.mockImplementation((callback: (payload: ProgressPayload) => void) => {
         progressCallback = callback;
         return jest.fn();
       });
@@ -230,7 +232,7 @@ describe('useSimulationProgress (Event Streaming)', () => {
     it('should update state on complete event', async () => {
       let completeCallback: (result: SimulationResultPayload) => void;
 
-      mockCoretoAPI.onComplete.mockImplementation((callback: (payload: SimulationResultPayload) => void) => {
+      mockCoretoAPI.simulation.onComplete.mockImplementation((callback: (payload: SimulationResultPayload) => void) => {
         completeCallback = callback;
         return jest.fn();
       });
@@ -262,12 +264,12 @@ describe('useSimulationProgress (Event Streaming)', () => {
       let progressCallback: (payload: ProgressPayload) => void;
       let completeCallback: (result: SimulationResultPayload) => void;
 
-      mockCoretoAPI.onProgress.mockImplementation((callback: (payload: ProgressPayload) => void) => {
+      mockCoretoAPI.simulation.onProgress.mockImplementation((callback: (payload: ProgressPayload) => void) => {
         progressCallback = callback;
         return jest.fn();
       });
 
-      mockCoretoAPI.onComplete.mockImplementation((callback: (payload: SimulationResultPayload) => void) => {
+      mockCoretoAPI.simulation.onComplete.mockImplementation((callback: (payload: SimulationResultPayload) => void) => {
         completeCallback = callback;
         return jest.fn();
       });
@@ -312,7 +314,7 @@ describe('useSimulationProgress (Event Streaming)', () => {
     it('should update state on error event', async () => {
       let errorCallback: (error: ErrorPayload) => void;
 
-      mockCoretoAPI.onError.mockImplementation((callback: (payload: ErrorPayload) => void) => {
+      mockCoretoAPI.simulation.onError.mockImplementation((callback: (payload: ErrorPayload) => void) => {
         errorCallback = callback;
         return jest.fn();
       });
@@ -339,7 +341,7 @@ describe('useSimulationProgress (Event Streaming)', () => {
 
   describe('startSimulation Method', () => {
     it('should call startSimulation and reset state', async () => {
-      mockCoretoAPI.startSimulation.mockResolvedValue({
+      mockCoretoAPI.simulation.start.mockResolvedValue({
         success: true,
         data: { simulationId: 'sim-123' },
       });
@@ -353,7 +355,7 @@ describe('useSimulationProgress (Event Streaming)', () => {
         });
       });
 
-      expect(mockCoretoAPI.startSimulation).toHaveBeenCalledWith({
+      expect(mockCoretoAPI.simulation.start).toHaveBeenCalledWith({
         projectPath: '/path/to/project',
         configPath: '/path/to/config.json',
       });
@@ -361,7 +363,7 @@ describe('useSimulationProgress (Event Streaming)', () => {
     });
 
     it('should handle startSimulation failure', async () => {
-      mockCoretoAPI.startSimulation.mockResolvedValue({
+      mockCoretoAPI.simulation.start.mockResolvedValue({
         success: false,
         error: {
           name: 'SimulationStartError',
@@ -386,7 +388,7 @@ describe('useSimulationProgress (Event Streaming)', () => {
     });
 
     it('should handle network errors on startSimulation', async () => {
-      mockCoretoAPI.startSimulation.mockRejectedValue(new Error('Network error'));
+      mockCoretoAPI.simulation.start.mockRejectedValue(new Error('Network error'));
 
       const { result } = renderHook(() => useSimulationProgress());
 
@@ -404,7 +406,7 @@ describe('useSimulationProgress (Event Streaming)', () => {
 
   describe('runSimulation Method (Legacy)', () => {
     it('should call runSimulation and return result', async () => {
-      mockCoretoAPI.runSimulation.mockResolvedValue({
+      mockCoretoAPI.simulation.run.mockResolvedValue({
         success: true,
         data: mockSimulationResult,
       });
@@ -420,7 +422,7 @@ describe('useSimulationProgress (Event Streaming)', () => {
         });
       });
 
-      expect(mockCoretoAPI.runSimulation).toHaveBeenCalledWith({
+      expect(mockCoretoAPI.simulation.run).toHaveBeenCalledWith({
         projectPath: '/path/to/project',
         configPath: '/path/to/config.json',
       });
@@ -430,7 +432,7 @@ describe('useSimulationProgress (Event Streaming)', () => {
     });
 
     it('should handle runSimulation errors', async () => {
-      mockCoretoAPI.runSimulation.mockResolvedValue({
+      mockCoretoAPI.simulation.run.mockResolvedValue({
         success: false,
         error: {
           name: 'SimulationError',
@@ -458,7 +460,7 @@ describe('useSimulationProgress (Event Streaming)', () => {
 
   describe('cancelSimulation Method', () => {
     it('should call cancelSimulation and update state', async () => {
-      mockCoretoAPI.cancelSimulation.mockResolvedValue({
+      mockCoretoAPI.simulation.cancel.mockResolvedValue({
         success: true,
         data: undefined,
       });
@@ -469,12 +471,12 @@ describe('useSimulationProgress (Event Streaming)', () => {
         await result.current.cancelSimulation();
       });
 
-      expect(mockCoretoAPI.cancelSimulation).toHaveBeenCalled();
+      expect(mockCoretoAPI.simulation.cancel).toHaveBeenCalled();
       expect(result.current.status).toBe('cancelled');
     });
 
     it('should handle cancelSimulation errors', async () => {
-      mockCoretoAPI.cancelSimulation.mockRejectedValue(
+      mockCoretoAPI.simulation.cancel.mockRejectedValue(
         new Error('Cancel failed')
       );
 
@@ -492,7 +494,7 @@ describe('useSimulationProgress (Event Streaming)', () => {
     it('should reset all state to initial values', async () => {
       let progressCallback: (payload: ProgressPayload) => void;
 
-      mockCoretoAPI.onProgress.mockImplementation((callback: (payload: ProgressPayload) => void) => {
+      mockCoretoAPI.simulation.onProgress.mockImplementation((callback: (payload: ProgressPayload) => void) => {
         progressCallback = callback;
         return jest.fn();
       });
@@ -538,16 +540,16 @@ describe('useSimulationProgress (Event Streaming)', () => {
       const cleanupComplete = jest.fn();
       const cleanupError = jest.fn();
 
-      mockCoretoAPI.onProgress.mockReturnValue(cleanupProgress);
-      mockCoretoAPI.onComplete.mockReturnValue(cleanupComplete);
-      mockCoretoAPI.onError.mockReturnValue(cleanupError);
+      mockCoretoAPI.simulation.onProgress.mockReturnValue(cleanupProgress);
+      mockCoretoAPI.simulation.onComplete.mockReturnValue(cleanupComplete);
+      mockCoretoAPI.simulation.onError.mockReturnValue(cleanupError);
 
       const { unmount } = renderHook(() => useSimulationProgress());
 
       // Verify listeners are registered
-      expect(mockCoretoAPI.onProgress).toHaveBeenCalled();
-      expect(mockCoretoAPI.onComplete).toHaveBeenCalled();
-      expect(mockCoretoAPI.onError).toHaveBeenCalled();
+      expect(mockCoretoAPI.simulation.onProgress).toHaveBeenCalled();
+      expect(mockCoretoAPI.simulation.onComplete).toHaveBeenCalled();
+      expect(mockCoretoAPI.simulation.onError).toHaveBeenCalled();
 
       // Unmount
       unmount();
@@ -564,17 +566,17 @@ describe('useSimulationProgress (Event Streaming)', () => {
       let progressCallback: (payload: ProgressPayload) => void;
       let completeCallback: (result: SimulationResultPayload) => void;
 
-      mockCoretoAPI.onProgress.mockImplementation((callback: (payload: ProgressPayload) => void) => {
+      mockCoretoAPI.simulation.onProgress.mockImplementation((callback: (payload: ProgressPayload) => void) => {
         progressCallback = callback;
         return jest.fn();
       });
 
-      mockCoretoAPI.onComplete.mockImplementation((callback: (payload: SimulationResultPayload) => void) => {
+      mockCoretoAPI.simulation.onComplete.mockImplementation((callback: (payload: SimulationResultPayload) => void) => {
         completeCallback = callback;
         return jest.fn();
       });
 
-      mockCoretoAPI.startSimulation.mockResolvedValue({
+      mockCoretoAPI.simulation.start.mockResolvedValue({
         success: true,
         data: { simulationId: 'test-sim-id' },
       });

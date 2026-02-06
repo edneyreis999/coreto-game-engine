@@ -23,6 +23,15 @@ export interface Logger {
 }
 
 /**
+ * Checks if running in development mode.
+ * Uses process.env.NODE_ENV which works in both Vite and Jest.
+ * Vite automatically defines process.env in the browser bundle.
+ */
+const isDev = (): boolean => {
+  return process.env.NODE_ENV !== 'production';
+};
+
+/**
  * Custom hook for structured logging in React components.
  *
  * @returns Logger instance with info, warn, error, debug methods
@@ -31,7 +40,7 @@ export function useLogger(): Logger {
   return useMemo(
     () => ({
       info: (message: string, meta?: Record<string, unknown>) => {
-        if (import.meta.env.DEV) {
+        if (isDev()) {
           if (meta && Object.keys(meta).length > 0) {
             console.log(`[INFO] ${message}`, meta);
           } else {
@@ -41,7 +50,7 @@ export function useLogger(): Logger {
       },
 
       warn: (message: string, meta?: Record<string, unknown>) => {
-        if (import.meta.env.DEV) {
+        if (isDev()) {
           if (meta && Object.keys(meta).length > 0) {
             console.warn(`[WARN] ${message}`, meta);
           } else {
@@ -60,7 +69,7 @@ export function useLogger(): Logger {
       },
 
       debug: (message: string, meta?: Record<string, unknown>) => {
-        if (import.meta.env.DEV) {
+        if (isDev()) {
           if (meta && Object.keys(meta).length > 0) {
             console.log(`[DEBUG] ${message}`, meta);
           } else {

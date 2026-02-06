@@ -4,8 +4,17 @@
  * Sets up global test environment configuration.
  */
 
+// Import reflect-metadata polyfill for TSyringe DI container
+import 'reflect-metadata';
+
+// Register DI dependencies for main process tests
+import { registerMainDependencies } from '../src/main/di/container.js';
+
 // Set NODE_ENV to test for all tests
 process.env.NODE_ENV = 'test';
+
+// Register main process dependencies (ILogger, etc.)
+registerMainDependencies();
 
 // Polyfill vi for Vitest compatibility (using Jest functions)
 (global as any).vi = {
