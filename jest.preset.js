@@ -18,6 +18,7 @@ export default {
         tsconfig: {
           esModuleInterop: true,
           allowSyntheticDefaultImports: true,
+          moduleResolution: 'bundler',
         },
         diagnostics: {
           ignoreCodes: ['TS151002'],
