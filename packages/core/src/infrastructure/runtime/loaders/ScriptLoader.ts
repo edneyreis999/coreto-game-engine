@@ -85,7 +85,9 @@ export class ScriptLoader {
     this.log(`  - Graphics: ${typeof g.Graphics}`);
 
     if (typeof g.PIXI === 'undefined') {
-      throw new Error('PIXI global not found. Ensure step2_loadShims() was called before loading scripts.');
+      throw new Error(
+        'PIXI global not found. Ensure step2_loadShims() was called before loading scripts.'
+      );
     }
     if (typeof g.window === 'undefined') {
       throw new Error('window global not found. Ensure step1_initializeJSDOM() was called.');
@@ -244,7 +246,12 @@ export class ScriptLoader {
     // Patch Sprite.prototype.setFrame to be no-op in headless mode
     // RMMZ's Sprite.setFrame tries to access texture properties that don't exist
     if (globalScope.Sprite && globalScope.Sprite.prototype) {
-      globalScope.Sprite.prototype.setFrame = function(x: number, y: number, width: number, height: number) {
+      globalScope.Sprite.prototype.setFrame = function (
+        x: number,
+        y: number,
+        width: number,
+        height: number
+      ) {
         // Store frame data but don't try to update texture UVs
         if (!this._frame) {
           this._frame = new globalScope.PIXI.Rectangle();
@@ -260,7 +267,7 @@ export class ScriptLoader {
 
     // Patch Sprite.prototype._refresh to be no-op
     if (globalScope.Sprite && globalScope.Sprite.prototype) {
-      globalScope.Sprite.prototype._refresh = function() {
+      globalScope.Sprite.prototype._refresh = function () {
         // No-op: don't update texture UVs in headless mode
       };
       this.log('[ScriptLoader] Sprite.prototype._refresh patched for headless mode');
@@ -269,7 +276,12 @@ export class ScriptLoader {
     // Patch Bitmap.prototype.clearRect to avoid _baseTexture.update() errors
     // Window_BattleLog creates bitmaps via 'new Bitmap()' which don't have _baseTexture
     if (globalScope.Bitmap && globalScope.Bitmap.prototype) {
-      globalScope.Bitmap.prototype.clearRect = function(_x: number, _y: number, _width: number, _height: number) {
+      globalScope.Bitmap.prototype.clearRect = function (
+        _x: number,
+        _y: number,
+        _width: number,
+        _height: number
+      ) {
         // No-op in headless mode - don't try to update textures
       };
       this.log('[ScriptLoader] Bitmap.prototype.clearRect patched for headless mode');
@@ -277,7 +289,7 @@ export class ScriptLoader {
 
     // Patch Bitmap.prototype.clear to be no-op
     if (globalScope.Bitmap && globalScope.Bitmap.prototype) {
-      globalScope.Bitmap.prototype.clear = function() {
+      globalScope.Bitmap.prototype.clear = function () {
         // No-op in headless mode
       };
       this.log('[ScriptLoader] Bitmap.prototype.clear patched for headless mode');
@@ -285,22 +297,22 @@ export class ScriptLoader {
 
     // Patch other Bitmap drawing methods that might cause errors
     if (globalScope.Bitmap && globalScope.Bitmap.prototype) {
-      globalScope.Bitmap.prototype.fillRect = function(..._args: any[]) {
+      globalScope.Bitmap.prototype.fillRect = function (..._args: any[]) {
         // No-op
       };
-      globalScope.Bitmap.prototype.gradientFillRect = function(..._args: any[]) {
+      globalScope.Bitmap.prototype.gradientFillRect = function (..._args: any[]) {
         // No-op
       };
-      globalScope.Bitmap.prototype.drawCircle = function(..._args: any[]) {
+      globalScope.Bitmap.prototype.drawCircle = function (..._args: any[]) {
         // No-op
       };
-      globalScope.Bitmap.prototype.drawText = function(..._args: any[]) {
+      globalScope.Bitmap.prototype.drawText = function (..._args: any[]) {
         // No-op
       };
-      globalScope.Bitmap.prototype.blt = function(..._args: any[]) {
+      globalScope.Bitmap.prototype.blt = function (..._args: any[]) {
         // No-op
       };
-      globalScope.Bitmap.prototype.strokeRect = function(..._args: any[]) {
+      globalScope.Bitmap.prototype.strokeRect = function (..._args: any[]) {
         // No-op
       };
       this.log('[ScriptLoader] Bitmap drawing methods patched for headless mode');
@@ -310,7 +322,7 @@ export class ScriptLoader {
     // CRITICAL: Window setter for 'openness' accesses this._container.y
     if (globalScope.Window && globalScope.Window.prototype) {
       const original_createAllParts = globalScope.Window.prototype._createAllParts;
-      globalScope.Window.prototype._createAllParts = function() {
+      globalScope.Window.prototype._createAllParts = function () {
         // Always ensure _container exists with position/scale
         if (!this._container) {
           this._container = new globalScope.PIXI.Container();
@@ -336,7 +348,7 @@ export class ScriptLoader {
       );
       if (opennessDescriptor && opennessDescriptor.set) {
         const originalSetter = opennessDescriptor.set;
-        opennessDescriptor.set = function(this: any, value: number) {
+        opennessDescriptor.set = function (this: any, value: number) {
           // Ensure _container exists before setting openness
           if (!this._container) {
             this._container = new globalScope.PIXI.Container();
@@ -358,7 +370,7 @@ export class ScriptLoader {
     // CRITICAL: RMMZ ColorFilter accesses this.uniforms.blendColor
     if (globalScope.ColorFilter && globalScope.ColorFilter.prototype) {
       const original_setBlendColor = globalScope.ColorFilter.prototype.setBlendColor;
-      globalScope.ColorFilter.prototype.setBlendColor = function(this: any, color: any) {
+      globalScope.ColorFilter.prototype.setBlendColor = function (this: any, color: any) {
         // Ensure uniforms exists
         if (!this.uniforms) {
           this.uniforms = {

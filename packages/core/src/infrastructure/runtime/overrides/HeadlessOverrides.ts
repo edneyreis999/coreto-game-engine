@@ -282,7 +282,7 @@ export class HeadlessOverrides {
     }
 
     // Helper to ensure uniforms always exists
-    const ensureUniforms = function(self: any): void {
+    const ensureUniforms = function (self: any): void {
       if (!self.uniforms || typeof self.uniforms !== 'object') {
         self.uniforms = {
           hue: 0,
@@ -344,7 +344,13 @@ export class HeadlessOverrides {
     const Window_Scrollable = (global as any).Window_Scrollable;
     const Game_Temp = (global as any).Game_Temp;
 
-    if (!Window_BattleLog || !Spriteset_Battle || !Spriteset_Base || !Window_Scrollable || !Game_Temp) {
+    if (
+      !Window_BattleLog ||
+      !Spriteset_Battle ||
+      !Spriteset_Base ||
+      !Window_Scrollable ||
+      !Game_Temp
+    ) {
       throw new Error(
         'Core scripts not loaded - call HeadlessOverrides.applyAll() after Task 22 (ScriptLoader)'
       );
@@ -619,7 +625,9 @@ export class HeadlessOverrides {
     BattleManager.updatePhase = function (this: any, timeActive: boolean) {
       // If in input phase and not inputting (headless), force transition to turn phase
       if (this._phase === 'input' && !this.isInputting()) {
-        console.log('[HeadlessOverrides] Detected input phase with isInputting=false, forcing startTurn()');
+        console.log(
+          '[HeadlessOverrides] Detected input phase with isInputting=false, forcing startTurn()'
+        );
         this.startTurn();
         return;
       }
@@ -631,7 +639,9 @@ export class HeadlessOverrides {
         (!this._actionBattlers || this._actionBattlers.length === 0) &&
         !this.isBattleEnd()
       ) {
-        console.log('[HeadlessOverrides] Detected turn phase with empty _actionBattlers, forcing startTurn()');
+        console.log(
+          '[HeadlessOverrides] Detected turn phase with empty _actionBattlers, forcing startTurn()'
+        );
         this.startTurn();
         return;
       }
@@ -694,9 +704,13 @@ export class HeadlessOverrides {
       const result = _BattleManager_startTurn.call(this);
 
       // Debug: Check if _actionBattlers was populated
-      console.log(`[HeadlessOverrides] After startTurn: _actionBattlers.length = ${this._actionBattlers?.length || 0}`);
+      console.log(
+        `[HeadlessOverrides] After startTurn: _actionBattlers.length = ${this._actionBattlers?.length || 0}`
+      );
       if (this._actionBattlers && this._actionBattlers.length > 0) {
-        console.log(`[HeadlessOverrides] _actionBattlers[0] = ${this._actionBattlers[0]?.name?.() || 'unknown'}`);
+        console.log(
+          `[HeadlessOverrides] _actionBattlers[0] = ${this._actionBattlers[0]?.name?.() || 'unknown'}`
+        );
       } else {
         // Debug: Why is _actionBattlers empty?
         console.log('[HeadlessOverrides] _actionBattlers is empty! Checking party/troop state:');
@@ -733,7 +747,8 @@ export class HeadlessOverrides {
       frameCount++;
 
       // Log every 100 calls in first 500, then every 500
-      const shouldLog = frameCount <= 5 || (frameCount <= 500 && frameCount % 100 === 0) || frameCount % 500 === 0;
+      const shouldLog =
+        frameCount <= 5 || (frameCount <= 500 && frameCount % 100 === 0) || frameCount % 500 === 0;
 
       if (shouldLog) {
         const isBusy = this.isBusy();

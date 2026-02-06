@@ -34,10 +34,10 @@ export class JsdomHeadlessRuntime implements IHeadlessRuntime {
   /**
    * @param logger - Logger instance for diagnostic output
    */
-  constructor(
-    @inject(ILoggerToken) private readonly logger: ILogger
-  ) {
-    this.logger.debug('[JsdomHeadlessRuntime] Constructor called', { diagnosticMode: this.diagnosticMode });
+  constructor(@inject(ILoggerToken) private readonly logger: ILogger) {
+    this.logger.debug('[JsdomHeadlessRuntime] Constructor called', {
+      diagnosticMode: this.diagnosticMode,
+    });
   }
 
   /**
@@ -48,10 +48,7 @@ export class JsdomHeadlessRuntime implements IHeadlessRuntime {
    */
   setDiagnosticMode(enabled: boolean): void {
     if (this.isInitialized) {
-      throw new RuntimeError(
-        'Cannot set diagnostic mode after initialization',
-        'warning'
-      );
+      throw new RuntimeError('Cannot set diagnostic mode after initialization', 'warning');
     }
     this.diagnosticMode = enabled;
     this.logger.debug('[JsdomHeadlessRuntime] Diagnostic mode set', { enabled });
@@ -78,11 +75,9 @@ export class JsdomHeadlessRuntime implements IHeadlessRuntime {
       this.logger.info('[JsdomHeadlessRuntime] JSDOM environment ready for initialization');
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      throw new RuntimeError(
-        `Failed to initialize JSDOM environment: ${message}`,
-        'critical',
-        { originalError: message }
-      );
+      throw new RuntimeError(`Failed to initialize JSDOM environment: ${message}`, 'critical', {
+        originalError: message,
+      });
     }
   }
 
@@ -109,10 +104,7 @@ export class JsdomHeadlessRuntime implements IHeadlessRuntime {
     }
 
     if (!this.bootstrapper) {
-      throw new RuntimeError(
-        'Cannot load core scripts: bootstrapper not initialized',
-        'critical'
-      );
+      throw new RuntimeError('Cannot load core scripts: bootstrapper not initialized', 'critical');
     }
 
     try {
@@ -129,11 +121,10 @@ export class JsdomHeadlessRuntime implements IHeadlessRuntime {
       this.logger.info('[JsdomHeadlessRuntime] Core scripts will be loaded during full bootstrap');
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      throw new RuntimeError(
-        `Failed to load core scripts: ${message}`,
-        'critical',
-        { projectPath, originalError: message }
-      );
+      throw new RuntimeError(`Failed to load core scripts: ${message}`, 'critical', {
+        projectPath,
+        originalError: message,
+      });
     }
   }
 
@@ -158,11 +149,9 @@ export class JsdomHeadlessRuntime implements IHeadlessRuntime {
       this.logger.info('[JsdomHeadlessRuntime] Graphics and audio mocks ready');
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      throw new RuntimeError(
-        `Failed to setup mocks: ${message}`,
-        'critical',
-        { originalError: message }
-      );
+      throw new RuntimeError(`Failed to setup mocks: ${message}`, 'critical', {
+        originalError: message,
+      });
     }
   }
 
@@ -222,11 +211,11 @@ export class JsdomHeadlessRuntime implements IHeadlessRuntime {
         // Ignore cleanup errors during error recovery
       }
       const message = error instanceof Error ? error.message : String(error);
-      throw new RuntimeError(
-        `Bootstrap failed: ${message}`,
-        'critical',
-        { projectPath, seed, originalError: message }
-      );
+      throw new RuntimeError(`Bootstrap failed: ${message}`, 'critical', {
+        projectPath,
+        seed,
+        originalError: message,
+      });
     }
   }
 

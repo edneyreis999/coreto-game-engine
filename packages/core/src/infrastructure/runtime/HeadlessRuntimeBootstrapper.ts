@@ -226,7 +226,9 @@ export class HeadlessRuntimeBootstrapper {
       configurable: true,
     });
 
-    this.log('[Bootstrap] Globals injected: window, document, navigator, location, HTMLCanvasElement');
+    this.log(
+      '[Bootstrap] Globals injected: window, document, navigator, location, HTMLCanvasElement'
+    );
   }
 
   /**
@@ -237,14 +239,52 @@ export class HeadlessRuntimeBootstrapper {
    *
    * @param window - Window do JSDOM
    */
-  private mockCanvasAPI(window: any): void {
-    // Mock CanvasRenderingContext2D
-    const CanvasRenderingContext2D = function (this: any): void {
+  private mockCanvasAPI(window: JSDOM['window']): void {
+    interface MockImageData {
+      data: Uint8ClampedArray;
+      width: number;
+      height: number;
+    }
+
+    interface MockTextMetrics {
+      width: number;
+    }
+
+    interface MockCanvasRenderingContext2D {
+      fillStyle: string;
+      strokeStyle: string;
+      lineWidth: number;
+      globalAlpha: number;
+      fillRect(): void;
+      strokeRect(): void;
+      clearRect(): void;
+      beginPath(): void;
+      closePath(): void;
+      moveTo(): void;
+      lineTo(): void;
+      arc(): void;
+      fill(): void;
+      stroke(): void;
+      drawImage(): void;
+      getImageData(): MockImageData;
+      putImageData(): void;
+      save(): void;
+      restore(): void;
+      translate(): void;
+      rotate(): void;
+      scale(): void;
+      measureText(): MockTextMetrics;
+    }
+
+    type JSDOMWindow = typeof window;
+
+    // Mock CanvasRenderingContext2D constructor
+    const CanvasRenderingContext2D = function (this: MockCanvasRenderingContext2D): void {
       this.fillStyle = '#000000';
       this.strokeStyle = '#000000';
       this.lineWidth = 1;
       this.globalAlpha = 1;
-    };
+    } as unknown as { new (): MockCanvasRenderingContext2D };
 
     CanvasRenderingContext2D.prototype = {
       fillRect: function () {},
@@ -258,7 +298,7 @@ export class HeadlessRuntimeBootstrapper {
       fill: function () {},
       stroke: function () {},
       drawImage: function () {},
-      getImageData: function () {
+      getImageData: function (): MockImageData {
         return { data: new Uint8ClampedArray(0), width: 0, height: 0 };
       },
       putImageData: function () {},
@@ -267,23 +307,30 @@ export class HeadlessRuntimeBootstrapper {
       translate: function () {},
       rotate: function () {},
       scale: function () {},
-      measureText: function () {
+      measureText: function (): MockTextMetrics {
         return { width: 0 };
       },
-    };
+    } as MockCanvasRenderingContext2D;
 
     // Override HTMLCanvasElement.prototype.getContext
-    const originalGetContext = window.HTMLCanvasElement.prototype.getContext;
-    window.HTMLCanvasElement.prototype.getContext = function (this: any, contextType: string) {
+    const canvasPrototype = window.HTMLCanvasElement.prototype as unknown as {
+      getContext: (contextType: string) => MockCanvasRenderingContext2D | null;
+    };
+    const originalGetContext = canvasPrototype.getContext;
+
+    canvasPrototype.getContext = function (
+      contextType: string
+    ): MockCanvasRenderingContext2D | null {
       if (contextType === '2d') {
-        return new (CanvasRenderingContext2D as any)();
+        return new CanvasRenderingContext2D();
       }
       // Fallback para implementação original (retorna null)
       return originalGetContext?.call(this, contextType) || null;
     };
 
     // Expor CanvasRenderingContext2D no window para compatibilidade
-    window.CanvasRenderingContext2D = CanvasRenderingContext2D;
+    (window as JSDOMWindow & { CanvasRenderingContext2D: unknown }).CanvasRenderingContext2D =
+      CanvasRenderingContext2D;
 
     this.log('[Bootstrap] Canvas API mocked: getContext("2d") functional');
   }
@@ -480,8 +527,13 @@ export class HeadlessRuntimeBootstrapper {
     const globalScope = global as any;
 
     // Gracefully skip if DataManager not available (test environments)
-    if (!globalScope.DataManager || typeof globalScope.DataManager.createGameObjects !== 'function') {
-      this.log('[Bootstrap] DataManager.createGameObjects not available - skipping game object initialization (test mode)');
+    if (
+      !globalScope.DataManager ||
+      typeof globalScope.DataManager.createGameObjects !== 'function'
+    ) {
+      this.log(
+        '[Bootstrap] DataManager.createGameObjects not available - skipping game object initialization (test mode)'
+      );
       return;
     }
 

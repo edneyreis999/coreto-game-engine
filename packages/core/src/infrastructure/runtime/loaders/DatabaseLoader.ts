@@ -60,7 +60,7 @@ export class DatabaseLoader {
         // Sem isso, isDatabaseLoaded() nunca retorna true
         DataManager.onLoad((window as any)[name]);
 
-          console.log(`[DatabaseLoader] Loaded ${src} → ${name}`);
+        console.log(`[DatabaseLoader] Loaded ${src} → ${name}`);
 
         // CRITICAL: Sync to global for RPG Maker MZ compatibility
         // Some RMMZ code accesses $data* via global, not window
@@ -150,7 +150,9 @@ export class DatabaseLoader {
       const data = (global as any)[dataName];
 
       if (!data) {
-        throw new Error(`Database validation failed: ${dataName} is ${data === null ? 'null' : 'undefined'}`);
+        throw new Error(
+          `Database validation failed: ${dataName} is ${data === null ? 'null' : 'undefined'}`
+        );
       }
 
       // Avisar se array está vazio (pode ser válido em projetos novos)
