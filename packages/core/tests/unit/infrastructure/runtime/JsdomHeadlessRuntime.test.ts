@@ -22,8 +22,8 @@ describe('JsdomHeadlessRuntime', () => {
       debug: jest.fn(),
     };
 
-    // Create runtime instance with diagnostic mode disabled
-    runtime = new JsdomHeadlessRuntime(mockLogger, false);
+    // Create runtime instance
+    runtime = new JsdomHeadlessRuntime(mockLogger);
   });
 
   afterEach(() => {
@@ -34,17 +34,7 @@ describe('JsdomHeadlessRuntime', () => {
   });
 
   describe('constructor', () => {
-    it('should create instance with logger and diagnostic mode', () => {
-      const testRuntime = new JsdomHeadlessRuntime(mockLogger, true);
-
-      expect(testRuntime).toBeInstanceOf(JsdomHeadlessRuntime);
-      expect(mockLogger.debug).toHaveBeenCalledWith(
-        '[JsdomHeadlessRuntime] Constructor called',
-        { diagnosticMode: true }
-      );
-    });
-
-    it('should create instance with default diagnostic mode (false)', () => {
+    it('should create instance with logger', () => {
       const testRuntime = new JsdomHeadlessRuntime(mockLogger);
 
       expect(testRuntime).toBeInstanceOf(JsdomHeadlessRuntime);
@@ -91,7 +81,7 @@ describe('JsdomHeadlessRuntime', () => {
 
       // This test verifies the error handling structure
       // Actual JSDOM initialization failure scenarios are environment-dependent
-      const failingRuntime = new JsdomHeadlessRuntime(failingLogger, false);
+      const failingRuntime = new JsdomHeadlessRuntime(failingLogger);
 
       // The runtime should successfully initialize in normal test conditions
       await expect(failingRuntime.initialize()).resolves.not.toThrow();
@@ -327,24 +317,16 @@ describe('JsdomHeadlessRuntime', () => {
 
   describe('dependency injection', () => {
     it('should use injected logger for all operations', async () => {
-      const diagnosticRuntime = new JsdomHeadlessRuntime(mockLogger, true);
+      const testRuntime = new JsdomHeadlessRuntime(mockLogger);
 
-      await diagnosticRuntime.initialize();
-      await diagnosticRuntime.loadCoreScripts('/project');
-      diagnosticRuntime.setupMocks();
-      await diagnosticRuntime.cleanup();
+      await testRuntime.initialize();
+      await testRuntime.loadCoreScripts('/project');
+      testRuntime.setupMocks();
+      await testRuntime.cleanup();
 
       // Verify logger was called for all operations
       expect(mockLogger.debug).toHaveBeenCalled();
       expect(mockLogger.info).toHaveBeenCalled();
-    });
-
-    it('should respect diagnostic mode setting', () => {
-      const diagnosticRuntime = new JsdomHeadlessRuntime(mockLogger, true);
-      const normalRuntime = new JsdomHeadlessRuntime(mockLogger, false);
-
-      expect(diagnosticRuntime).toBeInstanceOf(JsdomHeadlessRuntime);
-      expect(normalRuntime).toBeInstanceOf(JsdomHeadlessRuntime);
     });
   });
 });

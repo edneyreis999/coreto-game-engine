@@ -108,6 +108,18 @@ export class PartyConfigFakeBuilder extends FakeBuilder<PartyConfig> {
   }
 
   /**
+   * Create a party with a single member.
+   *
+   * @param classId - Class ID from RPG Maker MZ
+   * @param level - Member level (1-99)
+   * @returns This builder for chaining
+   */
+  withSingleMember(classId: number, level: number): this {
+    this.members = [{ classId, level }];
+    return this;
+  }
+
+  /**
    * Build the PartyConfig instance.
    *
    * @returns PartyConfig instance

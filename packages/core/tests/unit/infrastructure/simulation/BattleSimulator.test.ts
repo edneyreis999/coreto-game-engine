@@ -14,7 +14,7 @@ import {
 } from '@coreto/core';
 
 // Mock SyncWarpLoop to prevent actual loop execution during tests
-jest.mock('@/infrastructure/runtime/simulation/SyncWarpLoop.js', () => {
+jest.mock('../../../../src/infrastructure/runtime/simulation/SyncWarpLoop.js', () => {
   return {
     SyncWarpLoop: jest.fn().mockImplementation(() => {
       return {
@@ -27,7 +27,7 @@ jest.mock('@/infrastructure/runtime/simulation/SyncWarpLoop.js', () => {
 });
 
 // Mock HeadlessRuntimeBootstrapper to prevent loading real RMMZ scripts
-jest.mock('@/infrastructure/runtime/HeadlessRuntimeBootstrapper.js', () => {
+jest.mock('../../../../src/infrastructure/runtime/HeadlessRuntimeBootstrapper.js', () => {
   return {
     HeadlessRuntimeBootstrapper: jest.fn().mockImplementation(() => {
       return {
@@ -418,7 +418,7 @@ describe('HeadlessBattleSimulator', () => {
     it('should throw BattleTimeoutError if battle exceeds MAX_FRAMES', async () => {
       // Mock SyncWarpLoop to return more than MAX_FRAMES (10000)
       const { SyncWarpLoop } = jest.requireMock(
-        '@/infrastructure/runtime/simulation/SyncWarpLoop.js'
+        '../../../../src/infrastructure/runtime/simulation/SyncWarpLoop.js'
       );
       SyncWarpLoop.mockImplementationOnce(() => {
         return {

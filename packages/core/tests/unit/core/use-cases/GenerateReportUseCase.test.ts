@@ -1,9 +1,11 @@
 import 'reflect-metadata';
 import { GenerateReportUseCase, GenerateReportInput } from '@coreto/core/core/use-cases/GenerateReportUseCase.js';
-import { IReporter, Warning } from '@coreto/core/core/ports/IReporter.js';
-import { Report, ReportMetadata } from '@coreto/core/core/domain/Report.js';
+import { IReporter } from '@coreto/core/core/ports/IReporter.js';
+import { Report } from '@coreto/core/core/domain/Report.js';
 import { TrechoValidationResult } from '@coreto/core/core/use-cases/ValidateTrechoUseCase.js';
-import { BattleResult } from '@coreto/core/core/domain/BattleResult.js';
+import { TEST_CONSTANTS } from '../../../fixtures/test-constants.js';
+import { BattleResultFakeBuilder, WarningFakeBuilder } from '../../../fakes/index.js';
+import { ReportMetadataFakeBuilder } from '../../../fixtures/builders/ReportMetadataFakeBuilder.js';
 
 describe('GenerateReportUseCase', () => {
   let useCase: GenerateReportUseCase;
@@ -112,9 +114,9 @@ describe('GenerateReportUseCase', () => {
     it('should include all warnings in report', () => {
       // Arrange
       const warnings = [
-        new WarningFakeBuilder().asTtkOutOfTolerance(1).build(),
-        new WarningFakeBuilder().asBattleTimeout(1, 10000, 100).asCritical().build(),
-        new WarningFakeBuilder().asInfo().withType('skill_formula_error').build(),
+        new WarningFakeBuilder().withTtkOutOfTolerance(1).build(),
+        new WarningFakeBuilder().withBattleTimeout(1, 10000).withCriticalSeverity().build(),
+        new WarningFakeBuilder().withInfoSeverity().withType('skill_formula_error').build(),
       ];
 
       const metadata = new ReportMetadataFakeBuilder()

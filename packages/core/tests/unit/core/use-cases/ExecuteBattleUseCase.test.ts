@@ -1,9 +1,10 @@
 import 'reflect-metadata';
 import { ExecuteBattleUseCase, ExecuteBattleInput } from '@coreto/core/core/use-cases/ExecuteBattleUseCase.js';
 import { IBattleSimulator, BattleSetup } from '@coreto/core/core/ports/IBattleSimulator.js';
-import { BattleResult } from '@coreto/core/core/domain/BattleResult.js';
-import { PartyConfig } from '@coreto/core/core/domain/PartyConfig.js';
+import type { IClock } from '@coreto/core/core/ports/IClock.js';
 import { BattleTimeoutError } from '@coreto/core/core/errors/BattleTimeoutError.js';
+import { TEST_CONSTANTS } from '../../../fixtures/test-constants.js';
+import { PartyConfigFakeBuilder, BattleResultFakeBuilder } from '../../../fakes/index.js';
 
 describe('ExecuteBattleUseCase', () => {
   let useCase: ExecuteBattleUseCase;
