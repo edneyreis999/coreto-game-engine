@@ -43,10 +43,26 @@ export default {
       testMatch: [
         '**/tests/unit/main/**/*.test.ts',
         '**/tests/unit/preload/**/*.test.ts',
-        '**/src/main/**/__tests__/**/*.spec.ts',
-        '**/src/main/**/__tests__/**/*.test.ts'
+        '**/tests/unit/domain/**/*.spec.ts',
+        '**/src/main/**/__tests__/*.spec.ts',
+        '**/src/main/**/__tests__/*.test.ts'
+      ],
+      testPathIgnorePatterns: [
+        '/node_modules/',
+        '/__tests__/builders/',
+        '/__tests__/fakes/',
+        '/__tests__/fixtures/',
+        '/__tests__/mocks/'
       ],
       setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
+      moduleNameMapper: {
+        '^@/(.*)$': '<rootDir>/src/$1',
+        '^@tests/(.*)$': '<rootDir>/tests/$1',
+        '^@coreto/core$': '<rootDir>/../core/src/index.ts',
+        '^@coreto/electron/(.*)\\.js$': '<rootDir>/src/$1.ts',
+        '^@coreto/electron/(.+)$': '<rootDir>/src/$1.ts',
+        '^(\\.{1,2}/.*)\\.js$': '$1'
+      },
       collectCoverageFrom: [
         'src/main/**/*.ts',
         'src/preload/**/*.ts',
@@ -63,8 +79,24 @@ export default {
       roots: ['<rootDir>/tests'],
       testMatch: ['**/tests/unit/renderer/**/*.test.ts', '**/tests/unit/renderer/**/*.test.tsx'],
       setupFilesAfterEnv: ['<rootDir>/tests/setup.renderer.ts'],
+      transform: {
+        '^.+\\.tsx?$': [
+          'ts-jest',
+          {
+            useESM: true,
+            tsconfig: '<rootDir>/tsconfig.spec.json'
+          }
+        ]
+      },
       moduleNameMapper: {
-        ...baseConfig.moduleNameMapper,
+        '^@/tests/(.*)$': '<rootDir>/tests/$1',
+        '^@/(.*)$': '<rootDir>/src/renderer/src/$1',
+        '^@preload/(.*)$': '<rootDir>/src/preload/$1',
+        '^@coreto/core$': '<rootDir>/../core/src/index.ts',
+        '^@coreto/electron/(.*)\\.js$': '<rootDir>/src/$1.ts',
+        '^@coreto/electron/domain$': '<rootDir>/src/domain/index.ts',
+        '^@coreto/electron/(.+)$': '<rootDir>/src/$1.ts',
+        '^(\\.{1,2}/.*)\\.js$': '$1',
         '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
       },
       collectCoverageFrom: [

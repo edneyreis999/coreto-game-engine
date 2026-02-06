@@ -12,8 +12,9 @@ import baseConfig from './jest.preset.js';
 export default {
   preset: 'ts-jest/presets/default-esm',
   testEnvironment: 'node',
-  // Test discovery in packages/tests/ and examples/ directories
-  roots: ['<rootDir>/tests', '<rootDir>/packages', '<rootDir>/examples'],
+  // Test discovery in root tests and examples directories only
+  // Note: packages/core and packages/electron have their own jest configs
+  roots: ['<rootDir>/tests', '<rootDir>/examples'],
   testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
   transform: {
     '^.+\\.(ts|mts)$': [
@@ -73,6 +74,15 @@ export default {
   testTimeout: 10000,
   extensionsToTreatAsEsm: ['.ts'],
   moduleFileExtensions: ['ts', 'mts', 'js', 'json', 'node'],
-  // Ignore node_modules in packages during workspace discovery
-  testPathIgnorePatterns: ['/node_modules/', '/packages/*/node_modules/'],
+  // Ignore node_modules and non-test files in packages during workspace discovery
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/packages/*/node_modules/',
+    '/__tests__/builders/',
+    '/__tests__/fakes/',
+    '/__tests__/fixtures/',
+    '/__tests__/mocks/',
+    '/scripts/',
+    '/tests/scripts/',
+  ],
 };

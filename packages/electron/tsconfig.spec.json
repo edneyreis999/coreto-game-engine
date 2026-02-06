@@ -1,15 +1,20 @@
 {
   "extends": "./tsconfig.web.json",
   "compilerOptions": {
-    "types": ["node", "jest"],
+    "types": ["node", "jest", "@testing-library/jest-dom"],
     "paths": {
-      "@/*": ["./src/renderer/src/*"]
+      "@/*": ["./src/renderer/src/*"],
+      "@/tests/*": ["./tests/*"],
+      "@preload/*": ["./src/preload/*"]
     }
   },
   "include": [
     "src/renderer/**/*",
     "src/renderer/**/*.d.ts",
     "src/renderer/src/types/**/*.d.ts",
-    "tests/unit/renderer/**/*"
+    "src/renderer/src/window.coreto.d.ts",
+    "src/preload/**/*",
+    "tests/unit/renderer/**/*",
+    "tests/helpers/**/*"
   ]
 }
