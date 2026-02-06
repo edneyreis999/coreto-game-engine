@@ -145,9 +145,19 @@ export class SimulationController {
         }
       );
 
-      // Setup message handling
+      // Setup message handling with error boundary
       this.worker.on('message', (message: WorkerToMainMessage) => {
-        this.handleWorkerMessage(message);
+        try {
+          this.handleWorkerMessage(message);
+        } catch (error) {
+          console.error('[SimulationController] Worker message handler error:', error);
+          this.sendToRenderer('simulation:error', {
+            title: 'Worker Handler Error',
+            description: 'An error occurred while processing the worker message.',
+            code: 'ERR_WORKER_HANDLER',
+            details: error instanceof Error ? error.message : String(error),
+          });
+        }
       });
 
       // Setup crash handling

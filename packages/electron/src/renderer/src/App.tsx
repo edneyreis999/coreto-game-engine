@@ -21,7 +21,6 @@ export default function App(): React.ReactElement {
   const [simulationCompleted, setSimulationCompleted] = useState<boolean>(false)
 
   const handleProjectSelected = useCallback((projectPath: string): void => {
-    console.log('Project selected:', projectPath)
     // Only reset if project actually changed
     if (projectPath !== selectedProjectPath) {
       setSelectedProjectPath(projectPath)
@@ -32,8 +31,6 @@ export default function App(): React.ReactElement {
   }, [selectedProjectPath])
 
   const handleConfigSaved = useCallback(async (config: ProjectConfigFormData): Promise<void> => {
-    console.log('[App] Saving configuration:', config)
-
     try {
       // Call IPC to save config with the full trecho data
       const response = await window.coreto.saveConfig(config.projectPath, {
@@ -46,10 +43,7 @@ export default function App(): React.ReactElement {
         },
       })
 
-      console.log('[App] IPC response:', response)
-
       if (response.success) {
-        console.log('[App] Configuration saved successfully:', response.data.configPath)
         // Convert to SimulationConfigData using domain mapper
         const simConfig = mapToSimulationConfig(
           config.projectPath,
@@ -61,9 +55,7 @@ export default function App(): React.ReactElement {
           })),
           config.globalSettings
         )
-        console.log('[App] Setting simulation config:', simConfig)
         setSimulationConfig(simConfig)
-        console.log('[App] simulationConfig state updated')
       } else {
         console.error('[App] Failed to save configuration:', response.error)
       }
@@ -73,7 +65,6 @@ export default function App(): React.ReactElement {
   }, [])
 
   const handleSimulationComplete = (result: unknown): void => {
-    console.log('Simulation complete:', result)
     // Show Results Panel after simulation completes
     setSimulationCompleted(true)
   }

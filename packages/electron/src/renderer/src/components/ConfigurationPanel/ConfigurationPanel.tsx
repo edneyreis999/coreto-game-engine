@@ -115,27 +115,35 @@ export const ConfigurationPanel: FC<ConfigurationPanelProps> = ({
 
   /**
    * Fetch classes from the project.
+   * ipcFn wrapped in useCallback for stability.
    */
+  const getClassesIpcFn = useCallback((projectPath: string) =>
+    window.coreto.getClasses(projectPath),
+    []
+  );
+
   const {
     data: classesData,
     error: classesError,
     isLoading: isLoadingClasses,
     invoke: fetchClasses,
-  } = useIpcWithArg<ClassData[], string>((projectPath) =>
-    window.coreto.getClasses(projectPath)
-  );
+  } = useIpcWithArg<ClassData[], string>(getClassesIpcFn);
 
   /**
    * Fetch troops from the project.
+   * ipcFn wrapped in useCallback for stability.
    */
+  const getTroopsIpcFn = useCallback((projectPath: string) =>
+    window.coreto.getTroops(projectPath),
+    []
+  );
+
   const {
     data: troopsData,
     error: troopsError,
     isLoading: isLoadingTroops,
     invoke: fetchTroops,
-  } = useIpcWithArg<TroopData[], string>((projectPath) =>
-    window.coreto.getTroops(projectPath)
-  );
+  } = useIpcWithArg<TroopData[], string>(getTroopsIpcFn);
 
   // ========================================================================
   // Effects
@@ -143,25 +151,18 @@ export const ConfigurationPanel: FC<ConfigurationPanelProps> = ({
 
   /**
    * Load project data on mount.
-   * Note: fetchClasses/fetchTroops excluded from deps to prevent infinite loop
-   * (they are stable internally but change due to ipcFn recreation)
+   * fetchClasses and fetchTroops are now stable (wrapped in useCallback).
    */
   useEffect(() => {
-    console.log('[ConfigurationPanel] Loading project data for:', projectPath);
     void fetchClasses(projectPath);
     void fetchTroops(projectPath);
-  }, [projectPath]);
+  }, [projectPath, fetchClasses, fetchTroops]);
 
   /**
    * Update project data when classes/troops are loaded.
    */
   useEffect(() => {
-    console.log('[ConfigurationPanel] classesData:', classesData);
-    console.log('[ConfigurationPanel] troopsData:', troopsData);
-    console.log('[ConfigurationPanel] isLoadingClasses:', isLoadingClasses);
-    console.log('[ConfigurationPanel] isLoadingTroops:', isLoadingTroops);
     if (classesData && troopsData) {
-      console.log('[ConfigurationPanel] Both loaded, updating projectData');
       setProjectData({
         classes: classesData.map((c) => ({ value: c.id, label: c.name })),
         troops: troopsData.map((t) => ({ value: t.id, label: t.name })),

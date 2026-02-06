@@ -256,14 +256,14 @@ export function useFieldValidation(
   }, [initiallyTouched]);
 
   // Cleanup on unmount
-  process.env.NODE_ENV !== 'test' && (() => {
+  useEffect(() => {
     return () => {
       isMountedRef.current = false;
       if (debounceRef.current) {
         clearTimeout(debounceRef.current);
       }
     };
-  })();
+  }, []);
 
   // Derived state
   const isValid = status === 'valid' || (status === 'idle' && !message);

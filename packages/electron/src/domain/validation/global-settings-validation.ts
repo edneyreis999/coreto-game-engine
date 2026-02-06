@@ -8,9 +8,8 @@
 import { z } from 'zod';
 import type { FormErrors, FormValidation } from './types';
 
-// Re-export form data types from renderer for type compatibility
-// TODO: Move these types to domain in a future phase
-export type { GlobalSettingsFormData } from '../../../renderer/src/components/ConfigurationPanel/types';
+// Import form data types from domain layer
+export type { GlobalSettingsFormData } from '../types/form-types';
 
 // ============================================================================
 // Zod Schemas for Global Settings Validation

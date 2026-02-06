@@ -598,9 +598,50 @@ export interface HistoryLoadReportResponse {
 /**
  * Zod schema for history:export payload.
  */
+// Report data schemas
+const BattleOutcomeSchema = z.enum(['victory', 'defeat', 'timeout']);
+
+const WarningDataSchema = z.object({
+  type: z.string(),
+  severity: z.enum(['critical', 'warning', 'info']),
+  message: z.string(),
+  context: z.record(z.unknown()),
+});
+
+const ReportBattleResultSchema = z.object({
+  troopId: z.number(),
+  troopName: z.string(),
+  outcome: BattleOutcomeSchema,
+  ttkTurns: z.number(),
+  ttkActions: z.number(),
+  durationMs: z.number(),
+  seed: z.number(),
+  expGained: z.number(),
+});
+
+const TrechoSummaryDataSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  passed: z.boolean(),
+  battleCount: z.number(),
+  avgTtkTurns: z.number(),
+  avgTtkActions: z.number(),
+  p95TtkTurns: z.number(),
+  p95TtkActions: z.number(),
+  successRate: z.number(),
+  battles: z.array(ReportBattleResultSchema),
+  warnings: z.array(WarningDataSchema),
+});
+
+const ReportDataSchema = z.object({
+  trechos: z.array(TrechoSummaryDataSchema),
+  totalBattles: z.number(),
+  timestamp: z.string(),
+});
+
 export const HistoryExportPayloadSchema = z.object({
   simulationId: z.string().uuid(),
-  result: z.any(), // TODO: Should be ReportData schema
+  result: ReportDataSchema,
   projectPath: z.string().min(1),
 });
 

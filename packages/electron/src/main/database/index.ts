@@ -14,6 +14,7 @@
  */
 
 import Database from 'better-sqlite3';
+import { z } from 'zod';
 
 import {
   initializeMigrationsTable,
@@ -176,14 +177,13 @@ export function getSchemaVersion(): number {
  * @param backupPath - Path where backup should be saved
  * @throws {Error} If backup fails
  */
-export function backupDatabase(backupPath: string): void {
+export async function backupDatabase(backupPath: string): Promise<void> {
   const db = getDatabase();
-
-  db.backup(backupPath).then(() => {
-    // Backup completed successfully
-  }).catch((error) => {
+  try {
+    await db.backup(backupPath);
+  } catch (error) {
     throw new Error(`Database backup failed: ${error instanceof Error ? error.message : String(error)}`);
-  });
+  }
 }
 
 /**
@@ -200,8 +200,14 @@ export function getDatabaseStats(): {
 } {
   const db = getDatabase();
 
-  const recentProjectsCount = db.prepare('SELECT COUNT(*) as count FROM recent_projects').get() as { count: number };
-  const simulationHistoryCount = db.prepare('SELECT COUNT(*) as count FROM simulation_history').get() as { count: number };
+  const CountResultSchema = z.object({ count: z.number() });
+
+  const recentProjectsCount = CountResultSchema.parse(
+    db.prepare('SELECT COUNT(*) as count FROM recent_projects').get()
+  );
+  const simulationHistoryCount = CountResultSchema.parse(
+    db.prepare('SELECT COUNT(*) as count FROM simulation_history').get()
+  );
 
   return {
     recentProjectsCount: recentProjectsCount.count,

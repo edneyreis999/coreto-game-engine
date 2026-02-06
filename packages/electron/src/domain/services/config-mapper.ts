@@ -5,9 +5,8 @@
  * Domain layer - pure transformations without framework dependencies.
  */
 
-// Re-export form data types from renderer for type compatibility
-// TODO: Move these types to domain in a future phase
-export type { TrechoFormData, GlobalSettingsFormData } from '../../../renderer/src/components/ConfigurationPanel/types';
+// Import form data types from domain layer
+export type { TrechoFormData, GlobalSettingsFormData } from '../types/form-types';
 
 // SimulationConfigData is defined in ExecutionPanel, re-exported here for domain consistency
 export interface SimulationConfigData {

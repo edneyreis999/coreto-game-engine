@@ -128,22 +128,22 @@ export function useConfig(): ConfigReturn {
             }
           });
         } else {
-          setState({
-            ...state,
+          setState((prev) => ({
+            ...prev,
             isLoading: false,
             error: new Error(result.error.message),
-          });
+          }));
         }
       } catch (error) {
-        setState({
-          ...state,
+        setState((prev) => ({
+          ...prev,
           isLoading: false,
           error:
             error instanceof Error ? error : new Error(String(error)),
-        });
+        }));
       }
     },
-    [state]
+    []
   );
 
   /**
@@ -167,22 +167,22 @@ export function useConfig(): ConfigReturn {
             isLoading: false,
           }));
         } else {
-          setState({
-            ...state,
+          setState((prev) => ({
+            ...prev,
             isLoading: false,
             error: new Error(result.error.message),
-          });
+          }));
         }
       } catch (error) {
-        setState({
-          ...state,
+        setState((prev) => ({
+          ...prev,
           isLoading: false,
           error:
             error instanceof Error ? error : new Error(String(error)),
-        });
+        }));
       }
     },
-    [state]
+    []
   );
 
   /**

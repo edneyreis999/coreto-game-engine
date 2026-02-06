@@ -90,29 +90,22 @@ export const ProjectSelectionPanel: FC<ProjectSelectionPanelProps> = ({
    */
   const handleFilePickerClick = useCallback(async () => {
     try {
-      console.log('[ProjectSelectionPanel] Opening file picker...');
       // Open file picker dialog via Electron
       const response = await window.electron.ipcRenderer.invoke('dialog:openDirectory');
-      console.log('[ProjectSelectionPanel] Dialog response:', response);
 
       // Handler returns {success: true, data: {canceled, filePaths}}
       if (!response.success || !response.data) {
-        console.log('[ProjectSelectionPanel] Dialog failed or no data');
         return;
       }
 
       const { canceled, filePaths } = response.data;
       if (canceled || !filePaths?.[0]) {
         // User cancelled the dialog
-        console.log('[ProjectSelectionPanel] User canceled dialog');
         return;
       }
 
       const projectPath = filePaths[0];
-      console.log('[ProjectSelectionPanel] Selected project path:', projectPath);
-      console.log('[ProjectSelectionPanel] Calling openProject...');
       await openProject(projectPath);
-      console.log('[ProjectSelectionPanel] openProject completed');
     } catch (error) {
       console.error('[ProjectSelectionPanel] Failed to open file picker:', error);
     }
