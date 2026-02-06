@@ -1,34 +1,15 @@
 import 'reflect-metadata';
 import { ExecuteBattleUseCase, ExecuteBattleInput } from '@coreto/core/core/use-cases/ExecuteBattleUseCase.js';
-import { IBattleSimulator, BattleSetup } from '@coreto/core/core/ports/IBattleSimulator.js';
-import type { IClock } from '@coreto/core/core/ports/IClock.js';
 import { BattleTimeoutError } from '@coreto/core/core/errors/BattleTimeoutError.js';
 import { TEST_CONSTANTS } from '../../../fixtures/test-constants.js';
-import { PartyConfigFakeBuilder, BattleResultFakeBuilder } from '../../../fakes/index.js';
+import {
+  PartyConfigFakeBuilder,
+  BattleResultFakeBuilder,
+  FakeBattleSimulator,
+  FakeClock,
+} from '../../../fakes/index.js';
 
 describe('ExecuteBattleUseCase', () => {
-  let useCase: ExecuteBattleUseCase;
-  let mockSimulator: jest.Mocked<IBattleSimulator>;
-  let mockClock: jest.Mocked<IClock>;
-
-  beforeEach(() => {
-    // Create mock simulator
-    mockSimulator = {
-      initialize: jest.fn(),
-      executeBattle: jest.fn(),
-      getLastMetrics: jest.fn(),
-      cleanup: jest.fn(),
-    };
-
-    // Create mock clock
-    mockClock = {
-      now: jest.fn(() => Date.now()),
-    };
-
-    // Inject mocks
-    useCase = new ExecuteBattleUseCase(mockSimulator, mockClock);
-  });
-
   describe('execute', () => {
     it('should execute battle with correct setup', async () => {
       // Arrange
@@ -40,7 +21,7 @@ describe('ExecuteBattleUseCase', () => {
         seed: TEST_CONSTANTS.DEFAULT_SEED,
       };
 
-      const mockResult = new BattleResultFakeBuilder()
+      const expectedResult = new BattleResultFakeBuilder()
         .withTroopId(TEST_CONSTANTS.DEFAULT_TROOP_ID)
         .withTroopName('Goblin Pack')
         .withTtkMetrics(TEST_CONSTANTS.DEFAULT_TTK_TURNS, TEST_CONSTANTS.DEFAULT_TTK_ACTIONS)
@@ -48,19 +29,22 @@ describe('ExecuteBattleUseCase', () => {
         .withSeed(TEST_CONSTANTS.DEFAULT_SEED)
         .build();
 
-      mockSimulator.executeBattle.mockResolvedValue(mockResult);
+      const simulator = new FakeBattleSimulator(expectedResult);
+      const clock = new FakeClock();
+      const useCase = new ExecuteBattleUseCase(simulator, clock);
 
       // Act
       const output = await useCase.execute(input);
 
       // Assert
-      expect(mockSimulator.executeBattle).toHaveBeenCalledWith({
+      expect(output.result).toEqual(expectedResult);
+      expect(simulator.executeBattleCalls).toHaveLength(1);
+      expect(simulator.executeBattleCalls[0]).toEqual({
         troopId: TEST_CONSTANTS.DEFAULT_TROOP_ID,
         party,
         seed: TEST_CONSTANTS.DEFAULT_SEED,
         maxTurns: undefined,
       });
-      expect(output.result).toEqual(mockResult);
     });
 
     it('should return duration in milliseconds', async () => {
@@ -73,7 +57,7 @@ describe('ExecuteBattleUseCase', () => {
         seed: TEST_CONSTANTS.DEFAULT_SEED,
       };
 
-      const mockResult = new BattleResultFakeBuilder()
+      const expectedResult = new BattleResultFakeBuilder()
         .withTroopId(TEST_CONSTANTS.DEFAULT_TROOP_ID)
         .withTroopName('Goblin Pack')
         .withTtkMetrics(TEST_CONSTANTS.DEFAULT_TTK_TURNS, TEST_CONSTANTS.DEFAULT_TTK_ACTIONS)
@@ -81,7 +65,9 @@ describe('ExecuteBattleUseCase', () => {
         .withSeed(TEST_CONSTANTS.DEFAULT_SEED)
         .build();
 
-      mockSimulator.executeBattle.mockResolvedValue(mockResult);
+      const simulator = new FakeBattleSimulator(expectedResult);
+      const clock = new FakeClock();
+      const useCase = new ExecuteBattleUseCase(simulator, clock);
 
       // Act
       const output = await useCase.execute(input);
@@ -102,7 +88,7 @@ describe('ExecuteBattleUseCase', () => {
         seed: customSeed,
       };
 
-      const mockResult = new BattleResultFakeBuilder()
+      const expectedResult = new BattleResultFakeBuilder()
         .withTroopId(TEST_CONSTANTS.DEFAULT_TROOP_ID)
         .withTroopName('Goblin Pack')
         .withTtkMetrics(TEST_CONSTANTS.DEFAULT_TTK_TURNS, TEST_CONSTANTS.DEFAULT_TTK_ACTIONS)
@@ -110,14 +96,15 @@ describe('ExecuteBattleUseCase', () => {
         .withSeed(customSeed)
         .build();
 
-      mockSimulator.executeBattle.mockResolvedValue(mockResult);
+      const simulator = new FakeBattleSimulator(expectedResult);
+      const clock = new FakeClock();
+      const useCase = new ExecuteBattleUseCase(simulator, clock);
 
       // Act
       await useCase.execute(input);
 
       // Assert
-      const calledSetup = mockSimulator.executeBattle.mock.calls[0]?.[0] as BattleSetup;
-      expect(calledSetup.seed).toBe(customSeed);
+      expect(simulator.executeBattleCalls[0]?.seed).toBe(customSeed);
     });
 
     it('should handle battle timeout error', async () => {
@@ -131,7 +118,14 @@ describe('ExecuteBattleUseCase', () => {
       };
 
       const timeoutError = new BattleTimeoutError(1, 10000, 100);
-      mockSimulator.executeBattle.mockRejectedValue(timeoutError);
+
+      const simulator = new FakeBattleSimulator(
+        new BattleResultFakeBuilder().build()
+      );
+      simulator.throwOnExecute(timeoutError);
+
+      const clock = new FakeClock();
+      const useCase = new ExecuteBattleUseCase(simulator, clock);
 
       // Act & Assert
       await expect(useCase.execute(input)).rejects.toThrow(BattleTimeoutError);
@@ -148,7 +142,7 @@ describe('ExecuteBattleUseCase', () => {
         maxTurns: 50,
       };
 
-      const mockResult = new BattleResultFakeBuilder()
+      const expectedResult = new BattleResultFakeBuilder()
         .withTroopId(TEST_CONSTANTS.DEFAULT_TROOP_ID)
         .withTroopName('Goblin Pack')
         .withTtkMetrics(TEST_CONSTANTS.DEFAULT_TTK_TURNS, TEST_CONSTANTS.DEFAULT_TTK_ACTIONS)
@@ -156,14 +150,15 @@ describe('ExecuteBattleUseCase', () => {
         .withSeed(TEST_CONSTANTS.DEFAULT_SEED)
         .build();
 
-      mockSimulator.executeBattle.mockResolvedValue(mockResult);
+      const simulator = new FakeBattleSimulator(expectedResult);
+      const clock = new FakeClock();
+      const useCase = new ExecuteBattleUseCase(simulator, clock);
 
       // Act
       await useCase.execute(input);
 
       // Assert
-      const calledSetup = mockSimulator.executeBattle.mock.calls[0]?.[0] as BattleSetup;
-      expect(calledSetup.maxTurns).toBe(50);
+      expect(simulator.executeBattleCalls[0]?.maxTurns).toBe(50);
     });
 
     it('should include result from simulator', async () => {
@@ -176,7 +171,7 @@ describe('ExecuteBattleUseCase', () => {
         seed: TEST_CONSTANTS.DEFAULT_SEED,
       };
 
-      const mockResult = new BattleResultFakeBuilder()
+      const expectedResult = new BattleResultFakeBuilder()
         .withTroopId(TEST_CONSTANTS.DEFAULT_TROOP_ID)
         .withTroopName('Goblin Pack')
         .withTtkMetrics(TEST_CONSTANTS.DEFAULT_TTK_TURNS, TEST_CONSTANTS.DEFAULT_TTK_ACTIONS)
@@ -184,13 +179,15 @@ describe('ExecuteBattleUseCase', () => {
         .withSeed(TEST_CONSTANTS.DEFAULT_SEED)
         .build();
 
-      mockSimulator.executeBattle.mockResolvedValue(mockResult);
+      const simulator = new FakeBattleSimulator(expectedResult);
+      const clock = new FakeClock();
+      const useCase = new ExecuteBattleUseCase(simulator, clock);
 
       // Act
       const output = await useCase.execute(input);
 
       // Assert
-      expect(output.result).toBe(mockResult);
+      expect(output.result).toBe(expectedResult);
       expect(output.result.troopId).toBe(TEST_CONSTANTS.DEFAULT_TROOP_ID);
       expect(output.result.outcome).toBe('victory');
     });

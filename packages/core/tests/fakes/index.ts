@@ -30,3 +30,12 @@ export { WarningFakeBuilder } from './WarningFakeBuilder';
 export { BattleResultFakeBuilder } from './BattleResultFakeBuilder';
 export { TrechoFakeBuilder } from './TrechoFakeBuilder';
 export { ReportFakeBuilder } from './ReportFakeBuilder';
+
+// In-memory fakes for ports
+export { FakeBattleSimulator } from './FakeBattleSimulator';
+export { FakeReporter } from './FakeReporter';
+export { FakeClock } from './FakeClock';
+
+// Additional builders
+export { TrechoValidationResultFakeBuilder } from './TrechoValidationResultFakeBuilder';
+export { RmmzDatabaseFakeBuilder } from './RmmzDatabaseFakeBuilder';

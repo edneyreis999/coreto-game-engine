@@ -1,42 +1,16 @@
 import 'reflect-metadata';
 import { GenerateReportUseCase, GenerateReportInput } from '@coreto/core/core/use-cases/GenerateReportUseCase.js';
-import { IReporter } from '@coreto/core/core/ports/IReporter.js';
 import { Report } from '@coreto/core/core/domain/Report.js';
-import { TrechoValidationResult } from '@coreto/core/core/use-cases/ValidateTrechoUseCase.js';
 import { TEST_CONSTANTS } from '../../../fixtures/test-constants.js';
-import { BattleResultFakeBuilder, WarningFakeBuilder } from '../../../fakes/index.js';
+import {
+  BattleResultFakeBuilder,
+  WarningFakeBuilder,
+  TrechoValidationResultFakeBuilder,
+  FakeReporter,
+} from '../../../fakes/index.js';
 import { ReportMetadataFakeBuilder } from '../../../fixtures/builders/ReportMetadataFakeBuilder.js';
 
 describe('GenerateReportUseCase', () => {
-  let useCase: GenerateReportUseCase;
-  let mockReporter: jest.Mocked<IReporter>;
-
-  beforeEach(() => {
-    // Create mock reporter
-    mockReporter = {
-      addWarning: jest.fn(),
-      addBattleResult: jest.fn(),
-      generateReport: jest.fn(),
-      writeReport: jest.fn(),
-      exportContext: jest.fn(),
-    };
-
-    // Inject mock reporter
-    useCase = new GenerateReportUseCase(mockReporter);
-  });
-
-  const createTrechoValidationResult = (
-    overrides?: Partial<TrechoValidationResult>
-  ): TrechoValidationResult => ({
-    trechoId: overrides?.trechoId ?? 'ato1-nivel1-10',
-    trechoName: overrides?.trechoName ?? 'Ato 1 - Níveis 1-10',
-    passed: overrides?.passed ?? true,
-    avgTtkTurns: overrides?.avgTtkTurns ?? TEST_CONSTANTS.DEFAULT_TTK_TURNS,
-    avgTtkActions: overrides?.avgTtkActions ?? TEST_CONSTANTS.DEFAULT_TTK_ACTIONS,
-    battles: overrides?.battles ?? [new BattleResultFakeBuilder().build()],
-    failedBattles: overrides?.failedBattles ?? [],
-  });
-
   describe('execute', () => {
     it('should create report with correct metadata', () => {
       // Arrange
@@ -45,9 +19,12 @@ describe('GenerateReportUseCase', () => {
         .withSeed(TEST_CONSTANTS.DEFAULT_SEED)
         .build();
 
+      const reporter = new FakeReporter();
+      const useCase = new GenerateReportUseCase(reporter);
+
       const input: GenerateReportInput = {
         metadata,
-        trechoResults: [createTrechoValidationResult()],
+        trechoResults: [new TrechoValidationResultFakeBuilder().build()],
         warnings: [],
       };
 
@@ -71,19 +48,21 @@ describe('GenerateReportUseCase', () => {
           .build(),
       ];
 
-      const trechoResult = createTrechoValidationResult({
-        trechoId: 'ato1-nivel1-10',
-        trechoName: 'Ato 1 - Níveis 1-10',
-        passed: true,
-        avgTtkTurns: 3.5,
-        avgTtkActions: 9,
-        battles,
-      });
+      const trechoResult = new TrechoValidationResultFakeBuilder()
+        .withTrechoId('ato1-nivel1-10')
+        .withTrechoName('Ato 1 - Níveis 1-10')
+        .withPassed(true)
+        .withAvgTtk(3.5, 9)
+        .withBattles(battles)
+        .build();
 
       const metadata = new ReportMetadataFakeBuilder()
         .withVersion(TEST_CONSTANTS.DEFAULT_REPORT_VERSION)
         .withSeed(TEST_CONSTANTS.DEFAULT_SEED)
         .build();
+
+      const reporter = new FakeReporter();
+      const useCase = new GenerateReportUseCase(reporter);
 
       const input: GenerateReportInput = {
         metadata,
@@ -124,9 +103,12 @@ describe('GenerateReportUseCase', () => {
         .withSeed(TEST_CONSTANTS.DEFAULT_SEED)
         .build();
 
+      const reporter = new FakeReporter();
+      const useCase = new GenerateReportUseCase(reporter);
+
       const input: GenerateReportInput = {
         metadata,
-        trechoResults: [createTrechoValidationResult()],
+        trechoResults: [new TrechoValidationResultFakeBuilder().build()],
         warnings,
       };
 
@@ -141,24 +123,27 @@ describe('GenerateReportUseCase', () => {
     it('should handle multiple trechos', () => {
       // Arrange
       const trechoResults = [
-        createTrechoValidationResult({
-          trechoId: 'ato1-nivel1-10',
-          trechoName: 'Ato 1 - Níveis 1-10',
-        }),
-        createTrechoValidationResult({
-          trechoId: 'ato1-nivel11-20',
-          trechoName: 'Ato 1 - Níveis 11-20',
-        }),
-        createTrechoValidationResult({
-          trechoId: 'ato2-nivel1-10',
-          trechoName: 'Ato 2 - Níveis 1-10',
-        }),
+        new TrechoValidationResultFakeBuilder()
+          .withTrechoId('ato1-nivel1-10')
+          .withTrechoName('Ato 1 - Níveis 1-10')
+          .build(),
+        new TrechoValidationResultFakeBuilder()
+          .withTrechoId('ato1-nivel11-20')
+          .withTrechoName('Ato 1 - Níveis 11-20')
+          .build(),
+        new TrechoValidationResultFakeBuilder()
+          .withTrechoId('ato2-nivel1-10')
+          .withTrechoName('Ato 2 - Níveis 1-10')
+          .build(),
       ];
 
       const metadata = new ReportMetadataFakeBuilder()
         .withVersion(TEST_CONSTANTS.DEFAULT_REPORT_VERSION)
         .withSeed(TEST_CONSTANTS.DEFAULT_SEED)
         .build();
+
+      const reporter = new FakeReporter();
+      const useCase = new GenerateReportUseCase(reporter);
 
       const input: GenerateReportInput = {
         metadata,
@@ -183,6 +168,9 @@ describe('GenerateReportUseCase', () => {
         .withSeed(TEST_CONSTANTS.DEFAULT_SEED)
         .build();
 
+      const reporter = new FakeReporter();
+      const useCase = new GenerateReportUseCase(reporter);
+
       const input: GenerateReportInput = {
         metadata,
         trechoResults: [],
@@ -204,9 +192,12 @@ describe('GenerateReportUseCase', () => {
         .withSeed(TEST_CONSTANTS.DEFAULT_SEED)
         .build();
 
+      const reporter = new FakeReporter();
+      const useCase = new GenerateReportUseCase(reporter);
+
       const input: GenerateReportInput = {
         metadata,
-        trechoResults: [createTrechoValidationResult()],
+        trechoResults: [new TrechoValidationResultFakeBuilder().build()],
         warnings: [new WarningFakeBuilder().build()],
       };
 
@@ -226,12 +217,17 @@ describe('GenerateReportUseCase', () => {
         new BattleResultFakeBuilder().withTroopId(3).withTroopName('Troop 3').build(),
       ];
 
-      const trechoResult = createTrechoValidationResult({ battles });
+      const trechoResult = new TrechoValidationResultFakeBuilder()
+        .withBattles(battles)
+        .build();
 
       const metadata = new ReportMetadataFakeBuilder()
         .withVersion(TEST_CONSTANTS.DEFAULT_REPORT_VERSION)
         .withSeed(TEST_CONSTANTS.DEFAULT_SEED)
         .build();
+
+      const reporter = new FakeReporter();
+      const useCase = new GenerateReportUseCase(reporter);
 
       const input: GenerateReportInput = {
         metadata,
@@ -245,6 +241,92 @@ describe('GenerateReportUseCase', () => {
       // Assert
       expect(report.trechos[0]?.battles).toEqual(battles);
       expect(report.trechos[0]?.battles).toHaveLength(3);
+    });
+  });
+
+  describe('writeReport', () => {
+    it('should call reporter.writeReport', async () => {
+      // Arrange
+      const reporter = new FakeReporter();
+      const useCase = new GenerateReportUseCase(reporter);
+
+      const metadata = new ReportMetadataFakeBuilder()
+        .withVersion(TEST_CONSTANTS.DEFAULT_REPORT_VERSION)
+        .withSeed(TEST_CONSTANTS.DEFAULT_SEED)
+        .build();
+
+      const input: GenerateReportInput = {
+        metadata,
+        trechoResults: [new TrechoValidationResultFakeBuilder().build()],
+        warnings: [],
+      };
+
+      const report = useCase.execute(input);
+      const outputPath = '/path/to/report.json';
+
+      // Act
+      await useCase.writeReport(report, outputPath);
+
+      // Assert
+      expect(reporter.writeReportCalls).toHaveLength(1);
+      expect(reporter.writeReportCalls[0]).toEqual({ report, path: outputPath });
+    });
+
+    it('should propagate write errors', async () => {
+      // Arrange
+      const reporter = new FakeReporter();
+
+      // Make writeReport reject
+      reporter.writeReportCalls.push({} as any);
+      Object.defineProperty(reporter, 'writeReport', {
+        value: jest.fn(() => Promise.reject(new Error('Write failed'))),
+      });
+
+      const useCase = new GenerateReportUseCase(reporter);
+
+      const metadata = new ReportMetadataFakeBuilder()
+        .withVersion(TEST_CONSTANTS.DEFAULT_REPORT_VERSION)
+        .withSeed(TEST_CONSTANTS.DEFAULT_SEED)
+        .build();
+
+      const input: GenerateReportInput = {
+        metadata,
+        trechoResults: [new TrechoValidationResultFakeBuilder().build()],
+        warnings: [],
+      };
+
+      const report = useCase.execute(input);
+      const outputPath = '/path/to/report.json';
+
+      // Act & Assert
+      await expect(useCase.writeReport(report, outputPath)).rejects.toThrow('Write failed');
+    });
+
+    it('should handle absolute paths', async () => {
+      // Arrange
+      const reporter = new FakeReporter();
+      const useCase = new GenerateReportUseCase(reporter);
+
+      const metadata = new ReportMetadataFakeBuilder()
+        .withVersion(TEST_CONSTANTS.DEFAULT_REPORT_VERSION)
+        .withSeed(TEST_CONSTANTS.DEFAULT_SEED)
+        .build();
+
+      const input: GenerateReportInput = {
+        metadata,
+        trechoResults: [new TrechoValidationResultFakeBuilder().build()],
+        warnings: [],
+      };
+
+      const report = useCase.execute(input);
+      const absolutePath = '/absolute/path/to/report.json';
+
+      // Act
+      await useCase.writeReport(report, absolutePath);
+
+      // Assert
+      expect(reporter.writeReportCalls).toHaveLength(1);
+      expect(reporter.writeReportCalls[0]?.path).toBe(absolutePath);
     });
   });
 });

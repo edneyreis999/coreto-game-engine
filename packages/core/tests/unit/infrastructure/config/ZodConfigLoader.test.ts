@@ -133,24 +133,15 @@ describe('ZodConfigLoader', () => {
       );
 
       // Act & Assert
-      try {
-        await configLoader.loadConfig(validConfigPath);
-        expect(true).toBe(false); // Should not reach here
-      } catch (error) {
-        expect(error).toBeInstanceOf(ValidationError);
-        const validationError = error as ValidationError;
-        // Check that error context contains validation issues
-        expect(validationError.context).toHaveProperty('issues');
-        const issues = validationError.context.issues as Array<{
-          path: string;
-          message: string;
-        }>;
-        // Verify path traversal is mentioned in validation issues
-        const hasPathTraversalIssue = issues.some((issue) =>
-          issue.message.toLowerCase().includes('path traversal')
-        );
-        expect(hasPathTraversalIssue).toBe(true);
-      }
+      await expect(configLoader.loadConfig(validConfigPath)).rejects.toMatchObject({
+        context: {
+          issues: expect.arrayContaining([
+            expect.objectContaining({
+              message: expect.stringMatching(/path traversal/i),
+            }),
+          ]),
+        },
+      });
     });
 
     it('should reject missing required fields', async () => {

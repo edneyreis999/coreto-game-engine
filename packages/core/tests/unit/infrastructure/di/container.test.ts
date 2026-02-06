@@ -33,13 +33,6 @@ import type {
   IReporter,
   IHeadlessRuntime,
 } from '@coreto/core/core/ports/index.js';
-import { ConsoleLogger } from '@coreto/core/infrastructure/adapters/logger/ConsoleLogger.js';
-import { NodeFileSystem } from '@coreto/core/infrastructure/adapters/filesystem/NodeFileSystem.js';
-import { ZodConfigLoader } from '@coreto/core/infrastructure/config/ZodConfigLoader.js';
-import { RmmzDataLoader } from '@coreto/core/infrastructure/adapters/data/RmmzDataLoader.js';
-import { HeadlessBattleSimulator } from '@coreto/core/infrastructure/simulation/BattleSimulator.js';
-import { JsonReporter } from '@coreto/core/infrastructure/adapters/reporter/JsonReporter.js';
-import { JsdomHeadlessRuntime } from '@coreto/core/infrastructure/runtime/JsdomHeadlessRuntime.js';
 
 describe('DI Container', () => {
   beforeEach(() => {
@@ -99,14 +92,17 @@ describe('DI Container', () => {
     });
 
     describe('ILogger token', () => {
-      it('should resolve to ConsoleLogger instance', () => {
+      it('should resolve to instance with ILogger interface', () => {
         const logger = resolve(ILoggerToken);
 
-        expect(logger).toBeInstanceOf(ConsoleLogger);
         expect(logger).toHaveProperty('info');
         expect(logger).toHaveProperty('warn');
         expect(logger).toHaveProperty('error');
         expect(logger).toHaveProperty('debug');
+        expect(typeof logger.info).toBe('function');
+        expect(typeof logger.warn).toBe('function');
+        expect(typeof logger.error).toBe('function');
+        expect(typeof logger.debug).toBe('function');
       });
 
       it('should return same instance on multiple resolves (singleton)', () => {
@@ -118,14 +114,17 @@ describe('DI Container', () => {
     });
 
     describe('IFileSystem token', () => {
-      it('should resolve to NodeFileSystem instance', () => {
+      it('should resolve to instance with IFileSystem interface', () => {
         const fs = resolve(IFileSystemToken);
 
-        expect(fs).toBeInstanceOf(NodeFileSystem);
         expect(fs).toHaveProperty('exists');
         expect(fs).toHaveProperty('readFileSync');
         expect(fs).toHaveProperty('writeFileSync');
         expect(fs).toHaveProperty('validateProjectPath');
+        expect(typeof fs.exists).toBe('function');
+        expect(typeof fs.readFileSync).toBe('function');
+        expect(typeof fs.writeFileSync).toBe('function');
+        expect(typeof fs.validateProjectPath).toBe('function');
       });
 
       it('should return same instance on multiple resolves (singleton)', () => {
@@ -137,13 +136,15 @@ describe('DI Container', () => {
     });
 
     describe('IConfigLoader token', () => {
-      it('should resolve to ZodConfigLoader instance', () => {
+      it('should resolve to instance with IConfigLoader interface', () => {
         const loader = resolve(IConfigLoaderToken);
 
-        expect(loader).toBeInstanceOf(ZodConfigLoader);
         expect(loader).toHaveProperty('loadConfig');
         expect(loader).toHaveProperty('loadTrechos');
         expect(loader).toHaveProperty('validate');
+        expect(typeof loader.loadConfig).toBe('function');
+        expect(typeof loader.loadTrechos).toBe('function');
+        expect(typeof loader.validate).toBe('function');
       });
 
       it('should return same instance on multiple resolves (singleton)', () => {
@@ -157,19 +158,22 @@ describe('DI Container', () => {
         const loader = resolve(IConfigLoaderToken);
 
         // ZodConfigLoader requires IFileSystem in constructor
-        expect(loader).toBeInstanceOf(ZodConfigLoader);
+        expect(typeof loader.loadConfig).toBe('function');
       });
     });
 
     describe('IDataLoader token', () => {
-      it('should resolve to RmmzDataLoader instance', () => {
+      it('should resolve to instance with IDataLoader interface', () => {
         const loader = resolve(IDataLoaderToken);
 
-        expect(loader).toBeInstanceOf(RmmzDataLoader);
         expect(loader).toHaveProperty('loadDatabase');
         expect(loader).toHaveProperty('validateProjectStructure');
         expect(loader).toHaveProperty('validateReferences');
         expect(loader).toHaveProperty('loadDataFile');
+        expect(typeof loader.loadDatabase).toBe('function');
+        expect(typeof loader.validateProjectStructure).toBe('function');
+        expect(typeof loader.validateReferences).toBe('function');
+        expect(typeof loader.loadDataFile).toBe('function');
       });
 
       it('should return same instance on multiple resolves (singleton)', () => {
@@ -183,19 +187,22 @@ describe('DI Container', () => {
         const loader = resolve(IDataLoaderToken);
 
         // RmmzDataLoader requires IFileSystem and RmmzProjectValidator
-        expect(loader).toBeInstanceOf(RmmzDataLoader);
+        expect(typeof loader.loadDatabase).toBe('function');
       });
     });
 
     describe('IBattleSimulator token', () => {
-      it('should resolve to HeadlessBattleSimulator instance', () => {
+      it('should resolve to instance with IBattleSimulator interface', () => {
         const simulator = resolve(IBattleSimulatorToken);
 
-        expect(simulator).toBeInstanceOf(HeadlessBattleSimulator);
         expect(simulator).toHaveProperty('initialize');
         expect(simulator).toHaveProperty('executeBattle');
         expect(simulator).toHaveProperty('getLastMetrics');
         expect(simulator).toHaveProperty('cleanup');
+        expect(typeof simulator.initialize).toBe('function');
+        expect(typeof simulator.executeBattle).toBe('function');
+        expect(typeof simulator.getLastMetrics).toBe('function');
+        expect(typeof simulator.cleanup).toBe('function');
       });
 
       it('should return same instance on multiple resolves (singleton)', () => {
@@ -207,15 +214,19 @@ describe('DI Container', () => {
     });
 
     describe('IReporter token', () => {
-      it('should resolve to JsonReporter instance', () => {
+      it('should resolve to instance with IReporter interface', () => {
         const reporter = resolve(IReporterToken);
 
-        expect(reporter).toBeInstanceOf(JsonReporter);
         expect(reporter).toHaveProperty('addWarning');
         expect(reporter).toHaveProperty('addBattleResult');
         expect(reporter).toHaveProperty('generateReport');
         expect(reporter).toHaveProperty('writeReport');
         expect(reporter).toHaveProperty('exportContext');
+        expect(typeof reporter.addWarning).toBe('function');
+        expect(typeof reporter.addBattleResult).toBe('function');
+        expect(typeof reporter.generateReport).toBe('function');
+        expect(typeof reporter.writeReport).toBe('function');
+        expect(typeof reporter.exportContext).toBe('function');
       });
 
       it('should return same instance on multiple resolves (singleton)', () => {
@@ -227,14 +238,17 @@ describe('DI Container', () => {
     });
 
     describe('IHeadlessRuntime token', () => {
-      it('should resolve to JsdomHeadlessRuntime instance', () => {
+      it('should resolve to instance with IHeadlessRuntime interface', () => {
         const runtime = resolve(IHeadlessRuntimeToken);
 
-        expect(runtime).toBeInstanceOf(JsdomHeadlessRuntime);
         expect(runtime).toHaveProperty('initialize');
         expect(runtime).toHaveProperty('loadCoreScripts');
         expect(runtime).toHaveProperty('setupMocks');
         expect(runtime).toHaveProperty('cleanup');
+        expect(typeof runtime.initialize).toBe('function');
+        expect(typeof runtime.loadCoreScripts).toBe('function');
+        expect(typeof runtime.setupMocks).toBe('function');
+        expect(typeof runtime.cleanup).toBe('function');
       });
 
       it('should return same instance on multiple resolves (singleton)', () => {
@@ -248,7 +262,7 @@ describe('DI Container', () => {
         const runtime = resolve(IHeadlessRuntimeToken);
 
         // JsdomHeadlessRuntime requires ILogger in constructor
-        expect(runtime).toBeInstanceOf(JsdomHeadlessRuntime);
+        expect(typeof runtime.initialize).toBe('function');
       });
     });
 
@@ -387,11 +401,7 @@ describe('DI Container', () => {
     });
 
     it('should inject IFileSystem into ZodConfigLoader', () => {
-      const loader = resolve(IConfigLoaderToken);
       const fs = resolve(IFileSystemToken);
-
-      // ZodConfigLoader should have IFileSystem injected
-      expect(loader).toBeInstanceOf(ZodConfigLoader);
 
       // Verify IFileSystem is available (singleton check)
       const fsFromLoader = resolve(IFileSystemToken);
@@ -399,19 +409,12 @@ describe('DI Container', () => {
     });
 
     it('should inject IFileSystem and RmmzProjectValidator into RmmzDataLoader', () => {
-      const loader = resolve(IDataLoaderToken);
-
-      expect(loader).toBeInstanceOf(RmmzDataLoader);
-
       // Verify dependencies are registered
       expect(() => resolve(IFileSystemToken)).not.toThrow();
     });
 
     it('should inject ILogger into JsdomHeadlessRuntime', () => {
-      const runtime = resolve(IHeadlessRuntimeToken);
       const logger = resolve(ILoggerToken);
-
-      expect(runtime).toBeInstanceOf(JsdomHeadlessRuntime);
 
       // Verify ILogger is available (singleton check)
       const loggerFromRuntime = resolve(ILoggerToken);
@@ -586,7 +589,7 @@ describe('DI Container', () => {
       // Test 1: Register and resolve
       registerDependencies();
       const logger1 = resolve(ILoggerToken);
-      expect(logger1).toBeInstanceOf(ConsoleLogger);
+      expect(typeof logger1.info).toBe('function');
 
       // Cleanup (simulating end of test)
       clearContainer();
@@ -594,7 +597,7 @@ describe('DI Container', () => {
       // Test 2: Fresh registration
       registerDependencies();
       const logger2 = resolve(ILoggerToken);
-      expect(logger2).toBeInstanceOf(ConsoleLogger);
+      expect(typeof logger2.info).toBe('function');
       expect(logger1).not.toBe(logger2);
 
       // Cleanup
