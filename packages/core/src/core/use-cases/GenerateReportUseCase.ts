@@ -13,6 +13,8 @@ export interface GenerateReportInput {
   readonly trechoResults: TrechoValidationResult[];
   /** Validation warnings collected during simulation (ADR-013) */
   readonly warnings: Warning[];
+  /** Optional peak memory usage in MB */
+  readonly peakMemoryMB?: number;
 }
 
 /**

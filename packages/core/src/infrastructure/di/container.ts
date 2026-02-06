@@ -26,6 +26,7 @@ import {
   IBattleSimulatorToken,
   IReporterToken,
   IHeadlessRuntimeToken,
+  IClockToken,
 } from './tokens.js';
 
 import { ConsoleLogger } from '../adapters/logger/ConsoleLogger.js';
@@ -35,6 +36,9 @@ import { RmmzDataLoader, RmmzProjectValidator } from '../adapters/data/index.js'
 import { HeadlessBattleSimulator } from '../simulation/BattleSimulator.js';
 import { JsonReporter } from '../adapters/reporter/JsonReporter.js';
 import { JsdomHeadlessRuntime } from '../runtime/JsdomHeadlessRuntime.js';
+import { ExecuteBattleUseCase } from '../../core/use-cases/ExecuteBattleUseCase.js';
+import { GenerateReportUseCase } from '../../core/use-cases/GenerateReportUseCase.js';
+import { ValidateTrechoUseCase } from '../../core/use-cases/ValidateTrechoUseCase.js';
 
 // Re-export all tokens for external use
 export {

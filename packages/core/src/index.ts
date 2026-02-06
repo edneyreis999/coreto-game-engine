@@ -20,6 +20,9 @@
 // PUBLIC API - Core Domain
 // =============================================================================
 
+// Errors
+export * from './core/errors/index.js';
+
 // Value Objects
 export * from './core/domain/AnchorLevelRange.js';
 export * from './core/domain/TtkTarget.js';
@@ -35,6 +38,9 @@ export * from './core/domain/Report.js';
 // Domain Services
 export * from './core/domain/services/WarningCollector.js';
 
+// Use Cases
+export * from './core/use-cases/index.js';
+
 // =============================================================================
 // Configuration Schemas (Zod)
 // =============================================================================
@@ -46,12 +52,20 @@ export {
   PartyConfigSchema,
   TrechoSchema,
   ProjectConfigSchema,
-  type AnchorLevelRange as ZodAnchorLevelRange,
-  type TtkTarget as ZodTtkTarget,
-  type PartyMember as ZodPartyMember,
-  type PartyConfig as ZodPartyConfig,
-  type TrechoConfig as ZodTrechoConfig,
-  type ProjectConfig as ZodProjectConfig,
+  // DTOs with original names (for backward compatibility)
+  type AnchorLevelRangeDTO,
+  type TtkTargetDTO,
+  type PartyMemberDTO,
+  type PartyConfigDTO,
+  type TrechoDTO,
+  type ProjectConfigDTO,
+  // DTOs with Zod prefix (alternative naming)
+  type AnchorLevelRangeDTO as ZodAnchorLevelRange,
+  type TtkTargetDTO as ZodTtkTarget,
+  type PartyMemberDTO as ZodPartyMember,
+  type PartyConfigDTO as ZodPartyConfig,
+  type TrechoDTO as ZodTrechoConfig,
+  type ProjectConfigDTO as ZodProjectConfig,
 } from './infrastructure/config/schemas.js';
 
 // =============================================================================
@@ -127,22 +141,6 @@ export {
   type ReportSummary as ReportSummaryDTO,
   type Report as ReportDTO,
 } from './infrastructure/schemas/report.schema.js';
-
-// Configuration schemas
-export {
-  AnchorLevelRangeSchema,
-  TtkTargetSchema,
-  PartyMemberSchema,
-  PartyConfigSchema,
-  TrechoSchema,
-  ProjectConfigSchema,
-  type AnchorLevelRangeDTO,
-  type TtkTargetDTO,
-  type PartyMemberDTO,
-  type PartyConfigDTO,
-  type TrechoDTO,
-  type ProjectConfigDTO,
-} from './infrastructure/config/schemas.js';
 
 // =============================================================================
 // PUBLIC API - Configuration Loader

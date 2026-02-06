@@ -18,7 +18,6 @@ import { ILoggerToken } from '../di/tokens.js';
 import { HeadlessRuntimeBootstrapper } from './HeadlessRuntimeBootstrapper.js';
 import { RuntimeError } from '../../core/errors/RuntimeError.js';
 
-// @ts-expect-error - jsdom types resolution issue with ts-jest + pnpm
 import type { JSDOM } from 'jsdom';
 
 /**

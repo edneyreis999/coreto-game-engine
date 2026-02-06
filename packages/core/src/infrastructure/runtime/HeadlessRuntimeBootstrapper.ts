@@ -1,4 +1,3 @@
-// @ts-expect-error - jsdom types resolution issue with ts-jest + pnpm
 import { JSDOM } from 'jsdom';
 import { ScriptLoader } from './loaders/ScriptLoader.js';
 import { DatabaseLoader } from './loaders/DatabaseLoader.js';
