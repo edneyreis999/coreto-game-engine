@@ -15,7 +15,7 @@ import type {
   IDataLoader,
   IBattleSimulator,
   IReporter,
-  IClock,
+  IHeadlessRuntime,
 } from '../../core/ports/index.js';
 
 import {
@@ -25,7 +25,7 @@ import {
   IDataLoaderToken,
   IBattleSimulatorToken,
   IReporterToken,
-  IClockToken,
+  IHeadlessRuntimeToken,
 } from './tokens.js';
 
 import { ConsoleLogger } from '../adapters/logger/ConsoleLogger.js';
@@ -34,10 +34,7 @@ import { ZodConfigLoader } from '../config/ZodConfigLoader.js';
 import { RmmzDataLoader, RmmzProjectValidator } from '../adapters/data/index.js';
 import { HeadlessBattleSimulator } from '../simulation/BattleSimulator.js';
 import { JsonReporter } from '../adapters/reporter/JsonReporter.js';
-import { SystemClock } from '../adapters/clock/SystemClock.js';
-import { ExecuteBattleUseCase } from '../../core/use-cases/ExecuteBattleUseCase.js';
-import { GenerateReportUseCase } from '../../core/use-cases/GenerateReportUseCase.js';
-import { ValidateTrechoUseCase } from '../../core/use-cases/ValidateTrechoUseCase.js';
+import { JsdomHeadlessRuntime } from '../runtime/JsdomHeadlessRuntime.js';
 
 // Re-export all tokens for external use
 export {
@@ -62,11 +59,8 @@ export {
  * - RmmzDataLoader (IDataLoader implementation)
  * - HeadlessBattleSimulator (IBattleSimulator implementation)
  * - JsonReporter (IReporter implementation)
- * - SystemClock (IClock implementation)
+ * - JsdomHeadlessRuntime (IHeadlessRuntime implementation)
  * - RmmzProjectValidator (helper for data loading)
- *
- * To be implemented:
- * - HeadlessRuntime (IHeadlessRuntime)
  */
 export function registerDependencies(): void {
   // Logger: ConsoleLogger implementation registered as singleton
@@ -90,8 +84,8 @@ export function registerDependencies(): void {
   // Reporter: JsonReporter implementation registered as singleton
   tsyringeContainer.registerSingleton<IReporter>(IReporterToken, JsonReporter);
 
-  // Clock: SystemClock implementation registered as singleton
-  tsyringeContainer.registerSingleton<IClock>(IClockToken, SystemClock);
+  // HeadlessRuntime: JsdomHeadlessRuntime implementation registered as singleton
+  tsyringeContainer.registerSingleton<IHeadlessRuntime>(IHeadlessRuntimeToken, JsdomHeadlessRuntime);
 
   // RmmzProjectValidator: Helper for data loading validation (singleton)
   tsyringeContainer.registerSingleton(RmmzProjectValidator);

@@ -1,0 +1,10 @@
+[
+  null,
+  {
+    "id": 1,
+    "name": "Normal",
+    "iconIndex": 0,
+    "priority": 50,
+    "traits": []
+  }
+]

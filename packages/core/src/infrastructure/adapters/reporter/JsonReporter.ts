@@ -9,6 +9,7 @@
  * @see docs/adrs/REPORTER/ADR-013-typed-warning-system-with-severity-levels.md
  */
 
+import { injectable } from 'tsyringe';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { IReporter, Warning } from '../../../core/ports/index.js';
@@ -74,6 +75,7 @@ interface TrechoData {
  * await reporter.writeReport(report, '/path/to/report.json');
  * ```
  */
+@injectable()
 export class JsonReporter implements IReporter {
   /**
    * Map of trecho ID to collected battle results and warnings.

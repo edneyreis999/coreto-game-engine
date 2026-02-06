@@ -36,27 +36,26 @@ export * from './core/domain/Report.js';
 export * from './core/domain/services/WarningCollector.js';
 
 // =============================================================================
-// PUBLIC API - Use Cases
+// Configuration Schemas (Zod)
 // =============================================================================
 
-export * from './core/use-cases/ExecuteBattleUseCase.js';
-export * from './core/use-cases/ValidateTrechoUseCase.js';
-export * from './core/use-cases/GenerateReportUseCase.js';
+export {
+  AnchorLevelRangeSchema,
+  TtkTargetSchema,
+  PartyMemberSchema,
+  PartyConfigSchema,
+  TrechoSchema,
+  ProjectConfigSchema,
+  type AnchorLevelRange as ZodAnchorLevelRange,
+  type TtkTarget as ZodTtkTarget,
+  type PartyMember as ZodPartyMember,
+  type PartyConfig as ZodPartyConfig,
+  type TrechoConfig as ZodTrechoConfig,
+  type ProjectConfig as ZodProjectConfig,
+} from './infrastructure/config/schemas.js';
 
 // =============================================================================
-// PUBLIC API - Domain Errors
-// =============================================================================
-
-export * from './core/errors/DomainError.js';
-export * from './core/errors/ValidationError.js';
-export * from './core/errors/ConfigError.js';
-export * from './core/errors/DataLoadError.js';
-export * from './core/errors/BattleTimeoutError.js';
-export * from './core/errors/SkillFormulaError.js';
-export * from './core/errors/FileSystemError.js';
-
-// =============================================================================
-// PUBLIC API - Port Interfaces (type-only)
+// Port Interfaces
 // =============================================================================
 
 export type {

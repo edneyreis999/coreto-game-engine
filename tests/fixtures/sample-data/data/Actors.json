@@ -1,0 +1,31 @@
+[
+  null,
+  {
+    "id": 1,
+    "name": "Hero",
+    "nickname": "",
+    "classId": 1,
+    "initialLevel": 1,
+    "maxLevel": 99,
+    "characterName": "",
+    "characterIndex": 0,
+    "faceName": "",
+    "faceIndex": 0,
+    "equips": [0, 0, 0, 0, 0],
+    "traits": []
+  },
+  {
+    "id": 2,
+    "name": "Warrior",
+    "nickname": "",
+    "classId": 2,
+    "initialLevel": 1,
+    "maxLevel": 99,
+    "characterName": "",
+    "characterIndex": 0,
+    "faceName": "",
+    "faceIndex": 0,
+    "equips": [0, 0, 0, 0, 0],
+    "traits": []
+  }
+]

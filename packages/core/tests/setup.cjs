@@ -3,10 +3,12 @@
  *
  * This file runs after the test framework has been installed in the environment.
  * It provides global mocks and configuration for all tests.
+ *
+ * Uses .cjs extension to avoid TypeScript transpilation issues with ESM mode.
  */
 
-import 'reflect-metadata';
-import 'jest-canvas-mock';
+require('reflect-metadata');
+require('jest-canvas-mock');
 
 /**
  * Suppress console noise in tests

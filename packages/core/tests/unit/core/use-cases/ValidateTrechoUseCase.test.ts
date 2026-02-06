@@ -1,10 +1,8 @@
 import 'reflect-metadata';
-import { ValidateTrechoUseCase } from '@coreto/core';
-
-import { BattleResultFakeBuilder } from '../../../fixtures/builders/BattleResultFakeBuilder';
-import { TrechoFakeBuilder } from '../../../fixtures/builders/TrechoFakeBuilder';
-import type { BattleResult } from '@coreto/core';
-import { TEST_CONSTANTS, TEST_TRECHO_IDS } from '../../../fixtures/test-constants';
+import { ValidateTrechoUseCase } from '@coreto/core/core/use-cases/ValidateTrechoUseCase.js';
+import { Trecho } from '@coreto/core/core/domain/Trecho.js';
+import { BattleResult } from '@coreto/core/core/domain/BattleResult.js';
+import { PartyConfig } from '@coreto/core/core/domain/PartyConfig.js';
 
 describe('ValidateTrechoUseCase', () => {
   let useCase: ValidateTrechoUseCase;

@@ -1,20 +1,22 @@
 {
-  "projectPath": "/Users/edney/projects/rpg-maker-mz-project",
+  "projectPath": "/Users/edney/.compozy/worktrees/edneyreis999coreto-game-engine-3bcddc903511ad2f77c59c907989eb69/edney_reis999/domain-driven-design-with-hexagonal-architecture/tests/fixtures/sample-data",
+  "reportOutputPath": "/tmp/coreto-sample-reports",
   "seed": 42,
+  "maxBattleTurns": 100,
   "trechos": [
     {
-      "id": "ato1-nivel1-10",
-      "name": "Ato 1: Tutorial e Primeiros Combates",
+      "id": "happy-path-trecho",
+      "name": "Happy Path: TTK within tolerance",
       "anchorLevelRange": {
-        "min": 1,
+        "min": 5,
         "max": 10
       },
       "ttkTarget": {
-        "turns": 8,
-        "actions": 32,
+        "turns": 5,
+        "actions": 20,
         "tolerance": 0.2
       },
-      "troopIds": [1, 2, 3, 4],
+      "troopIds": [1],
       "party": {
         "members": [
           { "classId": 1, "level": 5 },
@@ -23,44 +25,43 @@
       }
     },
     {
-      "id": "ato2-nivel11-20",
-      "name": "Ato 2: Dungeon Principal",
+      "id": "out-of-tolerance-trecho",
+      "name": "Out of Tolerance: TTK exceeds tolerance (demonstrates warning generation)",
       "anchorLevelRange": {
-        "min": 11,
-        "max": 20
+        "min": 1,
+        "max": 5
       },
       "ttkTarget": {
-        "turns": 12,
-        "actions": 48
+        "turns": 1,
+        "actions": 2,
+        "tolerance": 0.1
       },
-      "troopIds": [5, 6, 7, 8, 9],
+      "troopIds": [2],
       "party": {
         "members": [
-          { "classId": 1, "level": 15 },
-          { "classId": 2, "level": 15 },
-          { "classId": 3, "level": 15 }
+          { "classId": 1, "level": 3 }
         ]
       }
     },
     {
-      "id": "ato3-boss-final",
-      "name": "Ato 3: Boss Final",
+      "id": "edge-case-max-party",
+      "name": "Edge Case: Max party size with boundary level values",
       "anchorLevelRange": {
-        "min": 30,
-        "max": 30
+        "min": 99,
+        "max": 99
       },
       "ttkTarget": {
-        "turns": 25,
-        "actions": 100,
-        "tolerance": 0.1
+        "turns": 15,
+        "actions": 60,
+        "tolerance": 0.15
       },
-      "troopIds": [10],
+      "troopIds": [1, 2],
       "party": {
         "members": [
-          { "classId": 1, "level": 30 },
-          { "classId": 2, "level": 30 },
-          { "classId": 3, "level": 30 },
-          { "classId": 4, "level": 30 }
+          { "classId": 1, "level": 99 },
+          { "classId": 2, "level": 99 },
+          { "classId": 4, "level": 99 },
+          { "classId": 1, "level": 99 }
         ]
       }
     }

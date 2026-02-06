@@ -1,13 +1,9 @@
 import 'reflect-metadata';
-import { GenerateReportUseCase, GenerateReportInput } from '@coreto/core';
-import { IReporter } from '@coreto/core';
-import { Report } from '@coreto/core';
-import type { TrechoValidationResult } from '@coreto/core';
-
-import { BattleResultFakeBuilder } from '../../../fixtures/builders/BattleResultFakeBuilder';
-import { ReportMetadataFakeBuilder } from '../../../fixtures/builders/ReportMetadataFakeBuilder';
-import { WarningFakeBuilder } from '../../../fixtures/builders/WarningFakeBuilder';
-import { TEST_CONSTANTS } from '../../../fixtures/test-constants';
+import { GenerateReportUseCase, GenerateReportInput } from '@coreto/core/core/use-cases/GenerateReportUseCase.js';
+import { IReporter, Warning } from '@coreto/core/core/ports/IReporter.js';
+import { Report, ReportMetadata } from '@coreto/core/core/domain/Report.js';
+import { TrechoValidationResult } from '@coreto/core/core/use-cases/ValidateTrechoUseCase.js';
+import { BattleResult } from '@coreto/core/core/domain/BattleResult.js';
 
 describe('GenerateReportUseCase', () => {
   let useCase: GenerateReportUseCase;
@@ -104,9 +100,9 @@ describe('GenerateReportUseCase', () => {
         battles,
         aggregates: {
           avgTtkTurns: 3.5,
-          p95TtkTurns: 4,
+          p95TtkTurns: 4, // 95th percentile of [3, 4]
           avgTtkActions: 9,
-          p95TtkActions: 10,
+          p95TtkActions: 10, // 95th percentile of [8, 10]
         },
         warnings: [],
         passed: true,
