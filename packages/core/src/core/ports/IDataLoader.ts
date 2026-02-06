@@ -1,11 +1,11 @@
 import type {
-  ClassData,
-  EnemyData,
-  TroopData,
-  SkillData,
-  SystemData,
-  ItemData,
-} from '../../types/rmmz-data.js';
+  DomainClassData,
+  DomainEnemyData,
+  DomainTroopData,
+  DomainSkillData,
+  DomainSystemData,
+  DomainItemData,
+} from '../domain/data/index.js';
 import type { Warning } from './IReporter.js';
 
 /**
@@ -16,23 +16,23 @@ export interface RmmzDatabase {
   /** Actor data from Actors.json (1-based array, index 0 is null) */
   $dataActors: unknown[];
   /** Class data from Classes.json (1-based array, index 0 is null) */
-  $dataClasses: ClassData[];
+  $dataClasses: Array<DomainClassData | null>;
   /** Skill data from Skills.json (1-based array, index 0 is null) */
-  $dataSkills: SkillData[];
+  $dataSkills: Array<DomainSkillData | null>;
   /** Item data from Items.json (1-based array, index 0 is null) */
-  $dataItems: ItemData[];
+  $dataItems: Array<DomainItemData | null>;
   /** Weapon data from Weapons.json (1-based array, index 0 is null) */
   $dataWeapons: unknown[];
   /** Armor data from Armors.json (1-based array, index 0 is null) */
   $dataArmors: unknown[];
   /** Enemy data from Enemies.json (1-based array, index 0 is null) */
-  $dataEnemies: EnemyData[];
+  $dataEnemies: Array<DomainEnemyData | null>;
   /** Troop data from Troops.json (1-based array, index 0 is null) */
-  $dataTroops: TroopData[];
+  $dataTroops: Array<DomainTroopData | null>;
   /** State data from States.json (1-based array, index 0 is null) */
   $dataStates: unknown[];
   /** System configuration from System.json */
-  $dataSystem: SystemData;
+  $dataSystem: DomainSystemData;
 }
 
 /**

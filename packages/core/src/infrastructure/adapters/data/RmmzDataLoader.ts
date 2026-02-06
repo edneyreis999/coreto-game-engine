@@ -17,16 +17,17 @@ import * as path from 'path';
 import { IFileSystemToken } from '../../di/tokens.js';
 import type { IFileSystem, Warning, IDataLoader, RmmzDatabase } from '../../../core/ports/index.js';
 import type {
-  ClassData,
-  EnemyData,
-  TroopData,
-  SkillData,
-  SystemData,
-  ItemData,
+  ClassData as InfraClassData,
+  EnemyData as InfraEnemyData,
+  TroopData as InfraTroopData,
+  SkillData as InfraSkillData,
+  SystemData as InfraSystemData,
+  ItemData as InfraItemData,
 } from '../../../types/rmmz-data.js';
 import { DataLoadError } from '../../../core/errors/DataLoadError.js';
 import { RmmzProjectValidator } from './RmmzProjectValidator.js';
 import { IntegrityValidator } from './IntegrityValidator.js';
+import { DataMapper } from '../mappers/DataMapper.js';
 
 /**
  * RmmzDataLoader loads all RPG Maker MZ database files.
@@ -74,19 +75,28 @@ export class RmmzDataLoader implements IDataLoader {
     await this.validateProjectStructure(projectPath);
 
     try {
-      // Load all database files synchronously
+      // Load all database files synchronously (infrastructure types)
+      // Then map to domain types using DataMapper
       // RPG Maker MZ uses 1-based arrays (index 0 is null)
+      const infraClasses = await this.loadDataFile<InfraClassData[]>(projectPath, 'Classes.json');
+      const infraSkills = await this.loadDataFile<InfraSkillData[]>(projectPath, 'Skills.json');
+      const infraItems = await this.loadDataFile<InfraItemData[]>(projectPath, 'Items.json');
+      const infraEnemies = await this.loadDataFile<InfraEnemyData[]>(projectPath, 'Enemies.json');
+      const infraTroops = await this.loadDataFile<InfraTroopData[]>(projectPath, 'Troops.json');
+      const infraSystem = await this.loadDataFile<InfraSystemData>(projectPath, 'System.json');
+
+      // Map infrastructure types to domain DTOs
       const database: RmmzDatabase = {
         $dataActors: await this.loadDataFile<unknown[]>(projectPath, 'Actors.json'),
-        $dataClasses: await this.loadDataFile<ClassData[]>(projectPath, 'Classes.json'),
-        $dataSkills: await this.loadDataFile<SkillData[]>(projectPath, 'Skills.json'),
-        $dataItems: await this.loadDataFile<ItemData[]>(projectPath, 'Items.json'),
+        $dataClasses: infraClasses.map((c) => (c ? DataMapper.toDomainClassData(c) : null)),
+        $dataSkills: infraSkills.map((s) => (s ? DataMapper.toDomainSkillData(s) : null)),
+        $dataItems: infraItems.map((i) => (i ? DataMapper.toDomainItemData(i) : null)),
         $dataWeapons: await this.loadDataFile<unknown[]>(projectPath, 'Weapons.json'),
         $dataArmors: await this.loadDataFile<unknown[]>(projectPath, 'Armors.json'),
-        $dataEnemies: await this.loadDataFile<EnemyData[]>(projectPath, 'Enemies.json'),
-        $dataTroops: await this.loadDataFile<TroopData[]>(projectPath, 'Troops.json'),
+        $dataEnemies: infraEnemies.map((e) => (e ? DataMapper.toDomainEnemyData(e) : null)),
+        $dataTroops: infraTroops.map((t) => (t ? DataMapper.toDomainTroopData(t) : null)),
         $dataStates: await this.loadDataFile<unknown[]>(projectPath, 'States.json'),
-        $dataSystem: await this.loadDataFile<SystemData>(projectPath, 'System.json'),
+        $dataSystem: DataMapper.toDomainSystemData(infraSystem),
       };
 
       return database;

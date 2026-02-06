@@ -19,6 +19,129 @@
  */
 
 import type { RmmzDatabase, Warning } from '../../../core/ports/index.js';
+import type {
+  DomainEnemyData,
+  DomainClassData,
+  DomainTroopData,
+  DomainSystemData,
+} from '../../../core/domain/data/index.js';
+
+/**
+ * Type guard for validating an object has a numeric id property.
+ * Used to safely extract IDs from database entries.
+ */
+function hasNumericId(value: unknown): value is { id: number } {
+  return (
+    value !== null && typeof value === 'object' && 'id' in value && typeof value.id === 'number'
+  );
+}
+
+/**
+ * Type guard for validating TroopData structure.
+ */
+function isTroopData(value: unknown): value is DomainTroopData {
+  return (
+    hasNumericId(value) &&
+    'members' in value &&
+    Array.isArray(value.members) &&
+    'name' in value &&
+    typeof value.name === 'string'
+  );
+}
+
+/**
+ * Type guard for validating a troop member has enemyId.
+ */
+function hasTroopMemberEnemyId(value: unknown): value is { enemyId: number } {
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    'enemyId' in value &&
+    typeof value.enemyId === 'number'
+  );
+}
+
+/**
+ * Type guard for validating EnemyData structure with actions.
+ */
+function isEnemyDataWithActions(value: unknown): value is DomainEnemyData {
+  return (
+    hasNumericId(value) &&
+    'actions' in value &&
+    Array.isArray(value.actions) &&
+    'name' in value &&
+    typeof value.name === 'string'
+  );
+}
+
+/**
+ * Type guard for validating an enemy action has skillId.
+ */
+function hasActionSkillId(value: unknown): value is { skillId: number } {
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    'skillId' in value &&
+    typeof value.skillId === 'number'
+  );
+}
+
+/**
+ * Type guard for validating ClassData structure with learnings.
+ */
+function isClassDataWithLearnings(
+  value: unknown
+): value is DomainClassData & { learnings: Array<{ skillId: number; level: number }> } {
+  return (
+    hasNumericId(value) &&
+    'learnings' in value &&
+    Array.isArray(value.learnings) &&
+    'name' in value &&
+    typeof value.name === 'string'
+  );
+}
+
+/**
+ * Type guard for validating a class learning entry.
+ */
+function hasLearningSkillId(value: unknown): value is { skillId: number; level: number } {
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    'skillId' in value &&
+    typeof value.skillId === 'number' &&
+    'level' in value &&
+    typeof value.level === 'number'
+  );
+}
+
+/**
+ * Type guard for validating SystemData structure with testBattlers.
+ */
+function isSystemDataWithTestBattlers(
+  value: unknown
+): value is DomainSystemData & { testBattlers: Array<{ classId: number; actorId: number }> } {
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    'testBattlers' in value &&
+    Array.isArray(value.testBattlers)
+  );
+}
+
+/**
+ * Type guard for validating a test battler entry.
+ */
+function hasTestBattlerClassId(value: unknown): value is { classId: number; actorId: number } {
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    'classId' in value &&
+    typeof value.classId === 'number' &&
+    'actorId' in value &&
+    typeof value.actorId === 'number'
+  );
+}
 
 /**
  * IntegrityValidator validates cross-references between database entries.
@@ -65,7 +188,7 @@ export class IntegrityValidator {
     const validEnemyIds = new Set<number>();
     for (let i = 1; i < $dataEnemies.length; i++) {
       const enemy = $dataEnemies[i];
-      if (enemy && typeof enemy === 'object' && 'id' in enemy && typeof enemy.id === 'number') {
+      if (hasNumericId(enemy)) {
         validEnemyIds.add(enemy.id);
       }
     }
@@ -73,12 +196,26 @@ export class IntegrityValidator {
     // Check each troop member
     for (let i = 1; i < $dataTroops.length; i++) {
       const troop = $dataTroops[i];
-      if (!troop || typeof troop !== 'object' || !('members' in troop)) {
+      if (!isTroopData(troop)) {
         continue;
       }
 
-      const members = troop.members as Array<{ enemyId: number }>;
-      for (const member of members) {
+      for (const member of troop.members) {
+        if (!hasTroopMemberEnemyId(member)) {
+          warnings.push({
+            type: 'enemy_not_found',
+            severity: 'critical',
+            message: `Troop ${troop.id} has member with invalid enemyId structure`,
+            context: {
+              troopId: troop.id,
+              troopName: troop.name,
+              source: 'TroopMember.enemyId',
+              issue: 'Missing or non-numeric enemyId',
+            },
+          });
+          continue;
+        }
+
         if (!validEnemyIds.has(member.enemyId)) {
           warnings.push({
             type: 'enemy_not_found',
@@ -86,7 +223,7 @@ export class IntegrityValidator {
             message: `Troop ${troop.id} references non-existent enemy ${member.enemyId}`,
             context: {
               troopId: troop.id,
-              troopName: (troop as { name: string }).name,
+              troopName: troop.name,
               enemyId: member.enemyId,
               source: 'TroopMember.enemyId',
             },
@@ -113,32 +250,34 @@ export class IntegrityValidator {
     const validSkillIds = new Set<number>();
     for (let i = 1; i < $dataSkills.length; i++) {
       const skill = $dataSkills[i];
-      if (skill && typeof skill === 'object' && 'id' in skill) {
-        validSkillIds.add(skill.id as number);
+      if (hasNumericId(skill)) {
+        validSkillIds.add(skill.id);
       }
     }
 
     // Check each enemy action
     for (let i = 1; i < $dataEnemies.length; i++) {
       const enemy = $dataEnemies[i];
-      if (!enemy || typeof enemy !== 'object' || !('actions' in enemy)) {
+      if (!isEnemyDataWithActions(enemy)) {
         continue;
       }
 
-      const actions = enemy.actions as Array<{ skillId: number }>;
-      for (const action of actions) {
-        if (typeof action.skillId !== 'number') {
+      for (const action of enemy.actions) {
+        if (!hasActionSkillId(action)) {
           warnings.push({
             type: 'skill_formula_error',
             severity: 'critical',
-            message: `Enemy ${(enemy as { id: number }).id} action has non-numeric skillId`,
+            message: `Enemy ${enemy.id} action has invalid skillId structure`,
             context: {
-              enemyId: (enemy as { id: number }).id,
+              enemyId: enemy.id,
+              enemyName: enemy.name,
               source: 'EnemyAction.skillId',
+              issue: 'Missing or non-numeric skillId',
             },
           });
           continue;
         }
+
         if (!validSkillIds.has(action.skillId)) {
           warnings.push({
             type: 'skill_not_found',
@@ -146,7 +285,7 @@ export class IntegrityValidator {
             message: `Enemy ${enemy.id} action references non-existent skill ${action.skillId}`,
             context: {
               enemyId: enemy.id,
-              enemyName: (enemy as { name: string }).name,
+              enemyName: enemy.name,
               skillId: action.skillId,
               source: 'EnemyAction.skillId',
             },
@@ -173,20 +312,34 @@ export class IntegrityValidator {
     const validSkillIds = new Set<number>();
     for (let i = 1; i < $dataSkills.length; i++) {
       const skill = $dataSkills[i];
-      if (skill && typeof skill === 'object' && 'id' in skill) {
-        validSkillIds.add(skill.id as number);
+      if (hasNumericId(skill)) {
+        validSkillIds.add(skill.id);
       }
     }
 
     // Check each class learning
     for (let i = 1; i < $dataClasses.length; i++) {
       const classData = $dataClasses[i];
-      if (!classData || typeof classData !== 'object' || !('learnings' in classData)) {
+      if (!isClassDataWithLearnings(classData)) {
         continue;
       }
 
-      const learnings = classData.learnings as Array<{ skillId: number; level: number }>;
-      for (const learning of learnings) {
+      for (const learning of classData.learnings) {
+        if (!hasLearningSkillId(learning)) {
+          warnings.push({
+            type: 'skill_not_found',
+            severity: 'critical',
+            message: `Class ${classData.id} learning has invalid skillId structure`,
+            context: {
+              classId: classData.id,
+              className: classData.name,
+              source: 'ClassLearning.skillId',
+              issue: 'Missing or non-numeric skillId/level',
+            },
+          });
+          continue;
+        }
+
         if (!validSkillIds.has(learning.skillId)) {
           warnings.push({
             type: 'skill_not_found',
@@ -194,7 +347,7 @@ export class IntegrityValidator {
             message: `Class ${classData.id} learning references non-existent skill ${learning.skillId}`,
             context: {
               classId: classData.id,
-              className: (classData as { name: string }).name,
+              className: classData.name,
               skillId: learning.skillId,
               learningLevel: learning.level,
               source: 'ClassLearning.skillId',
@@ -222,23 +375,19 @@ export class IntegrityValidator {
     const validClassIds = new Set<number>();
     for (let i = 1; i < $dataClasses.length; i++) {
       const classData = $dataClasses[i];
-      if (classData && typeof classData === 'object' && 'id' in classData) {
-        validClassIds.add(classData.id as number);
+      if (hasNumericId(classData)) {
+        validClassIds.add(classData.id);
       }
     }
 
-    // Check test battlers
-    if (!$dataSystem || typeof $dataSystem !== 'object' || !('testBattlers' in $dataSystem)) {
+    // Check test battlers - validate structure first
+    if (!isSystemDataWithTestBattlers($dataSystem)) {
       return warnings;
     }
 
-    const testBattlers = $dataSystem.testBattlers as Array<{ classId: number; actorId: number }>;
-    if (!Array.isArray(testBattlers)) {
-      return warnings;
-    }
-
-    for (const battler of testBattlers) {
-      if (!battler || typeof battler !== 'object' || !('classId' in battler)) {
+    for (const battler of $dataSystem.testBattlers) {
+      // Skip validation if battler doesn't have classId (optional field in some games)
+      if (!hasTestBattlerClassId(battler)) {
         continue;
       }
 
