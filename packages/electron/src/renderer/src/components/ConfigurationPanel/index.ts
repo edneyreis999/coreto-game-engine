@@ -14,7 +14,7 @@ export type { ConfigurationPanelProps } from './ConfigurationPanel';
 export { TrechosListSection } from './TrechosListSection';
 export type { TrechosListSectionProps } from './TrechosListSection';
 
-export { TrechoForm } from './TrechoForm';
+export { TrechoForm } from './TrechoForm/index';
 export type { TrechoFormProps } from './types';
 
 export { GlobalSettingsSection } from './GlobalSettingsSection';

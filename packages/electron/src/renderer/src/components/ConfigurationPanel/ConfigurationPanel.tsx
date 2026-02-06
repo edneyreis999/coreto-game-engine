@@ -41,7 +41,7 @@ import { getDefaultGlobalSettingsFormData } from './validation';
 
 // Sub-components
 import { TrechosListSection } from './TrechosListSection';
-import { TrechoForm } from './TrechoForm';
+import { TrechoForm } from './TrechoForm/index';
 import { GlobalSettingsSection } from './GlobalSettingsSection';
 
 // ============================================================================
