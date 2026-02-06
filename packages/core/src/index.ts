@@ -152,7 +152,11 @@ export { ZodConfigLoader } from './infrastructure/config/ZodConfigLoader.js';
 // PUBLIC API - Type Definitions
 // =============================================================================
 
+// Infrastructure types (for reference and backward compatibility)
 export * from './types/rmmz-data.js';
+
+// Domain data types (pure domain DTOs)
+export * from './core/domain/data/index.js';
 
 // =============================================================================
 // PUBLIC API - Infrastructure Adapters
@@ -175,6 +179,7 @@ export { SystemClock } from './infrastructure/adapters/clock/SystemClock.js';
 // Mapper Adapters
 export { EnemyMapper } from './infrastructure/adapters/mappers/EnemyMapper.js';
 export { SkillMapper } from './infrastructure/adapters/mappers/SkillMapper.js';
+export { DataMapper } from './infrastructure/adapters/mappers/DataMapper.js';
 
 // =============================================================================
 // PUBLIC API - Security

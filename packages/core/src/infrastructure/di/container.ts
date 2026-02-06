@@ -55,6 +55,32 @@ export {
 } from './tokens.js';
 
 /**
+ * Coerces a typed Symbol token to string for TSyringe compatibility.
+ *
+ * TSyringe expects `string | InjectionToken` but we use Symbol tokens for type safety.
+ * This utility provides a type-safe conversion that preserves the phantom type parameter.
+ *
+ * @template T - The type associated with the injection token
+ * @param token - Typed Symbol token (created via Symbol.for())
+ * @returns String representation of the token for TSyringe
+ *
+ * @example
+ * ```ts
+ * // Registration
+ * tsyringeContainer.registerSingleton<ILogger>(
+ *   coerceToken(ILoggerToken),
+ *   ConsoleLogger
+ * );
+ *
+ * // Resolution
+ * const logger = tsyringeContainer.resolve<ILogger>(coerceToken(ILoggerToken));
+ * ```
+ */
+function coerceToken<T>(token: symbol & { __type: T }): string {
+  return token as unknown as string;
+}
+
+/**
  * Register all dependencies in the DI container.
  * Should be called once at application startup.
  *
@@ -91,39 +117,36 @@ export function registerDependencies(): void {
   tsyringeContainer.registerSingleton<IReporter>(IReporterToken, JsonReporter);
 
   // HeadlessRuntime: JsdomHeadlessRuntime implementation registered as singleton
-  tsyringeContainer.registerSingleton<IHeadlessRuntime>(IHeadlessRuntimeToken, JsdomHeadlessRuntime);
+  tsyringeContainer.registerSingleton<IHeadlessRuntime>(
+    IHeadlessRuntimeToken,
+    JsdomHeadlessRuntime
+  );
 
   // RmmzProjectValidator: Helper for data loading validation (singleton)
   tsyringeContainer.registerSingleton(RmmzProjectValidator);
 
   // Clock: SystemClock implementation registered as singleton
-  tsyringeContainer.registerSingleton<IClock>(
-    IClockToken as unknown as string,
-    SystemClock,
-  );
+  tsyringeContainer.registerSingleton<IClock>(coerceToken(IClockToken), SystemClock);
 
   // Use Cases: registered with manual factory functions (domain stays framework-free)
-  // Usa o mesmo padrao de resolve que ja existe na linha 108: token as unknown as string
   tsyringeContainer.register(ExecuteBattleUseCase, {
     useFactory: () =>
       new ExecuteBattleUseCase(
-        tsyringeContainer.resolve(IBattleSimulatorToken as unknown as string),
-        tsyringeContainer.resolve(IClockToken as unknown as string)
+        tsyringeContainer.resolve(coerceToken(IBattleSimulatorToken)),
+        tsyringeContainer.resolve(coerceToken(IClockToken))
       ),
   });
 
   tsyringeContainer.register(GenerateReportUseCase, {
     useFactory: () =>
-      new GenerateReportUseCase(
-        tsyringeContainer.resolve(IReporterToken as unknown as string)
-      ),
+      new GenerateReportUseCase(tsyringeContainer.resolve(coerceToken(IReporterToken))),
   });
 
   tsyringeContainer.register(ValidateTrechoUseCase, {
     useFactory: () => new ValidateTrechoUseCase(),
   });
 
-  const logger = tsyringeContainer.resolve<ILogger>(ILoggerToken as unknown as string);
+  const logger = tsyringeContainer.resolve<ILogger>(coerceToken(ILoggerToken));
   logger.info('[DI] All dependencies registered');
 }
 
@@ -139,15 +162,11 @@ export function clearContainer(): void {
  * Resolves a dependency from the DI container.
  * Type-safe wrapper around container.resolve().
  *
- * NOTE: TSyringe expects string | InjectionToken but we use Symbol tokens.
- * The `as unknown as string` coercion is necessary because Symbol.for()
- * returns symbols that TSyringe can use as keys internally.
- *
  * @param token - Injection token for the dependency
  * @returns Resolved instance
  */
 export function resolve<T>(token: symbol & { __type: T }): T {
-  return tsyringeContainer.resolve(token as unknown as string) as T;
+  return tsyringeContainer.resolve(coerceToken(token)) as T;
 }
 
 /**
