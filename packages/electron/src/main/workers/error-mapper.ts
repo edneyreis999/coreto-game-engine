@@ -81,7 +81,8 @@ export function mapErrorToUserMessage(error: unknown): MappedError {
   if (isFileSystemError(error)) {
     return {
       title: 'Project Not Found',
-      description: 'Could not find a valid RPG Maker MZ project. Ensure the directory contains game.rmmzproject.',
+      description:
+        'Could not find a valid RPG Maker MZ project. Ensure the directory contains game.rmmzproject.',
       details: `Path: ${error.context?.path || 'unknown'}\n${error.message}`,
       code: 'ERR_PROJECT_NOT_FOUND',
       originalType: 'FileSystemError',
@@ -92,7 +93,8 @@ export function mapErrorToUserMessage(error: unknown): MappedError {
   if (isConfigError(error)) {
     return {
       title: 'Invalid Configuration',
-      description: 'The project configuration is invalid. Check that all trechos have valid hero teams and enemy troops.',
+      description:
+        'The project configuration is invalid. Check that all trechos have valid hero teams and enemy troops.',
       details: error.message,
       code: 'ERR_INVALID_CONFIG',
       originalType: 'ConfigError',
@@ -119,7 +121,8 @@ export function mapErrorToUserMessage(error: unknown): MappedError {
 
     return {
       title: 'Battle Simulation Timed Out',
-      description: 'Battle took too long to complete, often indicating an infinite loop in skill formulas. Check skill formulas for recursive calls or missing break conditions.',
+      description:
+        'Battle took too long to complete, often indicating an infinite loop in skill formulas. Check skill formulas for recursive calls or missing break conditions.',
       details: `Timeout: ${maxTurns} turns\n${error.message}`,
       code: 'ERR_TIMEOUT',
       originalType: 'BattleTimeoutError',
@@ -154,7 +157,8 @@ export function mapErrorToUserMessage(error: unknown): MappedError {
   // Unknown error: Fallback
   return {
     title: 'Simulation Failed',
-    description: 'An unexpected error occurred during simulation. Please check the project configuration and try again.',
+    description:
+      'An unexpected error occurred during simulation. Please check the project configuration and try again.',
     details: error.message,
     code: 'ERR_UNKNOWN',
     originalType: error.constructor.name,
@@ -170,7 +174,12 @@ export function mapErrorToUserMessage(error: unknown): MappedError {
  * Checks for error-specific properties.
  */
 function isFileSystemError(error: Error): error is FileSystemError {
-  return 'context' in error && typeof error.context === 'object' && error.context !== null && 'path' in error.context;
+  return (
+    'context' in error &&
+    typeof error.context === 'object' &&
+    error.context !== null &&
+    'path' in error.context
+  );
 }
 
 /**

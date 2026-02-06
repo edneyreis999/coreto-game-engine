@@ -34,9 +34,7 @@ export interface SimulationParams {
  * Discriminated union for messages from main process to worker.
  * Type narrowing via 'type' field enables exhaustiveness checks.
  */
-export type MainToWorkerMessage =
-  | { type: 'start'; payload: SimulationParams }
-  | { type: 'cancel' };
+export type MainToWorkerMessage = { type: 'start'; payload: SimulationParams } | { type: 'cancel' };
 
 // =============================================================================
 // Messages: UtilityProcess → Main
@@ -47,11 +45,11 @@ export type MainToWorkerMessage =
  * Defines the current phase of execution for UI feedback.
  */
 export type ProgressStage =
-  | 'initialization'    // Loading project, setting up simulation
-  | 'trecho'           // Trecho execution started
-  | 'battle'           // Battle progress within trecho (batched)
-  | 'trecho-complete'  // Trecho execution finished
-  | 'finalization';    // Writing results, cleanup
+  | 'initialization' // Loading project, setting up simulation
+  | 'trecho' // Trecho execution started
+  | 'battle' // Battle progress within trecho (batched)
+  | 'trecho-complete' // Trecho execution finished
+  | 'finalization'; // Writing results, cleanup
 
 /**
  * Progress update payload from worker to main process.

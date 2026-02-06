@@ -1,11 +1,11 @@
-import 'reflect-metadata'
-import { app, BrowserWindow, shell, utilityProcess, type UtilityProcess } from 'electron'
-import path from 'node:path'
-import { setupIpcHandlers, setMainWindowReference } from './ipc/index.js'
-import { initDatabase, closeDatabase, setDatabasePath } from './database/index.js'
-import { simulationController } from './services/index.js'
-import { createWindowConfig, getWindowUrl } from './window-config.js'
-import type { WorkerToMainMessage } from './workers/types.js'
+import 'reflect-metadata';
+import { app, BrowserWindow, shell, utilityProcess, type UtilityProcess } from 'electron';
+import path from 'node:path';
+import { setupIpcHandlers, setMainWindowReference } from './ipc/index.js';
+import { initDatabase, closeDatabase, setDatabasePath } from './database/index.js';
+import { simulationController } from './services/index.js';
+import { createWindowConfig, getWindowUrl } from './window-config.js';
+import type { WorkerToMainMessage } from './workers/types.js';
 
 /**
  * Main Process Entry Point
@@ -14,7 +14,7 @@ import type { WorkerToMainMessage } from './workers/types.js'
  * and manages app lifecycle events.
  */
 
-let mainWindow: BrowserWindow | null = null
+let mainWindow: BrowserWindow | null = null;
 
 /**
  * Creates the main application window.
@@ -28,34 +28,34 @@ let mainWindow: BrowserWindow | null = null
  * @returns The created BrowserWindow instance
  */
 export function createWindow(): BrowserWindow {
-  const isDev = process.env.NODE_ENV === 'development'
+  const isDev = process.env.NODE_ENV === 'development';
 
-  mainWindow = new BrowserWindow(createWindowConfig(isDev))
+  mainWindow = new BrowserWindow(createWindowConfig(isDev));
 
   // Load the renderer process
-  const windowUrl = getWindowUrl(isDev)
+  const windowUrl = getWindowUrl(isDev);
   if (isDev) {
-    mainWindow.loadURL(windowUrl)
-    mainWindow.webContents.openDevTools()
+    mainWindow.loadURL(windowUrl);
+    mainWindow.webContents.openDevTools();
   } else {
-    mainWindow.loadFile(windowUrl.replace('file://', ''))
+    mainWindow.loadFile(windowUrl.replace('file://', ''));
   }
 
   // Show window when ready to prevent visual flash
   mainWindow.once('ready-to-show', () => {
-    mainWindow?.show()
-  })
+    mainWindow?.show();
+  });
 
   // Set window reference for IPC event forwarding (Task 02)
-  setMainWindowReference(mainWindow)
+  setMainWindowReference(mainWindow);
 
   // Handle external links in default browser
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url)
-    return { action: 'deny' }
-  })
+    shell.openExternal(url);
+    return { action: 'deny' };
+  });
 
-  return mainWindow
+  return mainWindow;
 }
 
 /**
@@ -72,29 +72,29 @@ export function registerAppLifecycleHandlers(): void {
    */
   app.on('window-all-closed', () => {
     // Cleanup simulation controller on window close
-    simulationController.cleanup()
+    simulationController.cleanup();
     if (process.platform !== 'darwin') {
-      app.quit()
+      app.quit();
     }
-  })
+  });
 
   /**
    * App lifecycle: macOS-specific: Create new window when clicking dock icon.
    */
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow()
+      createWindow();
     }
-  })
+  });
 
   /**
    * App lifecycle: Before quitting, clean up resources.
    */
   app.on('before-quit', () => {
     // TODO: Save window bounds for persistence (task #6)
-    simulationController.cleanup()
-    closeDatabase()
-  })
+    simulationController.cleanup();
+    closeDatabase();
+  });
 }
 
 /**
@@ -110,13 +110,13 @@ export function registerAppLifecycleHandlers(): void {
  * @returns Promise that resolves when the app is ready
  */
 export async function startApp(): Promise<void> {
-  await app.whenReady()
-  const dbPath = path.join(app.getPath('userData'), 'coreto.db')
-  setDatabasePath(dbPath)
-  initDatabase()
-  setupIpcHandlers()
-  createWindow()
-  registerAppLifecycleHandlers()
+  await app.whenReady();
+  const dbPath = path.join(app.getPath('userData'), 'coreto.db');
+  setDatabasePath(dbPath);
+  initDatabase();
+  setupIpcHandlers();
+  createWindow();
+  registerAppLifecycleHandlers();
 }
 
 /**
@@ -126,16 +126,16 @@ export async function startApp(): Promise<void> {
  * In tests, the test harness imports and controls startup manually.
  */
 if (process.env.NODE_ENV !== 'test') {
-  startApp().catch(error => {
-    console.error('Failed to start Electron app:', error)
-    process.exit(1)
-  })
+  startApp().catch((error) => {
+    console.error('Failed to start Electron app:', error);
+    process.exit(1);
+  });
 }
 
 /**
  * Export window instance for testing and IPC handler access.
  */
-export { mainWindow }
+export { mainWindow };
 
 // =============================================================================
 // UtilityProcess Worker Placeholder (Task 01)
@@ -150,37 +150,33 @@ export { mainWindow }
  * @see planos/005-run-ttk-electron/tasks/01_task.md Section 4
  */
 export function spawnWorker(): UtilityProcess {
-  const worker = utilityProcess.fork(
-    path.join(__dirname, './workers/simulation.worker.js'),
-    [],
-    {
-      serviceName: 'SimulationWorker',
-      stdio: 'pipe'
-    }
-  )
+  const worker = utilityProcess.fork(path.join(__dirname, './workers/simulation.worker.js'), [], {
+    serviceName: 'SimulationWorker',
+    stdio: 'pipe',
+  });
 
   // Handle messages from worker
   worker.on('message', (message: WorkerToMainMessage) => {
-    console.log('[Main] Received from worker:', message.type)
+    console.log('[Main] Received from worker:', message.type);
     // TODO: Forward to renderer (Task 02 - IPC Layer)
-  })
+  });
 
   // Handle worker crashes
   worker.on('exit', (code) => {
     if (code !== 0 && code !== null) {
-      console.error(`[Main] Worker crashed with code ${code}`)
+      console.error(`[Main] Worker crashed with code ${code}`);
     }
-  })
+  });
 
   // Log worker stdout for debugging
   worker.stdout?.on('data', (data: Buffer) => {
-    console.log(`[Worker stdout] ${data.toString()}`)
-  })
+    console.log(`[Worker stdout] ${data.toString()}`);
+  });
 
   // Log worker stderr for debugging
   worker.stderr?.on('data', (data: Buffer) => {
-    console.error(`[Worker stderr] ${data.toString()}`)
-  })
+    console.error(`[Worker stderr] ${data.toString()}`);
+  });
 
-  return worker
+  return worker;
 }

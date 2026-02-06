@@ -135,7 +135,17 @@ describe('Worker Types', () => {
 
     it('should enforce type discrimination', () => {
       const messages: WorkerToMainMessage[] = [
-        { type: 'progress', payload: { stage: 'initialization', current: 0, total: 100, percentage: 0, message: '', timestamp: 0 } },
+        {
+          type: 'progress',
+          payload: {
+            stage: 'initialization',
+            current: 0,
+            total: 100,
+            percentage: 0,
+            message: '',
+            timestamp: 0,
+          },
+        },
         { type: 'error', payload: { title: '', description: '', code: '' } },
       ];
 
@@ -316,7 +326,19 @@ describe('Worker Types', () => {
         }
       };
 
-      expect(handleMessage({ type: 'progress', payload: { stage: 'initialization', current: 0, total: 100, percentage: 0, message: '', timestamp: 0 } })).toBe('progress');
+      expect(
+        handleMessage({
+          type: 'progress',
+          payload: {
+            stage: 'initialization',
+            current: 0,
+            total: 100,
+            percentage: 0,
+            message: '',
+            timestamp: 0,
+          },
+        })
+      ).toBe('progress');
     });
   });
 });
