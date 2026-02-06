@@ -13,6 +13,7 @@ import type {
   IHeadlessRuntime,
   ILogger,
   IFileSystem,
+  IClock,
 } from '../../core/ports/index.js';
 
 /**
@@ -69,4 +70,12 @@ export const ILoggerToken = Symbol.for('ILogger') as symbol & {
  */
 export const IFileSystemToken = Symbol.for('IFileSystem') as symbol & {
   __type: IFileSystem;
+};
+
+/**
+ * Injection token for IClock.
+ * Used to resolve clock/time implementations.
+ */
+export const IClockToken = Symbol.for('IClock') as symbol & {
+  __type: IClock;
 };

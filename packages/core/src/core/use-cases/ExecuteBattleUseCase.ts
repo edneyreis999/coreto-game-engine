@@ -1,6 +1,7 @@
 import { IBattleSimulator, BattleSetup } from '../ports/IBattleSimulator.js';
 import { BattleResult } from '../domain/BattleResult.js';
 import { PartyConfig } from '../domain/PartyConfig.js';
+import type { IClock } from '../ports/IClock.js';
 
 /**
  * Input data for ExecuteBattleUseCase.
@@ -48,7 +49,7 @@ export interface ExecuteBattleOutput {
  *
  * @example
  * ```typescript
- * const useCase = new ExecuteBattleUseCase(simulator);
+ * const useCase = new ExecuteBattleUseCase(simulator, clock);
  * const output = await useCase.execute({
  *   troopId: 1,
  *   troopName: 'Goblin Pack',
@@ -61,7 +62,10 @@ export interface ExecuteBattleOutput {
  * ```
  */
 export class ExecuteBattleUseCase {
-  constructor(private readonly simulator: IBattleSimulator) {}
+  constructor(
+    private readonly simulator: IBattleSimulator,
+    private readonly clock: IClock
+  ) {}
 
   /**
    * Execute a single battle simulation.
@@ -72,7 +76,7 @@ export class ExecuteBattleUseCase {
    * @throws {BattleError} If battle execution fails
    */
   async execute(input: ExecuteBattleInput): Promise<ExecuteBattleOutput> {
-    const startTime = Date.now();
+    const startTime = this.clock.now();
 
     const setup: BattleSetup = {
       troopId: input.troopId,
@@ -85,7 +89,7 @@ export class ExecuteBattleUseCase {
 
     return {
       result,
-      durationMs: Date.now() - startTime,
+      durationMs: this.clock.now() - startTime,
     };
   }
 }

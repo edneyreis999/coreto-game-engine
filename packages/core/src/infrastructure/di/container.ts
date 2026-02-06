@@ -15,6 +15,7 @@ import type {
   IDataLoader,
   IBattleSimulator,
   IReporter,
+  IClock,
 } from '../../core/ports/index.js';
 
 import {
@@ -24,6 +25,7 @@ import {
   IDataLoaderToken,
   IBattleSimulatorToken,
   IReporterToken,
+  IClockToken,
 } from './tokens.js';
 
 import { ConsoleLogger } from '../adapters/logger/ConsoleLogger.js';
@@ -32,6 +34,7 @@ import { ZodConfigLoader } from '../config/ZodConfigLoader.js';
 import { RmmzDataLoader, RmmzProjectValidator } from '../adapters/data/index.js';
 import { HeadlessBattleSimulator } from '../simulation/BattleSimulator.js';
 import { JsonReporter } from '../adapters/reporter/JsonReporter.js';
+import { SystemClock } from '../adapters/clock/SystemClock.js';
 import { ExecuteBattleUseCase } from '../../core/use-cases/ExecuteBattleUseCase.js';
 import { GenerateReportUseCase } from '../../core/use-cases/GenerateReportUseCase.js';
 import { ValidateTrechoUseCase } from '../../core/use-cases/ValidateTrechoUseCase.js';
@@ -45,6 +48,7 @@ export {
   IHeadlessRuntimeToken,
   ILoggerToken,
   IFileSystemToken,
+  IClockToken,
 } from './tokens.js';
 
 /**
@@ -58,6 +62,7 @@ export {
  * - RmmzDataLoader (IDataLoader implementation)
  * - HeadlessBattleSimulator (IBattleSimulator implementation)
  * - JsonReporter (IReporter implementation)
+ * - SystemClock (IClock implementation)
  * - RmmzProjectValidator (helper for data loading)
  *
  * To be implemented:
@@ -85,6 +90,9 @@ export function registerDependencies(): void {
   // Reporter: JsonReporter implementation registered as singleton
   tsyringeContainer.registerSingleton<IReporter>(IReporterToken, JsonReporter);
 
+  // Clock: SystemClock implementation registered as singleton
+  tsyringeContainer.registerSingleton<IClock>(IClockToken, SystemClock);
+
   // RmmzProjectValidator: Helper for data loading validation (singleton)
   tsyringeContainer.registerSingleton(RmmzProjectValidator);
 
@@ -93,7 +101,8 @@ export function registerDependencies(): void {
   tsyringeContainer.register(ExecuteBattleUseCase, {
     useFactory: () =>
       new ExecuteBattleUseCase(
-        tsyringeContainer.resolve(IBattleSimulatorToken as unknown as string)
+        tsyringeContainer.resolve(IBattleSimulatorToken as unknown as string),
+        tsyringeContainer.resolve(IClockToken as unknown as string)
       ),
   });
 

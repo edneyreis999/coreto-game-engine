@@ -11,7 +11,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import type { IReporter, Warning } from '../../../core/ports/IReporter.js';
+import type { IReporter, Warning } from '../../../core/ports/index.js';
 import {
   Report,
   type ReportMetadata,
@@ -21,7 +21,7 @@ import {
 } from '../../../core/domain/Report.js';
 import type { BattleResult } from '../../../core/domain/BattleResult.js';
 import { ReportSchema } from '../../schemas/report.schema.js';
-import { FileSystemError } from '../../../core/errors/index.js';
+import { FileSystemError } from '../../../core/errors/FileSystemError.js';
 
 /**
  * Internal structure for collecting battle results per trecho.

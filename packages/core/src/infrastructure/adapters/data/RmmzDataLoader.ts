@@ -15,8 +15,7 @@
 import { injectable, inject } from 'tsyringe';
 import * as path from 'path';
 import { IFileSystemToken } from '../../di/tokens.js';
-import type { IFileSystem, IDataLoader, RmmzDatabase } from '../../../core/ports/index.js';
-import type { Warning } from '../../../core/ports/IReporter.js';
+import type { IFileSystem, Warning, IDataLoader, RmmzDatabase } from '../../../core/ports/index.js';
 import type {
   ClassData,
   EnemyData,

@@ -11,8 +11,20 @@
  * - All methods are no-op, but maintain API compatibility
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// This file intentionally uses 'any' types to mock external Web Audio API
+/**
+ * Minimal AudioBuffer interface for mock implementation.
+ */
+interface MockAudioBuffer {
+  duration: number;
+  sampleRate: number;
+}
+
+/**
+ * Mock AudioParam interface (used for playbackRate, detune, gain).
+ */
+interface MockAudioParam {
+  value: number;
+}
 
 /**
  * Mock AudioContext implementation.
@@ -21,10 +33,10 @@
  * Even in headless mode, this property must exist and be a number.
  */
 class MockAudioContext {
-  currentTime: number = 0; // CRITICAL: used for timers
-  destination: any = {};
-  sampleRate: number = 44100;
-  state: string = 'running';
+  currentTime = 0; // CRITICAL: used for timers
+  destination: AudioNode = null as unknown as AudioNode;
+  sampleRate = 44100;
+  state = 'running';
 
   createGain(): MockGainNode {
     return new MockGainNode();
@@ -36,8 +48,8 @@ class MockAudioContext {
 
   decodeAudioData(
     _data: ArrayBuffer,
-    success?: (buffer: any) => void,
-    _error?: (err: any) => void
+    success?: (buffer: MockAudioBuffer) => void,
+    _error?: (err: unknown) => void
   ): void {
     // Immediately resolve with dummy buffer
     if (success) {
@@ -65,15 +77,15 @@ class MockAudioContext {
  * Some battle events wait for SE/ME to finish before proceeding.
  */
 class MockAudioBufferSourceNode {
-  buffer: any = null;
-  loop: boolean = false;
-  loopStart: number = 0;
-  loopEnd: number = 0;
-  playbackRate: any = { value: 1 };
-  detune: any = { value: 0 };
+  buffer: MockAudioBuffer | null = null;
+  loop = false;
+  loopStart = 0;
+  loopEnd = 0;
+  playbackRate: MockAudioParam = { value: 1 };
+  detune: MockAudioParam = { value: 0 };
   onended: (() => void) | null = null;
 
-  connect(_destination?: any): this {
+  connect(_destination?: AudioNode): this {
     return this;
   }
 
@@ -107,9 +119,9 @@ class MockAudioBufferSourceNode {
  * Mock GainNode (volume control).
  */
 class MockGainNode {
-  gain = { value: 1 };
+  gain: MockAudioParam = { value: 1 };
 
-  connect(_destination?: any): this {
+  connect(_destination?: AudioNode): this {
     return this;
   }
 
@@ -119,8 +131,11 @@ class MockGainNode {
 }
 
 // Inject into global scope
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (global as any).AudioContext = MockAudioContext;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (global as any).webkitAudioContext = MockAudioContext; // Safari fallback
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (global as any).GainNode = MockGainNode;
 
 export { MockAudioContext, MockAudioBufferSourceNode, MockGainNode };

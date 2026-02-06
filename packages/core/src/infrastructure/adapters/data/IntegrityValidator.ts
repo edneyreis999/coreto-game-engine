@@ -18,8 +18,7 @@
  * ```
  */
 
-import type { RmmzDatabase } from '../../../core/ports/index.js';
-import type { Warning } from '../../../core/ports/IReporter.js';
+import type { RmmzDatabase, Warning } from '../../../core/ports/index.js';
 
 /**
  * IntegrityValidator validates cross-references between database entries.
@@ -66,8 +65,8 @@ export class IntegrityValidator {
     const validEnemyIds = new Set<number>();
     for (let i = 1; i < $dataEnemies.length; i++) {
       const enemy = $dataEnemies[i];
-      if (enemy && typeof enemy === 'object' && 'id' in enemy) {
-        validEnemyIds.add(enemy.id as number);
+      if (enemy && typeof enemy === 'object' && 'id' in enemy && typeof enemy.id === 'number') {
+        validEnemyIds.add(enemy.id);
       }
     }
 
@@ -128,6 +127,18 @@ export class IntegrityValidator {
 
       const actions = enemy.actions as Array<{ skillId: number }>;
       for (const action of actions) {
+        if (typeof action.skillId !== 'number') {
+          warnings.push({
+            type: 'skill_formula_error',
+            severity: 'critical',
+            message: `Enemy ${(enemy as { id: number }).id} action has non-numeric skillId`,
+            context: {
+              enemyId: (enemy as { id: number }).id,
+              source: 'EnemyAction.skillId',
+            },
+          });
+          continue;
+        }
         if (!validSkillIds.has(action.skillId)) {
           warnings.push({
             type: 'skill_not_found',
