@@ -64,7 +64,10 @@ export class SyncWarpLoop {
     // Debug: check if override worked (gracefully handle missing PIXI in tests)
     const PIXI = (global as any).PIXI;
     if (PIXI?.filters?.ColorFilter) {
-      console.log('[SyncWarpLoop] ColorFilter after override:', PIXI.filters.ColorFilter.toString().substring(0, 100));
+      console.log(
+        '[SyncWarpLoop] ColorFilter after override:',
+        PIXI.filters.ColorFilter.toString().substring(0, 100)
+      );
     } else {
       console.log('[SyncWarpLoop] PIXI.filters.ColorFilter not available (test mode)');
     }
@@ -166,13 +169,17 @@ export class SyncWarpLoop {
 
     // Debug scene transition
     if (this.simulatedFrames < 5) {
-      console.log(`[SyncWarpLoop] Before changeScene: _scene=${SceneManager._scene?.constructor?.name}, _nextScene=${SceneManager._nextScene?.name}`);
+      console.log(
+        `[SyncWarpLoop] Before changeScene: _scene=${SceneManager._scene?.constructor?.name}, _nextScene=${SceneManager._nextScene?.name}`
+      );
     }
 
     SceneManager.changeScene(); // Manage transitions (Map -> Battle)
 
     if (this.simulatedFrames < 5) {
-      console.log(`[SyncWarpLoop] After changeScene: _scene=${SceneManager._scene?.constructor?.name}`);
+      console.log(
+        `[SyncWarpLoop] After changeScene: _scene=${SceneManager._scene?.constructor?.name}`
+      );
     }
 
     SceneManager.updateScene(); // Call .update() on current scene (Scene_Battle)
@@ -222,7 +229,9 @@ export class SyncWarpLoop {
 
       if ($gameTroop) {
         const enemies = $gameTroop.members();
-        console.log(`  Enemies alive: ${enemies.filter((e: any) => e.isAlive()).length}/${enemies.length}`);
+        console.log(
+          `  Enemies alive: ${enemies.filter((e: any) => e.isAlive()).length}/${enemies.length}`
+        );
         enemies.forEach((e: any, i: number) => {
           console.log(`    Enemy ${i}: HP=${e.hp}/${e.mhp} (alive=${e.isAlive()})`);
         });
@@ -230,7 +239,9 @@ export class SyncWarpLoop {
 
       if ($gameParty) {
         const members = $gameParty.members();
-        console.log(`  Party alive: ${members.filter((m: any) => m.isAlive()).length}/${members.length}`);
+        console.log(
+          `  Party alive: ${members.filter((m: any) => m.isAlive()).length}/${members.length}`
+        );
         members.forEach((m: any, i: number) => {
           console.log(`    Member ${i}: HP=${m.hp}/${m.mhp} (alive=${m.isAlive()})`);
         });
@@ -246,12 +257,18 @@ export class SyncWarpLoop {
       SceneManager._scene instanceof Scene_Title ||
       SceneManager._scene instanceof Scene_Gameover
     ) {
-      console.log(`[SyncWarpLoop] Battle ended: scene changed to ${SceneManager._scene.constructor.name}`);
+      console.log(
+        `[SyncWarpLoop] Battle ended: scene changed to ${SceneManager._scene.constructor.name}`
+      );
       this.running = false;
     }
 
     // Additional check: If BattleManager says battle is over
-    if (BattleManager && typeof BattleManager.isBattleEnd === 'function' && BattleManager.isBattleEnd()) {
+    if (
+      BattleManager &&
+      typeof BattleManager.isBattleEnd === 'function' &&
+      BattleManager.isBattleEnd()
+    ) {
       console.log(`[SyncWarpLoop] Battle ended: BattleManager.isBattleEnd() returned true`);
       this.running = false;
     }

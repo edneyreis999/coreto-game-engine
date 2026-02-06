@@ -19,9 +19,6 @@
  * ```
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// This file intentionally uses 'any' types to intercept fs module API
-
 import { createRequire } from 'module';
 import type { PathOrFileDescriptor, WriteFileOptions } from 'fs';
 import * as path from 'path';
@@ -31,6 +28,23 @@ const nodeRequire = createRequire(process.cwd() + '/');
 // In Node ESM, `import * as fs from 'fs'` yields a read-only module namespace object,
 // which cannot be monkey-patched (required for ADR-001 runtime guard).
 const fs = nodeRequire('fs') as typeof import('fs');
+
+/**
+ * Type-safe mutable fs module for monkey-patching.
+ * Allows assignment to writeFileSync property while maintaining type safety.
+ */
+type MutableFS = typeof import('fs') & {
+  writeFileSync: typeof import('fs').writeFileSync;
+};
+
+/**
+ * Type for fs.writeFileSync options parameter.
+ * Covers all valid option types from Node.js fs module.
+ */
+type WriteFileSyncOptions =
+  | WriteFileOptions
+  | BufferEncoding
+  | { encoding?: BufferEncoding | null; mode?: number | string; flag?: string };
 
 /**
  * ReadOnlyGuard class.
@@ -100,10 +114,7 @@ export class ReadOnlyGuard {
     const guardedWriteFileSync = function (
       filePath: PathOrFileDescriptor,
       data: string | NodeJS.ArrayBufferView,
-      options?:
-        | WriteFileOptions
-        | BufferEncoding
-        | { encoding?: BufferEncoding | null; mode?: number | string; flag?: string }
+      options?: WriteFileSyncOptions
     ): void {
       // Only check string paths (not file descriptors)
       if (typeof filePath === 'string') {
@@ -130,7 +141,7 @@ export class ReadOnlyGuard {
         throw new Error('INTERNAL ERROR: originalWriteFileSync not stored');
       }
 
-      return guard.originalWriteFileSync.call(fs, filePath, data, options as any);
+      return guard.originalWriteFileSync.call(fs, filePath, data, options);
     };
 
     // Override fs.writeFileSync.
@@ -146,7 +157,7 @@ export class ReadOnlyGuard {
       });
     } else if (desc?.writable !== false) {
       // Either writable:true or descriptor is missing (fallback to assignment)
-      (fs as any).writeFileSync = guardedWriteFileSync;
+      (fs as MutableFS).writeFileSync = guardedWriteFileSync;
     } else {
       throw new Error('INTERNAL ERROR: fs.writeFileSync cannot be overridden in this environment');
     }
@@ -185,7 +196,7 @@ export class ReadOnlyGuard {
         enumerable: true,
       });
     } else if (desc?.writable !== false) {
-      (fs as any).writeFileSync = this.originalWriteFileSync;
+      (fs as MutableFS).writeFileSync = this.originalWriteFileSync;
     } else {
       throw new Error('INTERNAL ERROR: fs.writeFileSync cannot be restored in this environment');
     }

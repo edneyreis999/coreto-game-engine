@@ -1,12 +1,14 @@
-import { injectable } from 'tsyringe';
+import { inject, injectable } from 'tsyringe';
 import type { IBattleSimulator, BattleSetup } from '../../core/ports/IBattleSimulator.js';
 import type { RmmzDatabase } from '../../core/ports/IDataLoader.js';
+import type { ILogger } from '../../core/ports/ILogger.js';
 import { BattleResult } from '../../core/domain/BattleResult.js';
 import { TtkMetrics } from '../../core/domain/TtkMetrics.js';
 import { BattleTimeoutError } from '../../core/errors/BattleTimeoutError.js';
 import { ValidationError } from '../../core/errors/ValidationError.js';
 import { SyncWarpLoop } from '../runtime/simulation/SyncWarpLoop.js';
 import { HeadlessRuntimeBootstrapper } from '../runtime/HeadlessRuntimeBootstrapper.js';
+import { ILoggerToken } from '../di/tokens.js';
 import seedrandom from 'seedrandom';
 
 /// <reference path="../../types/rmmz-runtime.d.ts" />
@@ -77,6 +79,8 @@ export class HeadlessBattleSimulator implements IBattleSimulator {
   private lastMetrics: TtkMetrics | null = null;
   private initialized = false;
   private bootstrapper: HeadlessRuntimeBootstrapper | null = null;
+
+  constructor(@inject(ILoggerToken as unknown as string) private readonly logger: ILogger) {}
 
   /**
    * Initialize the battle simulator with loaded RPG Maker MZ database.
@@ -244,9 +248,11 @@ export class HeadlessBattleSimulator implements IBattleSimulator {
     Math.random = () => rng();
 
     // Store original for cleanup if needed
-    (global as typeof globalThis & { _originalMathRandom?: typeof originalMathRandom })._originalMathRandom = originalMathRandom;
+    (
+      global as typeof globalThis & { _originalMathRandom?: typeof originalMathRandom }
+    )._originalMathRandom = originalMathRandom;
 
-    console.log(`[BattleSimulator] Seeded RNG with seed: ${seed}`);
+    this.logger.debug(`Seeded RNG with seed: ${seed}`);
   }
 
   /**
@@ -268,7 +274,11 @@ export class HeadlessBattleSimulator implements IBattleSimulator {
 
     // Log available methods for debugging
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    console.log('[BattleSimulator] $gameParty methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(gameParty)).filter((m: string) => typeof (gameParty as any)[m] === 'function'));
+    this.logger.debug('$gameParty methods', {
+      methods: Object.getOwnPropertyNames(Object.getPrototypeOf(gameParty)).filter(
+        (m: string) => typeof (gameParty as any)[m] === 'function'
+      ),
+    });
 
     // Clear existing party members
     // RMMZ uses different method names depending on version
@@ -456,7 +466,9 @@ export class HeadlessBattleSimulator implements IBattleSimulator {
    * This method intentionally returns 0 for non-victory outcomes.
    */
   private getBattleExpGained(outcome: 'victory' | 'defeat' | 'timeout'): number {
-    if (outcome !== 'victory') {return 0;}
+    if (outcome !== 'victory') {
+      return 0;
+    }
 
     try {
       const BattleManager = globalScope.BattleManager;

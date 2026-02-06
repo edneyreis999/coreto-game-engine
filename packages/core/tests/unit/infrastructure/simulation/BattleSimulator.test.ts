@@ -5,6 +5,7 @@ import type {
   RmmzDatabase,
   SkillData,
   TroopData,
+  ILogger,
 } from '@coreto/core';
 import {
   BattleTimeoutError,
@@ -174,9 +175,18 @@ describe('HeadlessBattleSimulator', () => {
   let simulator: HeadlessBattleSimulator;
   let mockDatabase: RmmzDatabase;
   let mockGlobal: any;
+  let mockLogger: ILogger;
 
   beforeEach(() => {
-    simulator = new HeadlessBattleSimulator();
+    // Create mock logger
+    mockLogger = {
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+      debug: jest.fn(),
+    };
+
+    simulator = new HeadlessBattleSimulator(mockLogger);
 
     // Mock database with proper types
     mockDatabase = {
@@ -319,7 +329,7 @@ describe('HeadlessBattleSimulator', () => {
     });
 
     it('should throw ValidationError if not initialized', async () => {
-      const uninitializedSimulator = new HeadlessBattleSimulator();
+      const uninitializedSimulator = new HeadlessBattleSimulator(mockLogger);
       const setup = {
         troopId: 1,
         party: new PartyConfig([{ classId: 1, level: 5 }]),
