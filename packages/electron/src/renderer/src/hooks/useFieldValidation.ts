@@ -15,6 +15,7 @@
 
 import {
   useCallback,
+  useEffect,
   useState,
   useRef,
 } from 'react';
@@ -257,6 +258,8 @@ export function useFieldValidation(
 
   // Cleanup on unmount
   useEffect(() => {
+    isMountedRef.current = true;
+
     return () => {
       isMountedRef.current = false;
       if (debounceRef.current) {

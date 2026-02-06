@@ -149,8 +149,8 @@ export function useIpc<T>(
 
   /**
    * Invokes the IPC call and updates state.
-   * Note: ipcFn is excluded from deps to prevent infinite loop.
-   * The function should be stable (defined outside component or wrapped in useCallback).
+   * Note: ipcFn is stored in a ref to always use the latest version
+   * without causing infinite loops in useCallback dependencies.
    */
   const invoke = useCallback(async () => {
     // Cancel any pending request

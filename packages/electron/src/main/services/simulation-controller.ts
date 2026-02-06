@@ -47,8 +47,10 @@ export class SimulationController {
   private keepAliveTimer: NodeJS.Timeout | null = null;
   private readonly KEEP_ALIVE_MS = 5 * 60 * 1000; // 5 minutes
   private readonly GRACEFUL_SHUTDOWN_MS = 5 * 1000; // 5 seconds
+  private readonly SIMULATION_TIMEOUT_MS = 300_000; // 5 minutes
   private currentSimulationId: string | null = null;
   private storageService: ReportStorageService | null = null;
+  private simulationTimeoutTimer: NodeJS.Timeout | null = null;
 
   /**
    * Sets the ReportStorageService for result storage.
@@ -67,7 +69,8 @@ export class SimulationController {
    * 1. Ensures worker is running (warm pool check)
    * 2. Generates unique simulation ID
    * 3. Sends start message to worker
-   * 4. Returns immediately (result comes via events)
+   * 4. Starts timeout timer (5 minutes)
+   * 5. Returns immediately (result comes via events)
    *
    * @param params - Simulation parameters (without simulationId)
    * @returns Simulation ID for tracking
@@ -87,6 +90,9 @@ export class SimulationController {
 
     worker.postMessage(message);
 
+    // Start timeout timer
+    this.startSimulationTimeout();
+
     return this.currentSimulationId;
   }
 
@@ -95,11 +101,15 @@ export class SimulationController {
    *
    * Sends cancel command to worker and initiates graceful shutdown.
    * Forces kill after 5 seconds if worker doesn't respond.
+   * Clears simulation timeout timer.
    */
   async cancel(): Promise<void> {
     if (!this.worker) {
       return;
     }
+
+    // Clear simulation timeout
+    this.clearSimulationTimeout();
 
     // Send graceful shutdown command
     const message: MainToWorkerMessage = { type: 'cancel' };
@@ -195,8 +205,8 @@ export class SimulationController {
    *
    * Routes messages to appropriate handlers:
    * - progress: Forward to renderer for UI updates
-   * - complete: Store result, forward to renderer, start warm pool timer
-   * - error: Forward to renderer, start warm pool timer
+   * - complete: Store result, forward to renderer, start warm pool timer, clear timeout
+   * - error: Forward to renderer, start warm pool timer, clear timeout
    *
    * @param message - Worker message to handle
    */
@@ -211,6 +221,7 @@ export class SimulationController {
         break;
 
       case 'error':
+        this.clearSimulationTimeout();
         this.sendToRenderer('simulation:error', message.payload);
         this.scheduleTermination();
         break;
@@ -227,6 +238,7 @@ export class SimulationController {
    * Handles simulation completion.
    *
    * Stores result in SQLite, forwards to renderer, and starts warm pool timer.
+   * Clears timeout timer.
    *
    * @param payload - Simulation result payload
    */
@@ -237,6 +249,9 @@ export class SimulationController {
     duration: number;
     seed: number;
   }): void {
+    // Clear timeout timer
+    this.clearSimulationTimeout();
+
     // Store result in SQLite if storage service is available
     if (this.storageService && this.currentSimulationId) {
       // Convert Report to ReportData for storage
@@ -314,6 +329,54 @@ export class SimulationController {
   }
 
   /**
+   * Starts simulation timeout timer.
+   *
+   * If simulation doesn't complete within SIMULATION_TIMEOUT_MS (5 minutes),
+   * the worker is killed and an error is sent to renderer.
+   */
+  private startSimulationTimeout(): void {
+    // Clear any existing timeout
+    this.clearSimulationTimeout();
+
+    console.log(
+      `[SimulationController] Starting simulation timeout (${this.SIMULATION_TIMEOUT_MS / 1000}s)`
+    );
+
+    this.simulationTimeoutTimer = setTimeout(() => {
+      console.warn('[SimulationController] Simulation timeout reached - killing worker');
+
+      // Send timeout error to renderer
+      this.sendToRenderer('simulation:error', {
+        title: 'Simulation Timeout',
+        description: 'The simulation took too long to complete and was terminated.',
+        code: 'ERR_SIMULATION_TIMEOUT',
+        details: `Timeout: ${this.SIMULATION_TIMEOUT_MS / 1000} seconds`,
+      });
+
+      // Kill worker and cleanup
+      if (this.worker) {
+        this.worker.kill();
+        this.worker = null;
+      }
+
+      this.currentSimulationId = null;
+      this.simulationTimeoutTimer = null;
+    }, this.SIMULATION_TIMEOUT_MS);
+  }
+
+  /**
+   * Clears the simulation timeout timer.
+   *
+   * Called when simulation completes or errors before timeout.
+   */
+  private clearSimulationTimeout(): void {
+    if (this.simulationTimeoutTimer) {
+      clearTimeout(this.simulationTimeoutTimer);
+      this.simulationTimeoutTimer = null;
+    }
+  }
+
+  /**
    * Schedules worker termination after idle timeout.
    *
    * Implements Warm Pool strategy:
@@ -341,6 +404,7 @@ export class SimulationController {
    *
    * Called during app shutdown to ensure graceful cleanup:
    * - Cancels termination timer
+   * - Clears simulation timeout timer
    * - Kills worker if running
    *
    * Should be called in app 'before-quit' and 'window-all-closed' handlers.
@@ -348,6 +412,7 @@ export class SimulationController {
   cleanup(): void {
     console.log('[SimulationController] Cleanup called');
     this.cancelTermination();
+    this.clearSimulationTimeout();
 
     if (this.worker) {
       console.log('[SimulationController] Killing worker on cleanup');

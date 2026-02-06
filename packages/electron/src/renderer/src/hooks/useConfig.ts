@@ -206,14 +206,14 @@ export function useConfig(): ConfigReturn {
 
   // Update state when trechos data changes
   useEffect(() => {
-    if (trechosData && state.trechos !== trechosData) {
+    if (trechosData) {
       setState((prev) => ({
         ...prev,
         trechos: trechosData,
         error: trechosError,
       }));
     }
-  }, [trechosData, trechosError, state.trechos]);
+  }, [trechosData, trechosError]);
 
   return {
     trechos: state.trechos,

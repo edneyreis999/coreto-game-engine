@@ -20,7 +20,7 @@ export type BattleOutcome = 'victory' | 'defeat' | 'timeout';
  * Result data for a single battle.
  * Used in SimulationResult responses.
  */
-export type BattleResultData = {
+export interface BattleResultData {
   troopId: number;
   troopName: string;
   outcome: BattleOutcome;
@@ -29,7 +29,7 @@ export type BattleResultData = {
   durationMs: number;
   seed: number;
   expGained: number;
-};
+}
 
 // ============================================================================
 // Report Types
