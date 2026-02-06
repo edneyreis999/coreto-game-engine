@@ -14,16 +14,9 @@
  * @see Task 11 - Simulation History & Report Export
  */
 
-import {
-  useCallback,
-  useEffect,
-  useState,
-} from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
-import type {
-  HistoryEntry,
-  SimulationReport,
-} from '@/types/preload';
+import type { HistoryEntry, SimulationReport } from '@/types/preload';
 
 // ============================================================================
 // Types
@@ -199,25 +192,28 @@ export function useSimulationHistory(
   /**
    * Export a report to file.
    */
-  const exportReport = useCallback(async (
-    simulationId: string,
-    result: Parameters<typeof window.coreto.exportHistoryReport>[1],
-    projectPath: string
-  ): Promise<string> => {
-    try {
-      const response = await window.coreto.exportHistoryReport(simulationId, result, projectPath);
+  const exportReport = useCallback(
+    async (
+      simulationId: string,
+      result: Parameters<typeof window.coreto.exportHistoryReport>[1],
+      projectPath: string
+    ): Promise<string> => {
+      try {
+        const response = await window.coreto.exportHistoryReport(simulationId, result, projectPath);
 
-      if (response.success) {
-        return response.data.filePath;
-      } else {
-        setError(new Error(response.error.message));
-        throw new Error(response.error.message);
+        if (response.success) {
+          return response.data.filePath;
+        } else {
+          setError(new Error(response.error.message));
+          throw new Error(response.error.message);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error('Failed to export report'));
+        throw err;
       }
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to export report'));
-      throw err;
-    }
-  }, []);
+    },
+    []
+  );
 
   // Auto-load on mount
   useEffect(() => {

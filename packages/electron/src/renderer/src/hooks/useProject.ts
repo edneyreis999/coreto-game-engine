@@ -18,11 +18,7 @@ import type { ProjectInfo } from '@coreto/electron/preload/index.js';
 /**
  * Validation status of a project.
  */
-export type ValidationStatus =
-  | 'idle'
-  | 'validating'
-  | 'valid'
-  | 'invalid';
+export type ValidationStatus = 'idle' | 'validating' | 'valid' | 'invalid';
 
 /**
  * Validation state including status and errors.
@@ -306,17 +302,12 @@ export function isIdleStatus(status: ValidationStatus): boolean {
 /**
  * Gets a human-readable message for the validation status.
  */
-export function getValidationMessage(
-  validation: ValidationState,
-  projectName?: string
-): string {
+export function getValidationMessage(validation: ValidationState, projectName?: string): string {
   switch (validation.status) {
     case 'idle':
       return 'Select a project to begin';
     case 'validating':
-      return projectName
-        ? `Validating ${projectName}...`
-        : 'Validating project...';
+      return projectName ? `Validating ${projectName}...` : 'Validating project...';
     case 'valid':
       return projectName
         ? `${projectName} is a valid RPG Maker MZ project`

@@ -13,12 +13,7 @@
  * @see Task 08 - Real-time Validation
  */
 
-import {
-  useCallback,
-  useEffect,
-  useState,
-  useRef,
-} from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 
 // ============================================================================
 // Types
@@ -130,9 +125,7 @@ export interface UseFieldValidationOptions {
  *   }
  * });
  */
-export function useFieldValidation(
-  options: UseFieldValidationOptions
-): UseFieldValidationReturn {
+export function useFieldValidation(options: UseFieldValidationOptions): UseFieldValidationReturn {
   const {
     validateFn,
     debounceMs = 300,
@@ -153,86 +146,89 @@ export function useFieldValidation(
   /**
    * Perform validation.
    */
-  const validate = useCallback(async (value: string) => {
-    // Clear any pending debounce
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current);
-      debounceRef.current = null;
-    }
+  const validate = useCallback(
+    async (value: string) => {
+      // Clear any pending debounce
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+        debounceRef.current = null;
+      }
 
-    // If validate on blur only and not touched, skip validation
-    if (validateOnBlurOnly && !isTouched) {
-      return;
-    }
+      // If validate on blur only and not touched, skip validation
+      if (validateOnBlurOnly && !isTouched) {
+        return;
+      }
 
-    // If not validating on blur only, debounce the validation
-    if (!validateOnBlurOnly && debounceMs > 0) {
+      // If not validating on blur only, debounce the validation
+      if (!validateOnBlurOnly && debounceMs > 0) {
+        setStatus('validating');
+
+        debounceRef.current = setTimeout(async () => {
+          if (!isMountedRef.current) {
+            return;
+          }
+
+          try {
+            const result = await validateFn(value);
+
+            if (!isMountedRef.current) {
+              return;
+            }
+
+            if (result.isValid) {
+              setStatus('valid');
+              setMessage(null);
+              setSeverity(null);
+            } else {
+              setStatus('invalid');
+              setMessage(result.message ?? 'Validation failed');
+              setSeverity(result.severity ?? 'error');
+            }
+          } catch {
+            if (!isMountedRef.current) {
+              return;
+            }
+
+            setStatus('invalid');
+            setMessage('Validation error occurred');
+            setSeverity('error');
+          }
+        }, debounceMs);
+
+        return;
+      }
+
+      // Immediate validation (no debounce or blur-only)
       setStatus('validating');
 
-      debounceRef.current = setTimeout(async () => {
+      try {
+        const result = await validateFn(value);
+
         if (!isMountedRef.current) {
           return;
         }
 
-        try {
-          const result = await validateFn(value);
-
-          if (!isMountedRef.current) {
-            return;
-          }
-
-          if (result.isValid) {
-            setStatus('valid');
-            setMessage(null);
-            setSeverity(null);
-          } else {
-            setStatus('invalid');
-            setMessage(result.message ?? 'Validation failed');
-            setSeverity(result.severity ?? 'error');
-          }
-        } catch {
-          if (!isMountedRef.current) {
-            return;
-          }
-
+        if (result.isValid) {
+          setStatus('valid');
+          setMessage(null);
+          setSeverity(null);
+        } else {
           setStatus('invalid');
-          setMessage('Validation error occurred');
-          setSeverity('error');
+          setMessage(result.message ?? 'Validation failed');
+          setSeverity(result.severity ?? 'error');
         }
-      }, debounceMs);
+      } catch {
+        if (!isMountedRef.current) {
+          return;
+        }
 
-      return;
-    }
-
-    // Immediate validation (no debounce or blur-only)
-    setStatus('validating');
-
-    try {
-      const result = await validateFn(value);
-
-      if (!isMountedRef.current) {
-        return;
-      }
-
-      if (result.isValid) {
-        setStatus('valid');
-        setMessage(null);
-        setSeverity(null);
-      } else {
         setStatus('invalid');
-        setMessage(result.message ?? 'Validation failed');
-        setSeverity(result.severity ?? 'error');
+        setMessage('Validation error occurred');
+        setSeverity('error');
       }
-    } catch {
-      if (!isMountedRef.current) {
-        return;
-      }
-
-      setStatus('invalid');
-      setMessage('Validation error occurred');
-      setSeverity('error');
-    }
-  }, [validateFn, debounceMs, validateOnBlurOnly, isTouched]);
+    },
+    [validateFn, debounceMs, validateOnBlurOnly, isTouched]
+  );
 
   /**
    * Mark field as touched.

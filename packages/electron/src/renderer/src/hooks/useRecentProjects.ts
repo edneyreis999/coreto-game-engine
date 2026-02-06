@@ -136,30 +136,33 @@ export function useRecentProjects(
   /**
    * Adds a project to recent projects or updates its last opened timestamp.
    */
-  const addRecent = useCallback(async (path: string, name: string) => {
-    setState((prev) => ({ ...prev, isLoading: true, error: null }));
+  const addRecent = useCallback(
+    async (path: string, name: string) => {
+      setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
-    try {
-      const result = await window.coreto.addRecent(path, name);
+      try {
+        const result = await window.coreto.addRecent(path, name);
 
-      if (result.success) {
-        // Refresh the list after adding
-        await fetchRecentProjects();
-      } else {
+        if (result.success) {
+          // Refresh the list after adding
+          await fetchRecentProjects();
+        } else {
+          setState((prev) => ({
+            ...prev,
+            isLoading: false,
+            error: createIpcError(result.error),
+          }));
+        }
+      } catch (error) {
         setState((prev) => ({
           ...prev,
           isLoading: false,
-          error: createIpcError(result.error),
+          error: error instanceof Error ? error : new Error(String(error)),
         }));
       }
-    } catch (error) {
-      setState((prev) => ({
-        ...prev,
-        isLoading: false,
-        error: error instanceof Error ? error : new Error(String(error)),
-      }));
-    }
-  }, [fetchRecentProjects]);
+    },
+    [fetchRecentProjects]
+  );
 
   /**
    * Resets the state to initial values.
@@ -205,7 +208,9 @@ export function useRecentProjects(
  * @param project - Recent project to check
  * @returns Validation status
  */
-export function getProjectValidationStatus(_project: RecentProject): 'valid' | 'invalid' | 'unknown' {
+export function getProjectValidationStatus(
+  _project: RecentProject
+): 'valid' | 'invalid' | 'unknown' {
   // Validation status is not stored in the database yet
   // This will be implemented when validation results are persisted
   return 'unknown';

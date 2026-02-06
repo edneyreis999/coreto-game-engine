@@ -35,10 +35,7 @@ interface ConfigReturn extends ConfigState {
    * @param projectPath - Path to the RPG Maker MZ project
    * @param trecho - Trecho data to add or update
    */
-  updateTrecho: (
-    projectPath: string,
-    trecho: TrechoData
-  ) => Promise<void>;
+  updateTrecho: (projectPath: string, trecho: TrechoData) => Promise<void>;
 
   /**
    * Deletes a trecho from the configuration.
@@ -95,95 +92,80 @@ export function useConfig(): ConfigReturn {
   /**
    * Adds or updates a trecho configuration.
    */
-  const updateTrecho = useCallback(
-    async (projectPath: string, trecho: TrechoData) => {
-      setState((prev) => ({ ...prev, isLoading: true, error: null }));
+  const updateTrecho = useCallback(async (projectPath: string, trecho: TrechoData) => {
+    setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
-      try {
-        const result = await window.coreto.updateTrecho(projectPath, trecho);
+    try {
+      const result = await window.coreto.updateTrecho(projectPath, trecho);
 
-        if (result.success) {
-          // Update local state with the returned trecho
-          setState((prev) => {
-            const existingIndex = prev.trechos.findIndex(
-              (t) => t.id === trecho.id
-            );
+      if (result.success) {
+        // Update local state with the returned trecho
+        setState((prev) => {
+          const existingIndex = prev.trechos.findIndex((t) => t.id === trecho.id);
 
-            if (existingIndex >= 0) {
-              // Update existing trecho
-              return {
-                ...prev,
-                trechos: prev.trechos.map((t, i) =>
-                  i === existingIndex ? result.data.trecho : t
-                ),
-                isLoading: false,
-              };
-            } else {
-              // Add new trecho
-              return {
-                ...prev,
-                trechos: [...prev.trechos, result.data.trecho],
-                isLoading: false,
-              };
-            }
-          });
-        } else {
-          setState((prev) => ({
-            ...prev,
-            isLoading: false,
-            error: new Error(result.error.message),
-          }));
-        }
-      } catch (error) {
+          if (existingIndex >= 0) {
+            // Update existing trecho
+            return {
+              ...prev,
+              trechos: prev.trechos.map((t, i) => (i === existingIndex ? result.data.trecho : t)),
+              isLoading: false,
+            };
+          } else {
+            // Add new trecho
+            return {
+              ...prev,
+              trechos: [...prev.trechos, result.data.trecho],
+              isLoading: false,
+            };
+          }
+        });
+      } else {
         setState((prev) => ({
           ...prev,
           isLoading: false,
-          error:
-            error instanceof Error ? error : new Error(String(error)),
+          error: new Error(result.error.message),
         }));
       }
-    },
-    []
-  );
+    } catch (error) {
+      setState((prev) => ({
+        ...prev,
+        isLoading: false,
+        error: error instanceof Error ? error : new Error(String(error)),
+      }));
+    }
+  }, []);
 
   /**
    * Deletes a trecho from the configuration.
    */
-  const deleteTrecho = useCallback(
-    async (projectPath: string, trechoId: string) => {
-      setState((prev) => ({ ...prev, isLoading: true, error: null }));
+  const deleteTrecho = useCallback(async (projectPath: string, trechoId: string) => {
+    setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
-      try {
-        const result = await window.coreto.deleteTrecho(
-          projectPath,
-          trechoId
-        );
+    try {
+      const result = await window.coreto.deleteTrecho(projectPath, trechoId);
 
-        if (result.success) {
-          // Remove trecho from local state
-          setState((prev) => ({
-            ...prev,
-            trechos: prev.trechos.filter((t) => t.id !== trechoId),
-            isLoading: false,
-          }));
-        } else {
-          setState((prev) => ({
-            ...prev,
-            isLoading: false,
-            error: new Error(result.error.message),
-          }));
-        }
-      } catch (error) {
+      if (result.success) {
+        // Remove trecho from local state
+        setState((prev) => ({
+          ...prev,
+          trechos: prev.trechos.filter((t) => t.id !== trechoId),
+          isLoading: false,
+        }));
+      } else {
         setState((prev) => ({
           ...prev,
           isLoading: false,
-          error:
-            error instanceof Error ? error : new Error(String(error)),
+          error: new Error(result.error.message),
         }));
       }
-    },
-    []
-  );
+    } catch (error) {
+      setState((prev) => ({
+        ...prev,
+        isLoading: false,
+        error: error instanceof Error ? error : new Error(String(error)),
+      }));
+    }
+  }, []);
 
   /**
    * Refreshes the trechos list from the main process.

@@ -19,7 +19,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type {
   ProgressPayload,
   ErrorPayload,
-  SimulationResultPayload
+  SimulationResultPayload,
 } from '@coreto/electron/preload/index.js';
 
 // ============================================================================
@@ -113,12 +113,7 @@ export interface SimulationCompletionResult {
 /**
  * Status of the simulation.
  */
-export type SimulationStatus =
-  | 'idle'
-  | 'running'
-  | 'completed'
-  | 'error'
-  | 'cancelled';
+export type SimulationStatus = 'idle' | 'running' | 'completed' | 'error' | 'cancelled';
 
 /**
  * Return value for useSimulationProgress hook.
@@ -250,16 +245,18 @@ export function useSimulationProgress(): UseSimulationProgressReturn {
     });
 
     // Completion events
-    const cleanupComplete = window.coreto.onComplete((simulationResult: SimulationResultPayload) => {
-      setResult(simulationResult);
-      setStatus('completed');
-      setProgressState((prev) => ({
-        ...prev,
-        percentage: 100,
-        isRunning: false,
-      }));
-      setProgressDetail(null);
-    });
+    const cleanupComplete = window.coreto.onComplete(
+      (simulationResult: SimulationResultPayload) => {
+        setResult(simulationResult);
+        setStatus('completed');
+        setProgressState((prev) => ({
+          ...prev,
+          percentage: 100,
+          isRunning: false,
+        }));
+        setProgressDetail(null);
+      }
+    );
 
     // Error events
     const cleanupError = window.coreto.onError((errorPayload: ErrorPayload) => {
@@ -295,101 +292,107 @@ export function useSimulationProgress(): UseSimulationProgressReturn {
    * Starts a simulation (new event-based API).
    * Returns immediately - result comes via onComplete event.
    */
-  const startSimulation = useCallback(async (params: {
-    projectPath: string;
-    configPath: string;
-    seed?: number;
-    diagnostic?: boolean;
-  }): Promise<void> => {
-    // Reset state
-    reset();
-    setStatus('running');
-    setProgressState({ ...initialProgress, isRunning: true });
+  const startSimulation = useCallback(
+    async (params: {
+      projectPath: string;
+      configPath: string;
+      seed?: number;
+      diagnostic?: boolean;
+    }): Promise<void> => {
+      // Reset state
+      reset();
+      setStatus('running');
+      setProgressState({ ...initialProgress, isRunning: true });
 
-    try {
-      const coretoAPI = window.coreto;
-      const response = await coretoAPI.startSimulation(params);
+      try {
+        const coretoAPI = window.coreto;
+        const response = await coretoAPI.startSimulation(params);
 
-      if (!response.success) {
+        if (!response.success) {
+          setStatus('error');
+          setError({
+            title: 'Failed to Start Simulation',
+            description: response.error.message,
+            code: 'ERR_START_FAILED',
+          });
+        }
+        // If success, wait for onComplete event
+      } catch (err) {
         setStatus('error');
         setError({
           title: 'Failed to Start Simulation',
-          description: response.error.message,
-          code: 'ERR_START_FAILED'
+          description: err instanceof Error ? err.message : 'Unknown error',
+          code: 'ERR_START_FAILED',
         });
       }
-      // If success, wait for onComplete event
-    } catch (err) {
-      setStatus('error');
-      setError({
-        title: 'Failed to Start Simulation',
-        description: err instanceof Error ? err.message : 'Unknown error',
-        code: 'ERR_START_FAILED'
-      });
-    }
-  }, [reset]);
+    },
+    [reset]
+  );
 
   /**
    * Legacy simulation run (for backward compatibility).
    * @deprecated Use startSimulation with event listeners instead
    */
-  const runSimulation = useCallback(async (config: {
-    projectPath: string;
-    configPath?: string;
-    trechoId?: string;
-    troopId?: number;
-    seed?: number;
-    maxTurns?: number;
-  }): Promise<SimulationCompletionResult> => {
-    // Reset state
-    reset();
-    setStatus('running');
-    setProgressState({ ...initialProgress, isRunning: true });
+  const runSimulation = useCallback(
+    async (config: {
+      projectPath: string;
+      configPath?: string;
+      trechoId?: string;
+      troopId?: number;
+      seed?: number;
+      maxTurns?: number;
+    }): Promise<SimulationCompletionResult> => {
+      // Reset state
+      reset();
+      setStatus('running');
+      setProgressState({ ...initialProgress, isRunning: true });
 
-    try {
-      const coretoAPI = window.coreto;
-      const response = await coretoAPI.runSimulation(config);
+      try {
+        const coretoAPI = window.coreto;
+        const response = await coretoAPI.runSimulation(config);
 
-      if (response.success) {
-        const simulationResult = response.data;
+        if (response.success) {
+          const simulationResult = response.data;
 
-        // Update state with result
-        setStatus('completed');
-        setProgressState({
-          isRunning: false,
-          percentage: 100,
-          currentIndex: simulationResult.battleResult.ttkTurns,
-          totalItems: simulationResult.battleResult.ttkTurns,
-          currentItem: simulationResult.troopName,
-        });
-        setError(null);
+          // Update state with result
+          setStatus('completed');
+          setProgressState({
+            isRunning: false,
+            percentage: 100,
+            currentIndex: simulationResult.battleResult.ttkTurns,
+            totalItems: simulationResult.battleResult.ttkTurns,
+            currentItem: simulationResult.troopName,
+          });
+          setError(null);
 
-        return simulationResult;
-      } else {
-        // Simulation failed
+          return simulationResult;
+        } else {
+          // Simulation failed
+          setStatus('error');
+          setProgressState({ ...initialProgress, isRunning: false });
+          setError({
+            title: 'Simulation Failed',
+            description: response.error.message ?? 'Unknown error',
+            code: 'ERR_SIMULATION_FAILED',
+          });
+
+          throw new Error(response.error.message ?? 'Simulation failed');
+        }
+      } catch (err) {
+        // Update error state
         setStatus('error');
         setProgressState({ ...initialProgress, isRunning: false });
         setError({
           title: 'Simulation Failed',
-          description: response.error.message ?? 'Unknown error',
-          code: 'ERR_SIMULATION_FAILED'
+          description: err instanceof Error ? err.message : 'Unknown error occurred',
+          code: 'ERR_SIMULATION_FAILED',
         });
 
-        throw new Error(response.error.message ?? 'Simulation failed');
+        throw err;
       }
-    } catch (err) {
-      // Update error state
-      setStatus('error');
-      setProgressState({ ...initialProgress, isRunning: false });
-      setError({
-        title: 'Simulation Failed',
-        description: err instanceof Error ? err.message : 'Unknown error occurred',
-        code: 'ERR_SIMULATION_FAILED'
-      });
-
-      throw err;
-    }
-  }, [reset]);
+    },
+    [reset]
+  );
 
   /**
    * Cancels the currently running simulation.
@@ -406,7 +409,7 @@ export function useSimulationProgress(): UseSimulationProgressReturn {
       setError({
         title: 'Cancellation Failed',
         description: err instanceof Error ? err.message : 'Failed to cancel simulation',
-        code: 'ERR_CANCEL_FAILED'
+        code: 'ERR_CANCEL_FAILED',
       });
     }
   }, []);

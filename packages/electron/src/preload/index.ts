@@ -1,10 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import { electronAPI } from '@electron-toolkit/preload';
-import type {
-  ProgressPayload,
-  ErrorPayload,
-  SimulationResultPayload
-} from '../main/workers/types';
+import type { ProgressPayload, ErrorPayload, SimulationResultPayload } from '../main/workers/types';
 
 // LOG INICIAL PARA VERIFICAR VERSÃO
 console.log('🚀 PRELOAD CARREGADO - Versão com logs de debug');
@@ -330,9 +326,7 @@ const coretoAPI = {
    * });
    * // Call cleanup() when done to prevent memory leaks
    */
-  onProgress: (
-    callback: (payload: ProgressPayload) => void
-  ): (() => void) => {
+  onProgress: (callback: (payload: ProgressPayload) => void): (() => void) => {
     const listener = (_event: Electron.IpcRendererEvent, payload: ProgressPayload): void => {
       callback(payload);
     };
@@ -354,9 +348,7 @@ const coretoAPI = {
    *   console.log('Simulation complete:', result.report);
    * });
    */
-  onComplete: (
-    callback: (result: SimulationResultPayload) => void
-  ): (() => void) => {
+  onComplete: (callback: (result: SimulationResultPayload) => void): (() => void) => {
     const listener = (_event: Electron.IpcRendererEvent, result: SimulationResultPayload): void => {
       callback(result);
     };
@@ -377,9 +369,7 @@ const coretoAPI = {
    *   console.error('Simulation failed:', error.title);
    * });
    */
-  onError: (
-    callback: (error: ErrorPayload) => void
-  ): (() => void) => {
+  onError: (callback: (error: ErrorPayload) => void): (() => void) => {
     const listener = (_event: Electron.IpcRendererEvent, error: ErrorPayload): void => {
       callback(error);
     };
@@ -423,24 +413,20 @@ const coretoAPI = {
    * @example
    * await window.coreto.cancelSimulation();
    */
-  cancelSimulation: (): Promise<IPCResult<void>> =>
-    ipcRenderer.invoke('simulation:cancel'),
+  cancelSimulation: (): Promise<IPCResult<void>> => ipcRenderer.invoke('simulation:cancel'),
 
   /**
    * Legacy simulation handler (deprecated - use startSimulation + event listeners).
    * @deprecated Use startSimulation with onProgress/onComplete/onError event listeners
    */
-  runSimulation: (
-    config: {
-      projectPath: string;
-      configPath?: string;
-      trechoId?: string;
-      troopId?: number;
-      seed?: number;
-      maxTurns?: number;
-    }
-  ): Promise<IPCResult<SimulationResult>> =>
-    ipcRenderer.invoke('simulation:run', config),
+  runSimulation: (config: {
+    projectPath: string;
+    configPath?: string;
+    trechoId?: string;
+    troopId?: number;
+    seed?: number;
+    maxTurns?: number;
+  }): Promise<IPCResult<SimulationResult>> => ipcRenderer.invoke('simulation:run', config),
 
   /**
    * Gets the current simulation progress (0-100).
@@ -517,8 +503,7 @@ const coretoAPI = {
    * Gets all trechos from the currently loaded config.
    * @returns Array of trecho configurations
    */
-  getTrechos: (): Promise<IPCResult<TrechoData[]>> =>
-    ipcRenderer.invoke('config:getTrechos'),
+  getTrechos: (): Promise<IPCResult<TrechoData[]>> => ipcRenderer.invoke('config:getTrechos'),
 
   /**
    * Adds or updates a trecho configuration.
@@ -561,8 +546,7 @@ const coretoAPI = {
       seed: number;
       maxBattleTurns?: number;
     }>
-  > =>
-    ipcRenderer.invoke('config:updateGlobalSettings', { projectPath, ...settings }),
+  > => ipcRenderer.invoke('config:updateGlobalSettings', { projectPath, ...settings }),
 
   /**
    * Data Handlers
@@ -621,8 +605,7 @@ const coretoAPI = {
    * Gets user preferences from the database.
    * @returns User preferences
    */
-  getPreferences: (): Promise<IPCResult<UserPreferences>> =>
-    ipcRenderer.invoke('preferences:get'),
+  getPreferences: (): Promise<IPCResult<UserPreferences>> => ipcRenderer.invoke('preferences:get'),
 
   /**
    * Updates user preferences in the database.
@@ -632,8 +615,7 @@ const coretoAPI = {
   setPreferences: (preferences: {
     theme?: 'light' | 'dark' | 'system';
     lastProjectPath?: string | null;
-  }): Promise<IPCResult<UserPreferences>> =>
-    ipcRenderer.invoke('preferences:set', preferences),
+  }): Promise<IPCResult<UserPreferences>> => ipcRenderer.invoke('preferences:set', preferences),
 
   /**
    * History Handlers
@@ -656,7 +638,9 @@ const coretoAPI = {
    * @param simulationId - UUID of the simulation
    * @returns Simulation report or null if not found
    */
-  loadHistoryReport: (simulationId: string): Promise<IPCResult<{ report: SimulationReport | null }>> =>
+  loadHistoryReport: (
+    simulationId: string
+  ): Promise<IPCResult<{ report: SimulationReport | null }>> =>
     ipcRenderer.invoke('history:loadReport', { simulationId }),
 
   /**
