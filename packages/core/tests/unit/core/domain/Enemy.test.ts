@@ -81,6 +81,14 @@ describe('Enemy', () => {
       expect(() => new Enemy(data)).toThrow('Enemy param[2] cannot be negative');
     });
 
+    it('should throw ValidationError when MaxHP is 0', () => {
+      const data = createValidEnemyData();
+      data.params = [0, 0, 10, 5, 3, 3, 4, 4];
+
+      expect(() => new Enemy(data)).toThrow(ValidationError);
+      expect(() => new Enemy(data)).toThrow('Enemy MaxHP must be >= 1');
+    });
+
     it('should accept zero params (valid for MP)', () => {
       const data = createValidEnemyData();
       data.params = [50, 0, 10, 5, 0, 0, 4, 4];

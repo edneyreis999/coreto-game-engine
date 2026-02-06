@@ -332,6 +332,216 @@ describe('Warning', () => {
 
       expect(warning.equals(warning)).toBe(true);
     });
+
+    it('should handle nested objects in context', () => {
+      const warning1 = new Warning({
+        type: 'skill_formula_error',
+        severity: 'warning',
+        message: 'Test',
+        context: {
+          skill: { id: 1, name: 'Attack' },
+          enemy: { id: 2, name: 'Slime' },
+        },
+      });
+
+      const warning2 = new Warning({
+        type: 'skill_formula_error',
+        severity: 'warning',
+        message: 'Test',
+        context: {
+          skill: { id: 1, name: 'Attack' },
+          enemy: { id: 2, name: 'Slime' },
+        },
+      });
+
+      expect(warning1.equals(warning2)).toBe(true);
+    });
+
+    it('should detect differences in nested objects', () => {
+      const warning1 = new Warning({
+        type: 'skill_formula_error',
+        severity: 'warning',
+        message: 'Test',
+        context: {
+          skill: { id: 1, name: 'Attack' },
+        },
+      });
+
+      const warning2 = new Warning({
+        type: 'skill_formula_error',
+        severity: 'warning',
+        message: 'Test',
+        context: {
+          skill: { id: 2, name: 'Attack' },
+        },
+      });
+
+      expect(warning1.equals(warning2)).toBe(false);
+    });
+
+    it('should handle arrays in context', () => {
+      const warning1 = new Warning({
+        type: 'battle_timeout',
+        severity: 'info',
+        message: 'Test',
+        context: {
+          turns: [1, 2, 3, 4, 5],
+        },
+      });
+
+      const warning2 = new Warning({
+        type: 'battle_timeout',
+        severity: 'info',
+        message: 'Test',
+        context: {
+          turns: [1, 2, 3, 4, 5],
+        },
+      });
+
+      expect(warning1.equals(warning2)).toBe(true);
+    });
+
+    it('should detect differences in arrays', () => {
+      const warning1 = new Warning({
+        type: 'battle_timeout',
+        severity: 'info',
+        message: 'Test',
+        context: {
+          turns: [1, 2, 3],
+        },
+      });
+
+      const warning2 = new Warning({
+        type: 'battle_timeout',
+        severity: 'info',
+        message: 'Test',
+        context: {
+          turns: [1, 2, 4],
+        },
+      });
+
+      expect(warning1.equals(warning2)).toBe(false);
+    });
+
+    it('should detect array length differences', () => {
+      const warning1 = new Warning({
+        type: 'battle_timeout',
+        severity: 'info',
+        message: 'Test',
+        context: {
+          turns: [1, 2, 3],
+        },
+      });
+
+      const warning2 = new Warning({
+        type: 'battle_timeout',
+        severity: 'info',
+        message: 'Test',
+        context: {
+          turns: [1, 2],
+        },
+      });
+
+      expect(warning1.equals(warning2)).toBe(false);
+    });
+
+    it('should handle null values in context', () => {
+      const warning1 = new Warning({
+        type: 'skill_formula_error',
+        severity: 'warning',
+        message: 'Test',
+        context: {
+          error: null,
+        },
+      });
+
+      const warning2 = new Warning({
+        type: 'skill_formula_error',
+        severity: 'warning',
+        message: 'Test',
+        context: {
+          error: null,
+        },
+      });
+
+      expect(warning1.equals(warning2)).toBe(true);
+    });
+
+    it('should distinguish null from undefined', () => {
+      const warning1 = new Warning({
+        type: 'skill_formula_error',
+        severity: 'warning',
+        message: 'Test',
+        context: {
+          error: null,
+        },
+      });
+
+      const warning2 = new Warning({
+        type: 'skill_formula_error',
+        severity: 'warning',
+        message: 'Test',
+        context: {
+          error: undefined,
+        },
+      });
+
+      expect(warning1.equals(warning2)).toBe(false);
+    });
+
+    it('should handle deeply nested structures', () => {
+      const warning1 = new Warning({
+        type: 'skill_formula_error',
+        severity: 'warning',
+        message: 'Test',
+        context: {
+          battle: {
+            troop: {
+              id: 1,
+              members: [{ enemyId: 1, x: 100, y: 200 }],
+            },
+          },
+        },
+      });
+
+      const warning2 = new Warning({
+        type: 'skill_formula_error',
+        severity: 'warning',
+        message: 'Test',
+        context: {
+          battle: {
+            troop: {
+              id: 1,
+              members: [{ enemyId: 1, x: 100, y: 200 }],
+            },
+          },
+        },
+      });
+
+      expect(warning1.equals(warning2)).toBe(true);
+    });
+
+    it('should distinguish between array and object', () => {
+      const warning1 = new Warning({
+        type: 'skill_formula_error',
+        severity: 'warning',
+        message: 'Test',
+        context: {
+          data: [1, 2, 3],
+        },
+      });
+
+      const warning2 = new Warning({
+        type: 'skill_formula_error',
+        severity: 'warning',
+        message: 'Test',
+        context: {
+          data: { 0: 1, 1: 2, 2: 3 },
+        },
+      });
+
+      expect(warning1.equals(warning2)).toBe(false);
+    });
   });
 
   describe('toJSON', () => {

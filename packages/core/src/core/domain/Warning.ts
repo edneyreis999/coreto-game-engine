@@ -142,8 +142,120 @@ export class Warning {
       this.type === other.type &&
       this.severity === other.severity &&
       this.message === other.message &&
-      JSON.stringify(this.context) === JSON.stringify(other.context)
+      this.deepEqualsContext(this.context, other.context)
     );
+  }
+
+  /**
+   * Deep equality check for context objects.
+   * Compares two Record<string, unknown> objects recursively.
+   *
+   * @param a - First context object
+   * @param b - Second context object
+   * @returns True if contexts are deeply equal
+   */
+  private deepEqualsContext(a: Record<string, unknown>, b: Record<string, unknown>): boolean {
+    const keysA = Object.keys(a);
+    const keysB = Object.keys(b);
+
+    // Different number of keys means not equal
+    if (keysA.length !== keysB.length) {
+      return false;
+    }
+
+    // Check each key-value pair
+    for (const key of keysA) {
+      if (!Object.prototype.hasOwnProperty.call(b, key)) {
+        return false;
+      }
+
+      const valueA = a[key];
+      const valueB = b[key];
+
+      // Handle null/undefined explicitly
+      if (valueA === null || valueA === undefined) {
+        return valueA === valueB;
+      }
+
+      if (valueB === null || valueB === undefined) {
+        return false;
+      }
+
+      // Recursively compare objects
+      if (typeof valueA === 'object' && typeof valueB === 'object') {
+        if (Array.isArray(valueA) && Array.isArray(valueB)) {
+          if (!this.deepEqualsArray(valueA, valueB)) {
+            return false;
+          }
+        } else if (Array.isArray(valueA) || Array.isArray(valueB)) {
+          // One is array, other is not
+          return false;
+        } else {
+          // Both are objects
+          if (
+            !this.deepEqualsContext(
+              valueA as Record<string, unknown>,
+              valueB as Record<string, unknown>
+            )
+          ) {
+            return false;
+          }
+        }
+      } else if (valueA !== valueB) {
+        // Primitive values must match exactly
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Deep equality check for arrays.
+   *
+   * @param a - First array
+   * @param b - Second array
+   * @returns True if arrays are deeply equal
+   */
+  private deepEqualsArray(a: unknown[], b: unknown[]): boolean {
+    if (a.length !== b.length) {
+      return false;
+    }
+
+    for (let i = 0; i < a.length; i++) {
+      const valueA = a[i];
+      const valueB = b[i];
+
+      if (valueA === null || valueA === undefined) {
+        if (valueA !== valueB) {
+          return false;
+        }
+        continue;
+      }
+
+      if (typeof valueA === 'object' && typeof valueB === 'object') {
+        if (Array.isArray(valueA) && Array.isArray(valueB)) {
+          if (!this.deepEqualsArray(valueA, valueB)) {
+            return false;
+          }
+        } else if (Array.isArray(valueA) || Array.isArray(valueB)) {
+          return false;
+        } else {
+          if (
+            !this.deepEqualsContext(
+              valueA as Record<string, unknown>,
+              valueB as Record<string, unknown>
+            )
+          ) {
+            return false;
+          }
+        }
+      } else if (valueA !== valueB) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   /**

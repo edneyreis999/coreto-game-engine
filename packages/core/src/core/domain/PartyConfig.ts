@@ -42,7 +42,7 @@ export class PartyConfig {
    * Creates a new PartyConfig.
    *
    * @param members - Array of party members (1-4 members)
-   * @throws {ValidationError} If party is empty or member levels are invalid
+   * @throws {ValidationError} If party is empty, member classIds are invalid, or member levels are invalid
    */
   constructor(members: PartyMemberData[]) {
     // Validate party size
@@ -52,6 +52,11 @@ export class PartyConfig {
 
     // Validate each member
     for (const member of members) {
+      if (member.classId < 1) {
+        throw new ValidationError('Member classId must be >= 1', {
+          classId: member.classId,
+        });
+      }
       if (member.level < 1 || member.level > 99) {
         throw new ValidationError('Member level must be 1-99', {
           classId: member.classId,

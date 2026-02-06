@@ -2,6 +2,7 @@ import {
   BattleResult,
   BattleResultData,
   BattleOutcome,
+  ValidationError,
 } from '@coreto/core';
 import { BattleResultFakeBuilder } from '../../../fakes';
 
@@ -136,6 +137,115 @@ describe('BattleResult', () => {
         .build();
 
       expect(result.troopName).toBe('Goblin "Elite" Squad [Lv.10+]');
+    });
+  });
+
+  describe('validation', () => {
+    describe('troopId validation', () => {
+      it('should throw ValidationError if troopId is 0', () => {
+        const data: BattleResultData = {
+          troopId: 0,
+          troopName: 'Test Troop',
+          outcome: 'victory',
+          ttkTurns: 3,
+          ttkActions: 8,
+          durationMs: 1000,
+          seed: 12345,
+        };
+
+        expect(() => new BattleResult(data)).toThrow(ValidationError);
+        expect(() => new BattleResult(data)).toThrow('BattleResult troopId must be >= 1');
+      });
+
+      it('should throw ValidationError if troopId is negative', () => {
+        const data: BattleResultData = {
+          troopId: -1,
+          troopName: 'Test Troop',
+          outcome: 'victory',
+          ttkTurns: 3,
+          ttkActions: 8,
+          durationMs: 1000,
+          seed: 12345,
+        };
+
+        expect(() => new BattleResult(data)).toThrow(ValidationError);
+        expect(() => new BattleResult(data)).toThrow('BattleResult troopId must be >= 1');
+      });
+
+      it('should accept troopId of 1', () => {
+        const result = new BattleResultFakeBuilder().withTroopId(1).build();
+
+        expect(result.troopId).toBe(1);
+      });
+    });
+
+    describe('ttkTurns validation', () => {
+      it('should throw ValidationError if ttkTurns is negative', () => {
+        const data: BattleResultData = {
+          troopId: 1,
+          troopName: 'Test Troop',
+          outcome: 'victory',
+          ttkTurns: -1,
+          ttkActions: 8,
+          durationMs: 1000,
+          seed: 12345,
+        };
+
+        expect(() => new BattleResult(data)).toThrow(ValidationError);
+        expect(() => new BattleResult(data)).toThrow('BattleResult ttkTurns cannot be negative');
+      });
+
+      it('should accept ttkTurns of 0', () => {
+        const result = new BattleResultFakeBuilder().withTtkMetrics(0, 0).build();
+
+        expect(result.ttkTurns).toBe(0);
+      });
+    });
+
+    describe('ttkActions validation', () => {
+      it('should throw ValidationError if ttkActions is negative', () => {
+        const data: BattleResultData = {
+          troopId: 1,
+          troopName: 'Test Troop',
+          outcome: 'victory',
+          ttkTurns: 3,
+          ttkActions: -1,
+          durationMs: 1000,
+          seed: 12345,
+        };
+
+        expect(() => new BattleResult(data)).toThrow(ValidationError);
+        expect(() => new BattleResult(data)).toThrow('BattleResult ttkActions cannot be negative');
+      });
+
+      it('should accept ttkActions of 0', () => {
+        const result = new BattleResultFakeBuilder().withTtkMetrics(0, 0).build();
+
+        expect(result.ttkActions).toBe(0);
+      });
+    });
+
+    describe('durationMs validation', () => {
+      it('should throw ValidationError if durationMs is negative', () => {
+        const data: BattleResultData = {
+          troopId: 1,
+          troopName: 'Test Troop',
+          outcome: 'victory',
+          ttkTurns: 3,
+          ttkActions: 8,
+          durationMs: -1,
+          seed: 12345,
+        };
+
+        expect(() => new BattleResult(data)).toThrow(ValidationError);
+        expect(() => new BattleResult(data)).toThrow('BattleResult durationMs cannot be negative');
+      });
+
+      it('should accept durationMs of 0', () => {
+        const result = new BattleResultFakeBuilder().withDuration(0).build();
+
+        expect(result.durationMs).toBe(0);
+      });
     });
   });
 });

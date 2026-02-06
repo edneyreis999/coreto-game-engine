@@ -179,6 +179,14 @@ export class Enemy {
       }
     }
 
+    // Validate MaxHP specifically must be >= 1
+    if (data.params[0] < 1) {
+      throw new ValidationError('Enemy MaxHP must be >= 1', {
+        id: data.id,
+        maxHp: data.params[0],
+      });
+    }
+
     // Validate actions
     for (const action of data.actions) {
       if (action.skillId < 1) {

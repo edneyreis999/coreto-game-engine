@@ -1,3 +1,5 @@
+import { ValidationError } from '../errors/index.js';
+
 /**
  * Battle outcome types.
  * Represents the final state of a battle simulation.
@@ -87,8 +89,39 @@ export class BattleResult {
    * Creates a new BattleResult.
    *
    * @param data - Battle result data
+   * @throws {ValidationError} If any validation rule fails
    */
   constructor(data: BattleResultData) {
+    // Validate troop ID
+    if (data.troopId < 1) {
+      throw new ValidationError('BattleResult troopId must be >= 1', {
+        troopId: data.troopId,
+      });
+    }
+
+    // Validate TTK metrics
+    if (data.ttkTurns < 0) {
+      throw new ValidationError('BattleResult ttkTurns cannot be negative', {
+        troopId: data.troopId,
+        ttkTurns: data.ttkTurns,
+      });
+    }
+    if (data.ttkActions < 0) {
+      throw new ValidationError('BattleResult ttkActions cannot be negative', {
+        troopId: data.troopId,
+        ttkActions: data.ttkActions,
+      });
+    }
+
+    // Validate duration
+    if (data.durationMs < 0) {
+      throw new ValidationError('BattleResult durationMs cannot be negative', {
+        troopId: data.troopId,
+        durationMs: data.durationMs,
+      });
+    }
+
+    // Assign validated data
     this.troopId = data.troopId;
     this.troopName = data.troopName;
     this.outcome = data.outcome;

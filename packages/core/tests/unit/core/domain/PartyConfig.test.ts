@@ -40,6 +40,35 @@ describe('PartyConfig', () => {
       expect(() => builder.build()).toThrow('Party must have at least 1 member');
     });
 
+    it('should throw ValidationError when member classId is 0', () => {
+      const members: PartyMemberData[] = [{ classId: 0, level: 5 }];
+
+      expect(() => new PartyConfig(members)).toThrow(ValidationError);
+      expect(() => new PartyConfig(members)).toThrow('Member classId must be >= 1');
+    });
+
+    it('should throw ValidationError when member classId is negative', () => {
+      const members: PartyMemberData[] = [{ classId: -1, level: 5 }];
+
+      expect(() => new PartyConfig(members)).toThrow(ValidationError);
+      expect(() => new PartyConfig(members)).toThrow('Member classId must be >= 1');
+    });
+
+    it('should include context in ValidationError for invalid classId', () => {
+      const members: PartyMemberData[] = [{ classId: 0, level: 5 }];
+
+      expect(() => new PartyConfig(members)).toThrow(ValidationError);
+      try {
+        new PartyConfig(members);
+      } catch (error) {
+        expect(error).toBeInstanceOf(ValidationError);
+        const validationError = error as ValidationError;
+        expect(validationError.context).toEqual({
+          classId: 0,
+        });
+      }
+    });
+
     it('should throw ValidationError when member level is 0', () => {
       const builder = new PartyConfigFakeBuilder().withInvalidMemberLevel();
 

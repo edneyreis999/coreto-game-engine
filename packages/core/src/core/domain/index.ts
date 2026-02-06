@@ -16,3 +16,6 @@ export * from './Skill.js';
 
 // Domain Services
 export * from './services/WarningCollector.js';
+
+// Domain Data Types (DTOs for data loading)
+export * from './data/index.js';
