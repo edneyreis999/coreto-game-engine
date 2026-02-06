@@ -10,11 +10,7 @@
 import { ipcMain, IpcMainInvokeEvent } from 'electron';
 import { z } from 'zod';
 
-import type {
-  IPCResponse,
-  IPCResult,
-  IPCError,
-} from './types.js';
+import type { IPCResponse, IPCResult, IPCError } from './types.js';
 import { getDatabase } from '../database/index.js';
 import { ReportStorageService, generateSimulationId } from '../services/report-storage.js';
 import type { SimulationReport, SimulationSummary } from '../services/types.js';
@@ -53,11 +49,14 @@ function withErrorHandling<T extends IPCResponse>(
   handler: () => Promise<T>
 ): Promise<IPCResult<T>> {
   return handler()
-    .then((data) => ({ success: true, data } as IPCResult<T>))
-    .catch((error: unknown) => ({
-      success: false,
-      error: serializeError(error),
-    } as IPCResult<T>));
+    .then((data) => ({ success: true, data }) as IPCResult<T>)
+    .catch(
+      (error: unknown) =>
+        ({
+          success: false,
+          error: serializeError(error),
+        }) as IPCResult<T>
+    );
 }
 
 // ============================================================================

@@ -20,7 +20,6 @@ import { ReportStorageService } from '../../services/report-storage.js';
 import { registerHistoryHandlers } from '../history-handlers.js';
 import type { ReportData } from '../types.js';
 
-
 // ============================================================================
 // Test Constants
 // ============================================================================
@@ -127,16 +126,20 @@ describe('History IPC Handlers', () => {
 
     // Mock getDatabase to return our test database
     const { getDatabase: _getDb } = require('../../database/index.js');
-    getDatabaseMock = jest.spyOn(require('../../database/index.js'), 'getDatabase').mockReturnValue(db);
+    getDatabaseMock = jest
+      .spyOn(require('../../database/index.js'), 'getDatabase')
+      .mockReturnValue(db);
 
     // Set up handler map to capture registered handlers
     handlers = new Map();
 
     // Mock ipcMain.handle to capture handlers
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (ipcMain.handle as jest.Mock).mockImplementation((channel: string, handler: (...args: any[]) => any) => {
-      handlers.set(channel, handler);
-    });
+    (ipcMain.handle as jest.Mock).mockImplementation(
+      (channel: string, handler: (...args: any[]) => any) => {
+        handlers.set(channel, handler);
+      }
+    );
 
     // Register handlers
     registerHistoryHandlers();

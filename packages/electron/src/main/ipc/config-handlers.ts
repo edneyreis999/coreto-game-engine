@@ -20,21 +20,10 @@ import {
   ConfigNotFoundError,
   ConfigValidationError,
 } from '../services/config-service.js';
-import type {
-  IPCResponse,
-  IPCResult,
-  ConfigSaveResponse,
-  ConfigExistsResponse,
-} from './types.js';
+import type { IPCResponse, IPCResult, ConfigSaveResponse, ConfigExistsResponse } from './types.js';
 import type { IPCError } from './types.js';
-import type {
-  ConfigSavePayload,
-  ConfigExistsPayload,
-} from './types.js';
-import {
-  ConfigSavePayloadSchema,
-  ConfigExistsPayloadSchema,
-} from './types.js';
+import type { ConfigSavePayload, ConfigExistsPayload } from './types.js';
+import { ConfigSavePayloadSchema, ConfigExistsPayloadSchema } from './types.js';
 
 // ============================================================================
 // Error Serialization
@@ -90,11 +79,14 @@ function withConfigErrorHandling<T extends IPCResponse>(
   handler: () => Promise<T>
 ): Promise<IPCResult<T>> {
   return handler()
-    .then((data) => ({ success: true, data } as IPCResult<T>))
-    .catch((error: unknown) => ({
-      success: false,
-      error: serializeConfigError(error),
-    } as IPCResult<T>));
+    .then((data) => ({ success: true, data }) as IPCResult<T>)
+    .catch(
+      (error: unknown) =>
+        ({
+          success: false,
+          error: serializeConfigError(error),
+        }) as IPCResult<T>
+    );
 }
 
 // ============================================================================
@@ -108,7 +100,13 @@ function withConfigErrorHandling<T extends IPCResponse>(
 function validateConfigPayload<T>(
   channel: string,
   payload: unknown,
-  schema: { safeParse: (data: unknown) => { success: boolean; data?: T; error?: { errors: Array<{ path: (string | number)[]; message: string }> } } }
+  schema: {
+    safeParse: (data: unknown) => {
+      success: boolean;
+      data?: T;
+      error?: { errors: Array<{ path: (string | number)[]; message: string }> };
+    };
+  }
 ): T {
   const result = schema.safeParse(payload);
 
@@ -119,8 +117,8 @@ function validateConfigPayload<T>(
       throw new Error(`Invalid payload for ${channel}: Unknown error`);
     }
     const errorMessages = parseError.errors
-      .map((e: { path: (string | number)[]; message: string }) =>
-        `${e.path.join('.')}: ${e.message}`
+      .map(
+        (e: { path: (string | number)[]; message: string }) => `${e.path.join('.')}: ${e.message}`
       )
       .join(', ');
     throw new Error(`Invalid payload for ${channel}: ${errorMessages}`);
@@ -167,7 +165,7 @@ async function handleConfigSave(
 
     // Transform ConfigurationPanel format to Core ProjectConfig format
     // Core schema uses: anchorLevelRange {min, max}, ttkTarget {turns, actions, tolerance}
-    const trechos = config.trechos.map(t => ({
+    const trechos = config.trechos.map((t) => ({
       id: t.id,
       name: t.name,
       anchorLevelRange: {

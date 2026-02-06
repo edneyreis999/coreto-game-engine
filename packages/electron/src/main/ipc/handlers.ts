@@ -215,9 +215,7 @@ async function handleProjectOpen(
     // Check for game.rmmzproject marker file
     const markerPath = path.join(projectPath, 'game.rmmzproject');
     if (!fs.exists(markerPath)) {
-      throw new Error(
-        'Invalid RPG Maker MZ project: game.rmmzproject not found'
-      );
+      throw new Error('Invalid RPG Maker MZ project: game.rmmzproject not found');
     }
 
     // Check for data directory
@@ -368,21 +366,16 @@ async function handleSimulationRun(
   return wrapHandler(async () => {
     validatePayload('simulation:run', payload, SimulationRunPayloadSchema);
 
-    const {
-      projectPath,
-      configPath,
-      trechoId,
-      troopId,
-      seed = 12345,
-      maxTurns = 100,
-    } = payload;
+    const { projectPath, configPath, trechoId, troopId, seed = 12345, maxTurns = 100 } = payload;
 
     const logger = resolve<ILogger>(ILoggerToken);
     const configLoader = resolve<IConfigLoader>(IConfigLoaderToken);
     const dataLoader = resolve<IDataLoader>(IDataLoaderToken);
     const simulator = resolve<IBattleSimulator>(IBattleSimulatorToken);
 
-    logger.info(`[IPC] Running simulation: project=${projectPath}, trecho=${trechoId}, troop=${troopId}`);
+    logger.info(
+      `[IPC] Running simulation: project=${projectPath}, trecho=${trechoId}, troop=${troopId}`
+    );
 
     // Check if simulation is already running
     if (simulationProgress.isRunning) {
@@ -980,8 +973,8 @@ async function handleDialogOpenDirectory(
   return wrapHandler(async () => {
     // Get the focused window using getFocusedWindow() (more efficient)
     // If no window is focused, fall back to checking isFocused()
-    const focusedWindow = BrowserWindow.getFocusedWindow() ??
-      BrowserWindow.getAllWindows().find(w => w.isFocused());
+    const focusedWindow =
+      BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows().find((w) => w.isFocused());
 
     // dialog.showOpenDialog can accept undefined (per Electron docs), but TS types don't reflect this
     // Type assertion needed because BaseWindow type doesn't include undefined

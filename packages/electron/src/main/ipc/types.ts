@@ -242,34 +242,43 @@ export const ConfigSavePayloadSchema = z.object({
     .refine((p) => !p.includes('..'), 'Path traversal not allowed'),
   config: z.object({
     version: z.string().default('1.0'),
-    trechos: z.array(
-      z.object({
-        id: z.string().min(1),
-        name: z.string().min(1),
-        anchorLevelMin: z.number().int().min(1).max(99),
-        anchorLevelMax: z.number().int().min(1).max(99),
-        targetTtkTurns: z.number().int().nonnegative(),
-        targetTtkActions: z.number().int().nonnegative(),
-        tolerancePercent: z.number().int().min(0).max(100),
-        troopIds: z.array(z.number().int().positive()).min(1),
-        party: z.object({
-          members: z.array(
-            z.object({
-              classId: z.number().int().positive(),
-              level: z.number().int().min(1).max(99),
-            })
-          ).min(1).max(4),
-        }),
+    trechos: z
+      .array(
+        z.object({
+          id: z.string().min(1),
+          name: z.string().min(1),
+          anchorLevelMin: z.number().int().min(1).max(99),
+          anchorLevelMax: z.number().int().min(1).max(99),
+          targetTtkTurns: z.number().int().nonnegative(),
+          targetTtkActions: z.number().int().nonnegative(),
+          tolerancePercent: z.number().int().min(0).max(100),
+          troopIds: z.array(z.number().int().positive()).min(1),
+          party: z.object({
+            members: z
+              .array(
+                z.object({
+                  classId: z.number().int().positive(),
+                  level: z.number().int().min(1).max(99),
+                })
+              )
+              .min(1)
+              .max(4),
+          }),
+        })
+      )
+      .default([]),
+    globalSettings: z
+      .object({
+        seed: z.number().int().nonnegative(),
+        maxBattleTurns: z.number().int().positive().optional(),
       })
-    ).default([]),
-    globalSettings: z.object({
-      seed: z.number().int().nonnegative(),
-      maxBattleTurns: z.number().int().positive().optional(),
-    }).optional(),
-    metadata: z.object({
-      projectName: z.string().optional(),
-      lastModified: z.number().int().nonnegative().optional(),
-    }).optional(),
+      .optional(),
+    metadata: z
+      .object({
+        projectName: z.string().optional(),
+        lastModified: z.number().int().nonnegative().optional(),
+      })
+      .optional(),
   }),
 });
 
@@ -321,19 +330,20 @@ export const ConfigUpdateTrechoPayloadSchema = z.object({
     tolerancePercent: z.number().min(0).max(100),
     troopIds: z.array(z.number().int().positive()).min(1),
     party: z.object({
-      members: z.array(
-        z.object({
-          classId: z.number().int().positive(),
-          level: z.number().int().min(1).max(99),
-        })
-      ).min(1).max(4),
+      members: z
+        .array(
+          z.object({
+            classId: z.number().int().positive(),
+            level: z.number().int().min(1).max(99),
+          })
+        )
+        .min(1)
+        .max(4),
     }),
   }),
 });
 
-export type ConfigUpdateTrechoPayload = z.infer<
-  typeof ConfigUpdateTrechoPayloadSchema
->;
+export type ConfigUpdateTrechoPayload = z.infer<typeof ConfigUpdateTrechoPayloadSchema>;
 
 /**
  * Response format for config:updateTrecho handler.
@@ -353,9 +363,7 @@ export const ConfigDeleteTrechoPayloadSchema = z.object({
   trechoId: z.string().min(1, 'Trecho ID cannot be empty'),
 });
 
-export type ConfigDeleteTrechoPayload = z.infer<
-  typeof ConfigDeleteTrechoPayloadSchema
->;
+export type ConfigDeleteTrechoPayload = z.infer<typeof ConfigDeleteTrechoPayloadSchema>;
 
 /**
  * Response format for config:deleteTrecho handler.
@@ -775,6 +783,4 @@ export const IPCPayloadSchemas = {
 /**
  * Type-safe payload extraction for each channel.
  */
-export type ChannelPayload<T extends IPCChannel> = z.infer<
-  (typeof IPCPayloadSchemas)[T]
->;
+export type ChannelPayload<T extends IPCChannel> = z.infer<(typeof IPCPayloadSchemas)[T]>;

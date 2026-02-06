@@ -59,4 +59,3 @@ export function setupIpcHandlers(): void {
  * Useful for testing to ensure clean state between tests.
  */
 export { clearContainer };
-

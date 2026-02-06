@@ -1,4 +1,10 @@
-import type { IPCResponse, IPCResult, IPCError, IPCSuccessResponse, IPCErrorResponse } from './types.js';
+import type {
+  IPCResponse,
+  IPCResult,
+  IPCError,
+  IPCSuccessResponse,
+  IPCErrorResponse,
+} from './types.js';
 
 /**
  * Creates a successful IPC response with literal type 'success: true'

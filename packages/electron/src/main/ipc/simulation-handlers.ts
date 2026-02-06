@@ -56,7 +56,7 @@ export function registerSimulationHandlers(): void {
 
         return {
           success: true,
-          data: { simulationId }
+          data: { simulationId },
         };
       } catch (error) {
         return {
@@ -66,8 +66,8 @@ export function registerSimulationHandlers(): void {
             message: error instanceof Error ? error.message : 'Failed to start simulation',
             severity: 'critical',
             context: {},
-            timestamp: new Date().toISOString()
-          }
+            timestamp: new Date().toISOString(),
+          },
         };
       }
     }
@@ -84,7 +84,7 @@ export function registerSimulationHandlers(): void {
 
       return {
         success: true,
-        data: undefined
+        data: undefined,
       };
     } catch (error) {
       return {
@@ -94,8 +94,8 @@ export function registerSimulationHandlers(): void {
           message: error instanceof Error ? error.message : 'Failed to cancel simulation',
           severity: 'warning',
           context: {},
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
     }
   });
