@@ -7,7 +7,6 @@
  */
 
 import { initDatabase, closeDatabase } from '../../../../src/main/database/index.js';
-import type { UserPreferences } from '../../../../src/main/database/queries/user-preferences.js';
 import {
   getUserPreferences,
   setUserPreferences,
@@ -20,6 +19,7 @@ import {
   getWindowBounds,
   setWindowBounds,
 } from '../../../../src/main/database/queries/user-preferences.js';
+import { UserPreferencesBuilder } from '../../../helpers/builders';
 
 describe('UserPreferences Queries', () => {
   beforeEach(() => {
@@ -92,11 +92,11 @@ describe('UserPreferences Queries', () => {
     it('should create or replace preferences record', () => {
       const db = initDatabase();
 
-      const prefs: UserPreferences = {
-        theme: 'dark',
-        window_bounds: { x: 100, y: 200, width: 800, height: 600 },
-        last_project_path: '/path/to/project',
-      };
+      const prefs = UserPreferencesBuilder.create()
+        .withDarkTheme()
+        .withWindowBounds({ x: 100, y: 200, width: 800, height: 600 })
+        .withLastProjectPath('/path/to/project')
+        .build();
 
       const result = setUserPreferences(db, prefs);
 
@@ -128,10 +128,10 @@ describe('UserPreferences Queries', () => {
     it('should handle null last_project_path', () => {
       const db = initDatabase();
 
-      const prefs: UserPreferences = {
-        theme: 'system',
-        last_project_path: null,
-      };
+      const prefs = UserPreferencesBuilder.create()
+        .withSystemTheme()
+        .withLastProjectPath(null)
+        .build();
 
       setUserPreferences(db, prefs);
 
@@ -142,9 +142,10 @@ describe('UserPreferences Queries', () => {
     it('should handle undefined window_bounds', () => {
       const db = initDatabase();
 
-      const prefs: UserPreferences = {
-        theme: 'system',
-      };
+      const prefs = UserPreferencesBuilder.create()
+        .withSystemTheme()
+        .withoutWindowBounds()
+        .build();
 
       setUserPreferences(db, prefs);
 

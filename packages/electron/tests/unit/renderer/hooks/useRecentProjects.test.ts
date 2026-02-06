@@ -6,6 +6,7 @@
 
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { useRecentProjects } from '@/hooks/useRecentProjects'
+import { createMinimalCoretoMock } from '../../../helpers/mocks/coreto-mock.factory'
 
 
 // ============================================================================
@@ -30,49 +31,30 @@ describe('useRecentProjects', () => {
     {
       path: '/path/to/project1',
       name: 'Project 1',
-      lastOpened: new Date(Date.now() - ONE_HOUR_MS).toISOString(), // 1 hour ago
+      lastOpened: new Date(Date.now() - ONE_HOUR_MS).toISOString(),
     },
     {
       path: '/path/to/project2',
       name: 'Project 2',
-      lastOpened: new Date(Date.now() - ONE_HOUR_MS * 24).toISOString(), // 1 day ago
+      lastOpened: new Date(Date.now() - ONE_DAY_MS).toISOString(),
     },
     {
       path: '/path/to/project3',
       name: 'Project 3',
-      lastOpened: new Date(Date.now() - ONE_HOUR_MS * 24 * 7).toISOString(), // 1 week ago
+      lastOpened: new Date(Date.now() - ONE_WEEK_MS).toISOString(),
     },
-  ]
+  ];
 
   beforeEach(() => {
     jest.clearAllMocks()
 
-    // Create fresh mock for each test
-    mockCoreto = {
-      openProject: jest.fn(),
-      validateProject: jest.fn(),
-      runSimulation: jest.fn(),
-      startSimulation: jest.fn(),
-      getSimulationProgress: jest.fn(),
-      cancelSimulation: jest.fn(),
-      getSimulationResults: jest.fn(),
-      loadConfig: jest.fn(),
-      getTrechos: jest.fn(),
-      updateTrecho: jest.fn(),
-      deleteTrecho: jest.fn(),
-      getTroops: jest.fn(),
-      getClasses: jest.fn(),
-      getEnemies: jest.fn(),
-      listRecent: jest.fn(),
-      addRecent: jest.fn(),
-      getPreferences: jest.fn(),
-      setPreferences: jest.fn(),
-      updateGlobalSettings: jest.fn(),
-      // Event listener functions - return cleanup function
-      onProgress: jest.fn(() => jest.fn()),
-      onComplete: jest.fn(() => jest.fn()),
-      onError: jest.fn(() => jest.fn()),
-    }
+    // Create fresh mock for each test using factory
+    mockCoreto = createMinimalCoretoMock({
+      listRecent: jest.fn().mockResolvedValue({
+        success: true,
+        data: mockRecentProjects,
+      }),
+    });
 
     // Setup global window mock
     Object.defineProperty(window, 'coreto', {

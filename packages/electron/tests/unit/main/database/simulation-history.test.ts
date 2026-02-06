@@ -7,7 +7,6 @@
  */
 
 import { initDatabase, resetDatabaseSingleton } from '../../../../src/main/database/index.js';
-import type { SimulationHistoryInput } from '../../../../src/main/database/queries/simulation-history.js';
 import {
   addSimulationHistory,
   countSimulationHistory,
@@ -17,25 +16,25 @@ import {
   listSimulationHistoryByProject,
   listSimulationHistoryByTrecho,
 } from '../../../../src/main/database/queries/simulation-history.js';
+import { SimulationHistoryInputBuilder } from '../../../helpers/builders';
 
 describe('SimulationHistory Queries', () => {
   let db: ReturnType<typeof initDatabase>;
 
-  const mockInput: SimulationHistoryInput = {
-    project_path: '/path/to/project',
-    config_name: 'test-config.json',
-    trecho_id: 'ato1-nivel1-10',
-    troop_id: 1,
-    troop_name: 'Test Troop',
-    ttk_turns: 5,
-    ttk_actions: 12,
-    duration_ms: 1500,
-    seed: 12345,
-    exp_gained: 100,
-    outcome: 'victory',
-    passed: true,
-    warnings: [],
-  };
+  const mockInput = SimulationHistoryInputBuilder.create()
+    .withProjectPath('/path/to/project')
+    .withConfigName('test-config.json')
+    .withTrechoId('ato1-nivel1-10')
+    .withTroopId(1)
+    .withTroopName('Test Troop')
+    .withTtkTurns(5)
+    .withTtkActions(12)
+    .withDurationMs(1500)
+    .withSeed(12345)
+    .withExpGained(100)
+    .withVictory()
+    .withWarnings([])
+    .build();
 
   beforeEach(() => {
     db = initDatabase(true);
