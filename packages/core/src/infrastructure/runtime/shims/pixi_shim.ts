@@ -74,7 +74,9 @@ Container.prototype.constructor = Container;
  * @returns The added child
  */
 Container.prototype.addChild = function (child: any) {
-  if (!child) {return child;}
+  if (!child) {
+    return child;
+  }
 
   // Remove from previous parent
   if (child.parent) {
@@ -283,7 +285,13 @@ function AlphaFilter(this: any, _alpha?: number) {
  * Blur filter stub.
  * Required by RPG Maker MZ for blur effects.
  */
-function BlurFilter(this: any, _strength?: number, _quality?: number, _resolution?: number, _kernelSize?: number) {
+function BlurFilter(
+  this: any,
+  _strength?: number,
+  _quality?: number,
+  _resolution?: number,
+  _kernelSize?: number
+) {
   // Empty constructor - visual effects are not rendered in headless mode
 }
 
@@ -351,7 +359,12 @@ TilingSprite.prototype.constructor = TilingSprite;
  * Filter class for shader-based post-processing effects.
  * Required by ColorFilter in rmmz_core.js.
  */
-function Filter(this: any, _vertexSrc?: string | null, _fragmentSrc?: string | null, _uniforms?: any) {
+function Filter(
+  this: any,
+  _vertexSrc?: string | null,
+  _fragmentSrc?: string | null,
+  _uniforms?: any
+) {
   // Stub constructor - shaders not executed in headless mode
 }
 
@@ -390,7 +403,9 @@ PIXI.Loader = {
     },
     load: (cb?: () => void) => {
       // Immediately invoke callback - all resources are "loaded"
-      if (cb) {cb();}
+      if (cb) {
+        cb();
+      }
     },
   },
 };
@@ -417,4 +432,15 @@ PIXI.BLEND_MODES = {
  */
 (global as any).PIXI = PIXI;
 
-export { PIXI, DisplayObject, Container, Sprite, Graphics, Rectangle, Point, ObjectRenderer, Filter, Texture };
+export {
+  PIXI,
+  DisplayObject,
+  Container,
+  Sprite,
+  Graphics,
+  Rectangle,
+  Point,
+  ObjectRenderer,
+  Filter,
+  Texture,
+};

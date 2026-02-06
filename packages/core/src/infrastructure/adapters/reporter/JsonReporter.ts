@@ -200,9 +200,7 @@ export class JsonReporter implements IReporter {
    * @param report - Report domain entity
    * @returns Report in schema format
    */
-  private convertReportToSchema(
-    report: Report
-  ): import('../../schemas/report.schema.js').Report {
+  private convertReportToSchema(report: Report): import('../../schemas/report.schema.js').Report {
     return {
       timestamp: report.metadata.generatedAt.toISOString(),
       seed: report.metadata.seed,
@@ -333,7 +331,9 @@ export class JsonReporter implements IReporter {
    * @returns Average value
    */
   private calculateAverage(values: number[]): number {
-    if (values.length === 0) {return 0;}
+    if (values.length === 0) {
+      return 0;
+    }
     const sum = values.reduce((acc, val) => acc + val, 0);
     return sum / values.length;
   }
@@ -347,7 +347,9 @@ export class JsonReporter implements IReporter {
    * @returns Percentile value
    */
   private calculatePercentile(values: number[], percentile: number): number {
-    if (values.length === 0) {return 0;}
+    if (values.length === 0) {
+      return 0;
+    }
     if (values.length === 1) {
       const single = values[0];
       return single !== undefined ? single : 0;
