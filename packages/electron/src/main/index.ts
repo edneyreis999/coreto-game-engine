@@ -4,6 +4,7 @@ import path from 'node:path'
 import { setupIpcHandlers, setMainWindowReference } from './ipc/index.js'
 import { initDatabase, closeDatabase, setDatabasePath } from './database/index.js'
 import { simulationController } from './services/index.js'
+import { createWindowConfig, getWindowUrl } from './window-config.js'
 import type { WorkerToMainMessage } from './workers/types.js'
 
 /**
@@ -14,12 +15,6 @@ import type { WorkerToMainMessage } from './workers/types.js'
  */
 
 let mainWindow: BrowserWindow | null = null
-
-/**
- * Default window dimensions matching TechSpec specifications
- */
-const DEFAULT_WINDOW_WIDTH = 1200
-const DEFAULT_WINDOW_HEIGHT = 800
 
 /**
  * Creates the main application window.
@@ -33,26 +28,17 @@ const DEFAULT_WINDOW_HEIGHT = 800
  * @returns The created BrowserWindow instance
  */
 export function createWindow(): BrowserWindow {
-  mainWindow = new BrowserWindow({
-    width: DEFAULT_WINDOW_WIDTH,
-    height: DEFAULT_WINDOW_HEIGHT,
-    title: 'Coreto Dev Portal',
-    show: false, // Don't show until ready-to-show
-    autoHideMenuBar: true,
-    webPreferences: {
-      preload: path.join(__dirname, '../preload/index.js'),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true
-    }
-  })
+  const isDev = process.env.NODE_ENV === 'development'
+
+  mainWindow = new BrowserWindow(createWindowConfig(isDev))
 
   // Load the renderer process
-  if (process.env.NODE_ENV === 'development') {
-    mainWindow.loadURL('http://localhost:5173')
+  const windowUrl = getWindowUrl(isDev)
+  if (isDev) {
+    mainWindow.loadURL(windowUrl)
     mainWindow.webContents.openDevTools()
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'))
+    mainWindow.loadFile(windowUrl.replace('file://', ''))
   }
 
   // Show window when ready to prevent visual flash

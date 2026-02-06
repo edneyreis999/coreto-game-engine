@@ -4,14 +4,16 @@
  * Form validation helpers using Zod schemas from @coreto/core.
  * Provides real-time validation for all form fields with error messages.
  *
- * This file now re-exports validation logic from the domain layer.
- * The domain layer is the source of truth for validation rules.
+ * This file re-exports validation logic from the domain layer.
+ * We import directly from validation files to avoid pulling in use-cases
+ * that depend on @coreto/core (which uses jsdom and causes issues in renderer tests).
  *
  * @see packages/core/src/infrastructure/config/schemas.ts
- * @see @coreto/electron/domain/validation
+ * @see src/domain/validation
  */
 
-// Re-export all validation logic from domain layer
+// Import directly from validation files to avoid circular dependencies
+// and jsdom issues in renderer tests
 export {
   TrechoFormSchema,
   TroopIdsFormSchema,
@@ -19,21 +21,23 @@ export {
   validateTrechoField,
   getFieldError,
   getDefaultTrechoFormData,
+} from '@coreto/electron/domain/validation/trecho-validation';
+export type { TrechoFormData } from '@coreto/electron/domain/validation/trecho-validation';
+
+export {
   PartyMemberFormSchema,
   PartyConfigFormSchema,
   validatePartyMemberForm,
+} from '@coreto/electron/domain/validation/party-validation';
+export type { PartyFormData, PartyMemberFormData } from '@coreto/electron/domain/validation/party-validation';
+
+export {
   GlobalSettingsFormSchema,
   validateGlobalSettingsForm,
   getDefaultGlobalSettingsFormData,
-} from '@coreto/electron/domain/validation';
+} from '@coreto/electron/domain/validation/global-settings-validation';
+export type { GlobalSettingsFormData } from '@coreto/electron/domain/validation/global-settings-validation';
 
-// Re-export types from domain layer
-export type {
-  TrechoFormData,
-  PartyFormData,
-  PartyMemberFormData,
-  GlobalSettingsFormData,
-} from '@coreto/electron/domain/validation';
 export type {
   FormErrors,
   FormValidation,
