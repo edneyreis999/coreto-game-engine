@@ -83,13 +83,13 @@ describe('ProjectSelectionPanel', () => {
   beforeEach(() => {
     jest.clearAllMocks()
 
-    // Setup default mock responses
-    mockCoreto.listRecent.mockResolvedValue({
+    // Setup default mock responses - using new segregated API
+    mockCoreto.recent.list.mockResolvedValue({
       success: true,
       data: mockRecentProjects,
     })
 
-    mockCoreto.openProject.mockResolvedValue({
+    mockCoreto.project.open.mockResolvedValue({
       success: true,
       data: {
         path: '/path/to/project',
@@ -99,7 +99,7 @@ describe('ProjectSelectionPanel', () => {
       },
     })
 
-    mockCoreto.addRecent.mockResolvedValue({
+    mockCoreto.recent.add.mockResolvedValue({
       success: true,
       data: {
         path: '/path/to/project',
@@ -373,7 +373,7 @@ describe('ProjectSelectionPanel', () => {
     })
 
     it('should show validation error messages', async () => {
-      mockCoreto.validateProject.mockResolvedValue({
+      mockCoreto.project.validate.mockResolvedValue({
         success: true,
         data: {
           isValid: false,
@@ -528,8 +528,7 @@ describe('ProjectSelectionPanel', () => {
       })
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        '[ProjectSelectionPanel] Failed to open file picker:',
-        expect.any(Error)
+        expect.stringContaining('[ERROR] Failed to open file picker:')
       )
 
       consoleSpy.mockRestore()

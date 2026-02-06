@@ -428,8 +428,7 @@ describe('SimulationController', () => {
       fakeWorker.receiveMessage({ type: 'unknown' } as any);
 
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        '[SimulationController] Unknown message type:',
-        expect.any(Object)
+        expect.stringContaining('[WARN] Unknown message type:')
       );
 
       consoleWarnSpy.mockRestore();

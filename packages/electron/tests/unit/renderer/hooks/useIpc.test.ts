@@ -6,7 +6,7 @@
 
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { useIpc, useIpcWithArg } from '@/hooks/useIpc'
-import { createMinimalCoretoMock } from '@/tests/helpers/factories'
+import { createMinimalCoretoMock } from '@/tests/helpers/mocks/coreto-mock.factory'
 
 
 // ============================================================================
@@ -27,13 +27,14 @@ describe('useIpc', () => {
   describe('basic usage', () => {
     it('should return initial idle state', () => {
       const mockCoreto = createMinimalCoretoMock({
-        getPreferences: jest.fn().mockResolvedValue({
+        preferences: { get: jest.fn().mockResolvedValue({
           success: true,
           data: {
             theme: 'system' as const,
             lastProjectPath: null,
           },
         }),
+        },
       })
 
       Object.defineProperty(window, 'coreto', {
@@ -42,7 +43,7 @@ describe('useIpc', () => {
       })
 
       const { result } = renderHook(() =>
-        useIpc(() => mockCoreto.getPreferences(), { invokeOnMount: false })
+        useIpc(() => mockCoreto.preferences.get(), { invokeOnMount: false })
       )
 
       expect(result.current.data).toBeNull()
@@ -57,10 +58,11 @@ describe('useIpc', () => {
       }
 
       const mockCoreto = createMinimalCoretoMock({
-        getPreferences: jest.fn().mockResolvedValue({
+        preferences: { get: jest.fn().mockResolvedValue({
           success: true,
           data: mockData,
         }),
+        },
       })
 
       Object.defineProperty(window, 'coreto', {
@@ -69,7 +71,7 @@ describe('useIpc', () => {
       })
 
       const { result } = renderHook(() =>
-        useIpc(() => mockCoreto.getPreferences(), { invokeOnMount: true })
+        useIpc(() => mockCoreto.preferences.get(), { invokeOnMount: true })
       )
 
       expect(result.current.isLoading).toBe(true)
@@ -107,9 +109,9 @@ describe('useIpc', () => {
         const mockCoreto = createMinimalCoretoMock()
 
         if (mockError instanceof Error) {
-          mockCoreto.getPreferences.mockRejectedValue(mockError)
+          mockCoreto.preferences.get.mockRejectedValue(mockError)
         } else {
-          mockCoreto.getPreferences.mockResolvedValue(mockError)
+          mockCoreto.preferences.get.mockResolvedValue(mockError)
         }
 
         Object.defineProperty(window, 'coreto', {
@@ -118,7 +120,7 @@ describe('useIpc', () => {
         })
 
         const { result } = renderHook(() =>
-          useIpc(() => mockCoreto.getPreferences(), { invokeOnMount: true })
+          useIpc(() => mockCoreto.preferences.get(), { invokeOnMount: true })
         )
 
         await waitFor(() => {
@@ -140,10 +142,11 @@ describe('useIpc', () => {
       }
 
       const mockCoreto = createMinimalCoretoMock({
-        getPreferences: jest.fn().mockResolvedValue({
+        preferences: { get: jest.fn().mockResolvedValue({
           success: true,
           data: mockData,
         }),
+        },
       })
 
       Object.defineProperty(window, 'coreto', {
@@ -152,7 +155,7 @@ describe('useIpc', () => {
       })
 
       const { result } = renderHook(() =>
-        useIpc(() => mockCoreto.getPreferences(), { invokeOnMount: false })
+        useIpc(() => mockCoreto.preferences.get(), { invokeOnMount: false })
       )
 
       await act(async () => {
@@ -160,18 +163,19 @@ describe('useIpc', () => {
       })
 
       expect(result.current.data).toEqual(mockData)
-      expect(mockCoreto.getPreferences).toHaveBeenCalledTimes(1)
+      expect(mockCoreto.preferences.get).toHaveBeenCalledTimes(1)
     })
 
     it('should handle multiple invocations', async () => {
       const mockCoreto = createMinimalCoretoMock({
-        getPreferences: jest.fn().mockResolvedValue({
+        preferences: { get: jest.fn().mockResolvedValue({
           success: true,
           data: {
             theme: 'system' as const,
             lastProjectPath: null,
           },
         }),
+        },
       })
 
       Object.defineProperty(window, 'coreto', {
@@ -180,7 +184,7 @@ describe('useIpc', () => {
       })
 
       const { result } = renderHook(() =>
-        useIpc(() => mockCoreto.getPreferences(), { invokeOnMount: false })
+        useIpc(() => mockCoreto.preferences.get(), { invokeOnMount: false })
       )
 
       await act(async () => {
@@ -192,20 +196,21 @@ describe('useIpc', () => {
       })
 
       expect(result.current.data).not.toBeNull()
-      expect(mockCoreto.getPreferences).toHaveBeenCalledTimes(2)
+      expect(mockCoreto.preferences.get).toHaveBeenCalledTimes(2)
     })
   })
 
   describe('reset', () => {
     it('should reset state to initial values', async () => {
       const mockCoreto = createMinimalCoretoMock({
-        getPreferences: jest.fn().mockResolvedValue({
+        preferences: { get: jest.fn().mockResolvedValue({
           success: true,
           data: {
             theme: 'system' as const,
             lastProjectPath: null,
           },
         }),
+        },
       })
 
       Object.defineProperty(window, 'coreto', {
@@ -214,7 +219,7 @@ describe('useIpc', () => {
       })
 
       const { result } = renderHook(() =>
-        useIpc(() => mockCoreto.getPreferences(), { invokeOnMount: true })
+        useIpc(() => mockCoreto.preferences.get(), { invokeOnMount: true })
       )
 
       await waitFor(() => {
@@ -249,10 +254,11 @@ describe('useIpcWithArg', () => {
       }
 
       const mockCoreto = createMinimalCoretoMock({
-        openProject: jest.fn().mockResolvedValue({
+        project: { open: jest.fn().mockResolvedValue({
           success: true,
           data: mockData,
         }),
+        },
       })
 
       Object.defineProperty(window, 'coreto', {
@@ -261,7 +267,7 @@ describe('useIpcWithArg', () => {
       })
 
       const { result } = renderHook(() =>
-        useIpcWithArg((path: string) => mockCoreto.openProject(path))
+        useIpcWithArg((path: string) => mockCoreto.project.open(path))
       )
 
       await act(async () => {
@@ -269,12 +275,12 @@ describe('useIpcWithArg', () => {
       })
 
       expect(result.current.data).toEqual(mockData)
-      expect(mockCoreto.openProject).toHaveBeenCalledWith('/path/to/project')
+      expect(mockCoreto.project.open).toHaveBeenCalledWith('/path/to/project')
     })
 
     it('should handle IPC errors with argument', async () => {
       const mockCoreto = createMinimalCoretoMock({
-        openProject: jest.fn().mockResolvedValue({
+        project: { open: jest.fn().mockResolvedValue({
           success: false,
           error: {
             name: 'IPCError',
@@ -284,6 +290,7 @@ describe('useIpcWithArg', () => {
             timestamp: new Date().toISOString(),
           },
         }),
+        },
       })
 
       Object.defineProperty(window, 'coreto', {
@@ -292,7 +299,7 @@ describe('useIpcWithArg', () => {
       })
 
       const { result } = renderHook(() =>
-        useIpcWithArg((path: string) => mockCoreto.openProject(path))
+        useIpcWithArg((path: string) => mockCoreto.project.open(path))
       )
 
       await act(async () => {
