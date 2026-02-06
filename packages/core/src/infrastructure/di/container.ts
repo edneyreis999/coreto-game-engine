@@ -9,6 +9,7 @@ import 'reflect-metadata';
 import { container as tsyringeContainer } from 'tsyringe';
 
 import type {
+  IClock,
   ILogger,
   IFileSystem,
   IConfigLoader,
@@ -36,6 +37,7 @@ import { RmmzDataLoader, RmmzProjectValidator } from '../adapters/data/index.js'
 import { HeadlessBattleSimulator } from '../simulation/BattleSimulator.js';
 import { JsonReporter } from '../adapters/reporter/JsonReporter.js';
 import { JsdomHeadlessRuntime } from '../runtime/JsdomHeadlessRuntime.js';
+import { SystemClock } from '../adapters/clock/SystemClock.js';
 import { ExecuteBattleUseCase } from '../../core/use-cases/ExecuteBattleUseCase.js';
 import { GenerateReportUseCase } from '../../core/use-cases/GenerateReportUseCase.js';
 import { ValidateTrechoUseCase } from '../../core/use-cases/ValidateTrechoUseCase.js';
@@ -94,6 +96,12 @@ export function registerDependencies(): void {
   // RmmzProjectValidator: Helper for data loading validation (singleton)
   tsyringeContainer.registerSingleton(RmmzProjectValidator);
 
+  // Clock: SystemClock implementation registered as singleton
+  tsyringeContainer.registerSingleton<IClock>(
+    IClockToken as unknown as string,
+    SystemClock,
+  );
+
   // Use Cases: registered with manual factory functions (domain stays framework-free)
   // Usa o mesmo padrao de resolve que ja existe na linha 108: token as unknown as string
   tsyringeContainer.register(ExecuteBattleUseCase, {
@@ -115,7 +123,8 @@ export function registerDependencies(): void {
     useFactory: () => new ValidateTrechoUseCase(),
   });
 
-  console.log('[DI] All dependencies registered');
+  const logger = tsyringeContainer.resolve<ILogger>(ILoggerToken as unknown as string);
+  logger.info('[DI] All dependencies registered');
 }
 
 /**
@@ -124,12 +133,15 @@ export function registerDependencies(): void {
  */
 export function clearContainer(): void {
   tsyringeContainer.clearInstances();
-  console.log('[DI] Container cleared');
 }
 
 /**
- * Resolve a dependency from the container.
+ * Resolves a dependency from the DI container.
  * Type-safe wrapper around container.resolve().
+ *
+ * NOTE: TSyringe expects string | InjectionToken but we use Symbol tokens.
+ * The `as unknown as string` coercion is necessary because Symbol.for()
+ * returns symbols that TSyringe can use as keys internally.
  *
  * @param token - Injection token for the dependency
  * @returns Resolved instance

@@ -169,6 +169,13 @@ export { IntegrityValidator } from './infrastructure/adapters/data/IntegrityVali
 // Reporter Adapters
 export { JsonReporter } from './infrastructure/adapters/reporter/JsonReporter.js';
 
+// Clock Adapters
+export { SystemClock } from './infrastructure/adapters/clock/SystemClock.js';
+
+// Mapper Adapters
+export { EnemyMapper } from './infrastructure/adapters/mappers/EnemyMapper.js';
+export { SkillMapper } from './infrastructure/adapters/mappers/SkillMapper.js';
+
 // =============================================================================
 // PUBLIC API - Security
 // =============================================================================

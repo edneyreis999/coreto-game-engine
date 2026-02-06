@@ -407,7 +407,7 @@ export class ScriptLoader {
       }`
     );
 
-    console.log('[ScriptLoader] ColorFilter.initialize patched for headless mode');
+    this.log('[ScriptLoader] ColorFilter.initialize patched for headless mode');
     return patched;
   }
 

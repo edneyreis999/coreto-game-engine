@@ -347,11 +347,10 @@ export class JsonReporter implements IReporter {
    * @returns Percentile value
    */
   private calculatePercentile(values: number[], percentile: number): number {
-    /* eslint-disable @typescript-eslint/no-non-null-assertion */
-    // Using non-null assertion because array bounds are verified in this function
     if (values.length === 0) {return 0;}
     if (values.length === 1) {
-      return values[0]!;
+      const single = values[0];
+      return single !== undefined ? single : 0;
     }
 
     // Sort values in ascending order
@@ -364,13 +363,15 @@ export class JsonReporter implements IReporter {
 
     // If index is exact, return that value
     if (lower === upper) {
-      return sorted[lower]!;
+      const value = sorted[lower];
+      return value !== undefined ? value : 0;
     }
 
     // Otherwise, interpolate between lower and upper
+    const lowerValue = sorted[lower] ?? 0;
+    const upperValue = sorted[upper] ?? 0;
     const fraction = index - lower;
-    return sorted[lower]! + fraction * (sorted[upper]! - sorted[lower]!);
-    /* eslint-enable @typescript-eslint/no-non-null-assertion */
+    return lowerValue + fraction * (upperValue - lowerValue);
   }
 
   /**

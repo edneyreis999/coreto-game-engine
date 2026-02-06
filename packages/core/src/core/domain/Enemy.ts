@@ -1,5 +1,4 @@
 import { ValidationError } from '../errors/index.js';
-import type { Action, DropItem as RmmzDropItem, EnemyData } from '../../types/rmmz-data.js';
 
 /**
  * Enemy action pattern data structure.
@@ -164,11 +163,18 @@ export class Enemy {
 
     // Validate each param is non-negative
     for (let i = 0; i < data.params.length; i++) {
-      if (data.params[i]! < 0) {
+      const param = data.params[i];
+      if (param === undefined) {
+        throw new ValidationError(`Missing parameter at index ${i}`, {
+          id: data.id,
+          paramIndex: i,
+        });
+      }
+      if (param < 0) {
         throw new ValidationError(`Enemy param[${i}] cannot be negative`, {
           id: data.id,
           paramIndex: i,
-          paramValue: data.params[i],
+          paramValue: param,
         });
       }
     }
@@ -347,37 +353,6 @@ export class Enemy {
    */
   equals(other: Enemy): boolean {
     return this.id === other.id;
-  }
-
-  /**
-   * Create Enemy from RPG Maker MZ EnemyData.
-   * Factory method to convert raw RMMZ data to domain entity.
-   *
-   * @param data - Raw RPG Maker MZ EnemyData
-   * @returns Enemy domain entity
-   */
-  static fromRmmzData(data: EnemyData): Enemy {
-    const actions: EnemyActionData[] = data.actions.map((action: Action) => ({
-      skillId: action.skillId,
-      rating: action.rating,
-      conditionType: action.conditionType,
-    }));
-
-    const dropItems: DropItemData[] = data.dropItems.map((drop: RmmzDropItem) => ({
-      kind: drop.kind,
-      dataId: drop.dataId,
-      denominator: drop.denominator,
-    }));
-
-    return new Enemy({
-      id: data.id,
-      name: data.name,
-      params: Object.freeze([...data.params]),
-      actions,
-      dropItems,
-      exp: data.exp,
-      gold: data.gold,
-    });
   }
 
   /**

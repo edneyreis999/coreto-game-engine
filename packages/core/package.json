@@ -13,9 +13,9 @@
       "default": "./dist/index.js"
     },
     "./testing": {
-      "types": "./dist/index.test.d.ts",
-      "import": "./dist/index.test.js",
-      "default": "./dist/index.test.js"
+      "types": "./dist/index.testing.d.ts",
+      "import": "./dist/index.testing.js",
+      "default": "./dist/index.testing.js"
     }
   },
   "main": "./dist/index.js",

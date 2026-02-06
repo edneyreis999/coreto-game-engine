@@ -1,4 +1,5 @@
 import { Enemy, type EnemyEntityData } from '../../../../src/core/domain/Enemy.js';
+import { EnemyMapper } from '../../../../src/infrastructure/adapters/mappers/EnemyMapper.js';
 import { ValidationError } from '../../../../src/core/errors/ValidationError.js';
 
 describe('Enemy', () => {
@@ -461,7 +462,7 @@ describe('Enemy', () => {
     });
   });
 
-  describe('fromRmmzData', () => {
+  describe('EnemyMapper.fromRmmzData', () => {
     it('should create Enemy from RMMZ EnemyData', () => {
       const rmmzData = {
         id: 1,
@@ -483,7 +484,7 @@ describe('Enemy', () => {
         note: '',
       };
 
-      const enemy = Enemy.fromRmmzData(rmmzData);
+      const enemy = EnemyMapper.fromRmmzData(rmmzData);
 
       expect(enemy.id).toBe(1);
       expect(enemy.name).toBe('Goblin');

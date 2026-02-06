@@ -1,4 +1,5 @@
 import { Skill, type SkillEntityData } from '../../../../src/core/domain/Skill.js';
+import { SkillMapper } from '../../../../src/infrastructure/adapters/mappers/SkillMapper.js';
 import { ValidationError } from '../../../../src/core/errors/ValidationError.js';
 
 describe('Skill', () => {
@@ -604,7 +605,7 @@ describe('Skill', () => {
         effects: [],
       };
 
-      const skill = Skill.fromRmmzData(rmmzData);
+      const skill = SkillMapper.fromRmmzData(rmmzData);
 
       expect(skill.id).toBe(1);
       expect(skill.name).toBe('Fireball');
@@ -646,7 +647,7 @@ describe('Skill', () => {
         effects: [],
       };
 
-      const skill = Skill.fromRmmzData(rmmzData);
+      const skill = SkillMapper.fromRmmzData(rmmzData);
 
       expect(skill.damage.type).toBe('hp_recover');
       expect(skill.hitType).toBe('certain');
@@ -686,7 +687,7 @@ describe('Skill', () => {
         effects: [],
       };
 
-      const skill = Skill.fromRmmzData(rmmzData);
+      const skill = SkillMapper.fromRmmzData(rmmzData);
 
       expect(skill.damage.type).toBe('none');
       expect(skill.scope).toBe('user');

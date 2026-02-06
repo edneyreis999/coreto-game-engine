@@ -215,6 +215,12 @@ export class JsdomHeadlessRuntime implements IHeadlessRuntime {
       this.projectPath = projectPath;
       this.logger.info('[JsdomHeadlessRuntime] Bootstrap completed successfully');
     } catch (error) {
+      // Clean up partial state on failure
+      try {
+        await this.cleanup();
+      } catch {
+        // Ignore cleanup errors during error recovery
+      }
       const message = error instanceof Error ? error.message : String(error);
       throw new RuntimeError(
         `Bootstrap failed: ${message}`,

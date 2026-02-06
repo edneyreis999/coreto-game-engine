@@ -1,5 +1,4 @@
 import { ValidationError } from '../errors/index.js';
-import type { SkillData } from '../../types/rmmz-data.js';
 
 /**
  * Damage type enumeration.
@@ -354,69 +353,6 @@ export class Skill {
    */
   equals(other: Skill): boolean {
     return this.id === other.id;
-  }
-
-  /**
-   * Create Skill from RPG Maker MZ SkillData.
-   * Factory method to convert raw RMMZ data to domain entity.
-   *
-   * @param data - Raw RPG Maker MZ SkillData
-   * @returns Skill domain entity
-   */
-  static fromRmmzData(data: SkillData): Skill {
-    // Map damage type
-    const damageTypeMap: Record<number, DamageType> = {
-      0: 'none',
-      1: 'hp_damage',
-      2: 'mp_damage',
-      3: 'hp_recover',
-      4: 'mp_recover',
-      5: 'hp_drain',
-      6: 'mp_drain',
-    };
-
-    // Map hit type
-    const hitTypeMap: Record<number, HitType> = {
-      0: 'certain',
-      1: 'physical',
-      2: 'magical',
-    };
-
-    // Map scope
-    const scopeMap: Record<number, SkillScope> = {
-      0: 'none',
-      1: 'one_enemy',
-      2: 'all_enemies',
-      3: 'one_ally', // Not actual MZ value but logical extension
-      7: 'one_ally',
-      8: 'all_allies',
-      10: 'user',
-      11: 'user',
-    };
-
-    const damageType = damageTypeMap[data.damage.type] || 'none';
-    const hitType = hitTypeMap[data.hitType] || 'certain';
-    const scope = scopeMap[data.scope] || 'one_enemy';
-
-    return new Skill({
-      id: data.id,
-      name: data.name,
-      description: data.description,
-      damage: {
-        type: damageType,
-        elementId: data.damage.elementId,
-        formula: data.damage.formula,
-        variance: data.damage.variance,
-        critical: data.damage.critical,
-      },
-      hitType,
-      scope,
-      mpCost: data.mpCost,
-      tpCost: data.tpCost,
-      successRate: data.successRate,
-      repeats: data.repeats,
-      speed: data.speed,
-    });
   }
 
   /**

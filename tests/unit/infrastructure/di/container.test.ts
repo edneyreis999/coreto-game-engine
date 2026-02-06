@@ -54,7 +54,8 @@ describe('DI Container', () => {
 
       expect(() => registerDependencies()).not.toThrow();
 
-      expect(consoleSpy).toHaveBeenCalledWith('[DI] All dependencies registered');
+      // registerDependencies() now uses logger.info() which formats as '[INFO] ...'
+      expect(consoleSpy).toHaveBeenCalledWith('[INFO] [DI] All dependencies registered');
 
       consoleSpy.mockRestore();
     });
@@ -269,14 +270,10 @@ describe('DI Container', () => {
 
   describe('clearContainer', () => {
     it('should clear all instances from container', () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-
       registerDependencies();
       const logger1 = resolve(ILoggerToken);
 
       clearContainer();
-
-      expect(consoleSpy).toHaveBeenCalledWith('[DI] Container cleared');
 
       // Re-register and resolve - should get a new instance
       registerDependencies();
@@ -285,8 +282,6 @@ describe('DI Container', () => {
       // New instance should be different from cleared one
       expect(logger2).toBeDefined();
       expect(logger1).not.toBe(logger2);
-
-      consoleSpy.mockRestore();
     });
 
     it('should allow container to be re-registered after cleanup', () => {

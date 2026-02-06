@@ -25,7 +25,10 @@ export interface GenerateReportInput {
  */
 function calculateP95(values: number[]): number {
   if (values.length === 0) return 0;
-  if (values.length === 1) return values[0]!;
+  if (values.length === 1) {
+    const single = values[0];
+    return single !== undefined ? single : 0;
+  }
 
   // Sort values in ascending order
   const sorted = [...values].sort((a, b) => a - b);
@@ -33,7 +36,11 @@ function calculateP95(values: number[]): number {
   // Calculate p95 index (ensure it's within bounds)
   const index = Math.min(Math.ceil(values.length * 0.95) - 1, values.length - 1);
 
-  return sorted[Math.max(0, index)]!;
+  const result = sorted[Math.max(0, index)];
+  if (result === undefined) {
+    return sorted[sorted.length - 1] ?? 0;
+  }
+  return result;
 }
 
 /**
