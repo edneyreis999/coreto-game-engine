@@ -38,7 +38,8 @@ import type { Report } from '@coreto/core';
  *   coreto-engine export-context -c project.config.json -r report-12345.json -o ./ai-context
  */
 export default class ExportContext extends Command {
-  static description = 'Export AI context from TTK validation report (splits large JSONs for LLM context limits)';
+  static description =
+    'Export AI context from TTK validation report (splits large JSONs for LLM context limits)';
 
   static examples = [
     '<%= config.bin %> <%= command.id %> --config project.config.json --report report-12345.json',

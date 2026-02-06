@@ -1,5 +1,5 @@
 {
-  "projectPath": "/Users/edney/.compozy/worktrees/edneyreis999coreto-game-engine-3bcddc903511ad2f77c59c907989eb69/edney_reis999/domain-driven-design-with-hexagonal-architecture/tests/fixtures/sample-data",
+  "projectPath": "/Users/edney/projects/coreto/game-engine/tests/fixtures/sample-data",
   "reportOutputPath": "/tmp/coreto-sample-reports",
   "seed": 42,
   "maxBattleTurns": 100,

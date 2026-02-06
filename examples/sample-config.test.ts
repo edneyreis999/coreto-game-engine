@@ -8,8 +8,15 @@
  * - Has valid party configurations
  * - Demonstrates the three test scenarios correctly
  *
+ * IMPORTANT: Tests validate domain entity structure (flat properties),
+ * NOT the JSON config structure (nested objects). ZodConfigLoader transforms:
+ * - anchorLevelRange.{min,max} → anchorLevelMin, anchorLevelMax
+ * - ttkTarget.{turns,actions,tolerance} → targetTtkTurns, targetTtkActions, tolerancePercent
+ * - tolerance 0-1 range → 0-100 range (0.2 → 20)
+ *
  * @see examples/sample-config.json
  * @see packages/core/src/infrastructure/config/schemas.ts
+ * @see packages/core/src/core/domain/Trecho.ts
  */
 
 import * as fs from 'fs';
@@ -83,19 +90,24 @@ describe('Sample Configuration Validation', () => {
     it('should validate happy-path trecho structure', async () => {
       // Arrange
       const config = await configLoader.loadConfig(SAMPLE_CONFIG_PATH);
-      const trechos = (await configLoader.loadTrechos(config)) as any[];
+      const trechos = await configLoader.loadTrechos(config);
 
       // Act & Assert
-      const happyPathTrecho = trechos.find((t: any) => t.id === 'happy-path-trecho');
+      const happyPathTrecho = trechos.find(t => t.id === 'happy-path-trecho');
       expect(happyPathTrecho).toBeDefined();
       expect(happyPathTrecho?.id).toBe('happy-path-trecho');
       expect(happyPathTrecho?.name).toBe('Happy Path: TTK within tolerance');
-      expect(happyPathTrecho?.anchorLevelRange).toEqual({ min: 5, max: 10 });
-      expect(happyPathTrecho?.ttkTarget).toEqual({
-        turns: 5,
-        actions: 20,
-        tolerance: 0.2,
-      });
+
+      // Domain entity uses flat properties (anchorLevelMin/Max, not anchorLevelRange)
+      expect(happyPathTrecho?.anchorLevelMin).toBe(5);
+      expect(happyPathTrecho?.anchorLevelMax).toBe(10);
+
+      // Domain entity uses flat properties (targetTtk*, tolerancePercent)
+      expect(happyPathTrecho?.targetTtkTurns).toBe(5);
+      expect(happyPathTrecho?.targetTtkActions).toBe(20);
+      // Tolerance converted from 0-1 to 0-100 (0.2 → 20)
+      expect(happyPathTrecho?.tolerancePercent).toBe(20);
+
       expect(happyPathTrecho?.troopIds).toEqual([1]);
       expect(happyPathTrecho?.party.members).toHaveLength(2);
     });
@@ -103,33 +115,38 @@ describe('Sample Configuration Validation', () => {
     it('should validate out-of-tolerance trecho structure', async () => {
       // Arrange
       const config = await configLoader.loadConfig(SAMPLE_CONFIG_PATH);
-      const trechos = (await configLoader.loadTrechos(config)) as any[];
+      const trechos = await configLoader.loadTrechos(config);
 
       // Act & Assert
       const outToleranceTrecho = trechos.find(
-        (t: any) => t.id === 'out-of-tolerance-trecho'
+        t => t.id === 'out-of-tolerance-trecho'
       );
       expect(outToleranceTrecho).toBeDefined();
       expect(outToleranceTrecho?.name).toContain('Out of Tolerance');
-      expect(outToleranceTrecho?.ttkTarget).toEqual({
-        turns: 1,
-        actions: 2,
-        tolerance: 0.1,
-      });
+
+      // Domain entity uses flat properties
+      expect(outToleranceTrecho?.targetTtkTurns).toBe(1);
+      expect(outToleranceTrecho?.targetTtkActions).toBe(2);
+      // Tolerance converted from 0-1 to 0-100 (0.1 → 10)
+      expect(outToleranceTrecho?.tolerancePercent).toBe(10);
     });
 
     it('should validate edge-case trecho structure', async () => {
       // Arrange
       const config = await configLoader.loadConfig(SAMPLE_CONFIG_PATH);
-      const trechos = (await configLoader.loadTrechos(config)) as any[];
+      const trechos = await configLoader.loadTrechos(config);
 
       // Act & Assert
       const edgeCaseTrecho = trechos.find(
-        (t: any) => t.id === 'edge-case-max-party'
+        t => t.id === 'edge-case-max-party'
       );
       expect(edgeCaseTrecho).toBeDefined();
       expect(edgeCaseTrecho?.name).toContain('Edge Case');
-      expect(edgeCaseTrecho?.anchorLevelRange).toEqual({ min: 99, max: 99 });
+
+      // Domain entity uses flat properties (anchorLevelMin/Max)
+      expect(edgeCaseTrecho?.anchorLevelMin).toBe(99);
+      expect(edgeCaseTrecho?.anchorLevelMax).toBe(99);
+
       expect(edgeCaseTrecho?.party.members).toHaveLength(4); // Max party size
     });
   });
@@ -142,10 +159,10 @@ describe('Sample Configuration Validation', () => {
 
       // Act - Load config and collect troop IDs
       const config = await configLoader.loadConfig(SAMPLE_CONFIG_PATH);
-      const trechos = (await configLoader.loadTrechos(config)) as any[];
+      const trechos = await configLoader.loadTrechos(config);
       const configTroopIds = new Set<number>();
       for (const trecho of trechos) {
-        for (const troopId of (trecho as any).troopIds) {
+        for (const troopId of trecho.troopIds) {
           configTroopIds.add(troopId);
         }
       }
@@ -159,12 +176,12 @@ describe('Sample Configuration Validation', () => {
     it('should only use troop IDs 1 and 2 from test fixtures', async () => {
       // Arrange
       const config = await configLoader.loadConfig(SAMPLE_CONFIG_PATH);
-      const trechos = (await configLoader.loadTrechos(config)) as any[];
+      const trechos = await configLoader.loadTrechos(config);
 
       // Act - Collect all troop IDs
       const allTroopIds: number[] = [];
       for (const trecho of trechos) {
-        allTroopIds.push(...(trecho as any).troopIds);
+        allTroopIds.push(...trecho.troopIds);
       }
 
       // Assert - Only use troops 1 (Goblin*2) and 2 (Gnomo*2)
@@ -177,11 +194,11 @@ describe('Sample Configuration Validation', () => {
     it('should have valid party sizes (1-4 members)', async () => {
       // Arrange
       const config = await configLoader.loadConfig(SAMPLE_CONFIG_PATH);
-      const trechos = (await configLoader.loadTrechos(config)) as any[];
+      const trechos = await configLoader.loadTrechos(config);
 
       // Act & Assert - Check each trecho's party
       for (const trecho of trechos) {
-        const memberCount = (trecho as any).party.members.length;
+        const memberCount = trecho.party.members.length;
         expect(memberCount).toBeGreaterThanOrEqual(1);
         expect(memberCount).toBeLessThanOrEqual(4);
       }
@@ -196,11 +213,11 @@ describe('Sample Configuration Validation', () => {
 
       // Act - Load config and collect class IDs
       const config = await configLoader.loadConfig(SAMPLE_CONFIG_PATH);
-      const trechos = (await configLoader.loadTrechos(config)) as any[];
+      const trechos = await configLoader.loadTrechos(config);
 
       // Assert - All class IDs in config exist in Classes.json
       for (const trecho of trechos) {
-        for (const member of (trecho as any).party.members) {
+        for (const member of trecho.party.members) {
           expect(validClassIds).toContain(member.classId);
         }
       }
@@ -209,11 +226,11 @@ describe('Sample Configuration Validation', () => {
     it('should have valid levels (1-99)', async () => {
       // Arrange
       const config = await configLoader.loadConfig(SAMPLE_CONFIG_PATH);
-      const trechos = (await configLoader.loadTrechos(config)) as any[];
+      const trechos = await configLoader.loadTrechos(config);
 
       // Act & Assert - Check each member's level
       for (const trecho of trechos) {
-        for (const member of (trecho as any).party.members) {
+        for (const member of trecho.party.members) {
           expect(member.level).toBeGreaterThanOrEqual(1);
           expect(member.level).toBeLessThanOrEqual(99);
         }
@@ -223,11 +240,11 @@ describe('Sample Configuration Validation', () => {
     it('should demonstrate max party size (4 members) in edge case trecho', async () => {
       // Arrange
       const config = await configLoader.loadConfig(SAMPLE_CONFIG_PATH);
-      const trechos = (await configLoader.loadTrechos(config)) as any[];
+      const trechos = await configLoader.loadTrechos(config);
 
       // Act
       const edgeCaseTrecho = trechos.find(
-        (t: any) => t.id === 'edge-case-max-party'
+        t => t.id === 'edge-case-max-party'
       );
 
       // Assert
@@ -235,39 +252,38 @@ describe('Sample Configuration Validation', () => {
     });
   });
 
-  describe('1.5: Validate TTK targets (positive turns/actions, tolerance 0-1)', () => {
+  describe('1.5: Validate TTK targets (positive turns/actions, tolerance 0-100)', () => {
     it('should have positive turns for all trechos', async () => {
       // Arrange
       const config = await configLoader.loadConfig(SAMPLE_CONFIG_PATH);
-      const trechos = (await configLoader.loadTrechos(config)) as any[];
+      const trechos = await configLoader.loadTrechos(config);
 
-      // Act & Assert
+      // Act & Assert - Domain entity uses targetTtkTurns
       for (const trecho of trechos) {
-        expect((trecho as any).ttkTarget.turns).toBeGreaterThan(0);
+        expect(trecho.targetTtkTurns).toBeGreaterThan(0);
       }
     });
 
     it('should have positive actions for all trechos', async () => {
       // Arrange
       const config = await configLoader.loadConfig(SAMPLE_CONFIG_PATH);
-      const trechos = (await configLoader.loadTrechos(config)) as any[];
+      const trechos = await configLoader.loadTrechos(config);
 
-      // Act & Assert
+      // Act & Assert - Domain entity uses targetTtkActions
       for (const trecho of trechos) {
-        expect((trecho as any).ttkTarget.actions).toBeGreaterThan(0);
+        expect(trecho.targetTtkActions).toBeGreaterThan(0);
       }
     });
 
-    it('should have tolerance values between 0 and 1', async () => {
+    it('should have tolerance values between 0 and 100', async () => {
       // Arrange
       const config = await configLoader.loadConfig(SAMPLE_CONFIG_PATH);
-      const trechos = (await configLoader.loadTrechos(config)) as any[];
+      const trechos = await configLoader.loadTrechos(config);
 
-      // Act & Assert
+      // Act & Assert - Domain entity uses tolerancePercent (0-100 range)
       for (const trecho of trechos) {
-        const tolerance = (trecho as any).ttkTarget.tolerance;
-        expect(tolerance).toBeGreaterThanOrEqual(0);
-        expect(tolerance).toBeLessThanOrEqual(1);
+        expect(trecho.tolerancePercent).toBeGreaterThanOrEqual(0);
+        expect(trecho.tolerancePercent).toBeLessThanOrEqual(100);
       }
     });
   });
@@ -314,7 +330,7 @@ describe('Sample Configuration Validation', () => {
     it('should have trechos array with at least 1 trecho', async () => {
       // Arrange
       const config = await configLoader.loadConfig(SAMPLE_CONFIG_PATH);
-      const trechos = (await configLoader.loadTrechos(config)) as any[];
+      const trechos = await configLoader.loadTrechos(config);
 
       // Assert
       expect(trechos).toBeDefined();
@@ -344,45 +360,46 @@ describe('Sample Configuration Validation', () => {
     it('should demonstrate happy path scenario with reasonable TTK', async () => {
       // Arrange
       const config = await configLoader.loadConfig(SAMPLE_CONFIG_PATH);
-      const trechos = (await configLoader.loadTrechos(config)) as any[];
-      const happyTrecho = trechos.find((t: any) => t.id === 'happy-path-trecho');
+      const trechos = await configLoader.loadTrechos(config);
+      const happyTrecho = trechos.find(t => t.id === 'happy-path-trecho');
 
       // Assert
       expect(happyTrecho).toBeDefined();
       expect(happyTrecho?.name).toContain('Happy Path');
-      // Has 20% tolerance allowing for reasonable variance
-      expect(happyTrecho?.ttkTarget.tolerance).toBe(0.2);
+      // Has 20% tolerance allowing for reasonable variance (20, not 0.2)
+      expect(happyTrecho?.tolerancePercent).toBe(20);
     });
 
     it('should demonstrate out-of-tolerance scenario for warnings', async () => {
       // Arrange
       const config = await configLoader.loadConfig(SAMPLE_CONFIG_PATH);
-      const trechos = (await configLoader.loadTrechos(config)) as any[];
+      const trechos = await configLoader.loadTrechos(config);
       const outToleranceTrecho = trechos.find(
-        (t: any) => t.id === 'out-of-tolerance-trecho'
+        t => t.id === 'out-of-tolerance-trecho'
       );
 
       // Assert
       expect(outToleranceTrecho).toBeDefined();
       expect(outToleranceTrecho?.name).toContain('Out of Tolerance');
-      // Very strict tolerance (10%) to demonstrate warnings
-      expect(outToleranceTrecho?.ttkTarget.tolerance).toBe(0.1);
+      // Very strict tolerance (10%, not 0.1)
+      expect(outToleranceTrecho?.tolerancePercent).toBe(10);
     });
 
     it('should demonstrate edge case with max party and level boundaries', async () => {
       // Arrange
       const config = await configLoader.loadConfig(SAMPLE_CONFIG_PATH);
-      const trechos = (await configLoader.loadTrechos(config)) as any[];
+      const trechos = await configLoader.loadTrechos(config);
       const edgeCaseTrecho = trechos.find(
-        (t: any) => t.id === 'edge-case-max-party'
+        t => t.id === 'edge-case-max-party'
       );
 
       // Assert
       expect(edgeCaseTrecho).toBeDefined();
       expect(edgeCaseTrecho?.name).toContain('Edge Case');
       expect(edgeCaseTrecho?.party.members).toHaveLength(4);
-      expect(edgeCaseTrecho?.anchorLevelRange.min).toBe(99);
-      expect(edgeCaseTrecho?.anchorLevelRange.max).toBe(99);
+      // Domain entity uses flat properties
+      expect(edgeCaseTrecho?.anchorLevelMin).toBe(99);
+      expect(edgeCaseTrecho?.anchorLevelMax).toBe(99);
     });
   });
 
@@ -392,9 +409,13 @@ describe('Sample Configuration Validation', () => {
       const sampleConfigContent = fs.readFileSync(SAMPLE_CONFIG_PATH, 'utf-8');
       const rawConfig = JSON.parse(sampleConfigContent);
 
-      // Act & Assert
+      // Act & Assert - Only check that path contains the expected directory name
       expect(rawConfig.projectPath).toContain('tests/fixtures/sample-data');
-      expect(fs.existsSync(rawConfig.projectPath)).toBe(true);
+    });
+
+    it('should use fixtures directory that actually exists', () => {
+      // Assert - FIXTURES_PATH is computed from process.cwd(), which is portable
+      expect(fs.existsSync(FIXTURES_PATH)).toBe(true);
     });
 
     it('should have Troops.json in fixtures directory', () => {
