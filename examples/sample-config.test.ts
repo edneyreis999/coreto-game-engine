@@ -14,7 +14,6 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-// @ts-expect-error - @jest/globals module resolution issue with ts-jest + pnpm, works at runtime
 import { describe, it, expect, beforeAll, afterEach } from '@jest/globals';
 import {
   registerDependencies,

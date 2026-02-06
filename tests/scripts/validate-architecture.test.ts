@@ -41,7 +41,7 @@ describe('validateArchitecture', () => {
         'port_leaks_implementation',
         'port_import_not_type_only',
         'infrastructure_missing_port',
-      ];
+      ] as const;
 
       for (const key of expectedKeys) {
         expect(result.summary).toHaveProperty(key);

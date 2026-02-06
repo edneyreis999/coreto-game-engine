@@ -18,12 +18,12 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-// @ts-expect-error - @jest/globals module resolution issue with ts-jest + pnpm, works at runtime
-import { describe, it, expect, afterEach, jest } from '@jest/globals';
 
 // Mock runtime components to avoid needing full RMMZ project structure
-jest.mock('@coreto/core/infrastructure/runtime/HeadlessRuntimeBootstrapper.js', () => {
+jest.mock('@coreto/core', () => {
+  const actual = jest.requireActual('@coreto/core');
   return {
+    ...actual,
     HeadlessRuntimeBootstrapper: jest.fn().mockImplementation(() => {
       return {
         bootstrap: jest.fn().mockResolvedValue(undefined),
@@ -31,11 +31,6 @@ jest.mock('@coreto/core/infrastructure/runtime/HeadlessRuntimeBootstrapper.js', 
         getDOM: jest.fn().mockReturnValue(null),
       };
     }),
-  };
-});
-
-jest.mock('@coreto/core/infrastructure/runtime/simulation/SyncWarpLoop.js', () => {
-  return {
     SyncWarpLoop: jest.fn().mockImplementation(() => {
       return {
         start: jest.fn(),
@@ -43,25 +38,20 @@ jest.mock('@coreto/core/infrastructure/runtime/simulation/SyncWarpLoop.js', () =
         stop: jest.fn(),
       };
     }),
-  };
-});
-
-// Mock BattleSimulator to avoid full RPG Maker MZ runtime bootstrap
-jest.mock('@coreto/core/infrastructure/simulation/BattleSimulator.js', () => {
-  return {
     HeadlessBattleSimulator: jest.fn().mockImplementation(() => {
       return {
         initialize: jest.fn().mockResolvedValue(undefined),
-        executeBattle: jest.fn().mockImplementation((setup: any) => {
+        executeBattle: jest.fn().mockImplementation((setup: unknown) => {
+          const battleSetup = setup as { troopId?: number; seed?: number };
           // Return complete BattleResult entity with all required fields
           return Promise.resolve({
-            troopId: setup.troopId ?? 1,
-            troopName: `Troop ${setup.troopId ?? 1}`,
+            troopId: battleSetup.troopId ?? 1,
+            troopName: `Troop ${battleSetup.troopId ?? 1}`,
             outcome: 'victory',
             ttkTurns: 5,
             ttkActions: 15,
             durationMs: 1250,
-            seed: setup.seed ?? 42,
+            seed: battleSetup.seed ?? 42,
             expGained: 100,
           });
         }),
