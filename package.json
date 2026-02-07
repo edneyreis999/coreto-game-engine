@@ -25,6 +25,7 @@
     "lint": "eslint \"packages/*/src/**/*.ts\"",
     "format": "prettier --write \"packages/*/src/**/*.ts\"",
     "test": "jest",
+    "test:all": "pnpm --filter @coreto/core test && pnpm --filter @coreto/electron test && pnpm test",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:e2e": "jest --selectProjects electron-e2e --no-coverage",
