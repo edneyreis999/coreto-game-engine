@@ -1,7 +1,7 @@
 # ADR Index - Coreto Game Engine
 
-**Total ADRs:** 32
-**Last Updated:** 2026-01-21
+**Total ADRs:** 33
+**Last Updated:** 2026-02-06
 
 ## Overview
 
@@ -78,11 +78,19 @@ This index organizes all 32 Architecture Decision Records (ADRs) for the Coreto 
 | [ADR-020](SIMULATION/ADR-020-dual-metric-ttk-measurement-turns-and-actions.md) | Dual-Metric TTK Measurement (Turns and Actions) | Accepted |
 | [ADR-027](SIMULATION/ADR-027-level-based-skill-derivation-from-learnings.md) | Level-Based Skill Derivation from Class Learnings | Accepted |
 
-### UI Module (1 ADR)
+### UI Module (2 ADRs)
 
 | ID | Title | Status |
 |----|-------|--------|
 | [ADR-032](UI/ADR-032-electron-dev-portal-multi-tool-platform.md) | Electron Dev Portal for Multi-Tool Platform | Accepted |
+| [ADR-033](UI/ADR-033-clean-architecture-electron-package.md) | Clean Architecture Implementation for Electron Package | Accepted |
+
+**Architecture Enforcement:**
+- **Automated Guardian:** `packages/electron/tests/architecture/architecture.test.ts`
+  - Validates 10 architectural rules (domain purity, import conventions, layer boundaries)
+  - Provides AI-friendly error messages with step-by-step fix instructions
+  - Run: `pnpm --filter @coreto/electron test architecture.test.ts`
+  - See also: `packages/electron/CLAUDE.md` (import conventions reference)
 
 ---
 
@@ -97,7 +105,8 @@ This index organizes all 32 Architecture Decision Records (ADRs) for the Coreto 
 | REPORTER | 4 | Report generation and output |
 | RUNTIME | 6 | Headless execution environment |
 | SIMULATION | 7 | Battle simulation mechanics |
-| **TOTAL** | **32** | **All architectural decisions** |
+| UI | 2 | Multi-tool platform, Clean Architecture |
+| **TOTAL** | **33** | **All architectural decisions** |
 
 ---
 

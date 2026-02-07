@@ -54,7 +54,11 @@ export type {
  * Re-export core domain types from the domain layer.
  * These types are framework-agnostic and used across IPC boundaries.
  *
+ * Import Convention (CLAUDE-ARCH-CONVENTION):
+ * - Domain imports use module aliases (@coreto/electron/domain/*)
+ *
  * @see packages/electron/src/domain/types
+ * @see packages/electron/CLAUDE.md (Import Conventions)
  */
 export type {
   BattleOutcome,
@@ -68,10 +72,12 @@ export type {
   SimulationProgress,
   SimulationResult,
   SimulationHistoryEntry,
-} from '../../domain/types/index.js';
+} from '@coreto/electron/domain/types';
 
 /**
  * Import domain types for use within this file (e.g., in response types).
+ * Import Convention (CLAUDE-ARCH-CONVENTION):
+ * - Domain imports use module aliases (@coreto/electron/domain/*)
  */
 import type {
   SimulationHistoryEntry,
@@ -87,11 +93,13 @@ import type {
   EnemyData,
   RecentProject,
   UserPreferences,
-} from '../../domain/types/index.js';
+} from '@coreto/electron/domain/types';
 
 /**
  * Domain DTOs also exported from domain layer.
  * Re-export them here for convenience.
+ * Import Convention (CLAUDE-ARCH-CONVENTION):
+ * - Domain imports use module aliases (@coreto/electron/domain/*)
  */
 export type {
   PartyMemberData,
@@ -104,7 +112,7 @@ export type {
   EnemyData,
   RecentProject,
   UserPreferences,
-} from '../../domain/types/index.js';
+} from '@coreto/electron/domain/types';
 
 // ============================================================================
 // Error Serialization

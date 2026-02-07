@@ -42,15 +42,13 @@ import {
   IDataLoaderToken,
   IBattleSimulatorToken,
   resolve,
-  PartyConfig,
 } from '@coreto/core';
-import type { Trecho } from '@coreto/core';
 
 // Infrastructure layer (same layer - relative imports)
 import { createProjectValidator, createGameDataLoader } from '../adapters/index.js';
 
 // Domain layer (cross-layer - module aliases)
-import { validateTrecho } from '@coreto/electron/domain/use-cases';
+import { validateTrecho, runSimulation } from '@coreto/electron/domain/use-cases';
 
 // Infrastructure layer (same layer - relative imports)
 import type {
@@ -251,7 +249,7 @@ async function handleProjectValidate(
  * Handler: simulation:run
  *
  * Executes a TTK battle simulation.
- * Runs a single battle or all trechos based on payload.
+ * Thin adapter - delegates to domain use case.
  */
 async function handleSimulationRun(
   _event: IpcMainInvokeEvent,
@@ -280,111 +278,39 @@ async function handleSimulationRun(
     // eslint-disable-next-line no-undef
     currentSimulationController = new AbortController();
 
-    // Load project data
     updateProgress({ isRunning: true, current: 0, total: 1 });
 
     try {
-      // Load RPG Maker MZ data
-      const database = await dataLoader.loadDatabase(projectPath);
-
-      // Initialize simulator with loaded database
-      await simulator.initialize(database, projectPath);
-      logger.info('[IPC] Simulator initialized successfully');
-
-      // Load config if provided
-      let configTrechos: Trecho[] = [];
-      if (configPath) {
-        const config = await configLoader.loadConfig(configPath);
-        configTrechos = await configLoader.loadTrechos(config);
-      }
-
-      // If specific troopId provided, run single battle
-      if (troopId !== undefined) {
-        updateProgress({ current: 0, total: 1, currentTroop: troopId });
-
-        // Default party for single troop simulation
-        const party = new PartyConfig([{ classId: 1, level: 1 }]);
-
-        const result = await simulator.executeBattle({
+      // Delegate to domain use case
+      const { result } = await runSimulation(
+        {
+          projectPath,
+          configPath,
+          trechoId,
           troopId,
-          party,
           seed,
           maxTurns,
-        });
-
-        updateProgress({ current: 1, total: 1, percentage: 100 });
-
-        return {
-          trechoId: trechoId ?? 'single-troop',
-          troopId,
-          troopName: `Troop ${troopId}`,
-          battleResult: {
-            troopId: result.troopId,
-            troopName: result.troopName,
-            outcome: result.outcome,
-            ttkTurns: result.ttkTurns,
-            ttkActions: result.ttkActions,
-            durationMs: result.durationMs,
-            seed: result.seed,
-            expGained: result.expGained,
-          },
-          passed: result.outcome === 'victory',
-          warnings: [],
-        };
-      }
-
-      // If trechoId provided, run all troops in that trecho
-      if (!trechoId) {
-        throw new Error('trechoId is required when troopId is not provided');
-      }
-
-      const trecho = configTrechos.find((t) => t.id === trechoId);
-      if (!trecho) {
-        throw new Error(`Trecho not found: ${trechoId}`);
-      }
-
-      updateProgress({
-        current: 0,
-        total: trecho.troopIds.length,
-        currentTrecho: trechoId,
-      });
-
-      // Run first troop in trecho (simplified for MVP)
-      const firstTroopId = trecho.troopIds[0];
-      if (firstTroopId === undefined) {
-        throw new Error(`Trecho has no troops: ${trechoId}`);
-      }
-
-      const result = await simulator.executeBattle({
-        troopId: firstTroopId,
-        party: trecho.party,
-        seed,
-        maxTurns,
-      });
-
-      updateProgress({ current: 1, total: trecho.troopIds.length });
-
-      // Use Trecho instance to check tolerance
-      // Trecho class has flat properties: targetTtkTurns, targetTtkActions, tolerancePercent
-      const passed = trecho.isWithinTolerance(result.ttkTurns, result.ttkActions);
-
-      return {
-        trechoId: trecho.id,
-        troopId: firstTroopId,
-        troopName: result.troopName,
-        battleResult: {
-          troopId: result.troopId,
-          troopName: result.troopName,
-          outcome: result.outcome,
-          ttkTurns: result.ttkTurns,
-          ttkActions: result.ttkActions,
-          durationMs: result.durationMs,
-          seed: result.seed,
-          expGained: result.expGained,
         },
-        passed,
-        warnings: passed ? [] : ['TTK outside tolerance range'],
-      };
+        {
+          dataLoader,
+          simulator,
+          configLoader,
+          logger,
+        },
+        {
+          onStart: () => {
+            logger.info('[IPC] Simulation started');
+          },
+          onProgress: (progress) => {
+            updateProgress(progress);
+          },
+          onEnd: () => {
+            logger.info('[IPC] Simulation completed');
+          },
+        }
+      );
+
+      return result;
     } finally {
       resetProgress();
     }

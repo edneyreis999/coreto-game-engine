@@ -10,9 +10,9 @@
  * - Handles ENOENT errors gracefully
  * - Atomic writes when possible
  *
- * TODO: Refactor to use module alias for domain imports (CLAUDE-ARCH-CONVENTION)
- * - Change: import type { ... } from '../../domain/ports/IConfigStorage.js'
- * - To: import type { ... } from '@coreto/electron/domain/ports'
+ * Import Convention (CLAUDE-ARCH-CONVENTION):
+ * - Domain imports use module aliases (@coreto/electron/domain/*)
+ * - Infrastructure imports use relative paths
  *
  * @see packages/electron/src/domain/ports/IConfigStorage.ts
  * @see packages/electron/src/domain/use-cases/load-project-config.ts
@@ -21,7 +21,7 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import type { IConfigStorage } from '../../domain/ports/IConfigStorage.js';
+import type { IConfigStorage } from '@coreto/electron/domain/ports';
 
 /**
  * Creates a filesystem-based configuration storage adapter.

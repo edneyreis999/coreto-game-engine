@@ -5,6 +5,37 @@
  * No Electron API mocks required - tests pure business logic only.
  */
 
+// Mock window-config module to avoid import.meta.url issues in Jest
+jest.mock('@coreto/electron/main/window-config', () => {
+  const { join } = require('node:path');
+  // Mock DIRNAME for testing
+  const DIRNAME = '/mock/path/to/electron/out/main';
+
+  return {
+    DEFAULT_WINDOW_WIDTH: 1200,
+    DEFAULT_WINDOW_HEIGHT: 800,
+    createWindowConfig: (isDev: boolean) => ({
+      width: 1200,
+      height: 800,
+      title: 'Coreto Dev Portal',
+      show: false,
+      autoHideMenuBar: true,
+      webPreferences: {
+        preload: join(DIRNAME, '../preload/index.cjs'),
+        contextIsolation: true,
+        nodeIntegration: false,
+        sandbox: !isDev,
+      },
+    }),
+    getWindowUrl: (isDev: boolean) => {
+      if (isDev && process.env.ELECTRON_RENDERER_URL) {
+        return process.env.ELECTRON_RENDERER_URL;
+      }
+      return `file://${join(DIRNAME, '../renderer/index.html')}`;
+    },
+  };
+}, { virtual: true });
+
 import { createWindowConfig, getWindowUrl, DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT } from '@coreto/electron/main/window-config'
 
 describe('Main Process - window-config', () => {

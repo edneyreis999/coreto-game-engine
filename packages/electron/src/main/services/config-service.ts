@@ -1,8 +1,15 @@
 /**
  * ConfigService - Project Configuration Management
  *
- * Handles loading, saving, and normalizing project configuration files.
- * Ensures CLI-GUI compatibility and supports schema versioning.
+ * @deprecated This service is being replaced by domain use cases for Clean Architecture compliance.
+ * Use `loadProjectConfig` and `saveProjectConfig` from `@coreto/electron/domain/use-cases` instead.
+ *
+ * This service is kept for backward compatibility during migration and will be removed in a future version.
+ *
+ * Migration Guide:
+ * - loadConfig() → loadProjectConfig() use case
+ * - saveConfig() → saveProjectConfig() use case
+ * - configExists() → IConfigStorage.exists() or use case
  *
  * Key Features:
  * - Loads/saves configs from temp/project.config.json (CLI-compatible)
@@ -17,6 +24,8 @@
  * @see planos/005-run-ttk-electron/tasks/04_task.md
  * @see planos/005-run-ttk-electron/TECHSPEC-round2.md (Section 1)
  * @see packages/electron/CLAUDE.md (Import Conventions)
+ * @see packages/electron/src/domain/use-cases/load-project-config.ts
+ * @see packages/electron/src/domain/use-cases/save-project-config.ts
  */
 
 import path from 'node:path';
@@ -75,6 +84,9 @@ export class ConfigService {
   /**
    * Loads a project configuration from disk.
    *
+   * @deprecated Use `loadProjectConfig` from `@coreto/electron/domain/use-cases` instead.
+   * This method is kept for backward compatibility and will be removed in a future version.
+   *
    * Process:
    * 1. Read file from temp/project.config.json
    * 2. Normalize schema (handle legacy formats)
@@ -85,6 +97,17 @@ export class ConfigService {
    * @returns Validated project configuration
    * @throws {ConfigNotFoundError} If config file doesn't exist
    * @throws {ConfigValidationError} If validation fails after normalization
+   *
+   * @example
+   * ```typescript
+   * // NEW: Use domain use case
+   * import { loadProjectConfig } from '@coreto/electron/domain/use-cases';
+   * const result = await loadProjectConfig({ projectPath }, { storage, ...deps });
+   *
+   * // OLD: Deprecated
+   * import { configService } from './services/config-service';
+   * const config = await configService.loadConfig(projectPath);
+   * ```
    */
   async loadConfig(projectPath: string): Promise<UIProjectConfig> {
     const configPath = this.getConfigPath(projectPath);
@@ -128,6 +151,9 @@ export class ConfigService {
   /**
    * Saves a project configuration to disk.
    *
+   * @deprecated Use `saveProjectConfig` from `@coreto/electron/domain/use-cases` instead.
+   * This method is kept for backward compatibility and will be removed in a future version.
+   *
    * Process:
    * 1. Ensure temp directory exists
    * 2. Validate with Zod
@@ -137,6 +163,17 @@ export class ConfigService {
    * @param projectPath - Absolute path to the RPG Maker MZ project
    * @param config - Configuration to save
    * @throws {ConfigValidationError} If validation fails
+   *
+   * @example
+   * ```typescript
+   * // NEW: Use domain use case
+   * import { saveProjectConfig } from '@coreto/electron/domain/use-cases';
+   * const result = await saveProjectConfig({ projectPath, config }, { storage, ...deps });
+   *
+   * // OLD: Deprecated
+   * import { configService } from './services/config-service';
+   * await configService.saveConfig(projectPath, config);
+   * ```
    */
   async saveConfig(projectPath: string, config: UIProjectConfig): Promise<void> {
     const configPath = this.getConfigPath(projectPath);

@@ -1,5 +1,14 @@
 import type { BrowserWindowConstructorOptions } from 'electron';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+/**
+ * Polyfill for DIRNAME in ES modules.
+ * In ES modules, __dirname is not defined globally.
+ * We use a different name to avoid conflicts with Jest's __dirname.
+ */
+// @ts-ignore - import.meta is an ES module feature
+const DIRNAME = fileURLToPath(new URL('.', import.meta.url));
 
 /**
  * Default window dimensions matching TechSpec specifications
@@ -24,7 +33,7 @@ export function createWindowConfig(isDev: boolean): BrowserWindowConstructorOpti
     show: false, // Don't show until ready-to-show
     autoHideMenuBar: true,
     webPreferences: {
-      preload: join(__dirname, '../preload/index.cjs'),
+      preload: join(DIRNAME, '../preload/index.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: !isDev, // Disable sandbox in development for easier debugging
@@ -46,5 +55,5 @@ export function getWindowUrl(isDev: boolean): string {
   if (isDev && process.env.ELECTRON_RENDERER_URL) {
     return process.env.ELECTRON_RENDERER_URL;
   }
-  return `file://${join(__dirname, '../renderer/index.html')}`;
+  return `file://${join(DIRNAME, '../renderer/index.html')}`;
 }

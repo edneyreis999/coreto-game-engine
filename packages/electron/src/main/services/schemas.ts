@@ -3,15 +3,14 @@
  *
  * Re-exports domain schemas for backward compatibility.
  *
- * TODO: Refactor to use module alias for domain imports (CLAUDE-ARCH-CONVENTION)
- * - Change: export { ... } from '../../domain/schemas/ui-config.schema.js'
- * - To: export { ... } from '@coreto/electron/domain/schemas'
+ * Import Convention (CLAUDE-ARCH-CONVENTION):
+ * - Domain imports use module aliases (@coreto/electron/domain/*)
  *
  * @module main/services/schemas
  * @see packages/electron/src/domain/schemas/ui-config.schema.ts
  * @see packages/electron/CLAUDE.md (Import Conventions)
  *
- * @deprecated Import from @coreto/electron/domain instead.
+ * @deprecated Import from @coreto/electron/domain/schemas instead.
  * This file is kept for backward compatibility during the domain extraction.
  */
 
@@ -22,4 +21,4 @@ export {
   type UITrechoConfig,
   CURRENT_SCHEMA_VERSION,
   LEGACY_SCHEMA_VERSIONS,
-} from '../../domain/schemas/ui-config.schema.js';
+} from '@coreto/electron/domain/schemas';

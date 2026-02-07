@@ -13,8 +13,6 @@
  */
 
 import { ipcMain, IpcMainInvokeEvent } from 'electron';
-import path from 'node:path';
-import fs from 'node:fs/promises';
 import {
   configService,
   ConfigNotFoundError,
@@ -24,7 +22,10 @@ import type { IPCResponse, IPCResult, IPCError, ConfigSaveResponse, ConfigExists
 import type { ConfigSavePayload, ConfigExistsPayload } from './types.js';
 import { ConfigSavePayloadSchema, ConfigExistsPayloadSchema } from './types.js';
 import { getLogger } from '../di/container.js';
-import { loadProjectConfig } from '@coreto/electron/domain/use-cases';
+import {
+  loadProjectConfig,
+  saveProjectConfigAsCoreFormat,
+} from '@coreto/electron/domain/use-cases';
 import { createFileConfigStorage } from '../adapters/file-config-storage-adapter.js';
 import { normalizeSchema } from '@coreto/electron/domain/services';
 import { ProjectConfigSchema, CURRENT_SCHEMA_VERSION, type UIProjectConfig } from '@coreto/electron/domain/schemas';
@@ -146,13 +147,6 @@ function validateConfigPayload<T>(
 // ============================================================================
 
 /**
- * Helper to convert tolerance percent to decimal (15% -> 0.15)
- */
-function tolerancePercentToDecimal(percent: number): number {
-  return Math.max(0, Math.min(1, percent / 100));
-}
-
-/**
  * Creates a default project configuration.
  * Used when no config file exists for a project.
  */
@@ -237,7 +231,7 @@ async function handleConfigLoad(
  * Handler: config:save
  *
  * Saves a project configuration to temp/project.config.json.
- * Transforms ConfigurationPanel format to Core package ProjectConfig format.
+ * Thin adapter - delegates to domain use case for transformation and saving.
  */
 async function handleConfigSave(
   _event: IpcMainInvokeEvent,
@@ -257,48 +251,23 @@ async function handleConfigSave(
       trechosCount: config.trechos.length,
     });
 
-    // Transform ConfigurationPanel format to Core ProjectConfig format
-    // Core schema uses: anchorLevelRange {min, max}, ttkTarget {turns, actions, tolerance}
-    const trechos = config.trechos.map((t) => ({
-      id: t.id,
-      name: t.name,
-      anchorLevelRange: {
-        min: t.anchorLevelMin,
-        max: t.anchorLevelMax,
+    // Delegate to domain use case for transformation and saving
+    const storage = createFileConfigStorage();
+    const result = await saveProjectConfigAsCoreFormat(
+      {
+        projectPath,
+        config,
       },
-      ttkTarget: {
-        turns: t.targetTtkTurns,
-        actions: t.targetTtkActions,
-        tolerance: tolerancePercentToDecimal(t.tolerancePercent),
-      },
-      troopIds: t.troopIds,
-      party: t.party,
-    }));
+      {
+        storage,
+      }
+    );
 
-    const projectConfig = {
-      projectPath,
-      reportOutputPath: 'temp/reports',
-      seed: config.globalSettings?.seed ?? 12345,
-      maxBattleTurns: config.globalSettings?.maxBattleTurns,
-      trechos,
-    };
+    ensureLogger().info('[config:save] Config saved successfully', {
+      configPath: result.configPath,
+    });
 
-    ensureLogger().debug('[config:save] Project config to save: ' + JSON.stringify(projectConfig, null, 2));
-
-    // Save config directly to filesystem in Core format
-    // Bypasses ConfigService UI schema validation since Core needs different format
-    const configPath = path.join(projectPath, 'temp', 'project.config.json');
-    const tempDir = path.dirname(configPath);
-
-    await fs.mkdir(tempDir, { recursive: true });
-    await fs.writeFile(configPath, JSON.stringify(projectConfig, null, 2), 'utf-8');
-
-    ensureLogger().info('[config:save] Config saved successfully', { configPath });
-
-    return {
-      success: true,
-      configPath,
-    };
+    return result;
   });
 }
 

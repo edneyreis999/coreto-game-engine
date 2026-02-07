@@ -4,14 +4,14 @@
  * Infrastructure implementation of IRecentProjectsRepository using SQLite.
  * Uses the existing better-sqlite3 database and query functions.
  *
- * TODO: Refactor to use module alias for domain imports (CLAUDE-ARCH-CONVENTION)
- * - Change: import type { ... } from '../../../domain/repositories'
- * - To: import type { ... } from '@coreto/electron/domain/repositories'
+ * Import Convention (CLAUDE-ARCH-CONVENTION):
+ * - Domain imports use module aliases (@coreto/electron/domain/*)
+ * - Infrastructure imports use relative paths
  *
  * @see packages/electron/CLAUDE.md (Import Conventions)
  */
 
-import type { IRecentProjectsRepository, RecentProject } from '../../../domain/repositories';
+import type { IRecentProjectsRepository, RecentProject } from '@coreto/electron/domain/repositories';
 import { getDatabase } from '../index';
 import { listRecentProjects, addRecentProject } from '../queries/recent-projects';
 

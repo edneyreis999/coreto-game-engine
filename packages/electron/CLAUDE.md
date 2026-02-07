@@ -199,6 +199,11 @@ Add new module aliases when:
 
 ## Enforcement
 
+**Architecture Tests (Automated):**
+- `tests/architecture/architecture.test.ts` - Validates all import conventions and layer boundaries
+- Run with: `pnpm --filter @coreto/electron test architecture.test.ts`
+- **When test fails:** Read error messages - they provide step-by-step fix instructions with examples
+
 **ESLint Rules (Future):**
 - `import/no-relative-parent-imports` - Enforce aliases for domain imports
 - `import/extensions` - Enforce .js extensions for relative imports

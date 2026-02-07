@@ -28,7 +28,7 @@ import type {
   ProgressPayload,
   ErrorPayload,
   SimulationResultPayload,
-} from '../domain/types/index.js';
+} from '@coreto/electron/domain/types';
 
 // LOG INICIAL PARA VERIFICAR VERSÃO
 console.log('🚀 PRELOAD CARREGADO - Versão com logs de debug');
