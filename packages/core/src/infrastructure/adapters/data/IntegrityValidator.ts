@@ -18,7 +18,8 @@
  * ```
  */
 
-import type { RmmzDatabase, Warning } from '@coreto/core';
+import type { RmmzDatabase } from '@coreto/core';
+import { Warning } from '@coreto/core';
 import type {
   DomainEnemyData,
   DomainClassData,
@@ -202,7 +203,7 @@ export class IntegrityValidator {
 
       for (const member of troop.members) {
         if (!hasTroopMemberEnemyId(member)) {
-          warnings.push({
+          warnings.push(new Warning({
             type: 'enemy_not_found',
             severity: 'critical',
             message: `Troop ${troop.id} has member with invalid enemyId structure`,
@@ -212,12 +213,12 @@ export class IntegrityValidator {
               source: 'TroopMember.enemyId',
               issue: 'Missing or non-numeric enemyId',
             },
-          });
+          }));
           continue;
         }
 
         if (!validEnemyIds.has(member.enemyId)) {
-          warnings.push({
+          warnings.push(new Warning({
             type: 'enemy_not_found',
             severity: 'critical',
             message: `Troop ${troop.id} references non-existent enemy ${member.enemyId}`,
@@ -227,7 +228,7 @@ export class IntegrityValidator {
               enemyId: member.enemyId,
               source: 'TroopMember.enemyId',
             },
-          });
+          }));
         }
       }
     }
@@ -264,7 +265,7 @@ export class IntegrityValidator {
 
       for (const action of enemy.actions) {
         if (!hasActionSkillId(action)) {
-          warnings.push({
+          warnings.push(new Warning({
             type: 'skill_formula_error',
             severity: 'critical',
             message: `Enemy ${enemy.id} action has invalid skillId structure`,
@@ -274,12 +275,12 @@ export class IntegrityValidator {
               source: 'EnemyAction.skillId',
               issue: 'Missing or non-numeric skillId',
             },
-          });
+          }));
           continue;
         }
 
         if (!validSkillIds.has(action.skillId)) {
-          warnings.push({
+          warnings.push(new Warning({
             type: 'skill_not_found',
             severity: 'critical',
             message: `Enemy ${enemy.id} action references non-existent skill ${action.skillId}`,
@@ -289,7 +290,7 @@ export class IntegrityValidator {
               skillId: action.skillId,
               source: 'EnemyAction.skillId',
             },
-          });
+          }));
         }
       }
     }
@@ -326,7 +327,7 @@ export class IntegrityValidator {
 
       for (const learning of classData.learnings) {
         if (!hasLearningSkillId(learning)) {
-          warnings.push({
+          warnings.push(new Warning({
             type: 'skill_not_found',
             severity: 'critical',
             message: `Class ${classData.id} learning has invalid skillId structure`,
@@ -336,12 +337,12 @@ export class IntegrityValidator {
               source: 'ClassLearning.skillId',
               issue: 'Missing or non-numeric skillId/level',
             },
-          });
+          }));
           continue;
         }
 
         if (!validSkillIds.has(learning.skillId)) {
-          warnings.push({
+          warnings.push(new Warning({
             type: 'skill_not_found',
             severity: 'critical',
             message: `Class ${classData.id} learning references non-existent skill ${learning.skillId}`,
@@ -352,7 +353,7 @@ export class IntegrityValidator {
               learningLevel: learning.level,
               source: 'ClassLearning.skillId',
             },
-          });
+          }));
         }
       }
     }
@@ -392,7 +393,7 @@ export class IntegrityValidator {
       }
 
       if (!validClassIds.has(battler.classId)) {
-        warnings.push({
+        warnings.push(new Warning({
           type: 'class_not_found',
           severity: 'critical',
           message: `System test battler references non-existent class ${battler.classId}`,
@@ -401,7 +402,7 @@ export class IntegrityValidator {
             actorId: battler.actorId,
             source: 'SystemData.testBattlers.classId',
           },
-        });
+        }));
       }
     }
 

@@ -34,6 +34,8 @@ export * from './core/domain/Trecho.js';
 export * from './core/domain/PartyConfig.js';
 export * from './core/domain/BattleResult.js';
 export * from './core/domain/Report.js';
+export * from './core/domain/Enemy.js';
+export * from './core/domain/Skill.js';
 
 // Domain Services
 export * from './core/domain/services/WarningCollector.js';
