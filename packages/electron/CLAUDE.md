@@ -57,6 +57,60 @@ import { useLogger } from '../../hooks/useLogger';
 
 **Rationale:** Renderer code is browser-based React application. The `@/*` alias is the conventional pattern in React/Vite projects and matches the electron-vite defaults.
 
+### Bundler-First Strategy (ESM Extensions)
+
+**Configuration:** `"moduleResolution": "bundler"` in tsconfig.json (TypeScript 5.0+)
+
+This project uses a **bundler-first** approach: code is bundled by electron-vite (Vite + esbuild) before execution. This allows cleaner imports without `.js` extensions in bundled contexts.
+
+#### Bundled Code (No .js Extension Needed)
+
+The following directories are **always bundled** by electron-vite:
+
+```typescript
+// ✅ CORRECT - Extensionless imports OK in bundled contexts
+// src/main/** (main process - bundled by electron-vite)
+import { getDatabase } from '../database';
+import { wrapHandler } from './ipc-response';
+
+// src/renderer/** (renderer process - bundled by Vite)
+import { Button } from '@/components/ui/button';
+import { useConfig } from '@/hooks/useConfig';
+```
+
+**Why:** Vite/esbuild resolve extensionless imports automatically during bundling. Runtime receives bundled output, not raw TypeScript.
+
+#### Unbundled Code (.js Extension REQUIRED)
+
+The following contexts **may run without bundler** and require explicit `.js` extensions per ESM spec:
+
+```typescript
+// ⚠️ REQUIRED - .js extension mandatory in unbundled contexts
+// src/preload/** (may execute before bundler)
+import { contextBridge } from 'electron';
+import { exposeAPI } from './api.js';  // ← .js required
+
+// scripts/** (Node.js scripts)
+import { config } from './config.js';  // ← .js required
+
+// tools/** (build tools)
+import { helper } from '../helpers/util.js';  // ← .js required
+```
+
+**Why:** These files may be executed directly by Node.js/Electron without going through the bundler. ESM requires explicit extensions for relative imports.
+
+#### Quick Reference
+
+| Directory | Bundled? | .js Extension? | Validation |
+|-----------|----------|----------------|------------|
+| `src/main/**` | ✅ Yes | Optional | Architecture test allows both |
+| `src/renderer/**` | ✅ Yes | Optional | Architecture test allows both |
+| `src/preload/**` | ⚠️ Maybe | **Required** | Architecture test enforces |
+| `scripts/**` | ❌ No | **Required** | Architecture test enforces |
+| `tools/**` | ❌ No | **Required** | Architecture test enforces |
+
+**Enforcement:** Architecture Rule 6 validates that unbundled contexts use `.js` extensions.
+
 ## Module Alias Configuration
 
 Module aliases are configured in three locations (multi-config requirement):
@@ -161,17 +215,24 @@ import { validateTrecho } from '@coreto/electron/domain/use-cases';  // Cross-la
 import type { ReportData } from '../ipc/types.js';  // Same layer
 ```
 
-### 2. Forgetting .js Extension
+### 2. Forgetting .js Extension in Unbundled Contexts
 
 ```typescript
-// ❌ WRONG - Missing extension for relative imports
-import { wrapHandler } from './ipc-response';
+// ⚠️ CONTEXT MATTERS - Bundled vs Unbundled
 
-// ✅ CORRECT - Include .js extension (ESM requirement)
-import { wrapHandler } from './ipc-response.js';
+// ✅ BUNDLED CODE (src/main/**, src/renderer/**) - .js optional
+import { wrapHandler } from './ipc-response';  // OK - bundler resolves
+import { getDatabase } from '../database';      // OK - bundler resolves
+
+// ❌ UNBUNDLED CODE (src/preload/**, scripts/**) - .js REQUIRED
+// src/preload/index.ts
+import { exposeAPI } from './api';  // ❌ WRONG - missing .js
+
+// ✅ CORRECT - Include .js extension
+import { exposeAPI } from './api.js';  // ✅ OK - ESM compliant
 ```
 
-**Note:** TypeScript compiles `.ts` to `.js`, so imports must reference the output file extension.
+**Note:** Bundled code (main/renderer) is processed by Vite before execution. Unbundled code (preload/scripts) may run directly via Node.js, requiring explicit `.js` per ESM spec.
 
 ### 3. Using Aliases for Infrastructure Imports
 

@@ -87,7 +87,16 @@ This index organizes all 32 Architecture Decision Records (ADRs) for the Coreto 
 
 **Architecture Enforcement:**
 - **Automated Guardian:** `packages/electron/tests/architecture/architecture.test.ts`
-  - Validates 10 architectural rules (domain purity, import conventions, layer boundaries)
+  - Validates 16 architectural rules across 9 categories:
+    * Domain Layer Purity (2 rules)
+    * Handler Thin Adapter Pattern (2 rules)
+    * Dependency Direction / Module Aliases (2 rules)
+    * Domain Structure (2 rules)
+    * File Placement (1 rule)
+    * ESM Import Conventions (1 rule)
+    * Dependency Injection Registration (2 rules) ← NEW
+    * Naming Conventions (3 rules) ← NEW
+    * Type Leakage Prevention (1 rule) ← NEW
   - Provides AI-friendly error messages with step-by-step fix instructions
   - Run: `pnpm --filter @coreto/electron test architecture.test.ts`
   - See also: `packages/electron/CLAUDE.md` (import conventions reference)

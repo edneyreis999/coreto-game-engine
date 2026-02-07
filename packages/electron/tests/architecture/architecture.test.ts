@@ -348,6 +348,159 @@ function generateEsmExtensionReport(violations: Array<{ file: string; import: st
   return lines.join('\n');
 }
 
+/**
+ * Generates DI registration violation report
+ */
+function generateDiRegistrationReport(violations: Array<{ port: string; issue: string }>): string {
+  const lines: string[] = [];
+
+  lines.push('\n╔════════════════════════════════════════════════════════════╗');
+  lines.push('║  ❌ DEPENDENCY INJECTION VIOLATION - Missing Registration  ║');
+  lines.push('╚════════════════════════════════════════════════════════════╝\n');
+
+  for (const v of violations) {
+    lines.push(`📁 Port: ${v.port}`);
+    lines.push(`   ❌ Issue: ${v.issue}\n`);
+    lines.push(`   💡 WHY THIS IS WRONG:`);
+    lines.push(`      TSyringe DI container is the core of our architecture.`);
+    lines.push(`      Ports without tokens/registration can't be injected, forcing direct instantiation.`);
+    lines.push(`      This breaks Dependency Inversion Principle and couples infrastructure to concrete types.\n`);
+    lines.push(`   🔧 HOW TO FIX:`);
+
+    if (v.issue.includes('Missing token')) {
+      lines.push(`      1. Add token to src/main/di/tokens.ts:`);
+      lines.push(`         export const ${v.port}Token = Symbol.for('${v.port}');\n`);
+      lines.push(`      2. Register in src/main/di/container.ts:`);
+      lines.push(`         container.register<${v.port}>(${v.port}Token as unknown as string, {`);
+      lines.push(`           useFactory: () => create${v.port.substring(1)}(...deps)`);
+      lines.push(`         });\n`);
+    } else if (v.issue.includes('Not registered')) {
+      lines.push(`      Add to src/main/di/container.ts in registerMainDependencies():`);
+      lines.push(`      container.register<${v.port}>(${v.port}Token as unknown as string, {`);
+      lines.push(`        useFactory: () => create${v.port.substring(1)}(/* dependencies */)`);
+      lines.push(`      });\n`);
+    }
+
+    lines.push(`   📋 EXAMPLE:`);
+    lines.push(`      ✅ CORRECT (src/main/services/my-service.ts):`);
+    lines.push(`         import { inject } from 'tsyringe';`);
+    lines.push(`         import { IConfigStorageToken } from '../di/tokens.js';`);
+    lines.push(``);
+    lines.push(`         export class MyService {`);
+    lines.push(`           constructor(`);
+    lines.push(`             @inject(IConfigStorageToken) private storage: IConfigStorage`);
+    lines.push(`           ) {}`);
+    lines.push(`         }\n`);
+    lines.push(`      ❌ WRONG (direct instantiation):`);
+    lines.push(`         const storage = new FileConfigStorageAdapter(); // Breaks DI!\n`);
+    lines.push(`   📚 LEARN MORE:`);
+    lines.push(`      - docs/adrs/FOUNDATION/ADR-029-tsyringe-di-container.md`);
+    lines.push(`      - src/main/di/container.ts (registration examples)\n`);
+    lines.push('─'.repeat(60) + '\n');
+  }
+
+  return lines.join('\n');
+}
+
+/**
+ * Generates naming convention violation report
+ */
+function generateNamingConventionReport(violations: Array<{ file: string; issue: string }>): string {
+  const lines: string[] = [];
+
+  lines.push('\n╔════════════════════════════════════════════════════════════╗');
+  lines.push('║  ❌ NAMING CONVENTION VIOLATION - Inconsistent Names      ║');
+  lines.push('╚════════════════════════════════════════════════════════════╝\n');
+
+  for (const v of violations) {
+    lines.push(`📁 File: ${v.file}`);
+    lines.push(`   ❌ Issue: ${v.issue}\n`);
+    lines.push(`   💡 WHY THIS MATTERS:`);
+    lines.push(`      Consistent naming conventions make code self-documenting.`);
+    lines.push(`      AI agents and developers can instantly identify file purpose by name pattern.\n`);
+    lines.push(`   🔧 HOW TO FIX:`);
+
+    if (v.issue.includes('Port interface')) {
+      const wrongName = v.file.split('/').pop()?.replace('.ts', '') || '';
+      const correctName = 'I' + wrongName;
+      lines.push(`      Rename file: ${wrongName}.ts → ${correctName}.ts`);
+      lines.push(`      Rename interface: interface ${wrongName} → interface ${correctName}\n`);
+    } else if (v.issue.includes('Schema file')) {
+      const fileName = v.file.split('/').pop() || '';
+      lines.push(`      Rename: ${fileName} → ${fileName.replace('.ts', '.schema.ts')}\n`);
+    } else if (v.issue.includes('Repository')) {
+      const wrongName = v.file.split('/').pop()?.replace('.ts', '') || '';
+      lines.push(`      Rename: ${wrongName}.ts → ${wrongName}Repository.ts\n`);
+    }
+
+    lines.push(`   📝 PROJECT CONVENTIONS:`);
+    lines.push(`      ✅ Port interfaces: I*.ts (IConfigStorage, IGameDataLoader)`);
+    lines.push(`      ✅ Schemas: *.schema.ts (ui-config.schema.ts, cli-config.schema.ts)`);
+    lines.push(`      ✅ Repositories: *Repository.ts (SqliteRecentProjectsRepository.ts)`);
+    lines.push(`      ✅ Domain entities: No suffix (Enemy, Skill, Actor)\n`);
+    lines.push(`   📚 LEARN MORE:`);
+    lines.push(`      - CLAUDE.md in project root (Naming Conventions section)\n`);
+    lines.push('─'.repeat(60) + '\n');
+  }
+
+  return lines.join('\n');
+}
+
+/**
+ * Generates type leakage violation report
+ */
+function generateTypeLeakageReport(violations: Array<{ file: string; import: string }>): string {
+  const lines: string[] = [];
+
+  lines.push('\n╔════════════════════════════════════════════════════════════╗');
+  lines.push('║  ❌ TYPE LEAKAGE VIOLATION - Infrastructure Type in Domain ║');
+  lines.push('╚════════════════════════════════════════════════════════════╝\n');
+
+  for (const v of violations) {
+    lines.push(`📁 File: ${v.file}`);
+    lines.push(`   ❌ Leaked import: ${v.import}\n`);
+    lines.push(`   💡 WHY THIS IS CRITICAL:`);
+    lines.push(`      Type imports create hidden coupling between domain and infrastructure.`);
+    lines.push(`      Even though types are erased at runtime, they force domain to know about`);
+    lines.push(`      infrastructure implementation details (Database, IpcMainEvent, etc).\n`);
+    lines.push(`   🔧 HOW TO FIX:`);
+
+    if (v.import.includes('src/main')) {
+      lines.push(`      1. Check if you really need this type in domain`);
+      lines.push(`      2. If yes, create a domain type that represents the concept`);
+      lines.push(`      3. Use a mapper in infrastructure to convert between domain and infra types\n`);
+      lines.push(`   📋 EXAMPLE:`);
+      lines.push(`      ❌ WRONG (domain importing infrastructure type):`);
+      lines.push(`         // src/domain/use-cases/save-config.ts`);
+      lines.push(`         import type { Database } from '../../main/database/schema';`);
+      lines.push(`         export function saveConfig(db: Database, config: Config) { ... }\n`);
+      lines.push(`      ✅ CORRECT (use domain port instead):`);
+      lines.push(`         // src/domain/ports/IConfigStorage.ts`);
+      lines.push(`         export interface IConfigStorage {`);
+      lines.push(`           save(config: Config): Promise<void>;`);
+      lines.push(`         }\n`);
+      lines.push(`         // src/domain/use-cases/save-config.ts`);
+      lines.push(`         export function saveConfig(storage: IConfigStorage, config: Config) {`);
+      lines.push(`           return storage.save(config);`);
+      lines.push(`         }\n`);
+      lines.push(`         // src/main/adapters/file-config-storage-adapter.ts`);
+      lines.push(`         import type { Database } from '../database/schema.js'; // OK here!`);
+      lines.push(`         export function createFileConfigStorage(db: Database): IConfigStorage {...}`);
+    } else if (v.import.includes('src/renderer')) {
+      lines.push(`      1. Move React-specific types to src/renderer/src/types/`);
+      lines.push(`      2. If domain needs UI concepts, create domain types (e.g., FormData → ConfigInput)`);
+      lines.push(`      3. Map between domain types and UI types in renderer hooks/components`);
+    }
+
+    lines.push(`\n   📚 LEARN MORE:`);
+    lines.push(`      - docs/adrs/FOUNDATION/ADR-032-ports-and-adapters-layer-contracts.md`);
+    lines.push(`      - docs/adrs/UI/ADR-033-clean-architecture-electron-package.md\n`);
+    lines.push('─'.repeat(60) + '\n');
+  }
+
+  return lines.join('\n');
+}
+
 // ============================================================================
 // Banned Import Patterns
 // ============================================================================
@@ -678,24 +831,256 @@ React components belong in src/renderer/src/components/, not in domain.
 });
 
 // ============================================================================
-// Rule 6: ESM Import Extensions (.js required for relative imports)
+// Rule 6: ESM Import Conventions (Bundler-Aware)
 // ============================================================================
 
-describe('Architecture Rule 6: ESM Import Conventions', () => {
-  it('should use .js extension for relative imports in infrastructure', () => {
-    const infraFiles = getInfrastructureFiles();
+describe('Architecture Rule 6: ESM Import Conventions (Bundler-Aware)', () => {
+  it('should use .js extension in unbundled contexts (preload, scripts, tools)', () => {
+    // Unbundled contexts: Code that MAY run without bundler
+    const unbundledDirs = [
+      join(__dirname, '../../src/preload'),
+      join(__dirname, '../../scripts'),
+      join(__dirname, '../../tools'),
+    ];
+
     const violations: Array<{ file: string; import: string }> = [];
 
-    for (const file of infraFiles) {
-      if (file.includes('.test.') || file.includes('/tests/')) continue;
+    for (const dir of unbundledDirs) {
+      // Skip if directory doesn't exist
+      try {
+        const files = findTsFiles(dir);
 
+        for (const file of files) {
+          if (file.includes('.test.') || file.includes('/tests/')) continue;
+
+          const content = readFileSync(file, 'utf-8');
+          const imports = extractImports(content);
+
+          for (const imp of imports) {
+            // Check relative imports without .js extension
+            if (imp.startsWith('.') && !imp.endsWith('.js') && !imp.endsWith('.json') && !imp.includes('@coreto')) {
+              violations.push({
+                file: getRelativePath(file),
+                import: imp,
+              });
+            }
+          }
+        }
+      } catch (err) {
+        // Directory doesn't exist - skip
+        continue;
+      }
+    }
+
+    if (violations.length > 0) {
+      console.error('\n╔════════════════════════════════════════════════════════════╗');
+      console.error('║  ❌ ESM VIOLATION - Missing .js in Unbundled Context      ║');
+      console.error('╚════════════════════════════════════════════════════════════╝\n');
+      console.error('💡 BUNDLER-FIRST POLICY:');
+      console.error('   • Bundled code (main/renderer): .js extension OPTIONAL');
+      console.error('   • Unbundled code (preload/scripts/tools): .js extension REQUIRED\n');
+      console.error('📋 VIOLATIONS:\n');
+
+      for (const v of violations) {
+        console.error(`   ❌ ${v.file}`);
+        console.error(`      Import: ${v.import}`);
+        console.error(`      Fix: ${v.import}.js\n`);
+      }
+
+      console.error('📚 LEARN MORE:');
+      console.error('   - packages/electron/CLAUDE.md (Bundler-First Strategy)\n');
+    }
+
+    expect(violations).toHaveLength(0);
+  });
+
+  it('should document bundler-first policy in CLAUDE.md', () => {
+    const claudePath = join(__dirname, '../../CLAUDE.md');
+    const claudeContent = readFileSync(claudePath, 'utf-8');
+
+    // Verify documentation mentions bundler strategy
+    const hasBundlerMention =
+      claudeContent.includes('moduleResolution') ||
+      claudeContent.includes('bundler') ||
+      claudeContent.includes('Bundler-First');
+
+    if (!hasBundlerMention) {
+      console.error('\n⚠️  CLAUDE.md should document bundler-first import strategy');
+      console.error('   Add section explaining when .js extensions are needed\n');
+    }
+
+    expect(hasBundlerMention).toBe(true);
+  });
+});
+
+// ============================================================================
+// Rule 7: Dependency Injection Registration
+// ============================================================================
+
+describe('Architecture Rule 7: Dependency Injection Registration', () => {
+  it('should have DI tokens for all domain ports', () => {
+    const portsDir = join(__dirname, '../../src/domain/ports');
+    const portFiles = findTsFiles(portsDir);
+    const tokensFile = join(__dirname, '../../src/main/di/tokens.ts');
+    const tokensContent = readFileSync(tokensFile, 'utf-8');
+    const violations: Array<{ port: string; issue: string }> = [];
+
+    for (const portFile of portFiles) {
+      const portName = portFile.split('/').pop()?.replace('.ts', '') || '';
+
+      // Check if token exists
+      const tokenName = `${portName}Token`;
+      if (!tokensContent.includes(tokenName)) {
+        violations.push({
+          port: portName,
+          issue: `Missing token definition in tokens.ts`,
+        });
+      }
+    }
+
+    if (violations.length > 0) {
+      console.error(generateDiRegistrationReport(violations));
+    }
+
+    expect(violations).toHaveLength(0);
+  });
+
+  it('should register all tokens in DI container', () => {
+    const tokensFile = join(__dirname, '../../src/main/di/tokens.ts');
+    const tokensContent = readFileSync(tokensFile, 'utf-8');
+    const containerFile = join(__dirname, '../../src/main/di/container.ts');
+    const containerContent = readFileSync(containerFile, 'utf-8');
+    const violations: Array<{ port: string; issue: string }> = [];
+
+    // Extract token names from tokens.ts (e.g., IConfigStorageToken)
+    const tokenRegex = /export const (\w+Token)\s*=/g;
+    let match;
+    while ((match = tokenRegex.exec(tokensContent)) !== null) {
+      const tokenName = match[1];
+
+      // Skip ILoggerToken (comes from @coreto/core)
+      if (tokenName === 'ILoggerToken') continue;
+
+      // Check if token is registered in container
+      if (!containerContent.includes(tokenName)) {
+        const portName = tokenName.replace('Token', '');
+        violations.push({
+          port: portName,
+          issue: `Not registered in container.ts`,
+        });
+      }
+    }
+
+    if (violations.length > 0) {
+      console.error(generateDiRegistrationReport(violations));
+    }
+
+    expect(violations).toHaveLength(0);
+  });
+});
+
+// ============================================================================
+// Rule 8: Naming Conventions
+// ============================================================================
+
+describe('Architecture Rule 8: Naming Conventions', () => {
+  it('should follow port interface naming convention (I*.ts)', () => {
+    const portsDir = join(__dirname, '../../src/domain/ports');
+    const portFiles = findTsFiles(portsDir);
+    const violations: Array<{ file: string; issue: string }> = [];
+
+    for (const portFile of portFiles) {
+      const fileName = portFile.split('/').pop() || '';
+
+      // Port interfaces must start with I
+      if (!fileName.startsWith('I')) {
+        violations.push({
+          file: getRelativePath(portFile),
+          issue: `Port interface must start with I (e.g., IConfigStorage.ts)`,
+        });
+      }
+    }
+
+    if (violations.length > 0) {
+      console.error(generateNamingConventionReport(violations));
+    }
+
+    expect(violations).toHaveLength(0);
+  });
+
+  it('should follow schema file naming convention (*.schema.ts)', () => {
+    const schemasDir = join(__dirname, '../../src/domain/schemas');
+    const schemaFiles = readdirSync(schemasDir).filter(f => f.endsWith('.ts') && f !== 'index.ts');
+    const violations: Array<{ file: string; issue: string }> = [];
+
+    for (const fileName of schemaFiles) {
+      // Schema files must end with .schema.ts
+      if (!fileName.endsWith('.schema.ts')) {
+        violations.push({
+          file: `src/domain/schemas/${fileName}`,
+          issue: `Schema file must end with .schema.ts (e.g., ui-config.schema.ts)`,
+        });
+      }
+    }
+
+    if (violations.length > 0) {
+      console.error(generateNamingConventionReport(violations));
+    }
+
+    expect(violations).toHaveLength(0);
+  });
+
+  it('should follow repository naming convention (*Repository.ts)', () => {
+    const repoDir = join(__dirname, '../../src/main/database/repositories');
+    if (!readdirSync(join(__dirname, '../../src/main/database')).includes('repositories')) {
+      // Skip if repositories directory doesn't exist yet
+      expect(true).toBe(true);
+      return;
+    }
+
+    const repoFiles = findTsFiles(repoDir);
+    const violations: Array<{ file: string; issue: string }> = [];
+
+    for (const repoFile of repoFiles) {
+      const fileName = repoFile.split('/').pop() || '';
+
+      // Repository files must end with Repository.ts
+      if (!fileName.toLowerCase().includes('repository')) {
+        violations.push({
+          file: getRelativePath(repoFile),
+          issue: `Repository file must include 'Repository' in name (e.g., SqliteRecentProjectsRepository.ts)`,
+        });
+      }
+    }
+
+    if (violations.length > 0) {
+      console.error(generateNamingConventionReport(violations));
+    }
+
+    expect(violations).toHaveLength(0);
+  });
+});
+
+// ============================================================================
+// Rule 9: Type Leakage Prevention
+// ============================================================================
+
+describe('Architecture Rule 9: Type Leakage Prevention', () => {
+  it('should not import infrastructure types in domain layer', () => {
+    const domainFiles = getDomainFiles();
+    const violations: Array<{ file: string; import: string }> = [];
+
+    for (const file of domainFiles) {
       const content = readFileSync(file, 'utf-8');
       const imports = extractImports(content);
 
       for (const imp of imports) {
-        // Check relative imports without .js extension
-        // Exclude module aliases (they don't need .js)
-        if (imp.startsWith('.') && !imp.endsWith('.js') && !imp.endsWith('.json') && !imp.includes('@coreto')) {
+        // Check for type imports from infrastructure layers
+        // Allow @coreto/core (shared infrastructure is OK)
+        if (
+          (imp.includes('src/main/') || imp.includes('../main/') || imp.includes('../../main/')) ||
+          (imp.includes('src/renderer/') || imp.includes('../renderer/') || imp.includes('../../renderer/'))
+        ) {
           violations.push({
             file: getRelativePath(file),
             import: imp,
@@ -705,7 +1090,7 @@ describe('Architecture Rule 6: ESM Import Conventions', () => {
     }
 
     if (violations.length > 0) {
-      console.error(generateEsmExtensionReport(violations));
+      console.error(generateTypeLeakageReport(violations));
     }
 
     expect(violations).toHaveLength(0);
@@ -728,7 +1113,14 @@ describe('Architecture Test Summary', () => {
       'Domain Structure - Use cases exported',
       'Domain Structure - Ports defined',
       'File Placement - UI components in renderer',
-      'ESM Conventions - .js extensions for relative imports',
+      'ESM Conventions - .js in unbundled contexts (bundler-aware)',
+      'ESM Conventions - Bundler-first policy documented',
+      'Dependency Injection - DI tokens for ports',
+      'Dependency Injection - Tokens registered in container',
+      'Naming Conventions - Port interfaces (I*.ts)',
+      'Naming Conventions - Schema files (*.schema.ts)',
+      'Naming Conventions - Repositories (*Repository.ts)',
+      'Type Leakage Prevention - No infra types in domain',
     ];
 
     console.log(`
@@ -747,7 +1139,10 @@ describe('Architecture Test Summary', () => {
           • Module Alias → Replace relative import with @coreto/electron/domain/*
           • Handler Complexity → Extract logic to domain use case
           • File Placement → Move file to correct layer (domain/main/renderer)
-          • ESM Extensions → Add .js to relative imports
+          • ESM Extensions → Add .js to unbundled contexts (preload/scripts/tools)
+          • DI Registration → Add token to tokens.ts and register in container.ts
+          • Naming Convention → Rename file to follow I*.ts, *.schema.ts, or *Repository.ts
+          • Type Leakage → Remove infrastructure type import, use domain port instead
           ↓
   STEP 3: Apply the suggested fix from error message
           ↓
@@ -756,6 +1151,8 @@ describe('Architecture Test Summary', () => {
   STEP 5: If still failing, consult:
           • packages/electron/CLAUDE.md (import conventions)
           • docs/adrs/UI/ADR-033-clean-architecture-electron-package.md
+          • docs/adrs/FOUNDATION/ADR-029-tsyringe-di-container.md (DI patterns)
+          • docs/adrs/FOUNDATION/ADR-032-ports-and-adapters-layer-contracts.md (type boundaries)
 
 📚 QUICK REFERENCE - Common Patterns:
 
@@ -795,6 +1192,6 @@ describe('Architecture Test Summary', () => {
 ═══════════════════════════════════════════════════════════════════════════
     `);
 
-    expect(rules).toHaveLength(10);
+    expect(rules).toHaveLength(17);
   });
 });
