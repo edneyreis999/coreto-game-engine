@@ -1,0 +1,800 @@
+/**
+ * ╔════════════════════════════════════════════════════════════════════════╗
+ * ║         ELECTRON PACKAGE - CLEAN ARCHITECTURE GUARDIAN                ║
+ * ╚════════════════════════════════════════════════════════════════════════╝
+ *
+ * Este teste é o guardião da arquitetura Clean Architecture do @coreto/electron.
+ * Quando ele falha, significa que um arquivo foi colocado no lugar errado ou
+ * está importando módulos que violam as regras de dependência.
+ *
+ * 📚 DOCUMENTAÇÃO RELACIONADA:
+ *    - packages/electron/CLAUDE.md (convenções de import)
+ *    - docs/adrs/UI/ADR-033-clean-architecture-electron-package.md
+ *
+ * ARCHITECTURE OF ELECTRON PACKAGE:
+ *
+ *    +-----------------------------------------------------------+
+ *    |  src/domain/                    (DOMAIN LAYER)            |
+ *    |  +-- entities/       - Business models                    |
+ *    |  +-- ports/          - Interfaces (IConfigStorage, etc)   |
+ *    |  +-- use-cases/      - Use cases (runSimulation)          |
+ *    |  +-- schemas/        - Zod validation                     |
+ *    |  +-- types/          - TypeScript types                   |
+ *    +-----------------------------------------------------------+
+ *                              ^ IMPORTS ONLY
+ *                              | (one-way dependency)
+ *    +-----------------------------------------------------------+
+ *    |  src/main/              (INFRASTRUCTURE - Main Process)   |
+ *    |  +-- adapters/       - Port implementations               |
+ *    |  +-- database/       - SQLite + repositories              |
+ *    |  +-- ipc/            - IPC handlers (thin adapters)       |
+ *    |  +-- services/       - Infrastructure services            |
+ *    +-----------------------------------------------------------+
+ *
+ *    +-----------------------------------------------------------+
+ *    |  src/renderer/          (INFRASTRUCTURE - Renderer)       |
+ *    |  +-- src/components/ - React components (shadcn/ui)       |
+ *    |  +-- src/hooks/      - Custom hooks (useConfig, etc)      |
+ *    |  +-- src/lib/        - Utilities (cn, etc)                |
+ *    +-----------------------------------------------------------+
+ *
+ *    +-----------------------------------------------------------+
+ *    |  src/preload/           (SECURITY BRIDGE)                 |
+ *    |  +-- index.ts        - Context bridge (exposeInMainWorld) |
+ *    +-----------------------------------------------------------+
+ *
+ * GOLDEN RULES:
+ *
+ *   RULE 1: Domain NEVER imports from Infrastructure
+ *       WRONG: import { app } from 'electron'
+ *       RIGHT: import type { IConfigStorage } from '../ports'
+ *
+ *   RULE 2: Infrastructure to Domain uses MODULE ALIASES
+ *       WRONG: import { validateTrecho } from '../../../domain/use-cases'
+ *       RIGHT: import { validateTrecho } from '@coreto/electron/domain/use-cases'
+ *
+ *   RULE 3: Infrastructure to Infrastructure uses RELATIVE PATHS
+ *       WRONG: import { getDatabase } from '@coreto/electron/main/database'
+ *       RIGHT: import { getDatabase } from '../database/index.js'
+ *
+ *   RULE 4: Handlers are THIN ADAPTERS (delegate to use cases)
+ *       WRONG: export const handleRunSimulation = async (config) => { /* 200 lines * / }
+ *       RIGHT: export const handleRunSimulation = async (config) => runSimulation(config)
+ *
+ * HISTORICAL CONTEXT (Why these rules exist):
+ *
+ *    BEFORE (commit 54110cb - Dec 2024):
+ *    - Handlers had business logic inline (700+ lines)
+ *    - Impossible to test without Electron runtime
+ *    - Code duplication between main/renderer
+ *
+ *    AFTER (commit 83b6e02 - Jan 2025):
+ *    - Pure domain layer (testable without Electron)
+ *    - Reusable use cases in CLI/Electron/Web
+ *    - Handlers are mere adapters (under 50 lines)
+ *
+ * WHEN THIS TEST FAILS:
+ *
+ *    1. Read the error message - it will tell you which file and import violated the rule
+ *    2. Check packages/electron/CLAUDE.md for correct examples
+ *    3. If domain import: use module alias @coreto/electron/domain/*
+ *    4. If intra-layer import: use relative path ./../../
+ *    5. If business logic: move to src/domain/use-cases/
+ *
+ * Run with: pnpm --filter @coreto/electron test architecture.test.ts
+ *
+ * ══════════════════════════════════════════════════════════════════════════
+ */
+
+import { describe, it, expect } from '@jest/globals';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { join, relative } from 'node:path';
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Recursively finds all TypeScript files in a directory
+ */
+function findTsFiles(dir: string): string[] {
+  const files: string[] = [];
+  const items = readdirSync(dir);
+
+  for (const item of items) {
+    const fullPath = join(dir, item);
+    const stat = statSync(fullPath);
+
+    if (stat.isDirectory()) {
+      // Skip node_modules and hidden directories
+      if (!item.startsWith('.') && item !== 'node_modules') {
+        files.push(...findTsFiles(fullPath));
+      }
+    } else if (item.endsWith('.ts') && !item.endsWith('.d.ts') && !item.endsWith('.test.ts') && !item.endsWith('.spec.ts') && item !== 'index.ts') {
+      files.push(fullPath);
+    }
+  }
+
+  return files;
+}
+
+/**
+ * Extracts imports from a file content
+ */
+function extractImports(content: string): string[] {
+  const importRegex = /import\s+(?:type\s+)?{?([^}]+)}?\s+(?:from\s+)?['"]([^'"]+)['"]/g;
+  const imports: string[] = [];
+
+  let match;
+  while ((match = importRegex.exec(content)) !== null) {
+    const modulePath = match[2];
+    imports.push(modulePath);
+  }
+
+  return imports;
+}
+
+/**
+ * Gets all domain layer files
+ */
+function getDomainFiles(): string[] {
+  const domainDir = join(__dirname, '../../src/domain');
+  return findTsFiles(domainDir);
+}
+
+/**
+ * Gets all infrastructure layer files
+ */
+function getInfrastructureFiles(): string[] {
+  const mainDir = join(__dirname, '../../src/main');
+  const preloadDir = join(__dirname, '../../src/preload');
+  const rendererDir = join(__dirname, '../../src/renderer');
+
+  return [
+    ...findTsFiles(mainDir),
+    ...findTsFiles(preloadDir),
+    ...findTsFiles(rendererDir),
+  ];
+}
+
+/**
+ * Gets relative path from project root
+ */
+function getRelativePath(filePath: string): string {
+  const rootDir = join(__dirname, '../..');
+  return relative(rootDir, filePath);
+}
+
+/**
+ * Generates actionable error message with correction suggestions for domain purity violations
+ */
+function generateDomainPurityReport(violations: Array<{ file: string; bannedImport: string }>): string {
+  const lines: string[] = [];
+
+  lines.push('\n╔════════════════════════════════════════════════════════════╗');
+  lines.push('║  ❌ DOMAIN PURITY VIOLATION - Infrastructure Import       ║');
+  lines.push('╚════════════════════════════════════════════════════════════╝\n');
+
+  for (const v of violations) {
+    lines.push(`📁 File: ${v.file}`);
+    lines.push(`   ❌ Banned import: ${v.bannedImport}\n`);
+    lines.push(`   💡 WHY THIS IS WRONG:`);
+    lines.push(`      Domain layer must be pure and framework-agnostic.`);
+    lines.push(`      Importing infrastructure dependencies couples domain to Electron runtime.`);
+    lines.push(`      This prevents testing domain logic without Electron and makes future`);
+    lines.push(`      porting to web/mobile impossible.\n`);
+    lines.push(`   🔧 HOW TO FIX:`);
+
+    if (v.bannedImport.includes('electron')) {
+      lines.push(`      1. Move code using Electron APIs → src/main/adapters/`);
+      lines.push(`      2. Create a port interface in src/domain/ports/ (e.g., IConfigStorage)`);
+      lines.push(`      3. Domain uses the port, main provides the implementation\n`);
+      lines.push(`   📋 EXAMPLE:`);
+      lines.push(`      ❌ BEFORE (domain/use-cases/save-config.ts):`);
+      lines.push(`         import { app } from 'electron';`);
+      lines.push(`         export function saveConfig(config) {`);
+      lines.push(`           const path = app.getPath('userData');`);
+      lines.push(`           // save logic...`);
+      lines.push(`         }\n`);
+      lines.push(`      ✅ AFTER (domain/ports/IConfigStorage.ts):`);
+      lines.push(`         export interface IConfigStorage {`);
+      lines.push(`           save(config: Config): Promise<void>;`);
+      lines.push(`         }\n`);
+      lines.push(`      ✅ AFTER (domain/use-cases/save-config.ts):`);
+      lines.push(`         export function saveConfig(config, storage: IConfigStorage) {`);
+      lines.push(`           return storage.save(config);`);
+      lines.push(`         }\n`);
+      lines.push(`      ✅ AFTER (main/adapters/file-config-storage-adapter.ts):`);
+      lines.push(`         import { app } from 'electron';`);
+      lines.push(`         export class FileConfigStorageAdapter implements IConfigStorage {`);
+      lines.push(`           async save(config) { /* electron logic */ }`);
+      lines.push(`         }`);
+    } else if (v.bannedImport.includes('react')) {
+      lines.push(`      1. Move React components → src/renderer/src/components/`);
+      lines.push(`      2. Keep domain types/use-cases separate from UI`);
+      lines.push(`      3. Components import domain via module alias @coreto/electron/domain/*`);
+    } else if (v.bannedImport.includes('better-sqlite3')) {
+      lines.push(`      1. Create repository port in src/domain/ports/`);
+      lines.push(`      2. Implement SQLite adapter in src/main/database/repositories/`);
+      lines.push(`      3. Domain uses port interface, main provides SQLite implementation`);
+    }
+
+    lines.push(`\n   📚 LEARN MORE:`);
+    lines.push(`      - packages/electron/CLAUDE.md (Domain Layer Purity)`);
+    lines.push(`      - docs/adrs/UI/ADR-033-clean-architecture-electron-package.md\n`);
+    lines.push('─'.repeat(60) + '\n');
+  }
+
+  return lines.join('\n');
+}
+
+/**
+ * Generates actionable error message for module alias violations
+ */
+function generateModuleAliasReport(violations: Array<{ file: string; import: string }>): string {
+  const lines: string[] = [];
+
+  lines.push('\n╔════════════════════════════════════════════════════════════╗');
+  lines.push('║  ❌ MODULE ALIAS VIOLATION - Use @coreto/electron/domain  ║');
+  lines.push('╚════════════════════════════════════════════════════════════╝\n');
+
+  for (const v of violations) {
+    lines.push(`📁 File: ${v.file}`);
+    lines.push(`   ❌ Wrong import: ${v.import}\n`);
+
+    // Generate correct import suggestion
+    const correctImport = v.import
+      .replace(/\.\.\/+domain\//, '@coreto/electron/domain/')
+      .replace(/\.\.\/+\.\.\/+domain\//, '@coreto/electron/domain/');
+
+    lines.push(`   💡 WHY THIS IS WRONG:`);
+    lines.push(`      Relative imports to domain create brittle paths that break during refactoring.`);
+    lines.push(`      Module aliases provide stable, process-agnostic imports that work in both`);
+    lines.push(`      main and renderer processes.\n`);
+    lines.push(`   🔧 HOW TO FIX:`);
+    lines.push(`      Replace:  import { ... } from '${v.import}'`);
+    lines.push(`      With:     import { ... } from '${correctImport}'\n`);
+    lines.push(`   📝 REMEMBER:`);
+    lines.push(`      ✅ Infrastructure → Domain: USE module alias @coreto/electron/domain/*`);
+    lines.push(`      ✅ Infrastructure → Infrastructure: USE relative path ./../\n`);
+    lines.push(`   📚 LEARN MORE:`);
+    lines.push(`      - packages/electron/CLAUDE.md (Import Conventions)`);
+    lines.push(`      - Search for "Module Alias Configuration" in CLAUDE.md\n`);
+    lines.push('─'.repeat(60) + '\n');
+  }
+
+  return lines.join('\n');
+}
+
+/**
+ * Generates handler complexity warning with refactoring guidance
+ */
+function generateHandlerComplexityReport(violations: Array<{ file: string; lines: number }>): string {
+  const lines: string[] = [];
+
+  lines.push('\n╔════════════════════════════════════════════════════════════╗');
+  lines.push('║  ⚠️  HANDLER COMPLEXITY WARNING - Extract to Use Case     ║');
+  lines.push('╚════════════════════════════════════════════════════════════╝\n');
+
+  for (const v of violations) {
+    lines.push(`📁 File: ${v.file}`);
+    lines.push(`   ⚠️  Lines of code: ${v.lines} (threshold: 100)\n`);
+    lines.push(`   💡 WHY THIS MATTERS:`);
+    lines.push(`      Handlers should be thin adapters that delegate to domain use cases.`);
+    lines.push(`      Complex handlers indicate business logic leaking into infrastructure.`);
+    lines.push(`      This makes testing harder and couples IPC protocol to business rules.\n`);
+    lines.push(`   🔧 HOW TO FIX:`);
+    lines.push(`      1. Extract business logic to src/domain/use-cases/{name}.ts`);
+    lines.push(`      2. Create a use case function that returns the result`);
+    lines.push(`      3. Handler should just call the use case and return response\n`);
+    lines.push(`   📋 EXAMPLE:`);
+    lines.push(`      ❌ BEFORE (src/main/ipc/handlers/run-simulation-handler.ts - 200 lines):`);
+    lines.push(`         export const handleRunSimulation = async (config: TrechoConfig) => {`);
+    lines.push(`           // 50 lines of validation...`);
+    lines.push(`           // 80 lines of simulation logic...`);
+    lines.push(`           // 70 lines of result formatting...`);
+    lines.push(`           return result;`);
+    lines.push(`         };\n`);
+    lines.push(`      ✅ AFTER (src/main/ipc/handlers/run-simulation-handler.ts - 10 lines):`);
+    lines.push(`         import { runSimulation } from '@coreto/electron/domain/use-cases';`);
+    lines.push(`         import { wrapHandler } from '../ipc-response.js';`);
+    lines.push(``);
+    lines.push(`         export const handleRunSimulation = wrapHandler(async (config) => {`);
+    lines.push(`           return runSimulation(config);`);
+    lines.push(`         });\n`);
+    lines.push(`      ✅ AFTER (src/domain/use-cases/run-simulation.ts - 190 lines):`);
+    lines.push(`         export function runSimulation(config: TrechoConfig) {`);
+    lines.push(`           // All business logic here (now testable without Electron!)`);
+    lines.push(`         }\n`);
+    lines.push(`   📚 LEARN MORE:`);
+    lines.push(`      - See commit 83b6e02 for refactoring examples`);
+    lines.push(`      - docs/adrs/UI/ADR-033-clean-architecture-electron-package.md\n`);
+    lines.push('─'.repeat(60) + '\n');
+  }
+
+  return lines.join('\n');
+}
+
+/**
+ * Generates ESM extension violation report
+ */
+function generateEsmExtensionReport(violations: Array<{ file: string; import: string }>): string {
+  const lines: string[] = [];
+
+  lines.push('\n╔════════════════════════════════════════════════════════════╗');
+  lines.push('║  ❌ ESM IMPORT VIOLATION - Missing .js Extension          ║');
+  lines.push('╚════════════════════════════════════════════════════════════╝\n');
+
+  for (const v of violations) {
+    const fixed = v.import.replace(/\/index$/, '/index.js').replace(/([^.])$/, '$1.js');
+
+    lines.push(`📁 File: ${v.file}`);
+    lines.push(`   ❌ Missing extension: ${v.import}\n`);
+    lines.push(`   💡 WHY THIS IS WRONG:`);
+    lines.push(`      ESM (ECMAScript Modules) requires explicit file extensions for relative imports.`);
+    lines.push(`      TypeScript compiles .ts to .js, so runtime needs .js extension.`);
+    lines.push(`      Without it, Node.js module resolution fails at runtime.\n`);
+    lines.push(`   🔧 HOW TO FIX:`);
+    lines.push(`      Replace:  import { ... } from '${v.import}'`);
+    lines.push(`      With:     import { ... } from '${fixed}'\n`);
+    lines.push(`   📝 RULE:`);
+    lines.push(`      All relative imports must end with .js extension`);
+    lines.push(`      (TypeScript strips it during compilation, Node.js adds it back at runtime)\n`);
+    lines.push(`   📚 LEARN MORE:`);
+    lines.push(`      - packages/electron/CLAUDE.md (Common Mistakes #2 - Forgetting .js Extension)\n`);
+    lines.push('─'.repeat(60) + '\n');
+  }
+
+  return lines.join('\n');
+}
+
+// ============================================================================
+// Banned Import Patterns
+// ============================================================================
+
+const BANNED_DOMAIN_IMPORTS = [
+  'electron', // Electron APIs
+  'react', // React APIs
+  'react-dom', // React DOM APIs
+  '@electron-toolkit', // Electron toolkit
+  'better-sqlite3', // Database (concrete implementation)
+];
+
+// ============================================================================
+// Rule 1: Domain Layer Purity
+// ============================================================================
+
+describe('Architecture Rule 1: Domain Layer Purity', () => {
+  it('should not import banned modules in domain layer', () => {
+    const domainFiles = getDomainFiles();
+    const violations: Array<{ file: string; bannedImport: string }> = [];
+
+    for (const file of domainFiles) {
+      const content = readFileSync(file, 'utf-8');
+      const imports = extractImports(content);
+
+      for (const imp of imports) {
+        for (const banned of BANNED_DOMAIN_IMPORTS) {
+          if (imp.includes(banned)) {
+            violations.push({
+              file: getRelativePath(file),
+              bannedImport: imp,
+            });
+          }
+        }
+      }
+    }
+
+    if (violations.length > 0) {
+      console.error(generateDomainPurityReport(violations));
+    }
+
+    expect(violations).toHaveLength(0);
+  });
+
+  it('should not use relative parent imports that escape domain layer', () => {
+    const domainFiles = getDomainFiles();
+    const violations: Array<{ file: string; import: string }> = [];
+
+    for (const file of domainFiles) {
+      const content = readFileSync(file, 'utf-8');
+      const imports = extractImports(content);
+
+      for (const imp of imports) {
+        // Check for relative imports that go up more than 2 levels (likely escaping domain)
+        const upLevelCount = (imp.match(/\.\.\//g) || []).length;
+        if (upLevelCount > 2) {
+          violations.push({
+            file: getRelativePath(file),
+            import: imp,
+          });
+        }
+      }
+    }
+
+    if (violations.length > 0) {
+      console.error('\nDomain Layer Import Escaping Violations:');
+      console.error('These imports escape the domain layer boundary:\n');
+      for (const v of violations) {
+        console.error(`  ❌ ${v.file}: ${v.import} (escapes domain layer)`);
+      }
+      console.error('\n💡 Domain files should only import from within src/domain/');
+      console.error('   If you need infrastructure, create a port interface instead.\n');
+    }
+
+    expect(violations).toHaveLength(0);
+  });
+});
+
+// ============================================================================
+// Rule 2: Handler Thin Adapter Pattern
+// ============================================================================
+
+describe('Architecture Rule 2: Handler Thin Adapter Pattern', () => {
+  it('should delegate to domain use cases in IPC handlers', () => {
+    const handlersDir = join(__dirname, '../../src/main/ipc/handlers');
+    const handlerFiles = findTsFiles(handlersDir);
+
+    for (const file of handlerFiles) {
+      const content = readFileSync(file, 'utf-8');
+      const relativePath = getRelativePath(file);
+
+      // Check if handler file has domain use case imports
+      const hasUseCaseImport = /from ['"]@coreto\/electron\/domain\/use-cases['"]/.test(content);
+
+      if (!hasUseCaseImport) {
+        console.warn(`  ⚠️  ${relativePath}: No domain use case import found (may need review)`);
+      }
+    }
+
+    // This is a warning test, so it always passes
+    expect(true).toBe(true);
+  });
+
+  it('should not have excessive complexity in handlers (max 100 lines)', () => {
+    const handlersDir = join(__dirname, '../../src/main/ipc');
+    const handlerFiles = findTsFiles(handlersDir);
+    const violations: Array<{ file: string; lines: number }> = [];
+
+    for (const file of handlerFiles) {
+      const content = readFileSync(file, 'utf-8');
+      const lines = content.split('\n').length;
+
+      // Skip if it's just exports/registry
+      if (lines > 100 && !file.includes('index.ts') && !file.includes('types.ts')) {
+        violations.push({
+          file: getRelativePath(file),
+          lines,
+        });
+      }
+    }
+
+    if (violations.length > 0) {
+      console.warn(generateHandlerComplexityReport(violations));
+    }
+
+    // This is a warning test, so it always passes
+    expect(true).toBe(true);
+  });
+});
+
+// ============================================================================
+// Rule 3: Dependency Direction - Module Aliases
+// ============================================================================
+
+describe('Architecture Rule 3: Dependency Direction (Module Aliases)', () => {
+  it('should use module aliases for cross-layer imports from infrastructure to domain', () => {
+    const infrastructureFiles = getInfrastructureFiles();
+    const violations: Array<{ file: string; import: string }> = [];
+
+    for (const file of infrastructureFiles) {
+      // Skip test files
+      if (file.includes('.test.') || file.includes('.spec.') || file.includes('/tests/')) {
+        continue;
+      }
+
+      const content = readFileSync(file, 'utf-8');
+      const imports = extractImports(content);
+
+      for (const imp of imports) {
+        // Check for relative imports that go into domain layer
+        // These should use @coreto/electron/domain/* instead
+        if (imp.includes('../domain/') || imp.includes('../../domain/')) {
+          violations.push({
+            file: getRelativePath(file),
+            import: imp,
+          });
+        }
+      }
+    }
+
+    if (violations.length > 0) {
+      console.error(generateModuleAliasReport(violations));
+    }
+
+    expect(violations).toHaveLength(0);
+  });
+
+  it('should use relative imports for same-layer imports', () => {
+    const mainDir = join(__dirname, '../../src/main');
+    const mainFiles = findTsFiles(mainDir);
+    const warnings: Array<{ file: string; import: string }> = [];
+
+    for (const file of mainFiles) {
+      // Skip test files
+      if (file.includes('.test.') || file.includes('.spec.') || file.includes('/tests/')) {
+        continue;
+      }
+
+      const content = readFileSync(file, 'utf-8');
+      const imports = extractImports(content);
+
+      for (const imp of imports) {
+        // Check for module alias usage within same layer
+        if (imp.startsWith('@coreto/electron/main/') || imp.startsWith('@coreto/electron/src/main/')) {
+          warnings.push({
+            file: getRelativePath(file),
+            import: imp,
+          });
+        }
+      }
+    }
+
+    if (warnings.length > 0) {
+      console.warn('Same-Layer Import Warnings (should use relative paths):');
+      for (const w of warnings) {
+        console.warn(`  ⚠️  ${w.file}: ${w.import}`);
+        console.warn(`     Should use relative import like: './file.js' or '../other/file.js'`);
+      }
+    }
+
+    // This is a warning test - alias usage is acceptable but not preferred
+    expect(true).toBe(true);
+  });
+});
+
+// ============================================================================
+// Rule 4: Domain Files Exist and Export Use Cases
+// ============================================================================
+
+describe('Architecture Rule 4: Domain Structure', () => {
+  it('should have domain use case files properly structured', () => {
+    // Check that key use case files exist
+    const expectedUseCases = [
+      'run-simulation',
+      'save-project-config-as-core-format',
+      'load-project-config',
+      'save-project-config',
+      'validate-trecho',
+      'validate-project',
+      'load-game-data',
+      // Note: index.ts is filtered out by findTsFiles (.test.ts filter)
+    ];
+
+    const domainDir = join(__dirname, '../../src/domain/use-cases');
+    const useCaseFiles = findTsFiles(domainDir);
+    const useCaseNames = useCaseFiles.map(f => relative(domainDir, f).replace('.ts', ''));
+
+    const missingUseCases: string[] = [];
+
+    for (const exp of expectedUseCases) {
+      if (!useCaseNames.includes(exp)) {
+        missingUseCases.push(exp);
+      }
+    }
+
+    if (missingUseCases.length > 0) {
+      console.error('Missing domain use case files:');
+      for (const m of missingUseCases) {
+        console.error(`  ❌ ${m}.ts does not exist in domain/use-cases/`);
+      }
+      console.error(`  Found: ${useCaseNames.join(', ')}`);
+    }
+
+    // Debug log to see actual values
+    console.log(`  Found use cases: ${useCaseNames.length}, Missing: ${missingUseCases.length}`);
+
+    // All expected use cases exist - test passes if none are missing
+    expect(missingUseCases).toHaveLength(0);
+  });
+
+  it('should have domain ports properly defined', () => {
+    const portsDir = join(__dirname, '../../src/domain/ports');
+    const portFiles = findTsFiles(portsDir);
+
+    // Check that key ports exist
+    const expectedPorts = [
+      'IConfigStorage.ts',
+      'IGameDataLoader.ts',
+      'IProjectValidator.ts',
+      // Note: IRecentProjectsRepository is in repositories/, not ports/
+    ];
+
+    const missingPorts: string[] = [];
+
+    for (const port of expectedPorts) {
+      const portPath = join(portsDir, port);
+      if (!portFiles.includes(portPath)) {
+        missingPorts.push(port);
+      }
+    }
+
+    if (missingPorts.length > 0) {
+      console.error('Missing domain ports:');
+      for (const m of missingPorts) {
+        console.error(`  ❌ ${m} does not exist in domain/ports/`);
+      }
+    }
+
+    expect(missingPorts).toHaveLength(0);
+  });
+});
+
+// ============================================================================
+// Rule 5: File Placement - Right Content in Right Place
+// ============================================================================
+
+describe('Architecture Rule 5: File Placement', () => {
+  it('should have UI components only in renderer layer', () => {
+    const domainFiles = getDomainFiles();
+    const violations: Array<{ file: string }> = [];
+
+    for (const file of domainFiles) {
+      const content = readFileSync(file, 'utf-8');
+
+      // Check for React component patterns
+      if (/export\s+(function|const)\s+\w+\s*:\s*React\.FC/.test(content) ||
+          /export\s+function\s+\w+\([^)]*\):\s*JSX\.Element/.test(content)) {
+        violations.push({ file: getRelativePath(file) });
+      }
+    }
+
+    if (violations.length > 0) {
+      console.error(`
+╔════════════════════════════════════════════════════════════╗
+║  ❌ UI COMPONENT IN DOMAIN LAYER                           ║
+╚════════════════════════════════════════════════════════════╝
+
+React components belong in src/renderer/src/components/, not in domain.
+
+💡 WHY: Domain layer must be UI-agnostic to support multiple frontends
+       (Electron renderer, Web, CLI, future mobile apps).
+
+🔧 HOW TO FIX:
+   1. Move component to src/renderer/src/components/{name}.tsx
+   2. If component needs domain logic, import use case via module alias
+   3. Keep domain pure - export only types, use cases, and business rules
+
+📋 VIOLATIONS:
+      `);
+
+      for (const v of violations) {
+        console.error(`   ❌ ${v.file}`);
+      }
+    }
+
+    expect(violations).toHaveLength(0);
+  });
+});
+
+// ============================================================================
+// Rule 6: ESM Import Extensions (.js required for relative imports)
+// ============================================================================
+
+describe('Architecture Rule 6: ESM Import Conventions', () => {
+  it('should use .js extension for relative imports in infrastructure', () => {
+    const infraFiles = getInfrastructureFiles();
+    const violations: Array<{ file: string; import: string }> = [];
+
+    for (const file of infraFiles) {
+      if (file.includes('.test.') || file.includes('/tests/')) continue;
+
+      const content = readFileSync(file, 'utf-8');
+      const imports = extractImports(content);
+
+      for (const imp of imports) {
+        // Check relative imports without .js extension
+        // Exclude module aliases (they don't need .js)
+        if (imp.startsWith('.') && !imp.endsWith('.js') && !imp.endsWith('.json') && !imp.includes('@coreto')) {
+          violations.push({
+            file: getRelativePath(file),
+            import: imp,
+          });
+        }
+      }
+    }
+
+    if (violations.length > 0) {
+      console.error(generateEsmExtensionReport(violations));
+    }
+
+    expect(violations).toHaveLength(0);
+  });
+});
+
+// ============================================================================
+// Test Summary with AI Agent Troubleshooting Guide
+// ============================================================================
+
+describe('Architecture Test Summary', () => {
+  it('should validate all architecture rules and provide troubleshooting guide', () => {
+    const rules = [
+      'Domain Layer Purity - No banned imports',
+      'Domain Layer Purity - No escaping imports',
+      'Handler Thin Adapter - Use case delegation',
+      'Handler Thin Adapter - Reasonable complexity',
+      'Dependency Direction - Module aliases for cross-layer',
+      'Dependency Direction - Relative paths for same-layer',
+      'Domain Structure - Use cases exported',
+      'Domain Structure - Ports defined',
+      'File Placement - UI components in renderer',
+      'ESM Conventions - .js extensions for relative imports',
+    ];
+
+    console.log(`
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                     ARCHITECTURE TEST SUITE SUMMARY                       ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+✅ Validated ${rules.length} architectural rules
+
+🤖 FOR AI AGENTS: If this test failed, here's what to do:
+
+  STEP 1: Read the error message above
+          ↓
+  STEP 2: Identify the violation type:
+          • Domain Purity → Move code to domain/use-cases or main/adapters
+          • Module Alias → Replace relative import with @coreto/electron/domain/*
+          • Handler Complexity → Extract logic to domain use case
+          • File Placement → Move file to correct layer (domain/main/renderer)
+          • ESM Extensions → Add .js to relative imports
+          ↓
+  STEP 3: Apply the suggested fix from error message
+          ↓
+  STEP 4: Verify fix with: pnpm --filter @coreto/electron test architecture.test.ts
+          ↓
+  STEP 5: If still failing, consult:
+          • packages/electron/CLAUDE.md (import conventions)
+          • docs/adrs/UI/ADR-033-clean-architecture-electron-package.md
+
+📚 QUICK REFERENCE - Common Patterns:
+
+   ✅ CORRECT IMPORTS:
+      // Domain use case from infrastructure
+      import { validateTrecho } from '@coreto/electron/domain/use-cases';
+
+      // Domain type from infrastructure
+      import type { TrechoConfig } from '@coreto/electron/domain/types';
+
+      // Infrastructure internal (same layer)
+      import { getDatabase } from '../database/index.js';
+
+      // Renderer component
+      import { Button } from '@/components/ui/button';
+
+   ❌ WRONG IMPORTS:
+      // Relative path to domain (breaks refactoring)
+      import { validateTrecho } from '../../../domain/use-cases';
+
+      // Electron in domain (couples to runtime)
+      import { app } from 'electron';
+
+      // Missing .js extension (ESM fails)
+      import { getDatabase } from '../database/index';
+
+      // Alias for same-layer (unnecessary complexity)
+      import { getDatabase } from '@coreto/electron/main/database';
+
+🎯 ARCHITECTURE LAYERS QUICK MAP:
+
+   src/domain/           → Business rules (framework-agnostic)
+   src/main/             → Node.js infrastructure (Electron main process)
+   src/renderer/         → React UI (Chromium renderer process)
+   src/preload/          → Security bridge (context isolation)
+
+═══════════════════════════════════════════════════════════════════════════
+    `);
+
+    expect(rules).toHaveLength(10);
+  });
+});

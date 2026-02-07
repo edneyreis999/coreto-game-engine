@@ -40,6 +40,9 @@ export default {
       testEnvironment: 'node',
       maxWorkers: 1, // Run tests sequentially to avoid database singleton conflicts
       roots: ['<rootDir>/tests', '<rootDir>/src/main'],
+      transformIgnorePatterns: [
+        'node_modules/(?!(ts-jest))',
+      ],
       testMatch: [
         '**/tests/unit/main/**/*.test.ts',
         '**/tests/unit/preload/**/*.test.ts',
@@ -162,6 +165,17 @@ export default {
       testMatch: ['**/tests/e2e/**/*.test.ts'],
       setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
       collectCoverageFrom: [],
+    },
+    // Architecture tests
+    {
+      ...baseConfig,
+      displayName: 'architecture',
+      testEnvironment: 'node',
+      roots: ['<rootDir>/tests'],
+      testMatch: ['**/tests/architecture/**/*.test.ts'],
+      testPathIgnorePatterns: [
+        '/node_modules/',
+      ],
     },
   ],
   coverageThreshold: {

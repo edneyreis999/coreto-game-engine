@@ -18,7 +18,7 @@
     "rebuild:node": "pnpm rebuild better-sqlite3",
     "predev": "pnpm rebuild:electron",
     "pretest": "pnpm rebuild:node",
-    "test": "jest --config=jest.config.js --selectProjects main --selectProjects renderer --selectProjects integration",
+    "test": "jest --config=jest.config.js --selectProjects main --selectProjects renderer --selectProjects integration --selectProjects architecture",
     "test:watch": "jest --config=jest.config.js --selectProjects main --selectProjects renderer --selectProjects integration --watch",
     "test:main": "jest --config=jest.config.js --selectProjects main",
     "test:renderer": "jest --config=jest.config.js --selectProjects renderer",
