@@ -45,11 +45,18 @@ export function buildProjectConfig(
     trechos: trechos.map((trecho) => ({
       id: trecho.id,
       name: trecho.name,
-      description: trecho.description,
-      heroTeam: trecho.heroTeam,
-      enemyTeam: trecho.enemyTeam,
-      expectedTTK: trecho.expectedTTK,
-      tolerance: trecho.tolerance,
+      anchorLevelMin: trecho.anchorLevelMin,
+      anchorLevelMax: trecho.anchorLevelMax,
+      targetTtkTurns: trecho.targetTtkTurns,
+      targetTtkActions: trecho.targetTtkActions,
+      tolerancePercent: trecho.tolerancePercent,
+      troopIds: [...trecho.troopIds],
+      party: {
+        members: trecho.party.members.map((member) => ({
+          classId: member.classId,
+          level: member.level,
+        })),
+      },
     })),
     globalSettings: {
       seed: globalSettings.seed,

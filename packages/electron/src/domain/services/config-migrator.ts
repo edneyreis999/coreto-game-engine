@@ -9,7 +9,7 @@
  * @module domain/services
  */
 
-import { CURRENT_SCHEMA_VERSION } from '../schemas/project-config.schema.js';
+import { UI_SCHEMA_VERSION as CURRENT_SCHEMA_VERSION } from '../schemas/index.js';
 
 /**
  * Normalizes a raw config object.

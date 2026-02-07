@@ -8,6 +8,23 @@
  * import type { SimulationConfig, SimulationResult } from '@/domain/types';
  */
 
+// Entity types from domain/entities
+export type {
+  TroopData,
+  ClassData,
+  EnemyData,
+} from '../entities/game-data.js';
+
+export type {
+  ProjectInfo,
+} from '../entities/project.js';
+
+export type {
+  SimulationSummary,
+  SimulationHistoryEntry,
+  SimulationReport,
+} from '../entities/simulation.js';
+
 export type {
   // Battle Types
   BattleOutcome,
@@ -27,11 +44,6 @@ export type {
   SimulationProgress,
   // Simulation Results
   SimulationResult,
-  // Simulation Summary & History
-  SimulationSummary,
-  SimulationHistoryEntry,
-  // Full Simulation Report
-  SimulationReport,
 } from './simulation-types.js';
 
 export type {
@@ -43,34 +55,16 @@ export type {
 } from './form-types.js';
 
 export type {
-  // Project Types
-  ProjectInfo,
   // Configuration Types
   PartyMemberData,
   PartyConfigData,
   TrechoData,
   ProjectConfigResponse,
-  // RPG Maker Data Types
-  TroopData,
-  ClassData,
-  EnemyData,
   // Application State Types
   RecentProject,
   UserPreferences,
-  SimulationSummary,
   HistoryEntry,
-  SimulationReport,
-  // IPC Error & Response Types
-  IPCError,
-  IPCSuccessResponse,
-  IPCErrorResponse,
-  IPCResult,
 } from './ipc-types.js';
 
-export type {
-  // Worker Communication Types
-  ProgressStage,
-  ProgressPayload,
-  ErrorPayload,
-  SimulationResultPayload,
-} from './worker-types.js';
+// Note: Worker communication types (ProgressStage, ProgressPayload, ErrorPayload, SimulationResultPayload)
+// have been moved to main/workers/protocol-types.ts as they are infrastructure concerns.

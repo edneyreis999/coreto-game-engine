@@ -1,31 +1,23 @@
 /**
- * IPC Type Definitions
+ * Domain DTOs for IPC Serialization
  *
- * Types specific to IPC communication between main and renderer processes.
- * These types are not core domain types but are used for serialization and
- * data transfer across process boundaries.
+ * Data Transfer Objects (DTOs) used for serializing domain data
+ * across IPC boundaries between main and renderer processes.
+ *
+ * IPC protocol types (IPCResult, IPCError, IPCChannel) have been moved to
+ * main/ipc/protocol-types.ts as they are transport-layer concerns.
  *
  * @module domain/types
+ * @see main/ipc/protocol-types.ts for IPC protocol types
  */
 
-// ============================================================================
-// Project Types
-// ============================================================================
-
-/**
- * Project info returned by project:open handler.
- */
-export interface ProjectInfo {
-  path: string;
-  name: string;
-  isValid: boolean;
-  troopsCount?: number;
-  classesCount?: number;
-  enemiesCount?: number;
-}
+// Re-export domain entities for IPC contracts
+export type { TroopData, ClassData, EnemyData } from '../entities/game-data.js';
+export type { ProjectInfo } from '../entities/project.js';
+export type { SimulationSummary, SimulationReport } from '../entities/simulation.js';
 
 // ============================================================================
-// Configuration Types
+// Configuration DTOs
 // ============================================================================
 
 /**
@@ -70,44 +62,7 @@ export interface ProjectConfigResponse {
 }
 
 // ============================================================================
-// RPG Maker Data Types
-// ============================================================================
-
-/**
- * Troop data structure.
- */
-export interface TroopData {
-  id: number;
-  name: string;
-  members: Array<{
-    enemyId: number;
-    x: number;
-    y: number;
-    hidden: boolean;
-  }>;
-}
-
-/**
- * Class data structure.
- */
-export interface ClassData {
-  id: number;
-  name: string;
-  expTable: number[];
-}
-
-/**
- * Enemy data structure.
- */
-export interface EnemyData {
-  id: number;
-  name: string;
-  params: number[];
-  dropItems: Array<{ kind: number; dataId: number; denominator: number }>;
-}
-
-// ============================================================================
-// Application State Types
+// Application State DTOs
 // ============================================================================
 
 /**
@@ -128,18 +83,8 @@ export interface UserPreferences {
 }
 
 /**
- * Simulation summary data for history entries.
- */
-export interface SimulationSummary {
-  totalBattles: number;
-  trechosCount: number;
-  passedCount: number;
-  failedCount: number;
-  timestamp: string;
-}
-
-/**
- * History entry data structure.
+ * Simulation history entry data structure (IPC-specific).
+ * Note: SimulationSummary is imported from entities/simulation.ts.
  */
 export interface HistoryEntry {
   id: string;
@@ -149,51 +94,3 @@ export interface HistoryEntry {
   summary: SimulationSummary;
   hasReport: boolean;
 }
-
-/**
- * Detailed simulation report data structure.
- */
-export interface SimulationReport {
-  simulationId: string;
-  projectPath: string;
-  timestamp: number;
-  status: 'SUCCESS' | 'FAILED' | 'CANCELLED';
-  summary: SimulationSummary;
-  reportData: import('./domain-types.js').ReportData;
-}
-
-// ============================================================================
-// IPC Error & Response Types
-// ============================================================================
-
-/**
- * IPC error structure.
- */
-export interface IPCError {
-  name: string;
-  message: string;
-  severity: 'critical' | 'warning' | 'info';
-  context: Record<string, unknown>;
-  timestamp: string;
-}
-
-/**
- * Success response wrapper.
- */
-export interface IPCSuccessResponse<T> {
-  success: true;
-  data: T;
-}
-
-/**
- * Error response wrapper.
- */
-export interface IPCErrorResponse {
-  success: false;
-  error: IPCError;
-}
-
-/**
- * Union type for all IPC responses.
- */
-export type IPCResult<T> = IPCSuccessResponse<T> | IPCErrorResponse;

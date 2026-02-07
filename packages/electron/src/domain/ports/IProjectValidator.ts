@@ -5,6 +5,8 @@
  * Implements Clean Architecture's Dependency Inversion Principle.
  */
 
+import type { ProjectInfo } from '../entities/project.js';
+
 /**
  * Input for project validation
  */
@@ -64,12 +66,6 @@ export interface IProjectValidator {
 
 /**
  * Project information returned after opening/validating
+ * Imported from entities/project.ts
  */
-export interface ProjectInfo {
-  path: string;
-  name: string;
-  isValid: boolean;
-  troopsCount: number;
-  classesCount: number;
-  enemiesCount: number;
-}
+export type { ProjectInfo } from '../entities/project.js';

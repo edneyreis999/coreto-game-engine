@@ -46,20 +46,20 @@ describe('ConfigService Integration', () => {
       trechos: [
         {
           id: 'trecho-1',
-          description: 'Test Battle',
-          heroTeam: {
-            level: 5,
-            actors: [1, 2, 3, 4],
-            weapons: { 1: 10, 2: 5 },
-            armors: { 3: 8, 4: 3 },
-          },
-          enemyTeam: {
-            troopId: 1,
-            count: 5,
-          },
-          expectedTTK: {
-            min: 15,
-            max: 25,
+          name: 'Test Battle',
+          anchorLevelMin: 5,
+          anchorLevelMax: 10,
+          targetTtkTurns: 15,
+          targetTtkActions: 20,
+          tolerancePercent: 15,
+          troopIds: [1],
+          party: {
+            members: [
+              { classId: 1, level: 5 },
+              { classId: 2, level: 5 },
+              { classId: 3, level: 5 },
+              { classId: 4, level: 5 },
+            ],
           },
         },
       ],
@@ -97,19 +97,17 @@ describe('ConfigService Integration', () => {
         trechos: [
           {
             id: 'cli-trecho-1',
-            description: 'CLI Created Trecho',
-            heroTeam: {
-              level: 10,
-              actors: [1],
-              weapons: {},
-              armors: {},
-            },
-            enemyTeam: {
-              troopId: 2,
-            },
-            expectedTTK: {
-              min: 20,
-              max: 30,
+            name: 'CLI Created Trecho',
+            anchorLevelMin: 10,
+            anchorLevelMax: 15,
+            targetTtkTurns: 20,
+            targetTtkActions: 30,
+            tolerancePercent: 20,
+            troopIds: [2],
+            party: {
+              members: [
+                { classId: 1, level: 10 },
+              ],
             },
           },
         ],
@@ -183,20 +181,18 @@ describe('ConfigService Integration', () => {
         trechos: [
           {
             id: 'round-trip-1',
-            description: 'Round Trip Test',
-            heroTeam: {
-              level: 15,
-              actors: [1, 2],
-              weapons: { 1: 100 },
-              armors: { 2: 50 },
-            },
-            enemyTeam: {
-              troopId: 3,
-              count: 2,
-            },
-            expectedTTK: {
-              min: 10,
-              max: 40,
+            name: 'Round Trip Test',
+            anchorLevelMin: 15,
+            anchorLevelMax: 20,
+            targetTtkTurns: 25,
+            targetTtkActions: 35,
+            tolerancePercent: 20,
+            troopIds: [1, 2, 3],
+            party: {
+              members: [
+                { classId: 1, level: 15 },
+                { classId: 2, level: 15 },
+              ],
             },
           },
         ],
@@ -223,11 +219,13 @@ describe('ConfigService Integration', () => {
       expect(final.trechos[0]).toBeDefined();
       const trecho = final.trechos[0];
       expect(trecho?.id).toBe('round-trip-1');
-      expect(trecho?.heroTeam.level).toBe(15);
-      expect(trecho?.heroTeam.actors).toEqual([1, 2]);
-      expect(trecho?.heroTeam.weapons).toEqual({ 1: 100 });
-      expect(trecho?.enemyTeam.troopId).toBe(3);
-      expect(trecho?.expectedTTK).toEqual({ min: 10, max: 40 });
+      expect(trecho?.anchorLevelMin).toBe(15);
+      expect(trecho?.anchorLevelMax).toBe(20);
+      expect(trecho?.targetTtkTurns).toBe(25);
+      expect(trecho?.targetTtkActions).toBe(35);
+      expect(trecho?.tolerancePercent).toBe(20);
+      expect(trecho?.troopIds).toEqual([1, 2, 3]);
+      expect(trecho?.party.members).toHaveLength(2);
     });
   });
 
@@ -244,14 +242,14 @@ describe('ConfigService Integration', () => {
         trechos: [
           {
             id: 'invalid',
-            description: 'Test',
-            heroTeam: {
-              level: 5,
-              actors: [],
-              weapons: {},
-              armors: {},
-            },
-            // missing enemyTeam
+            name: 'Test',
+            anchorLevelMin: 5,
+            anchorLevelMax: 10,
+            targetTtkTurns: 15,
+            targetTtkActions: 20,
+            tolerancePercent: 15,
+            troopIds: [],
+            // missing party
           },
         ],
       };

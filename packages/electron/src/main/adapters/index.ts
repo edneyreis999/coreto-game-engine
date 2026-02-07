@@ -6,3 +6,4 @@
 
 export * from './project-validator-adapter';
 export * from './game-data-loader-adapter';
+export * from './file-config-storage-adapter';

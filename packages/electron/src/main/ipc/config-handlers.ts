@@ -20,8 +20,7 @@ import {
   ConfigNotFoundError,
   ConfigValidationError,
 } from '../services/config-service.js';
-import type { IPCResponse, IPCResult, ConfigSaveResponse, ConfigExistsResponse } from './types.js';
-import type { IPCError } from './types.js';
+import type { IPCResponse, IPCResult, IPCError, ConfigSaveResponse, ConfigExistsResponse } from './types.js';
 import type { ConfigSavePayload, ConfigExistsPayload } from './types.js';
 import { ConfigSavePayloadSchema, ConfigExistsPayloadSchema } from './types.js';
 import { getLogger } from '../di/container.js';

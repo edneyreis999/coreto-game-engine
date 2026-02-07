@@ -18,8 +18,8 @@ import type {
   MainToWorkerMessage,
   WorkerToMainMessage,
   SimulationParams,
-  ProgressPayload,
 } from './types.js';
+import type { ProgressPayload } from './protocol-types.js';
 import { mapErrorToUserMessage } from './error-mapper.js';
 
 /**

@@ -196,20 +196,18 @@ describe('ConfigService', () => {
           trechos: [
             {
               id: 'trecho-1',
-              description: 'Test Trecho',
-              heroTeam: {
-                level: 5,
-                actors: [1, 2],
-                weapons: { 1: 10 },
-                armors: { 2: 5 },
-              },
-              enemyTeam: {
-                troopId: 1,
-                count: 3,
-              },
-              expectedTTK: {
-                min: 10,
-                max: 20,
+              name: 'Test Trecho',
+              anchorLevelMin: 5,
+              anchorLevelMax: 10,
+              targetTtkTurns: 15,
+              targetTtkActions: 20,
+              tolerancePercent: 15,
+              troopIds: [1, 2],
+              party: {
+                members: [
+                  { classId: 1, level: 5 },
+                  { classId: 2, level: 5 },
+                ],
               },
             },
           ],

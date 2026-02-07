@@ -7,16 +7,44 @@
  * This file defines the contract between renderer and main processes,
  * ensuring type safety across the IPC boundary.
  *
- * TODO: Refactor to use module alias for domain imports (CLAUDE-ARCH-CONVENTION)
- * - Change: export/import type { ... } from '../../domain/types/index.js'
- * - To: export/import type { ... } from '@coreto/electron/domain/types'
+ * IPC protocol types (IPCResult, IPCError, IPCChannel) are now imported from
+ * protocol-types.ts (transport layer).
  *
- * @see packages/electron/src/main/ipc/handlers.ts
- * @see packages/electron/src/preload/index.ts
+ * @see main/ipc/protocol-types.ts for IPC protocol types
+ * @see domain/types for domain DTOs
  * @see packages/electron/CLAUDE.md (Import Conventions)
  */
 
 import { z } from 'zod';
+
+// ============================================================================
+// IPC Protocol Types (Transport Layer)
+// ============================================================================
+
+/**
+ * Import IPC protocol types from protocol-types.ts.
+ * These types define the serialization contracts for IPC communication.
+ */
+export type {
+  IPCChannel,
+  IPCError,
+  IPCSuccessResponse,
+  IPCErrorResponse,
+  IPCResult,
+} from './protocol-types.js';
+
+/**
+ * Re-export domain entities from protocol-types.ts.
+ * (protocol-types.ts re-exports them from domain layer)
+ */
+export type {
+  TroopData,
+  ClassData,
+  EnemyData,
+  ProjectInfo,
+  SimulationSummary,
+  SimulationReport,
+} from './protocol-types.js';
 
 // ============================================================================
 // Domain Type Re-exports
@@ -39,9 +67,7 @@ export type {
   SimulationConfig,
   SimulationProgress,
   SimulationResult,
-  SimulationSummary,
   SimulationHistoryEntry,
-  SimulationReport,
 } from '../../domain/types/index.js';
 
 /**
@@ -64,7 +90,7 @@ import type {
 } from '../../domain/types/index.js';
 
 /**
- * IPC-specific types that are also exported from domain layer.
+ * Domain DTOs also exported from domain layer.
  * Re-export them here for convenience.
  */
 export type {
@@ -78,10 +104,6 @@ export type {
   EnemyData,
   RecentProject,
   UserPreferences,
-  IPCError,
-  IPCSuccessResponse,
-  IPCErrorResponse,
-  IPCResult,
 } from '../../domain/types/index.js';
 
 // ============================================================================
@@ -89,9 +111,9 @@ export type {
 // ============================================================================
 
 /**
- * Import IPCError from domain layer (already re-exported above).
+ * Import IPCError from protocol-types.ts.
  */
-import type { IPCError } from '../../domain/types/index.js';
+import type { IPCError } from './protocol-types.js';
 
 /**
  * Zod schema for validating IPC error format.
@@ -103,42 +125,6 @@ export const IPCErrorSchema: z.ZodType<IPCError> = z.object({
   context: z.record(z.unknown()),
   timestamp: z.string(),
 });
-
-// ============================================================================
-// IPC Channel Definitions
-// ============================================================================
-
-/**
- * Union type of all IPC channel names.
- * Used for type-safe channel routing.
- */
-export type IPCChannel =
-  | 'project:open'
-  | 'project:validate'
-  | 'simulation:run'
-  | 'simulation:getProgress'
-  | 'simulation:cancel'
-  | 'simulation:getResults'
-  | 'config:load'
-  | 'config:save'
-  | 'config:exists'
-  | 'config:getTrechos'
-  | 'config:updateTrecho'
-  | 'config:deleteTrecho'
-  | 'config:updateGlobalSettings'
-  | 'data:getTroops'
-  | 'data:getClasses'
-  | 'data:getEnemies'
-  | 'recent:list'
-  | 'recent:add'
-  | 'preferences:get'
-  | 'preferences:set'
-  | 'dialog:openDirectory'
-  | 'history:list'
-  | 'history:loadReport'
-  | 'history:export'
-  | 'history:delete'
-  | 'history:generateId';
 
 // ============================================================================
 // Project Handlers

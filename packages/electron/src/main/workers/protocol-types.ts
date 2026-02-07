@@ -1,14 +1,18 @@
 /**
- * Worker Communication Type Contracts (Domain Layer)
+ * Worker Communication Protocol Types (Infrastructure Layer)
  *
  * Type-safe message definitions for UtilityProcess communication.
- * These types represent the domain contract for async simulation execution.
+ * These types are infrastructure concerns, not domain concepts.
  *
- * Moved from main/workers/types.ts to break re-export chains.
- * Infrastructure adapters in main/workers use these domain contracts.
+ * Originally located in domain/types/worker-types.ts but moved because:
+ * - Imports from @coreto/core (external dependency)
+ * - Defines transport protocol between processes
+ * - Not a core domain business concept
  *
- * @see planos/005-run-ttk-electron/TECHSPEC-round2.md Section 5
+ * @see planos/014-arrumando-testes/electron/codebase/PLAN.md Task 2.2
  */
+
+import type { Report } from '@coreto/core';
 
 /**
  * Progress event stages for simulation lifecycle.
@@ -73,7 +77,7 @@ export interface SimulationResultPayload {
   /** Absolute path to RPG Maker MZ project directory */
   projectPath: string;
   /** Complete report with all trechos, battles, and warnings */
-  report: import('@coreto/core').Report;
+  report: Report;
   /** Total execution time in milliseconds */
   duration: number;
   /** RNG seed used (for reproducibility) */

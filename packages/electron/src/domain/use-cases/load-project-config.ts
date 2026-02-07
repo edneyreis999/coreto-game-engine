@@ -15,9 +15,9 @@
  * @see packages/electron/src/domain/services/config-migrator.ts
  */
 
-import type { UIProjectConfig } from '../schemas/project-config.schema.js';
+import type { UIProjectConfig } from '../schemas/index.js';
 import type { IConfigStorage } from '../ports/IConfigStorage.js';
-import { CURRENT_SCHEMA_VERSION } from '../schemas/project-config.schema.js';
+import { UI_SCHEMA_VERSION as CURRENT_SCHEMA_VERSION } from '../schemas/index.js';
 
 /**
  * Input for loading a project configuration.

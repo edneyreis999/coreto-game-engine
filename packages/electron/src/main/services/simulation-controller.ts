@@ -62,6 +62,16 @@ export class SimulationController {
   private storageService: ReportStorageService | null = null;
   private simulationTimeoutTimer: NodeJS.Timeout | null = null;
 
+  // Simulation state management (moved from handlers/simulation.ts)
+  private simulationProgress: SimulationProgress = {
+    current: 0,
+    total: 0,
+    percentage: 0,
+    isRunning: false,
+  };
+  private abortController: AbortController | null = null;
+  private lastResults: ReportData | null = null;
+
   /**
    * Sets the ReportStorageService for result storage.
    * Must be called before starting simulations.
@@ -449,6 +459,85 @@ export class SimulationController {
    */
   getWorker(): UtilityProcess | null {
     return this.worker;
+  }
+
+  // ===========================================================================
+  // Simulation State Management (moved from handlers/simulation.ts)
+  // ===========================================================================
+
+  /**
+   * Gets the current simulation progress.
+   *
+   * @returns A copy of the current simulation progress
+   */
+  getProgress(): SimulationProgress {
+    return { ...this.simulationProgress };
+  }
+
+  /**
+   * Updates the simulation progress state.
+   *
+   * @param progress - Partial progress object to merge with current state
+   */
+  updateProgress(progress: Partial<SimulationProgress>): void {
+    this.simulationProgress = { ...this.simulationProgress, ...progress };
+  }
+
+  /**
+   * Resets simulation progress to initial state.
+   */
+  resetProgress(): void {
+    this.simulationProgress = {
+      current: 0,
+      total: 0,
+      percentage: 0,
+      isRunning: false,
+    };
+    this.abortController = null;
+  }
+
+  /**
+   * Gets the last simulation results.
+   *
+   * @returns The last simulation results or null
+   */
+  getLastResults(): ReportData | null {
+    return this.lastResults;
+  }
+
+  /**
+   * Sets the simulation results.
+   *
+   * @param results - The simulation results to store
+   */
+  setLastResults(results: ReportData): void {
+    this.lastResults = results;
+  }
+
+  /**
+   * Clears the stored simulation results.
+   */
+  clearLastResults(): void {
+    this.lastResults = null;
+  }
+
+  /**
+   * Gets the abort controller for cancellation.
+   *
+   * @returns The current abort controller or null
+   */
+  getAbortController(): AbortController | null {
+    return this.abortController;
+  }
+
+  /**
+   * Creates and returns a new abort controller.
+   *
+   * @returns A new abort controller
+   */
+  createAbortController(): AbortController {
+    this.abortController = new AbortController();
+    return this.abortController;
   }
 }
 

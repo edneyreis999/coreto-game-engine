@@ -10,7 +10,8 @@
 import { ipcMain, IpcMainInvokeEvent } from 'electron';
 import { z } from 'zod';
 
-import type { IPCResponse, IPCResult, IPCError } from './types.js';
+import type { IPCError, IPCResult } from './protocol-types.js';
+import type { IPCResponse } from './types.js';
 import { getDatabase } from '../database/index.js';
 import { ReportStorageService, generateSimulationId } from '../services/report-storage.js';
 import type { SimulationReport, SimulationSummary } from '../services/types.js';

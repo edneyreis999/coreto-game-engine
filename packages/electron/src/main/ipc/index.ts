@@ -8,7 +8,7 @@
  */
 
 import { registerDependencies, clearContainer } from '@coreto/core';
-import { registerIpcHandlers } from './handlers.js';
+import { registerHandlers as registerIpcHandlers } from './handlers/index.js';
 
 /**
  * Sets the main window reference for simulation event forwarding.

@@ -2,11 +2,11 @@
  * FakeBuilder for UIProjectConfig in tests.
  * Provides realistic test data following DDD testing patterns.
  *
- * @see packages/electron/src/domain/schemas/project-config.schema.ts
+ * @see packages/electron/src/domain/schemas/ui-config.schema.ts
  */
 
 import Chance from 'chance';
-import type { UIProjectConfig, UITrechoConfig } from '../../../src/domain/schemas/project-config.schema';
+import type { UIProjectConfig, UITrechoConfig, UIPartyMemberConfig } from '../../../src/domain/schemas';
 
 const chance = new Chance();
 
@@ -21,21 +21,23 @@ export class UITrechoConfigBuilder {
   }
 
   withDefaults(): this {
+    const level = chance.natural({ min: 1, max: 50 });
     this.data = {
       id: `ato${chance.natural({ min: 1, max: 3 })}-nivel${chance.natural({ min: 1, max: 10 })}-${chance.natural({ min: 1, max: 99 })}`,
-      description: chance.sentence({ words: 5 }),
-      heroTeam: {
-        level: chance.natural({ min: 1, max: 50 }),
-        actors: [1],
-        weapons: { 1: chance.natural({ min: 1, max: 10 }) },
-        armors: { 1: chance.natural({ min: 1, max: 5 }) },
-      },
-      enemyTeam: {
-        troopId: chance.natural({ min: 1, max: 50 }),
-      },
-      expectedTTK: {
-        min: chance.natural({ min: 1, max: 10 }),
-        max: chance.natural({ min: 11, max: 20 }),
+      name: chance.sentence({ words: 5 }),
+      anchorLevelMin: level,
+      anchorLevelMax: level + chance.natural({ min: 1, max: 10 }),
+      targetTtkTurns: chance.natural({ min: 5, max: 30 }),
+      targetTtkActions: chance.natural({ min: 10, max: 50 }),
+      tolerancePercent: chance.natural({ min: 5, max: 25 }),
+      troopIds: [chance.natural({ min: 1, max: 50 })],
+      party: {
+        members: [
+          {
+            classId: 1,
+            level: chance.natural({ min: 1, max: 50 }),
+          },
+        ],
       },
     };
     return this;
@@ -46,45 +48,75 @@ export class UITrechoConfigBuilder {
     return this;
   }
 
-  withDescription(description: string): this {
-    this.data.description = description;
+  withName(name: string): this {
+    this.data.name = name;
     return this;
   }
 
-  withHeroLevel(level: number): this {
-    if (this.data.heroTeam) {
-      this.data.heroTeam = { ...this.data.heroTeam, level };
-    }
+  withAnchorLevelMin(level: number): this {
+    this.data.anchorLevelMin = level;
     return this;
   }
 
-  withActors(actors: number[]): this {
-    if (this.data.heroTeam) {
-      this.data.heroTeam = { ...this.data.heroTeam, actors };
-    }
+  withAnchorLevelMax(level: number): this {
+    this.data.anchorLevelMax = level;
     return this;
   }
 
-  withTroopId(troopId: number): this {
-    if (this.data.enemyTeam) {
-      this.data.enemyTeam = { ...this.data.enemyTeam, troopId };
-    }
+  withTargetTtkTurns(turns: number): this {
+    this.data.targetTtkTurns = turns;
     return this;
   }
 
-  withExpectedTTK(min: number, max: number): this {
-    this.data.expectedTTK = { min, max };
+  withTargetTtkActions(actions: number): this {
+    this.data.targetTtkActions = actions;
+    return this;
+  }
+
+  withTolerancePercent(percent: number): this {
+    this.data.tolerancePercent = percent;
+    return this;
+  }
+
+  withTroopIds(troopIds: number[]): this {
+    this.data.troopIds = troopIds;
+    return this;
+  }
+
+  withParty(members: UIPartyMemberConfig[]): this {
+    this.data.party = { members };
     return this;
   }
 
   withInvalidId(): this {
-    return this.withId('invalid-format');
+    return this.withId('');
   }
 
-  withEmptyActors(): this {
-    if (this.data.heroTeam) {
-      this.data.heroTeam = { ...this.data.heroTeam, actors: [] };
-    }
+  withEmptyName(): this {
+    return this.withName('');
+  }
+
+  withEmptyTroopIds(): this {
+    return this.withTroopIds([]);
+  }
+
+  withEmptyParty(): this {
+    return this.withParty([]);
+  }
+
+  withInvalidAnchorLevelRange(): this {
+    this.data.anchorLevelMin = 10;
+    this.data.anchorLevelMax = 5;
+    return this;
+  }
+
+  withNegativeTolerance(): this {
+    this.data.tolerancePercent = -1;
+    return this;
+  }
+
+  withToleranceOver100(): this {
+    this.data.tolerancePercent = 150;
     return this;
   }
 
@@ -145,6 +177,11 @@ export class UIProjectConfigBuilder {
     } else {
       this.data.metadata = { projectName: name };
     }
+    return this;
+  }
+
+  withGlobalSettings(globalSettings: { seed: number; maxBattleTurns?: number }): this {
+    this.data.globalSettings = globalSettings;
     return this;
   }
 

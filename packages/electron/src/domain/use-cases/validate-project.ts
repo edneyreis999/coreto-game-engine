@@ -6,6 +6,7 @@
  */
 
 import type { IFileSystem, IDataLoader, ILogger } from '@coreto/core';
+import type { ProjectInfo } from '../entities/project.js';
 import * as path from 'path';
 
 /**
@@ -22,18 +23,6 @@ export interface ValidateProjectOutput {
   isValid: boolean;
   errors: string[];
   warnings: string[];
-}
-
-/**
- * Output from project info use case
- */
-export interface ProjectInfo {
-  path: string;
-  name: string;
-  isValid: boolean;
-  troopsCount: number;
-  classesCount: number;
-  enemiesCount: number;
 }
 
 /**

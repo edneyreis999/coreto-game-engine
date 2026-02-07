@@ -3,13 +3,13 @@
  *
  * Tests for project configuration Zod schemas.
  *
- * @see packages/electron/src/domain/schemas/project-config.schema.ts
+ * @see packages/electron/src/domain/schemas/ui-config.schema.ts
  */
 
 import {
   ProjectConfigSchema,
   TrechoConfigSchema,
-} from '@/domain/schemas/project-config.schema';
+} from '@/domain/schemas';
 import { UITrechoConfigBuilder, UIProjectConfigBuilder } from '../../../helpers/builders';
 
 describe('ProjectConfigSchema', () => {
@@ -68,9 +68,9 @@ describe('ProjectConfigSchema', () => {
       expect(result.success).toBe(false);
     });
 
-    it('should reject trecho with empty description', () => {
+    it('should reject trecho with empty name', () => {
       const trecho = UITrechoConfigBuilder.create()
-        .withDescription('')
+        .withName('')
         .build();
       const result = ProjectConfigSchema.safeParse({
         version: '1.0',
@@ -79,22 +79,9 @@ describe('ProjectConfigSchema', () => {
       expect(result.success).toBe(false);
     });
 
-    it('should reject trecho with invalid level range (min > max)', () => {
+    it('should reject trecho with invalid anchor level range (min > max)', () => {
       const trecho = UITrechoConfigBuilder.create()
-        .withHeroLevel(50)
-        .build();
-      const result = ProjectConfigSchema.safeParse({
-        version: '1.0',
-        trechos: [trecho],
-      });
-      // Note: The schema doesn't validate the relationship between min/max
-      // This test documents current behavior
-      expect(result.success).toBe(true);
-    });
-
-    it('should reject trecho with empty actors array', () => {
-      const trecho = UITrechoConfigBuilder.create()
-        .withActors([])
+        .withInvalidAnchorLevelRange()
         .build();
       const result = ProjectConfigSchema.safeParse({
         version: '1.0',
@@ -103,9 +90,42 @@ describe('ProjectConfigSchema', () => {
       expect(result.success).toBe(false);
     });
 
-    it('should reject trecho with non-positive troopId', () => {
+    it('should reject trecho with empty troopIds array', () => {
       const trecho = UITrechoConfigBuilder.create()
-        .withTroopId(0)
+        .withEmptyTroopIds()
+        .build();
+      const result = ProjectConfigSchema.safeParse({
+        version: '1.0',
+        trechos: [trecho],
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject trecho with empty party array', () => {
+      const trecho = UITrechoConfigBuilder.create()
+        .withEmptyParty()
+        .build();
+      const result = ProjectConfigSchema.safeParse({
+        version: '1.0',
+        trechos: [trecho],
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject trecho with negative tolerance', () => {
+      const trecho = UITrechoConfigBuilder.create()
+        .withNegativeTolerance()
+        .build();
+      const result = ProjectConfigSchema.safeParse({
+        version: '1.0',
+        trechos: [trecho],
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject trecho with tolerance over 100', () => {
+      const trecho = UITrechoConfigBuilder.create()
+        .withToleranceOver100()
         .build();
       const result = ProjectConfigSchema.safeParse({
         version: '1.0',
@@ -132,40 +152,44 @@ describe('TrechoConfigSchema', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should accept valid level 1', () => {
+    it('should accept valid anchorLevelMin 1', () => {
       const trecho = UITrechoConfigBuilder.create()
-        .withHeroLevel(1)
+        .withAnchorLevelMin(1)
+        .withAnchorLevelMax(5)
         .build();
       const result = TrechoConfigSchema.safeParse(trecho);
       expect(result.success).toBe(true);
     });
 
-    it('should accept valid level 99', () => {
+    it('should accept valid anchorLevelMax 99', () => {
       const trecho = UITrechoConfigBuilder.create()
-        .withHeroLevel(99)
+        .withAnchorLevelMin(5)
+        .withAnchorLevelMax(99)
         .build();
       const result = TrechoConfigSchema.safeParse(trecho);
       expect(result.success).toBe(true);
     });
 
-    it('should accept trecho without expectedTTK', () => {
-      const trecho = UITrechoConfigBuilder.create().build();
-      delete (trecho as any).expectedTTK;
-      const result = TrechoConfigSchema.safeParse(trecho);
-      expect(result.success).toBe(true);
-    });
-
-    it('should accept valid expectedTTK', () => {
+    it('should accept anchorLevelMin equals anchorLevelMax', () => {
       const trecho = UITrechoConfigBuilder.create()
-        .withExpectedTTK(5, 10)
+        .withAnchorLevelMin(10)
+        .withAnchorLevelMax(10)
         .build();
       const result = TrechoConfigSchema.safeParse(trecho);
       expect(result.success).toBe(true);
     });
 
-    it('should accept expectedTTK with zero min', () => {
+    it('should accept valid tolerancePercent 0', () => {
       const trecho = UITrechoConfigBuilder.create()
-        .withExpectedTTK(0, 10)
+        .withTolerancePercent(0)
+        .build();
+      const result = TrechoConfigSchema.safeParse(trecho);
+      expect(result.success).toBe(true);
+    });
+
+    it('should accept valid tolerancePercent 100', () => {
+      const trecho = UITrechoConfigBuilder.create()
+        .withTolerancePercent(100)
         .build();
       const result = TrechoConfigSchema.safeParse(trecho);
       expect(result.success).toBe(true);
@@ -179,57 +203,137 @@ describe('TrechoConfigSchema', () => {
       expect(result.success).toBe(false);
     });
 
-    it('should reject empty description', () => {
+    it('should reject empty name', () => {
       const trecho = UITrechoConfigBuilder.create()
-        .withDescription('')
+        .withName('')
         .build();
       const result = TrechoConfigSchema.safeParse(trecho);
       expect(result.success).toBe(false);
     });
 
-    it('should reject level below 1', () => {
+    it('should reject anchorLevelMin below 1', () => {
       const trecho = UITrechoConfigBuilder.create()
-        .withHeroLevel(0)
+        .withAnchorLevelMin(0)
         .build();
       const result = TrechoConfigSchema.safeParse(trecho);
       expect(result.success).toBe(false);
     });
 
-    it('should reject level above 99', () => {
+    it('should reject anchorLevelMin above 99', () => {
       const trecho = UITrechoConfigBuilder.create()
-        .withHeroLevel(100)
+        .withAnchorLevelMin(100)
         .build();
       const result = TrechoConfigSchema.safeParse(trecho);
       expect(result.success).toBe(false);
     });
 
-    it('should reject empty actors array', () => {
+    it('should reject anchorLevelMax below 1', () => {
       const trecho = UITrechoConfigBuilder.create()
-        .withActors([])
+        .withAnchorLevelMin(5)
+        .withAnchorLevelMax(0)
         .build();
       const result = TrechoConfigSchema.safeParse(trecho);
       expect(result.success).toBe(false);
     });
 
-    it('should reject non-positive troopId', () => {
+    it('should reject anchorLevelMax above 99', () => {
       const trecho = UITrechoConfigBuilder.create()
-        .withTroopId(0)
+        .withAnchorLevelMin(5)
+        .withAnchorLevelMax(100)
         .build();
       const result = TrechoConfigSchema.safeParse(trecho);
       expect(result.success).toBe(false);
     });
 
-    it('should reject negative expectedTTK min', () => {
+    it('should reject invalid anchor level range (min > max)', () => {
       const trecho = UITrechoConfigBuilder.create()
-        .withExpectedTTK(-1, 10)
+        .withInvalidAnchorLevelRange()
         .build();
       const result = TrechoConfigSchema.safeParse(trecho);
       expect(result.success).toBe(false);
     });
 
-    it('should reject negative expectedTTK max', () => {
+    it('should reject empty troopIds array', () => {
       const trecho = UITrechoConfigBuilder.create()
-        .withExpectedTTK(0, -1)
+        .withEmptyTroopIds()
+        .build();
+      const result = TrechoConfigSchema.safeParse(trecho);
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject empty party array', () => {
+      const trecho = UITrechoConfigBuilder.create()
+        .withEmptyParty()
+        .build();
+      const result = TrechoConfigSchema.safeParse(trecho);
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject party with more than 4 members', () => {
+      const trecho = UITrechoConfigBuilder.create()
+        .withParty([
+          { classId: 1, level: 10 },
+          { classId: 2, level: 10 },
+          { classId: 3, level: 10 },
+          { classId: 4, level: 10 },
+          { classId: 5, level: 10 }, // 5th member - too many!
+        ])
+        .build();
+      const result = TrechoConfigSchema.safeParse(trecho);
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject negative tolerancePercent', () => {
+      const trecho = UITrechoConfigBuilder.create()
+        .withNegativeTolerance()
+        .build();
+      const result = TrechoConfigSchema.safeParse(trecho);
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject tolerancePercent over 100', () => {
+      const trecho = UITrechoConfigBuilder.create()
+        .withToleranceOver100()
+        .build();
+      const result = TrechoConfigSchema.safeParse(trecho);
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject non-positive targetTtkTurns', () => {
+      const trecho = UITrechoConfigBuilder.create()
+        .withTargetTtkTurns(0)
+        .build();
+      const result = TrechoConfigSchema.safeParse(trecho);
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject non-positive targetTtkActions', () => {
+      const trecho = UITrechoConfigBuilder.create()
+        .withTargetTtkActions(0)
+        .build();
+      const result = TrechoConfigSchema.safeParse(trecho);
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject party member with level below 1', () => {
+      const trecho = UITrechoConfigBuilder.create()
+        .withParty([{ classId: 1, level: 0 }])
+        .build();
+      const result = TrechoConfigSchema.safeParse(trecho);
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject party member with level above 99', () => {
+      const trecho = UITrechoConfigBuilder.create()
+        .withParty([{ classId: 1, level: 100 }])
+        .build();
+      const result = TrechoConfigSchema.safeParse(trecho);
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject party member with non-positive classId', () => {
+      const trecho = UITrechoConfigBuilder.create()
+        .withParty([{ classId: 0, level: 10 }])
         .build();
       const result = TrechoConfigSchema.safeParse(trecho);
       expect(result.success).toBe(false);

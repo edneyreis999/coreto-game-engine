@@ -5,42 +5,7 @@
  * Implements Clean Architecture's Dependency Inversion Principle.
  */
 
-/**
- * Troop data from RPG Maker MZ
- */
-export interface TroopData {
-  id: number;
-  name: string;
-  members: Array<{
-    enemyId: number;
-    x: number;
-    y: number;
-    hidden: boolean;
-  }>;
-}
-
-/**
- * Class data from RPG Maker MZ
- */
-export interface ClassData {
-  id: number;
-  name: string;
-  expTable: number[];
-}
-
-/**
- * Enemy data from RPG Maker MZ
- */
-export interface EnemyData {
-  id: number;
-  name: string;
-  params: number[];
-  dropItems: Array<{
-    kind: number;
-    dataId: number;
-    denominator: number;
-  }>;
-}
+import type { TroopData, ClassData, EnemyData } from '../entities/game-data.js';
 
 /**
  * Port interface for loading game data from RPG Maker MZ projects.

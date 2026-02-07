@@ -9,7 +9,7 @@
  * @module domain/services
  */
 
-import { ProjectConfigSchema, type UIProjectConfig } from '../schemas/project-config.schema.js';
+import { UIProjectConfigSchema as ProjectConfigSchema, type UIProjectConfig } from '../schemas/index.js';
 import { normalizeSchema } from './config-migrator.js';
 
 /**

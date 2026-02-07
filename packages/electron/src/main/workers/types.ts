@@ -4,19 +4,19 @@
  * Type-safe message definitions for UtilityProcess communication
  * between main process and simulation worker.
  *
- * This module re-exports domain contracts and defines infrastructure-specific
+ * This module re-exports protocol types and defines infrastructure-specific
  * message types for IPC communication.
  *
  * @see planos/005-run-ttk-electron/TECHSPEC-round2.md Section 5
  */
 
-// Re-export worker domain types (avoid re-export chains)
+// Re-export worker protocol types from protocol-types.ts
 export type {
   ProgressStage,
   ProgressPayload,
   ErrorPayload,
   SimulationResultPayload,
-} from '@coreto/electron/domain/types';
+} from './protocol-types.js';
 
 // =============================================================================
 // Messages: Main → UtilityProcess
@@ -53,12 +53,12 @@ export type MainToWorkerMessage = { type: 'start'; payload: SimulationParams } |
  * Discriminated union for messages from worker to main process.
  * Type narrowing via 'type' field enables exhaustiveness checks.
  *
- * Uses domain types for payload contracts.
+ * Uses protocol types for payload contracts.
  */
 export type WorkerToMainMessage =
-  | { type: 'progress'; payload: import('@coreto/electron/domain/types').ProgressPayload }
-  | { type: 'complete'; payload: import('@coreto/electron/domain/types').SimulationResultPayload }
-  | { type: 'error'; payload: import('@coreto/electron/domain/types').ErrorPayload };
+  | { type: 'progress'; payload: ProgressPayload }
+  | { type: 'complete'; payload: SimulationResultPayload }
+  | { type: 'error'; payload: ErrorPayload };
 
 // =============================================================================
 // Helper Types

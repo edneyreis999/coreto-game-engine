@@ -14,7 +14,7 @@
  * @see packages/electron/src/domain/schemas/project-config.schema.ts
  */
 
-import type { UIProjectConfig } from '../schemas/project-config.schema.js';
+import type { UIProjectConfig } from '../schemas/index.js';
 import type { IConfigStorage } from '../ports/IConfigStorage.js';
 
 /**
