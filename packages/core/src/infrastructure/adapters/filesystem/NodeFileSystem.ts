@@ -7,8 +7,8 @@
 
 import { injectable } from 'tsyringe';
 import * as fs from 'fs';
-import type { IFileSystem } from '../../../core/ports/index.js';
-import { ConfigError } from '../../../core/errors/ConfigError.js';
+import type { IFileSystem } from '@coreto/core';
+import { ConfigError } from '@coreto/core';
 import { PathSanitizer } from '../../security/index.js';
 
 /**

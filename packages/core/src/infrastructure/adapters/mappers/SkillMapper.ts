@@ -14,8 +14,8 @@
  * ```
  */
 
-import { Skill } from '../../../core/domain/Skill.js';
-import type { DamageType, HitType, SkillScope } from '../../../core/domain/Skill.js';
+import { Skill } from '@coreto/core';
+import type { DamageType, HitType, SkillScope } from '@coreto/core';
 import type { SkillData } from '../../../types/rmmz-data.js';
 
 export class SkillMapper {

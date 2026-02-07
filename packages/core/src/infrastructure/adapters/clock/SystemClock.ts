@@ -11,7 +11,7 @@
  * ```
  */
 
-import type { IClock } from '../../../core/ports/IClock.js';
+import type { IClock } from '@coreto/core';
 
 export class SystemClock implements IClock {
   now(): number {

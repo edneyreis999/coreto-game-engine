@@ -13,8 +13,8 @@
 
 import { injectable, inject } from 'tsyringe';
 import { IFileSystemToken } from '../../di/tokens.js';
-import type { IFileSystem } from '../../../core/ports/index.js';
-import { DataLoadError } from '../../../core/errors/DataLoadError.js';
+import type { IFileSystem } from '@coreto/core';
+import { DataLoadError } from '@coreto/core';
 
 /**
  * RmmzProjectValidator validates RPG Maker MZ project structure.

@@ -18,13 +18,13 @@
  * ```
  */
 
-import type { RmmzDatabase, Warning } from '../../../core/ports/index.js';
+import type { RmmzDatabase, Warning } from '@coreto/core';
 import type {
   DomainEnemyData,
   DomainClassData,
   DomainTroopData,
   DomainSystemData,
-} from '../../../core/domain/data/index.js';
+} from '@coreto/core';
 
 /**
  * Type guard for validating an object has a numeric id property.

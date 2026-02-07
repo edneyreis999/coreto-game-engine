@@ -1,7 +1,7 @@
 import { injectable } from 'tsyringe';
-import { TtkMetrics } from '../../core/domain/TtkMetrics.js';
-import { TtkTarget } from '../../core/domain/TtkTarget.js';
-import { ValidationError } from '../../core/errors/ValidationError.js';
+import { TtkMetrics } from '@coreto/core';
+import { TtkTarget } from '@coreto/core';
+import { ValidationError } from '@coreto/core';
 
 /**
  * Type assertion for accessing global RMMZ objects

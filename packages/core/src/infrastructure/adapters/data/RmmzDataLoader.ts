@@ -15,7 +15,7 @@
 import { injectable, inject } from 'tsyringe';
 import * as path from 'path';
 import { IFileSystemToken } from '../../di/tokens.js';
-import type { IFileSystem, Warning, IDataLoader, RmmzDatabase } from '../../../core/ports/index.js';
+import type { IFileSystem, Warning, IDataLoader, RmmzDatabase } from '@coreto/core';
 import type {
   ClassData as InfraClassData,
   EnemyData as InfraEnemyData,
@@ -24,7 +24,7 @@ import type {
   SystemData as InfraSystemData,
   ItemData as InfraItemData,
 } from '../../../types/rmmz-data.js';
-import { DataLoadError } from '../../../core/errors/DataLoadError.js';
+import { DataLoadError } from '@coreto/core';
 import { RmmzProjectValidator } from './RmmzProjectValidator.js';
 import { IntegrityValidator } from './IntegrityValidator.js';
 import { DataMapper } from '../mappers/DataMapper.js';

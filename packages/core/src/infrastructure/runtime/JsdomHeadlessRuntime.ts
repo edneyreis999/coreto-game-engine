@@ -12,11 +12,11 @@
  */
 
 import { injectable, inject } from 'tsyringe';
-import type { ILogger } from '../../core/ports/ILogger.js';
-import type { IHeadlessRuntime } from '../../core/ports/IHeadlessRuntime.js';
+import type { ILogger } from '@coreto/core';
+import type { IHeadlessRuntime } from '@coreto/core';
 import { ILoggerToken } from '../di/tokens.js';
 import { HeadlessRuntimeBootstrapper } from './HeadlessRuntimeBootstrapper.js';
-import { RuntimeError } from '../../core/errors/RuntimeError.js';
+import { RuntimeError } from '@coreto/core';
 
 import type { JSDOM } from 'jsdom';
 

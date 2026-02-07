@@ -1,11 +1,11 @@
 import { inject, injectable } from 'tsyringe';
-import type { IBattleSimulator, BattleSetup } from '../../core/ports/IBattleSimulator.js';
-import type { RmmzDatabase } from '../../core/ports/IDataLoader.js';
-import type { ILogger } from '../../core/ports/ILogger.js';
-import { BattleResult } from '../../core/domain/BattleResult.js';
-import { TtkMetrics } from '../../core/domain/TtkMetrics.js';
-import { BattleTimeoutError } from '../../core/errors/BattleTimeoutError.js';
-import { ValidationError } from '../../core/errors/ValidationError.js';
+import type { IBattleSimulator, BattleSetup } from '@coreto/core';
+import type { RmmzDatabase } from '@coreto/core';
+import type { ILogger } from '@coreto/core';
+import { BattleResult } from '@coreto/core';
+import { TtkMetrics } from '@coreto/core';
+import { BattleTimeoutError } from '@coreto/core';
+import { ValidationError } from '@coreto/core';
 import { SyncWarpLoop } from '../runtime/simulation/SyncWarpLoop.js';
 import { HeadlessRuntimeBootstrapper } from '../runtime/HeadlessRuntimeBootstrapper.js';
 import { ILoggerToken } from '../di/tokens.js';

@@ -11,17 +11,17 @@
 import { injectable, inject } from 'tsyringe';
 import { z } from 'zod';
 
-import type { IConfigLoader, ProjectConfig, IFileSystem } from '../../core/ports/index.js';
-import type { Trecho } from '../../core/domain/Trecho.js';
-import { Trecho as TrechoClass } from '../../core/domain/Trecho.js';
-import { PartyConfig } from '../../core/domain/PartyConfig.js';
+import type { IConfigLoader, ProjectConfig, IFileSystem } from '@coreto/core';
+import type { Trecho } from '@coreto/core';
+import { Trecho as TrechoClass } from '@coreto/core';
+import { PartyConfig } from '@coreto/core';
 import { IFileSystemToken } from '../di/tokens.js';
 import {
   ConfigError,
   ConfigFileNotFoundError,
   ConfigParseError,
-} from '../../core/errors/ConfigError.js';
-import { ValidationError } from '../../core/errors/ValidationError.js';
+} from '@coreto/core';
+import { ValidationError } from '@coreto/core';
 import { TrechoSchema } from './schemas.js';
 
 /**

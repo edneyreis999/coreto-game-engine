@@ -16,8 +16,8 @@
  * ```
  */
 
-import { Enemy } from '../../../core/domain/Enemy.js';
-import type { EnemyActionData, DropItemData } from '../../../core/domain/Enemy.js';
+import { Enemy } from '@coreto/core';
+import type { EnemyActionData, DropItemData } from '@coreto/core';
 import type { Action, DropItem as RmmzDropItem, EnemyData } from '../../../types/rmmz-data.js';
 
 /**

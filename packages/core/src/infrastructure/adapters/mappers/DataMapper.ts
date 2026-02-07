@@ -22,7 +22,7 @@ import type {
   DomainTroopData,
   DomainItemData,
   DomainSystemData,
-} from '../../../core/domain/data/index.js';
+} from '@coreto/core';
 import type * as Infra from '../../../types/rmmz-data.js';
 
 /**

@@ -16,7 +16,7 @@
 
 import * as path from 'path';
 import * as fs from 'fs';
-import { ValidationError } from '../../core/errors/index.js';
+import { ValidationError } from '@coreto/core';
 
 /**
  * PathSanitizer utility class.

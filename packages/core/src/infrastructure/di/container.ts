@@ -17,7 +17,7 @@ import type {
   IBattleSimulator,
   IReporter,
   IHeadlessRuntime,
-} from '../../core/ports/index.js';
+} from '@coreto/core';
 
 import {
   ILoggerToken,
@@ -38,9 +38,9 @@ import { HeadlessBattleSimulator } from '../simulation/BattleSimulator.js';
 import { JsonReporter } from '../adapters/reporter/JsonReporter.js';
 import { JsdomHeadlessRuntime } from '../runtime/JsdomHeadlessRuntime.js';
 import { SystemClock } from '../adapters/clock/SystemClock.js';
-import { ExecuteBattleUseCase } from '../../core/use-cases/ExecuteBattleUseCase.js';
-import { GenerateReportUseCase } from '../../core/use-cases/GenerateReportUseCase.js';
-import { ValidateTrechoUseCase } from '../../core/use-cases/ValidateTrechoUseCase.js';
+import { ExecuteBattleUseCase } from '@coreto/core';
+import { GenerateReportUseCase } from '@coreto/core';
+import { ValidateTrechoUseCase } from '@coreto/core';
 
 // Re-export all tokens for external use
 export {

@@ -6,7 +6,7 @@
  */
 
 import { injectable } from 'tsyringe';
-import type { ILogger } from '../../../core/ports/index.js';
+import type { ILogger } from '@coreto/core';
 
 /**
  * Console-based logger implementation.

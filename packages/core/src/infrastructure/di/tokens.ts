@@ -14,7 +14,7 @@ import type {
   ILogger,
   IFileSystem,
   IClock,
-} from '../../core/ports/index.js';
+} from '@coreto/core';
 
 /**
  * Injection token for IConfigLoader.
