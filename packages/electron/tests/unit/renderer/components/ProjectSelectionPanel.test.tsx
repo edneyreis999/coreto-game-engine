@@ -14,31 +14,6 @@ import { useProject } from '@/hooks/useProject'
 const mockIpcRenderer = global.window.electron.ipcRenderer as jest.Mocked<typeof global.window.electron.ipcRenderer>
 const mockCoreto = global.window.coreto as jest.Mocked<typeof global.window.coreto>
 
-// Mock lucide-react icons
-jest.mock('lucide-react', () => ({
-  FolderOpen: ({ className }: { className: string }) => (
-    <svg data-testid="folder-open" className={className} />
-  ),
-  CheckCircle2: ({ className }: { className: string }) => (
-    <svg data-testid="check-circle" className={className} />
-  ),
-  XCircle: ({ className }: { className: string }) => (
-    <svg data-testid="x-circle" className={className} />
-  ),
-  AlertCircle: ({ className }: { className: string }) => (
-    <svg data-testid="alert-circle" className={className} />
-  ),
-  Clock: ({ className }: { className: string }) => (
-    <svg data-testid="clock" className={className} />
-  ),
-  Loader2: ({ className }: { className: string }) => (
-    <svg data-testid="loader" className={className} />
-  ),
-  Trash2: ({ className }: { className: string }) => (
-    <svg data-testid="trash" className={className} />
-  ),
-}))
-
 // Mock useRecentProjects hook
 jest.mock('@/hooks/useRecentProjects', () => ({
   useRecentProjects: jest.fn(() => ({
@@ -80,7 +55,8 @@ describe('ProjectSelectionPanel', () => {
     },
   ]
 
-  beforeEach(() => {
+  // Helper: Setup default mocks for rendering tests
+  function setupDefaultMocks() {
     jest.clearAllMocks()
 
     // Setup default mock responses - using new segregated API
@@ -138,6 +114,37 @@ describe('ProjectSelectionPanel', () => {
       validateProject: jest.fn().mockResolvedValue(undefined),
       reset: jest.fn(),
     })
+  }
+
+  // Helper: Setup mocks for file picker tests
+  function setupFilePickerMocks() {
+    jest.clearAllMocks()
+
+    mockIpcRenderer.invoke.mockResolvedValue({
+      canceled: false,
+      filePaths: ['/path/to/project'],
+    })
+
+    ;(useRecentProjects as jest.Mock).mockReturnValue({
+      recentProjects: [],
+      isLoading: false,
+      refresh: jest.fn(),
+      addRecent: jest.fn(),
+    })
+
+    ;(useProject as jest.Mock).mockReturnValue({
+      projectInfo: null,
+      validation: { status: 'idle', errors: [], warnings: [] },
+      isLoading: false,
+      error: null,
+      openProject: jest.fn().mockResolvedValue(undefined),
+      validateProject: jest.fn().mockResolvedValue(undefined),
+      reset: jest.fn(),
+    })
+  }
+
+  beforeEach(() => {
+    setupDefaultMocks()
   })
 
   describe('rendering', () => {

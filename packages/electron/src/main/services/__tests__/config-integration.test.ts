@@ -11,7 +11,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { ConfigService } from '../config-service.js';
-import type { UIProjectConfig } from '../schemas.js';
+import { UIProjectConfigBuilder } from '../../../../tests/helpers/builders/ui-project-config.builder.js';
 
 describe('ConfigService Integration', () => {
   let service: ConfigService;
@@ -41,9 +41,8 @@ describe('ConfigService Integration', () => {
   });
 
   describe('CLI-GUI Compatibility', () => {
-    const cliCompatibleConfig: UIProjectConfig = {
-      version: '1.0',
-      trechos: [
+    const cliCompatibleConfig = UIProjectConfigBuilder.create()
+      .withTrechos([
         {
           id: 'trecho-1',
           name: 'Test Battle',
@@ -62,12 +61,12 @@ describe('ConfigService Integration', () => {
             ],
           },
         },
-      ],
-      metadata: {
+      ])
+      .withMetadata({
         projectName: 'CLI Test Project',
         lastModified: Date.now(),
-      },
-    };
+      })
+      .build();
 
     it('should save config that CLI can load', async () => {
       // Save config via GUI (ConfigService)
@@ -92,9 +91,8 @@ describe('ConfigService Integration', () => {
 
     it('should load config saved by CLI', async () => {
       // Simulate CLI creating config file
-      const cliConfig = {
-        version: '1.0',
-        trechos: [
+      const cliConfig = UIProjectConfigBuilder.create()
+        .withTrechos([
           {
             id: 'cli-trecho-1',
             name: 'CLI Created Trecho',
@@ -110,12 +108,12 @@ describe('ConfigService Integration', () => {
               ],
             },
           },
-        ],
-        metadata: {
+        ])
+        .withMetadata({
           projectName: 'CLI Project',
           lastModified: Date.now(),
-        },
-      };
+        })
+        .build();
 
       await fs.writeFile(configPath, JSON.stringify(cliConfig, null, 2), 'utf-8');
 
@@ -160,10 +158,7 @@ describe('ConfigService Integration', () => {
     });
 
     it('should preserve version field when saving', async () => {
-      const config: UIProjectConfig = {
-        version: '1.0',
-        trechos: [],
-      };
+      const config = UIProjectConfigBuilder.create().withEmptyTrechos().build();
 
       await service.saveConfig(testProjectPath, config);
 
@@ -176,9 +171,8 @@ describe('ConfigService Integration', () => {
 
   describe('Round-Trip Tests', () => {
     it('should preserve data through load-save cycle', async () => {
-      const originalConfig: UIProjectConfig = {
-        version: '1.0',
-        trechos: [
+      const originalConfig = UIProjectConfigBuilder.create()
+        .withTrechos([
           {
             id: 'round-trip-1',
             name: 'Round Trip Test',
@@ -195,12 +189,12 @@ describe('ConfigService Integration', () => {
               ],
             },
           },
-        ],
-        metadata: {
+        ])
+        .withMetadata({
           projectName: 'Round Trip Project',
           lastModified: 1234567890,
-        },
-      };
+        })
+        .build();
 
       // Save original
       await service.saveConfig(testProjectPath, originalConfig);

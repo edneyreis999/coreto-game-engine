@@ -63,19 +63,21 @@ describe('useConfigurationManager', () => {
   });
 
   describe('saveTrecho - create mode', () => {
-    it('should add a new trecho when editingIndex is null', () => {
+    it('should add a new trecho to the list', () => {
       const { result } = renderHook(() => useConfigurationManager());
 
       act(() => {
         result.current.saveTrecho(mockTrecho1);
       });
 
+      // User-visible outcome: trechos list now contains the new item
       expect(result.current.trechos).toHaveLength(1);
       expect(result.current.trechos[0]).toEqual(mockTrecho1);
+      // After saving, editing mode should be cleared (ready for next action)
       expect(result.current.editingIndex).toBeNull();
     });
 
-    it('should add multiple trechos', () => {
+    it('should add multiple trechos in sequence', () => {
       const { result } = renderHook(() => useConfigurationManager());
 
       act(() => {
@@ -86,6 +88,7 @@ describe('useConfigurationManager', () => {
         result.current.saveTrecho(mockTrecho2);
       });
 
+      // User-visible outcome: both trechos appear in the list in order
       expect(result.current.trechos).toHaveLength(2);
       expect(result.current.trechos[0]).toEqual(mockTrecho1);
       expect(result.current.trechos[1]).toEqual(mockTrecho2);
@@ -93,19 +96,17 @@ describe('useConfigurationManager', () => {
   });
 
   describe('saveTrecho - edit mode', () => {
-    it('should update an existing trecho when editingIndex is set', () => {
+    it('should update existing trecho in place when editing', () => {
       const { result } = renderHook(() =>
         useConfigurationManager([mockTrecho1, mockTrecho2])
       );
 
-      // Start editing index 0
+      // Start editing the first trecho
       act(() => {
         result.current.startEdit(0);
       });
 
-      expect(result.current.editingIndex).toBe(0);
-
-      // Update the trecho
+      // User initiates an update
       const updatedTrecho: TrechoFormData = {
         ...mockTrecho1,
         name: 'Updated Name',
@@ -115,13 +116,16 @@ describe('useConfigurationManager', () => {
         result.current.saveTrecho(updatedTrecho);
       });
 
+      // User-visible outcome: first trecho is updated, second is unchanged
       expect(result.current.trechos).toHaveLength(2);
       expect(result.current.trechos[0].name).toBe('Updated Name');
+      expect(result.current.trechos[0].id).toBe(mockTrecho1.id); // ID preserved
       expect(result.current.trechos[1]).toEqual(mockTrecho2);
+      // Editing mode is cleared after save
       expect(result.current.editingIndex).toBeNull();
     });
 
-    it('should not affect other trechos when updating', () => {
+    it('should not affect other trechos when updating one', () => {
       const { result } = renderHook(() =>
         useConfigurationManager([mockTrecho1, mockTrecho2])
       );
@@ -139,8 +143,10 @@ describe('useConfigurationManager', () => {
         result.current.saveTrecho(updatedTrecho);
       });
 
+      // User-visible outcome: only the edited trecho changes
       expect(result.current.trechos[0]).toEqual(mockTrecho1);
       expect(result.current.trechos[1].description).toBe('Updated Description');
+      expect(result.current.trechos[1].name).toBe(mockTrecho2.name); // Other fields unchanged
     });
   });
 

@@ -11,25 +11,7 @@
 import path from 'node:path';
 import { Volume, createFsFromVolume } from 'memfs';
 import { jest } from '@jest/globals';
-import type { UIProjectConfig } from '../schemas.js';
-
-// ============================================================================
-// Test Helpers
-// ============================================================================
-
-/**
- * Creates a minimal valid config for testing.
- * Accepts partial overrides to customize specific fields.
- */
-function createValidConfig(overrides?: Partial<UIProjectConfig>): UIProjectConfig {
-  const defaultConfig: UIProjectConfig = {
-    version: '1.0',
-    trechos: [],
-    metadata: { projectName: 'Test' },
-  };
-
-  return { ...defaultConfig, ...overrides };
-}
+import { UIProjectConfigBuilder } from '../../../../tests/helpers/builders/ui-project-config.builder.js';
 
 // ============================================================================
 // Test Suite Setup
@@ -85,8 +67,8 @@ describe('ConfigService', () => {
     it('should use correct path matching CLI expectation', async () => {
       const service = new ConfigService();
 
-      // Create config file in memory
-      createMockConfigFile(createValidConfig());
+      // Create config file in memory using builder
+      createMockConfigFile(UIProjectConfigBuilder.create().withEmptyTrechos().build());
 
       // Test through public interface - configExists uses getConfigPath internally
       await service.configExists(mockProjectPath);
@@ -97,7 +79,7 @@ describe('ConfigService', () => {
 
     it('should load config from temp directory', async () => {
       const service = new ConfigService();
-      const config = createValidConfig();
+      const config = UIProjectConfigBuilder.create().withEmptyTrechos().build();
       createMockConfigFile(config);
 
       const loadedConfig = await service.loadConfig(mockProjectPath);
@@ -192,8 +174,8 @@ describe('ConfigService', () => {
 
       beforeEach(async () => {
         service = new ConfigService();
-        validConfig = createValidConfig({
-          trechos: [
+        validConfig = UIProjectConfigBuilder.create()
+          .withTrechos([
             {
               id: 'trecho-1',
               name: 'Test Trecho',
@@ -210,12 +192,12 @@ describe('ConfigService', () => {
                 ],
               },
             },
-          ],
-          metadata: {
+          ])
+          .withMetadata({
             projectName: 'Test Project',
             lastModified: Date.now(),
-          },
-        });
+          })
+          .build();
 
         // Write config to in-memory filesystem
         createMockConfigFile(validConfig);
@@ -249,23 +231,29 @@ describe('ConfigService', () => {
 
     it('should throw ConfigValidationError if invalid after normalization', async () => {
       const service = new ConfigService();
-      const invalidConfig = createValidConfig({
-        trechos: [
+      // Use builder with invalid level (> 99) to test validation error
+      const invalidConfig = UIProjectConfigBuilder.create()
+        .withTrechos([
           {
             id: 'trecho-1',
-            description: 'Test',
-            heroTeam: {
-              level: 999, // invalid level (> 99)
-              actors: [],
-              weapons: {},
-              armors: {},
-            },
-            enemyTeam: {
-              troopId: 1,
+            name: 'Test Trecho',
+            anchorLevelMin: 5,
+            anchorLevelMax: 10,
+            targetTtkTurns: 15,
+            targetTtkActions: 20,
+            tolerancePercent: 15,
+            troopIds: [1, 2],
+            party: {
+              members: [
+                { classId: 1, level: 5 },
+              ],
             },
           },
-        ],
-      });
+        ])
+        .build();
+
+      // Manually inject invalid data for testing validation error
+      (invalidConfig.trechos[0] as { anchorLevelMin: number }).anchorLevelMin = 999;
 
       createMockConfigFile(invalidConfig);
 
@@ -286,7 +274,10 @@ describe('ConfigService', () => {
   describe('saveConfig', () => {
     it('should save config with formatting', async () => {
       const service = new ConfigService();
-      const validConfig = createValidConfig({ metadata: { projectName: 'Test Project' } });
+      const validConfig = UIProjectConfigBuilder.create()
+        .withEmptyTrechos()
+        .withMetadata({ projectName: 'Test Project' })
+        .build();
 
       await service.saveConfig(mockProjectPath, validConfig);
 
@@ -310,7 +301,7 @@ describe('ConfigService', () => {
     it('should update lastModified timestamp', async () => {
       const service = new ConfigService();
       const beforeTime = Date.now();
-      await service.saveConfig(mockProjectPath, createValidConfig());
+      await service.saveConfig(mockProjectPath, UIProjectConfigBuilder.create().withEmptyTrechos().build());
       const afterTime = Date.now();
 
       const savedContent = vol.readFileSync(mockConfigPath, 'utf-8') as string;
@@ -322,25 +313,31 @@ describe('ConfigService', () => {
 
     it('should throw ConfigValidationError for invalid config', async () => {
       const service = new ConfigService();
-      const invalidConfig = createValidConfig({
-        trechos: [
-          {
-            id: '', // Invalid: empty id
-            description: 'Test',
-            heroTeam: { level: 5, actors: [], weapons: {}, armors: {} },
-            enemyTeam: { troopId: 1 },
-          },
-        ],
-      }) as unknown as UIProjectConfig;
+      // Use builder then manually inject invalid data
+      const invalidConfig = UIProjectConfigBuilder.create().withEmptyTrechos().build();
+      // Manually inject invalid trecho with empty id
+      (invalidConfig as unknown as { trechos: unknown[] }).trechos = [
+        {
+          id: '', // Invalid: empty id
+          name: 'Test Trecho',
+          anchorLevelMin: 5,
+          anchorLevelMax: 10,
+          targetTtkTurns: 15,
+          targetTtkActions: 20,
+          tolerancePercent: 15,
+          troopIds: [1],
+          party: { members: [{ classId: 1, level: 5 }] },
+        },
+      ];
 
-      await expect(service.saveConfig(mockProjectPath, invalidConfig)).rejects.toThrow(
+      await expect(service.saveConfig(mockProjectPath, invalidConfig as UIProjectConfig)).rejects.toThrow(
         ConfigValidationError
       );
     });
 
     it('should preserve metadata when not provided', async () => {
       const service = new ConfigService();
-      await service.saveConfig(mockProjectPath, createValidConfig());
+      await service.saveConfig(mockProjectPath, UIProjectConfigBuilder.create().withEmptyTrechos().build());
 
       const savedContent = vol.readFileSync(mockConfigPath, 'utf-8') as string;
       const savedConfig = JSON.parse(savedContent);
@@ -353,7 +350,7 @@ describe('ConfigService', () => {
   describe('configExists', () => {
     it('should return true when config file exists', async () => {
       const service = new ConfigService();
-      createMockConfigFile(createValidConfig());
+      createMockConfigFile(UIProjectConfigBuilder.create().withEmptyTrechos().build());
 
       const exists = await service.configExists(mockProjectPath);
 
@@ -387,7 +384,7 @@ describe('ConfigService', () => {
   describe('deleteConfig', () => {
     it('should delete existing config file', async () => {
       const service = new ConfigService();
-      createMockConfigFile(createValidConfig());
+      createMockConfigFile(UIProjectConfigBuilder.create().withEmptyTrechos().build());
 
       await service.deleteConfig(mockProjectPath);
 

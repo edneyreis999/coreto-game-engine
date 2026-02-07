@@ -18,7 +18,7 @@ import { ipcMain } from 'electron';
 import Database from 'better-sqlite3';
 import { ReportStorageService } from '../../services/report-storage.js';
 import { registerHistoryHandlers } from '../history-handlers.js';
-import type { ReportData } from '../types.js';
+import { ReportDataFakeBuilder } from '../../../../tests/fakes/ReportDataFakeBuilder.js';
 
 // ============================================================================
 // Test Constants
@@ -29,57 +29,6 @@ const EXPECTED_SIM_COUNT = 2;
 const EXPECTED_ONE_SIM = 1;
 const EXPECTED_NO_SIM = 0;
 const UUID_REGEX_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-// ============================================================================
-// Test Helpers
-// ============================================================================
-
-/**
- * Creates a minimal mock ReportData for testing.
- * Only includes fields that are actually used by tests.
- * Accepts partial overrides to customize specific fields.
- */
-function createMockReportData(overrides?: Partial<ReportData>): ReportData {
-  const defaultData: ReportData = {
-    trechos: [
-      {
-        id: 'trecho-1',
-        name: 'Trecho 1',
-        passed: true,
-        battleCount: 1,
-        avgTtkTurns: 5,
-        avgTtkActions: 10,
-        p95TtkTurns: 8,
-        p95TtkActions: 15,
-        successRate: 1.0,
-        battles: [
-          {
-            troopId: 1,
-            troopName: 'Test Troop',
-            outcome: 'victory' as const,
-            ttkTurns: 5,
-            ttkActions: 10,
-            durationMs: 1000,
-            seed: 12345,
-            expGained: 100,
-          },
-        ],
-        warnings: [
-          {
-            type: 'test-warning',
-            severity: 'warning',
-            message: 'Test warning',
-            context: {},
-          },
-        ],
-      },
-    ],
-    totalBattles: 1,
-    timestamp: new Date().toISOString(),
-  };
-
-  return { ...defaultData, ...overrides };
-}
 
 /**
  * Creates an in-memory database for testing.
@@ -172,8 +121,8 @@ describe('History IPC Handlers', () => {
       const { generateSimulationId } = require('../../services/report-storage.js');
       const sim1 = generateSimulationId();
       const sim2 = generateSimulationId();
-      await service.storeSimulation(sim1, '/project/a', createMockReportData(), 'SUCCESS');
-      await service.storeSimulation(sim2, '/project/b', createMockReportData(), 'SUCCESS');
+      await service.storeSimulation(sim1, '/project/a', ReportDataFakeBuilder.anEntity().build(), 'SUCCESS');
+      await service.storeSimulation(sim2, '/project/b', ReportDataFakeBuilder.anEntity().build(), 'SUCCESS');
 
       const result = await invokeHandler('history:list', { limit: MOCK_LIMIT });
 
@@ -185,8 +134,8 @@ describe('History IPC Handlers', () => {
       const { generateSimulationId } = require('../../services/report-storage.js');
       const sim1 = generateSimulationId();
       const sim2 = generateSimulationId();
-      await service.storeSimulation(sim1, '/project/a', createMockReportData(), 'SUCCESS');
-      await service.storeSimulation(sim2, '/project/b', createMockReportData(), 'SUCCESS');
+      await service.storeSimulation(sim1, '/project/a', ReportDataFakeBuilder.anEntity().build(), 'SUCCESS');
+      await service.storeSimulation(sim2, '/project/b', ReportDataFakeBuilder.anEntity().build(), 'SUCCESS');
 
       const result = await invokeHandler('history:list', { projectPath: '/project/a' });
 
@@ -224,7 +173,7 @@ describe('History IPC Handlers', () => {
       // Use a valid UUID (generateSimulationId generates UUIDs)
       const { generateSimulationId } = require('../../services/report-storage.js');
       const simId = generateSimulationId();
-      await service.storeSimulation(simId, '/project/a', createMockReportData(), 'SUCCESS');
+      await service.storeSimulation(simId, '/project/a', ReportDataFakeBuilder.anEntity().build(), 'SUCCESS');
 
       const result = await invokeHandler('history:loadReport', { simulationId: simId });
 
@@ -244,7 +193,7 @@ describe('History IPC Handlers', () => {
     it('should delete simulation record', async () => {
       const { generateSimulationId } = require('../../services/report-storage.js');
       const simId = generateSimulationId();
-      await service.storeSimulation(simId, '/project/a', createMockReportData(), 'SUCCESS');
+      await service.storeSimulation(simId, '/project/a', ReportDataFakeBuilder.anEntity().build(), 'SUCCESS');
 
       // Verify exists
       let stmt = db.prepare('SELECT COUNT(*) as count FROM simulation_history_v2 WHERE id = ?');
