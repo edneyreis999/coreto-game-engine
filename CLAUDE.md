@@ -143,3 +143,43 @@ pnpm --filter @coreto/core build
 3. `electron.vite.config.ts` → `resolve.alias` (for BOTH main AND renderer sections)
 
 **Note:** electron-vite builds 3 separate processes. Each needs its own alias configuration.
+
+### React Hook Infinite Loop Prevention
+
+**CRITICAL:** Never add unstable functions (inline arrows, mock functions) to `useCallback`/`useEffect` deps. This causes infinite re-render loops.
+
+**Anti-pattern:**
+```typescript
+// ❌ CAUSES INFINITE LOOP
+const invoke = useCallback(async () => {
+  await someFunction();
+}, [someFunction]); // someFunction changes every render
+```
+
+**Correct pattern:**
+```typescript
+// ✅ STABLE REFERENCE
+const fnRef = useRef(someFunction);
+useEffect(() => { fnRef.current = someFunction; }, [someFunction]);
+
+const invoke = useCallback(async () => {
+  await fnRef.current(); // No re-creation
+}, []); // Empty deps
+```
+
+**Also:** Never use `jest.useFakeTimers()` with `waitFor()` — conflicts cause hangs. Remove fake timers if tests use async assertions.
+
+## Agent Army
+
+Use these specialized agents as a coordinated "army" to solve complex problems faster.
+
+### Roster
+- **bibliotecario** — Navigate docs via `index.md` and answer questions with minimal reading
+- **catalogador** — Create/refresh lightweight `index.md` files so LLMs can choose what to read
+- **fdd-interviewer** — Run structured interview and generate Feature Design Doc
+- **implementation-analyzer** — Review React+Electron code against best practices; produce quality score
+- **test-analyzer** — Evaluate tests against DDD/Clean Architecture; produce gaps + score
+- **test-orchestrator** — Detect DDD layers and coordinate test strategy
+
+### Parallel-First Default
+When a task has multiple unknowns, **run agents in parallel** to reduce iteration time.
