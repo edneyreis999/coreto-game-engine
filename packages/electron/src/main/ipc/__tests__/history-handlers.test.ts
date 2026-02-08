@@ -83,9 +83,8 @@ describe('History IPC Handlers', () => {
     handlers = new Map();
 
     // Mock ipcMain.handle to capture handlers
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (ipcMain.handle as jest.Mock).mockImplementation(
-      (channel: string, handler: (...args: any[]) => any) => {
+      (channel: string, handler: (...args: unknown[]) => unknown) => {
         handlers.set(channel, handler);
       }
     );

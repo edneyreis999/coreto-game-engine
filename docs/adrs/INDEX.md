@@ -1,11 +1,11 @@
 # ADR Index - Coreto Game Engine
 
-**Total ADRs:** 33
-**Last Updated:** 2026-02-06
+**Total ADRs:** 34
+**Last Updated:** 2026-02-07
 
 ## Overview
 
-This index organizes all 32 Architecture Decision Records (ADRs) for the Coreto Game Engine project, organized by system module.
+This index organizes all 34 Architecture Decision Records (ADRs) for the Coreto Game Engine project, organized by system module.
 
 ---
 
@@ -34,7 +34,7 @@ This index organizes all 32 Architecture Decision Records (ADRs) for the Coreto 
 | [ADR-022](DOCS/ADR-022-documentation-before-implementation-greenfield-approach.md) | Documentation-Before-Implementation Greenfield Approach | Accepted |
 | [ADR-023](DOCS/ADR-023-madr-lightweight-adr-format.md) | MADR-Inspired Lightweight ADR Format | Accepted |
 
-### FOUNDATION Module (7 ADRs)
+### FOUNDATION Module (8 ADRs)
 
 | ID | Title | Status |
 |----|-------|--------|
@@ -45,6 +45,7 @@ This index organizes all 32 Architecture Decision Records (ADRs) for the Coreto 
 | [ADR-030](FOUNDATION/ADR-030-tsx-esbuild-build-tooling.md) | tsx/esbuild Build Tooling | Accepted |
 | [ADR-031](FOUNDATION/ADR-031-jest-testing-framework.md) | Jest Testing Framework | Accepted |
 | [ADR-032](FOUNDATION/ADR-032-ports-and-adapters-layer-contracts.md) | Ports and Adapters Layer Contracts | Accepted |
+| [ADR-033](FOUNDATION/ADR-033-cli-package-removal.md) | CLI Package Removal | Accepted |
 
 ### REPORTER Module (4 ADRs)
 

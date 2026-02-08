@@ -193,9 +193,24 @@ export class FakeReportStorageService {
   // ==========================================================================
 
   /**
-   * Extracts lightweight summary from result.
+   * Lightweight summary for test assertions
    */
-  private extractSummary(result: ReportData): any {
+  private extractSummary(result: ReportData): {
+    trechos: Array<{
+      id: string;
+      description: string;
+      avgTTK: number;
+      maxTTK: number;
+      minTTK: number;
+      battleCount: number;
+      status: 'SUCCESS' | 'FAILED';
+    }>;
+    overallTTK: number;
+    totalBattles: number;
+    warningCount: number;
+    criticalWarningCount: number;
+    duration: number;
+  } {
     let totalBattles = 0;
     let totalTTK = 0;
     let warningCount = 0;

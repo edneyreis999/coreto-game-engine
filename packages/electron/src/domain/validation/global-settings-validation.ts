@@ -7,9 +7,7 @@
 
 import { z } from 'zod';
 import type { FormErrors, FormValidation } from './types';
-
-// Import form data types from domain layer
-export type { GlobalSettingsFormData } from '../types/form-types';
+import type { GlobalSettingsFormData } from '../types/form-types';
 
 // ============================================================================
 // Zod Schemas for Global Settings Validation
@@ -66,7 +64,7 @@ export function validateGlobalSettingsForm(data: unknown): FormValidation {
  *
  * @returns Default global settings form data
  */
-export function getDefaultGlobalSettingsFormData() {
+export function getDefaultGlobalSettingsFormData(): GlobalSettingsFormData {
   return {
     seed: 12345,
     maxBattleTurns: 100,

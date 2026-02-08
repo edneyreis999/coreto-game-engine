@@ -273,10 +273,9 @@ export class HeadlessBattleSimulator implements IBattleSimulator {
     }
 
     // Log available methods for debugging
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     this.logger.debug('$gameParty methods', {
       methods: Object.getOwnPropertyNames(Object.getPrototypeOf(gameParty)).filter(
-        (m: string) => typeof (gameParty as any)[m] === 'function'
+        (m: string) => typeof gameParty[m as keyof typeof gameParty] === 'function'
       ),
     });
 

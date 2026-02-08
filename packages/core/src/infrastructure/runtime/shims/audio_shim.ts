@@ -12,6 +12,14 @@
  */
 
 /**
+ * Minimal MockAudioNode interface for mock implementation.
+ */
+interface MockAudioNode {
+  connect?(destination?: MockAudioNode): this;
+  disconnect?(): void;
+}
+
+/**
  * Minimal AudioBuffer interface for mock implementation.
  */
 interface MockAudioBuffer {
@@ -34,7 +42,7 @@ interface MockAudioParam {
  */
 class MockAudioContext {
   currentTime = 0; // CRITICAL: used for timers
-  destination: AudioNode = null as unknown as AudioNode;
+  destination: MockAudioNode = null as unknown as MockAudioNode;
   sampleRate = 44100;
   state = 'running';
 
@@ -85,7 +93,7 @@ class MockAudioBufferSourceNode {
   detune: MockAudioParam = { value: 0 };
   onended: (() => void) | null = null;
 
-  connect(_destination?: AudioNode): this {
+  connect(_destination?: MockAudioNode): this {
     return this;
   }
 
@@ -121,7 +129,7 @@ class MockAudioBufferSourceNode {
 class MockGainNode {
   gain: MockAudioParam = { value: 1 };
 
-  connect(_destination?: AudioNode): this {
+  connect(_destination?: MockAudioNode): this {
     return this;
   }
 

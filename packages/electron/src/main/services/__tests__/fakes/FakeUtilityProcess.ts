@@ -112,7 +112,7 @@ export class FakeUtilityProcess extends EventEmitter {
     this.receiveMessage({
       type: 'progress',
       payload: {
-        stage: stage as any,
+        stage,
         current,
         total,
         percentage: Math.floor((current / total) * 100),
@@ -131,7 +131,7 @@ export class FakeUtilityProcess extends EventEmitter {
       payload: {
         simulationId,
         projectPath,
-        report: {} as any, // Minimal report
+        report: {} as ReportData, // Minimal report
         duration: 1000,
         seed: 12345,
       },

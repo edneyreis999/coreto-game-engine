@@ -161,7 +161,10 @@ export class SkillSelector {
     }
 
     // Return first alive enemy (MVP target selection)
-    // Non-null assertion: length check above guarantees this is defined
-    return aliveEnemies[0]!;
+    const target = aliveEnemies[0];
+    if (!target) {
+      throw new Error('Unreachable: length check ensures target exists');
+    }
+    return target;
   }
 }

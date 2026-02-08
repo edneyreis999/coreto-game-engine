@@ -2,6 +2,16 @@
  * Minimal PIXI.js type declarations for runtime shims
  */
 
+declare global {
+  interface HTMLImageElement {
+    src: string;
+    width: number;
+    height: number;
+    readonly complete: boolean;
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 declare namespace PIXI {
   export class Container {
     children: Container[];

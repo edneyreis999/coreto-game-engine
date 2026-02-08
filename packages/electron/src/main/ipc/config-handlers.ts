@@ -32,7 +32,7 @@ import { ProjectConfigSchema, CURRENT_SCHEMA_VERSION, type UIProjectConfig } fro
 
 // Lazy initialization to avoid calling getLogger() before DI container is ready
 let logger: ReturnType<typeof getLogger> | null = null;
-function ensureLogger() {
+function ensureLogger(): ReturnType<typeof getLogger> {
   if (!logger) {
     logger = getLogger();
   }

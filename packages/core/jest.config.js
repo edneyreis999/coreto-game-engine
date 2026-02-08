@@ -43,7 +43,6 @@ export default {
   setupFilesAfterEnv: ['jest-canvas-mock', '<rootDir>/tests/setup.cjs'],
   testPathIgnorePatterns: [
     '/node_modules/',
-    '/tests/unit/cli/', // CLI tests are for @coreto/cli package
   ],
   collectCoverageFrom: [
     'src/**/*.ts',

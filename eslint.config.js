@@ -62,6 +62,8 @@ export default [
     rules: {
       // Disable base no-unused-vars in favor of TypeScript version
       'no-unused-vars': 'off',
+      // Disable no-undef for TypeScript - TS compiler handles this
+      'no-undef': 'off',
       // TypeScript-specific rules
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': [

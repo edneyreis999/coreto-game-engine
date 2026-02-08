@@ -7,6 +7,7 @@
 
 import { z } from 'zod';
 import type { FormErrors, FormValidation } from './types';
+import type { TrechoFormData } from '../types/form-types';
 
 // Import form data types from domain layer
 export type { TrechoFormData } from '../types/form-types';
@@ -239,7 +240,7 @@ export function getFieldError(errors: FormErrors, fieldName: string): string | u
  *
  * @returns Default trecho form data
  */
-export function getDefaultTrechoFormData() {
+export function getDefaultTrechoFormData(): TrechoFormData {
   return {
     id: '',
     name: '',

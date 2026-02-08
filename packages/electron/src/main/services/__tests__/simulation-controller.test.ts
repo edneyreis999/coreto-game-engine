@@ -88,7 +88,7 @@ class SimulationControllerTestFactory {
     this.controller = new SimulationController();
 
     // Inject fake storage
-    this.controller.setStorageService(this.fakeStorage as any);
+    this.controller.setStorageService(this.fakeStorage as unknown as ReportStorageService);
 
     // Mock utilityProcess.fork to return our fake worker
     const { utilityProcess } = require('electron');
@@ -424,8 +424,8 @@ describe('SimulationController', () => {
 
       await controller.start(createMockParams());
 
-      // Cast to unknown to bypass type checking
-      fakeWorker.receiveMessage({ type: 'unknown' } as any);
+      // Send unknown message type to test error handling
+      fakeWorker.receiveMessage({ type: 'unknown' } as unknown);
 
       expect(consoleWarnSpy).toHaveBeenCalledWith(
         expect.stringContaining('[WARN] Unknown message type:')

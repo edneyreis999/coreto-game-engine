@@ -25,7 +25,6 @@
 
 import { ipcMain, IpcMainInvokeEvent, dialog, BrowserWindow, BaseWindow } from 'electron';
 import { z } from 'zod';
-import * as path from 'path';
 
 // External dependencies (@coreto/core)
 import type {
@@ -120,7 +119,6 @@ let simulationProgress: SimulationProgress = {
  * AbortController for cancelling running simulations.
  * Used by the simulation:cancel handler.
  */
-// eslint-disable-next-line no-undef
 let currentSimulationController: AbortController | null = null;
 
 /**
@@ -275,7 +273,6 @@ async function handleSimulationRun(
     }
 
     // Create AbortController for cancellation support
-    // eslint-disable-next-line no-undef
     currentSimulationController = new AbortController();
 
     updateProgress({ isRunning: true, current: 0, total: 1 });

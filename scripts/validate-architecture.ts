@@ -71,7 +71,6 @@ const LAYERS = {
   ports: 'packages/core/src/core/ports',
   useCases: 'packages/core/src/core/use-cases',
   infrastructure: 'packages/core/src/infrastructure',
-  cli: 'packages/cli',
 } as const;
 
 /** Implementation detail keywords that should NOT appear in ports */

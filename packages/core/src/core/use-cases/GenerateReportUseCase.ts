@@ -24,7 +24,9 @@ export interface GenerateReportInput {
  * @returns The 95th percentile value, or 0 for empty arrays
  */
 function calculateP95(values: number[]): number {
-  if (values.length === 0) return 0;
+  if (values.length === 0) {
+    return 0;
+  }
   if (values.length === 1) {
     const single = values[0];
     return single !== undefined ? single : 0;

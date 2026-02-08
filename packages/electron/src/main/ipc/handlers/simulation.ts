@@ -20,12 +20,10 @@ import type { Trecho } from '@coreto/core';
 import type { IPCResult } from '../protocol-types.js';
 import type {
   SimulationResult,
-  SimulationProgress,
   ReportData,
 } from '../types.js';
 import { SimulationRunPayloadSchema } from '../types.js';
 import { wrapHandler } from '../ipc-response.js';
-import { validateTrecho } from '@coreto/electron/domain/use-cases';
 import { simulationController } from '../../services/index.js';
 
 /**
@@ -75,9 +73,6 @@ export async function handleSimulationRun(
     if (currentProgress.isRunning) {
       throw new Error('Simulation is already running. Cancel or wait for completion.');
     }
-
-    // Create AbortController for cancellation support via controller
-    const abortController = simulationController.createAbortController();
 
     // Load project data - update progress via controller
     simulationController.updateProgress({ isRunning: true, current: 0, total: 1 });
