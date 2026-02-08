@@ -11,7 +11,12 @@ import './styles.css'
  * ErrorBoundary catches and displays errors from child components.
  */
 
-ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
+const rootElement = document.getElementById('root');
+if (!rootElement) {
+  throw new Error('Failed to find the root element. React app cannot mount.');
+}
+
+ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <ErrorBoundary>
       <App />

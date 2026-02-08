@@ -22,10 +22,6 @@ import type {
   SimulationResultPayload,
 } from '@coreto/electron/domain/types';
 
-// LOG INICIAL PARA VERIFICAR VERSÃO
-console.log('🚀 PRELOAD CARREGADO - Versão com logs de debug');
-console.log('📍 Timestamp:', new Date().toISOString());
-
 /**
  * Preload Script - IPC Bridge
  *
@@ -530,12 +526,10 @@ const coretoAPI = {
  * ```
  */
 export function initializePreload(): void {
-  console.log('[Preload] initializePreload called, contextIsolated:', process.contextIsolated);
   if (process.contextIsolated) {
     try {
       contextBridge.exposeInMainWorld('electron', electronAPI);
       contextBridge.exposeInMainWorld('coreto', coretoAPI);
-      console.log('[Preload] Successfully exposed electron and coreto APIs (domain-segregated)');
     } catch (error) {
       console.error('[Preload] Failed to expose context bridge APIs:', error);
     }
@@ -554,7 +548,6 @@ export function initializePreload(): void {
  *
  * NOTE: Always initialize in Electron context (when contextBridge exists)
  */
-console.log('[Preload] Script loaded, contextBridge:', typeof contextBridge);
 if (typeof contextBridge !== 'undefined') {
   initializePreload();
 } else {

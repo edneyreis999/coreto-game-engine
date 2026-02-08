@@ -3,6 +3,11 @@
  *
  * Handlers for running and managing battle simulations.
  * State management is now delegated to SimulationController.
+ *
+ * Abort Signal Support (Task 05):
+ * - Long-running operations check for cancellation signals
+ * - Signals are checked at start and periodically during execution
+ * - Renderer destruction automatically aborts in-flight operations
  */
 
 import type { IpcMainInvokeEvent } from 'electron';
@@ -28,6 +33,7 @@ import { wrapHandler } from '../ipc-response.js';
 import { simulationController } from '../../services/index.js';
 import { IReportBuilderToken } from '../../di/tokens.js';
 import { saveSimulationToHistory, generateSimulationId } from './history-handlers.js';
+import { checkAbortSignal } from '../abort-signal.js';
 
 /**
  * Validates an IPC payload against its Zod schema.
@@ -52,6 +58,7 @@ function validatePayload<T extends unknown>(
  *
  * Executes a TTK battle simulation.
  * Runs a single battle or all trechos based on payload.
+ * Supports cancellation via abort signal (checks at start and during execution).
  */
 export async function handleSimulationRun(
   _event: IpcMainInvokeEvent,
@@ -78,20 +85,30 @@ export async function handleSimulationRun(
       throw new Error('Simulation is already running. Cancel or wait for completion.');
     }
 
+    // Create abort controller for this simulation run
+    const abortController = simulationController.createAbortController();
+    const signal = abortController.signal;
+
+    // Check for cancellation at start
+    checkAbortSignal(signal, 'simulation initialization');
+
     // Load project data - update progress via controller
     simulationController.updateProgress({ isRunning: true, current: 0, total: 1 });
 
     try {
       // Load RPG Maker MZ data
+      checkAbortSignal(signal, 'loading database');
       const database = await dataLoader.loadDatabase(projectPath);
 
       // Initialize simulator with loaded database
+      checkAbortSignal(signal, 'initializing simulator');
       await simulator.initialize(database, projectPath);
       logger.info('[IPC] Simulator initialized successfully');
 
       // Load config if provided
       let configTrechos: Trecho[] = [];
       if (configPath) {
+        checkAbortSignal(signal, 'loading configuration');
         const config = await configLoader.loadConfig(configPath);
         configTrechos = await configLoader.loadTrechos(config);
       }
@@ -103,6 +120,7 @@ export async function handleSimulationRun(
         // Default party for single troop simulation
         const party = new PartyConfig([{ classId: 1, level: 1 }]);
 
+        checkAbortSignal(signal, 'executing battle');
         const result = await simulator.executeBattle({
           troopId,
           party,
@@ -168,6 +186,7 @@ export async function handleSimulationRun(
         throw new Error(`Trecho has no troops: ${trechoId}`);
       }
 
+      checkAbortSignal(signal, `executing battle for troop ${firstTroopId}`);
       const result = await simulator.executeBattle({
         troopId: firstTroopId,
         party: trecho.party,
@@ -201,6 +220,7 @@ export async function handleSimulationRun(
       };
 
       // Persist results using injected report builder (convert SimulationResult to ReportData)
+      checkAbortSignal(signal, 'building report');
       const reportData = reportBuilder.buildReport({
         simulationResult,
         trechoName: trecho.name,

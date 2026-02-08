@@ -20,6 +20,7 @@ import {
   type FC,
   useCallback,
   useEffect,
+  useState,
 } from 'react';
 import {
   History,
@@ -33,6 +34,7 @@ import { cn } from '@/lib/utils';
 import { useSimulationHistory } from '@/hooks/useSimulationHistory';
 import { HistoryListItem } from './HistoryListItem';
 import { EmptyState } from '../ResultsPanel/EmptyState';
+import { AlertDialog } from '../shared/AlertDialog';
 
 // ============================================================================
 // Types
@@ -212,6 +214,18 @@ export const HistoryPanel: FC<HistoryPanelProps> = ({
 }) => {
   const logger = useLogger();
 
+  /**
+   * State for export loading indicator.
+   * Tracks which entry is currently being exported.
+   */
+  const [exportingId, setExportingId] = useState<string | null>(null);
+
+  /**
+   * State for delete confirmation dialog.
+   */
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [entryToDelete, setEntryToDelete] = useState<import('@/types/preload').HistoryEntry | null>(null);
+
   const {
     history,
     isLoading,
@@ -276,19 +290,35 @@ export const HistoryPanel: FC<HistoryPanelProps> = ({
 
   /**
    * Handle delete button click.
+   * Opens confirmation dialog instead of using native window.confirm.
    */
-  const handleDelete = useCallback(async (entry: import('@/types/preload').HistoryEntry) => {
-    // Confirm before deleting
-    const confirmed = window.confirm(
-      `Are you sure you want to delete this simulation entry?\n\nThis action cannot be undone.`
-    );
+  const handleDelete = useCallback((entry: import('@/types/preload').HistoryEntry) => {
+    setEntryToDelete(entry);
+    setDeleteDialogOpen(true);
+  }, []);
 
-    if (!confirmed) {
+  /**
+   * Handle delete confirmation.
+   * Actually deletes the entry after user confirms.
+   */
+  const handleConfirmDelete = useCallback(async () => {
+    if (!entryToDelete) {
       return;
     }
 
-    await deleteEntry(entry.id);
-  }, [deleteEntry]);
+    await deleteEntry(entryToDelete.id);
+    setDeleteDialogOpen(false);
+    setEntryToDelete(null);
+  }, [deleteEntry, entryToDelete]);
+
+  /**
+   * Handle delete cancellation.
+   * Closes the dialog without deleting.
+   */
+  const handleCancelDelete = useCallback(() => {
+    setDeleteDialogOpen(false);
+    setEntryToDelete(null);
+  }, []);
 
   // ========================================================================
   // Render Helpers
@@ -319,72 +349,86 @@ export const HistoryPanel: FC<HistoryPanelProps> = ({
   // ========================================================================
 
   return (
-    <div
-      className={cn(
-        'flex flex-col gap-6 p-6 bg-background rounded-lg border border-border',
-        className
-      )}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <History className="h-5 w-5 text-muted-foreground" />
-            <h2 className="text-2xl font-semibold tracking-tight">
-              Simulation History
-            </h2>
+    <>
+      <div
+        className={cn(
+          'flex flex-col gap-6 p-6 bg-background rounded-lg border border-border',
+          className
+        )}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <History className="h-5 w-5 text-muted-foreground" />
+              <h2 className="text-2xl font-semibold tracking-tight">
+                Simulation History
+              </h2>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              View, export, and delete past simulation results
+            </p>
           </div>
-          <p className="text-sm text-muted-foreground">
-            View, export, and delete past simulation results
-          </p>
+
+          {/* Refresh Button */}
+          <button
+            type="button"
+            onClick={refresh}
+            disabled={isLoading}
+            className={cn(
+              'flex items-center gap-2 px-3 py-1.5',
+              'bg-secondary text-secondary-foreground rounded-md',
+              'hover:bg-secondary/80 transition-colors',
+              'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+              'text-sm font-medium',
+              isLoading && 'opacity-50 cursor-not-allowed'
+            )}
+          >
+            <RotateCw className={cn('h-4 w-4', isLoading && 'animate-spin')} />
+            <span>Refresh</span>
+          </button>
         </div>
 
-        {/* Refresh Button */}
-        <button
-          type="button"
-          onClick={refresh}
-          disabled={isLoading}
-          className={cn(
-            'flex items-center gap-2 px-3 py-1.5',
-            'bg-secondary text-secondary-foreground rounded-md',
-            'hover:bg-secondary/80 transition-colors',
-            'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
-            'text-sm font-medium',
-            isLoading && 'opacity-50 cursor-not-allowed'
+        {/* Content */}
+        <div className="flex flex-col gap-4">
+          {/* Loading State */}
+          {showLoading && <LoadingState />}
+
+          {/* Error State */}
+          {showError && <ErrorState error={error} onRetry={refresh} />}
+
+          {/* Empty State */}
+          {showEmpty && (
+            <EmptyState
+              title="No Simulation History"
+              message="Run simulations to see them here. History is automatically saved after each simulation."
+            />
           )}
-        >
-          <RotateCw className={cn('h-4 w-4', isLoading && 'animate-spin')} />
-          <span>Refresh</span>
-        </button>
+
+          {/* History List */}
+          {showList && (
+            <HistoryList
+              entries={history}
+              onLoad={handleLoad}
+              onExport={handleExport}
+              onDelete={handleDelete}
+            />
+          )}
+        </div>
       </div>
 
-      {/* Content */}
-      <div className="flex flex-col gap-4">
-        {/* Loading State */}
-        {showLoading && <LoadingState />}
-
-        {/* Error State */}
-        {showError && <ErrorState error={error} onRetry={refresh} />}
-
-        {/* Empty State */}
-        {showEmpty && (
-          <EmptyState
-            title="No Simulation History"
-            message="Run simulations to see them here. History is automatically saved after each simulation."
-          />
-        )}
-
-        {/* History List */}
-        {showList && (
-          <HistoryList
-            entries={history}
-            onLoad={handleLoad}
-            onExport={handleExport}
-            onDelete={handleDelete}
-          />
-        )}
-      </div>
-    </div>
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        open={deleteDialogOpen}
+        title="Delete Simulation Entry?"
+        description="Are you sure you want to delete this simulation entry? This action cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        destructive={true}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
+    </>
   );
 };
 

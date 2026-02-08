@@ -28,3 +28,9 @@ export {
   type ValidationMessageProps,
   type ValidationSeverity,
 } from './ValidationMessage';
+
+// AlertDialog Component
+export {
+  AlertDialog,
+  type AlertDialogProps,
+} from './AlertDialog';
