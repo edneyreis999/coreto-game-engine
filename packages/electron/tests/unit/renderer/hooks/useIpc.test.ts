@@ -16,12 +16,6 @@ import { createMinimalCoretoMock } from '@/tests/helpers/mocks/coreto-mock.facto
 describe('useIpc', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    jest.useFakeTimers()
-  })
-
-  afterEach(() => {
-    jest.runOnlyPendingTimers()
-    jest.useRealTimers()
   })
 
   describe('basic usage', () => {

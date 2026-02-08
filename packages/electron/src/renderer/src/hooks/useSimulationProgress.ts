@@ -142,8 +142,9 @@ export interface UseSimulationProgressReturn {
 
   /**
    * Simulation result if simulation completed successfully.
+   * Can be either event-based result (new API) or legacy result (runSimulation).
    */
-  result: SimulationResultPayload | null;
+  result: SimulationResultPayload | SimulationCompletionResult | null;
 
   /**
    * Starts a simulation with the given configuration (new event-based API).
@@ -224,58 +225,89 @@ export function useSimulationProgress(): UseSimulationProgressReturn {
   const [progressDetail, setProgressDetail] = useState<ProgressPayload | null>(null);
   const [status, setStatus] = useState<SimulationStatus>('idle');
   const [error, setError] = useState<ErrorPayload | null>(null);
-  const [result, setResult] = useState<SimulationResultPayload | null>(null);
+  const [result, setResult] = useState<SimulationResultPayload | SimulationCompletionResult | null>(null);
 
   /**
    * Setup event listeners on mount.
    * CRITICAL: Cleanup listeners on unmount to prevent memory leaks.
+   * CRITICAL: Event handlers wrapped in try-catch to prevent unhandled rejections.
    */
   useEffect(() => {
     // Progress events
     const cleanupProgress = window.coreto.simulation.onProgress((payload: ProgressPayload) => {
-      setProgressState({
-        percentage: payload.percentage,
-        currentIndex: payload.current,
-        totalItems: payload.total,
-        isRunning: true,
-        stage: payload.stage,
-        message: payload.message,
-        ...(payload.trechoName !== undefined && { currentItem: payload.trechoName }),
-      });
-      setProgressDetail(payload);
-      setStatus('running');
+      try {
+        setProgressState({
+          percentage: payload.percentage,
+          currentIndex: payload.current,
+          totalItems: payload.total,
+          isRunning: true,
+          stage: payload.stage,
+          message: payload.message,
+          ...(payload.trechoName !== undefined && { currentItem: payload.trechoName }),
+        });
+        setProgressDetail(payload);
+        setStatus('running');
+      } catch (error) {
+        logger.error(`Error in progress event handler: ${error instanceof Error ? error.message : String(error)}`);
+        // Ensure state remains consistent even if handler fails
+        setProgressState((prev) => ({ ...prev, isRunning: false }));
+      }
     });
 
     // Completion events
     const cleanupComplete = window.coreto.simulation.onComplete(
       (simulationResult: SimulationResultPayload) => {
-        setResult(simulationResult);
-        setStatus('completed');
-        setProgressState((prev) => ({
-          ...prev,
-          percentage: 100,
-          isRunning: false,
-        }));
-        setProgressDetail(null);
+        try {
+          setResult(simulationResult);
+          setStatus('completed');
+          setProgressState((prev) => ({
+            ...prev,
+            percentage: 100,
+            isRunning: false,
+          }));
+          setProgressDetail(null);
+        } catch (error) {
+          logger.error(`Error in completion event handler: ${error instanceof Error ? error.message : String(error)}`);
+          // Ensure state remains consistent even if handler fails
+          setStatus('error');
+          setError({
+            title: 'Completion Handler Error',
+            description: error instanceof Error ? error.message : 'Unknown error in completion handler',
+            code: 'ERR_COMPLETION_HANDLER',
+          });
+          setProgressState((prev) => ({ ...prev, isRunning: false }));
+        }
       }
     );
 
     // Error events
     const cleanupError = window.coreto.simulation.onError((errorPayload: ErrorPayload) => {
-      setError(errorPayload);
-      setStatus('error');
-      setProgressState((prev) => ({
-        ...prev,
-        isRunning: false,
-      }));
-      setProgressDetail(null);
+      try {
+        setError(errorPayload);
+        setStatus('error');
+        setProgressState((prev) => ({
+          ...prev,
+          isRunning: false,
+        }));
+        setProgressDetail(null);
+      } catch (error) {
+        // Log the error but avoid recursive error handling
+        logger.error(`Error in error event handler: ${error instanceof Error ? error.message : String(error)}`);
+        // Set a minimal error state to avoid infinite recursion
+        setStatus('error');
+        setProgressState((prev) => ({ ...prev, isRunning: false }));
+      }
     });
 
-    // Cleanup on unmount
+    // Cleanup on unmount (always runs, even if errors occur above)
     return () => {
-      cleanupProgress();
-      cleanupComplete();
-      cleanupError();
+      try {
+        cleanupProgress();
+        cleanupComplete();
+        cleanupError();
+      } catch (error) {
+        logger.error(`Error during event listener cleanup: ${error instanceof Error ? error.message : String(error)}`);
+      }
     };
   }, []);
 
@@ -366,6 +398,7 @@ export function useSimulationProgress(): UseSimulationProgressReturn {
             currentItem: simulationResult.troopName,
           });
           setError(null);
+          setResult(simulationResult);
 
           return simulationResult;
         } else {

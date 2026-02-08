@@ -136,6 +136,12 @@ export function useIpc<T>(
 
   const isMountedRef = useRef(true);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const ipcFnRef = useRef(ipcFn);
+
+  // Keep ipcFnRef up to date
+  useEffect(() => {
+    ipcFnRef.current = ipcFn;
+  }, [ipcFn]);
 
   /**
    * Resets the state to initial values.
@@ -150,8 +156,8 @@ export function useIpc<T>(
 
   /**
    * Invokes the IPC call and updates state.
-   * Note: ipcFn is stored in a ref to always use the latest version
-   * without causing infinite loops in useCallback dependencies.
+   * Uses ref to avoid ipcFn in dependencies, preventing infinite loops.
+   * Note: isMountedRef is intentionally omitted from deps as refs are stable.
    */
   const invoke = useCallback(async () => {
     // Cancel any pending request
@@ -166,7 +172,7 @@ export function useIpc<T>(
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      const result = await ipcFn();
+      const result = await ipcFnRef.current();
 
       // Check if component is still mounted and request wasn't aborted
       if (!isMountedRef.current || abortController.signal.aborted) {
@@ -251,6 +257,12 @@ export function useIpcWithArg<T, A>(
 
   const isMountedRef = useRef(true);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const ipcFnRef = useRef(ipcFn);
+
+  // Keep ipcFnRef up to date
+  useEffect(() => {
+    ipcFnRef.current = ipcFn;
+  }, [ipcFn]);
 
   const reset = useCallback(() => {
     setState({
@@ -279,7 +291,7 @@ export function useIpcWithArg<T, A>(
 
       try {
         logger.debug('[useIpcWithArg] Calling ipcFn...');
-        const result = await ipcFn(arg);
+        const result = await ipcFnRef.current(arg);
         logger.debug(`[useIpcWithArg] ipcFn returned: ${JSON.stringify(result)}`);
 
         // Only skip setState if the request was actively aborted (not unmounted)
@@ -311,7 +323,7 @@ export function useIpcWithArg<T, A>(
         abortControllerRef.current = null;
       }
     },
-    [ipcFn, logger]
+    [logger]
   );
 
   useEffect(() => {
