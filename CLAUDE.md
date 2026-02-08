@@ -98,6 +98,18 @@ pnpm build             # Build core + electron
 pnpm --filter @coreto/electron build  # Build electron
 ```
 
+## TTK Execution Flow
+
+The TTK (Time-to-Kill) validation feature follows a complete end-to-end flow from project selection to history persistence. This section documents the full execution path, critical wiring points, and data transformations.
+
+### User Flow Overview
+
+1. **Project Selection** → User selects RPG Maker MZ project directory
+2. **Configuration** → User defines trechos with TTK targets and troop assignments
+3. **Execution** → User clicks "Run Validation" to simulate battles
+4. **Results** → System displays detailed battle results with pass/fail status
+5. **History** → Results are persisted for later review and export
+
 ## Troubleshooting
 
 ### Monorepo Import Rules
@@ -125,6 +137,7 @@ pnpm --filter @coreto/core build
 **Cause:** Vite/Rollup has its own module resolution. Each build environment needs explicit alias config.
 
 **Fix:** When adding new module aliases, update ALL configs:
+
 1. `tsconfig.json` → `compilerOptions.paths`
 2. `jest.config.js` → `moduleNameMapper` (for ALL projects: main, renderer, integration)
 3. `electron.vite.config.ts` → `resolve.alias` (for BOTH main AND renderer sections)
