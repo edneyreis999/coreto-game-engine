@@ -11,7 +11,10 @@ export { ConfigurationPanel } from './ConfigurationPanel';
 export type { ConfigurationPanelProps } from './ConfigurationPanel';
 
 export { ExecutionPanel } from './ExecutionPanel';
-export type { ExecutionPanelProps, SimulationConfigData } from './ExecutionPanel';
+export type { ExecutionPanelProps, SimulationConfigData } from './ExecutionPanel/index';
 
 export { ResultsPanel } from './ResultsPanel';
 export type { ResultsPanelProps } from './ResultsPanel';
+
+export { HistoryPanel } from './HistoryPanel/HistoryPanel';
+export type { HistoryPanelProps } from './HistoryPanel/HistoryPanel';
