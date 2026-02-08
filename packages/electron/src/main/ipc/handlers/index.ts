@@ -15,6 +15,7 @@ import * as config from './config.js';
 import * as recent from './recent.js';
 import * as preferences from './preferences.js';
 import * as dialog from './dialog.js';
+import * as history from './history-handlers.js';
 
 // Import external handler registries
 import { CONFIG_IPC_HANDLERS } from '../config-handlers.js';
@@ -78,10 +79,12 @@ export function registerHandlers(): void {
   // Dialog handlers
   ipcMain.handle('dialog:openDirectory', dialog.handleDialogOpenDirectory);
 
-  // History handlers (from registry)
+  // History handlers
+  ipcMain.handle('history:export', history.handleHistoryExport);
+
+  // History handlers (from registry - for other history operations)
   ipcMain.handle('history:list', getRegistryHandler(HISTORY_IPC_HANDLERS, 'history:list'));
   ipcMain.handle('history:loadReport', getRegistryHandler(HISTORY_IPC_HANDLERS, 'history:loadReport'));
-  ipcMain.handle('history:export', getRegistryHandler(HISTORY_IPC_HANDLERS, 'history:export'));
   ipcMain.handle('history:delete', getRegistryHandler(HISTORY_IPC_HANDLERS, 'history:delete'));
   ipcMain.handle('history:generateId', getRegistryHandler(HISTORY_IPC_HANDLERS, 'history:generateId'));
 }

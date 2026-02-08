@@ -14,3 +14,4 @@ export * from './validation/index.js';
 export * from './use-cases/index.js';
 export * from './repositories/index.js';
 export * from './ports/index.js';
+export * from './mappers/index.js';

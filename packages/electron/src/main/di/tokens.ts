@@ -12,3 +12,4 @@ export const ILoggerToken = 'ILogger' as unknown as symbol;
 export const IProjectValidatorToken = Symbol.for('IProjectValidator');
 export const IGameDataLoaderToken = Symbol.for('IGameDataLoader');
 export const IConfigStorageToken = Symbol.for('IConfigStorage');
+export const IReportBuilderToken = Symbol.for('IReportBuilder');

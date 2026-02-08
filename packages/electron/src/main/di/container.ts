@@ -11,8 +11,9 @@ import { ConsoleLogger } from '../services/ConsoleLogger.js';
 import { createProjectValidator } from '../adapters/index.js';
 import { createGameDataLoader } from '../adapters/index.js';
 import { createFileConfigStorage } from '../adapters/index.js';
-import type { IProjectValidator, IGameDataLoader, IConfigStorage } from '@coreto/electron/domain/ports';
+import type { IProjectValidator, IGameDataLoader, IConfigStorage, IReportBuilder } from '@coreto/electron/domain/ports';
 import { NodeFileSystem, RmmzDataLoader } from '@coreto/core';
+import { createSimulationReportBuilder } from '@coreto/electron/domain/use-cases';
 
 // Import tokens
 import {
@@ -20,6 +21,7 @@ import {
   IProjectValidatorToken,
   IGameDataLoaderToken,
   IConfigStorageToken,
+  IReportBuilderToken,
 } from './tokens.js';
 
 /**
@@ -30,6 +32,7 @@ import {
  * - IProjectValidator: Project validator adapter
  * - IGameDataLoader: Game data loader adapter
  * - IConfigStorage: File config storage adapter
+ * - IReportBuilder: Simulation report builder use case
  */
 export function registerMainDependencies(): void {
   // ILogger - using ConsoleLogger
@@ -61,6 +64,13 @@ export function registerMainDependencies(): void {
   container.register<IConfigStorage>(IConfigStorageToken as unknown as string, {
     useFactory: () => {
       return createFileConfigStorage();
+    },
+  });
+
+  // IReportBuilder - factory function
+  container.register<IReportBuilder>(IReportBuilderToken as unknown as string, {
+    useFactory: () => {
+      return createSimulationReportBuilder();
     },
   });
 }

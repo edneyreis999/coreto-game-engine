@@ -8,3 +8,4 @@
 export * from './IProjectValidator';
 export * from './IGameDataLoader';
 export * from './IConfigStorage';
+export * from './IReportBuilder';

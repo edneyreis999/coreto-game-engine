@@ -14,7 +14,7 @@ const baseConfig = {
     '^@coreto/core$': '<rootDir>/../core/src/index.ts',
     '^@coreto/electron/(.*)\\.js$': '<rootDir>/src/$1.ts',
     '^@coreto/electron/(.+)$': '<rootDir>/src/$1.ts',
-    '^(\\.{1,2}/.*)\\.js$': '$1'
+    '^(\\.{1,2}/.*)\\.js$': '$1',
   },
   transform: {
     '^.+\\.tsx?$': [
@@ -23,10 +23,10 @@ const baseConfig = {
         useESM: true,
         tsconfig: {
           jsx: 'react-jsx',
-          esModuleInterop: true
-        }
-      }
-    ]
+          esModuleInterop: true,
+        },
+      },
+    ],
   },
 };
 
@@ -40,22 +40,20 @@ export default {
       testEnvironment: 'node',
       maxWorkers: 1, // Run tests sequentially to avoid database singleton conflicts
       roots: ['<rootDir>/tests', '<rootDir>/src/main'],
-      transformIgnorePatterns: [
-        'node_modules/(?!(ts-jest))',
-      ],
+      transformIgnorePatterns: ['node_modules/(?!(ts-jest))'],
       testMatch: [
         '**/tests/unit/main/**/*.test.ts',
         '**/tests/unit/preload/**/*.test.ts',
         '**/tests/unit/domain/**/*.spec.ts',
         '**/src/main/**/__tests__/*.spec.ts',
-        '**/src/main/**/__tests__/*.test.ts'
+        '**/src/main/**/__tests__/*.test.ts',
       ],
       testPathIgnorePatterns: [
         '/node_modules/',
         '/__tests__/builders/',
         '/__tests__/fakes/',
         '/__tests__/fixtures/',
-        '/__tests__/mocks/'
+        '/__tests__/mocks/',
       ],
       setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
       moduleNameMapper: {
@@ -70,18 +68,19 @@ export default {
         '^@coreto/electron/domain/use-cases$': '<rootDir>/src/domain/use-cases/index.ts',
         '^@coreto/electron/domain/repositories$': '<rootDir>/src/domain/repositories/index.ts',
         '^@coreto/electron/domain/validation$': '<rootDir>/src/domain/validation/index.ts',
+        '^@coreto/electron/domain/mappers$': '<rootDir>/src/domain/mappers/index.ts',
         '^@coreto/electron/domain$': '<rootDir>/src/domain/index.ts',
         // Generic fallback for other @coreto/electron imports
         '^@coreto/electron/(.*)\\.js$': '<rootDir>/src/$1.ts',
         '^@coreto/electron/(.+)$': '<rootDir>/src/$1.ts',
-        '^(\\.{1,2}/.*)\\.js$': '$1'
+        '^(\\.{1,2}/.*)\\.js$': '$1',
       },
       collectCoverageFrom: [
         'src/main/**/*.ts',
         'src/preload/**/*.ts',
         '!src/main/**/*.d.ts',
         '!src/preload/**/*.d.ts',
-        '!src/main/**/__tests__/**'
+        '!src/main/**/__tests__/**',
       ],
     },
     // Renderer process tests (jsdom environment for React)
@@ -97,9 +96,9 @@ export default {
           'ts-jest',
           {
             useESM: true,
-            tsconfig: '<rootDir>/tsconfig.spec.json'
-          }
-        ]
+            tsconfig: '<rootDir>/tsconfig.spec.json',
+          },
+        ],
       },
       moduleNameMapper: {
         '^@/tests/(.*)$': '<rootDir>/tests/$1',
@@ -114,6 +113,7 @@ export default {
         '^@coreto/electron/domain/use-cases$': '<rootDir>/src/domain/use-cases/index.ts',
         '^@coreto/electron/domain/repositories$': '<rootDir>/src/domain/repositories/index.ts',
         '^@coreto/electron/domain/validation$': '<rootDir>/src/domain/validation/index.ts',
+        '^@coreto/electron/domain/mappers$': '<rootDir>/src/domain/mappers/index.ts',
         '^@coreto/electron/domain$': '<rootDir>/src/domain/index.ts',
         // Generic fallback for other @coreto/electron imports
         '^@coreto/electron/(.*)\\.js$': '<rootDir>/src/$1.ts',
@@ -147,11 +147,12 @@ export default {
         '^@coreto/electron/domain/use-cases$': '<rootDir>/src/domain/use-cases/index.ts',
         '^@coreto/electron/domain/repositories$': '<rootDir>/src/domain/repositories/index.ts',
         '^@coreto/electron/domain/validation$': '<rootDir>/src/domain/validation/index.ts',
+        '^@coreto/electron/domain/mappers$': '<rootDir>/src/domain/mappers/index.ts',
         '^@coreto/electron/domain$': '<rootDir>/src/domain/index.ts',
         // Generic fallback for other @coreto/electron imports
         '^@coreto/electron/(.*)\\.js$': '<rootDir>/src/$1.ts',
         '^@coreto/electron/(.+)$': '<rootDir>/src/$1.ts',
-        '^(\\.{1,2}/.*)\\.js$': '$1'
+        '^(\\.{1,2}/.*)\\.js$': '$1',
       },
       collectCoverageFrom: [],
     },
@@ -173,9 +174,7 @@ export default {
       testEnvironment: 'node',
       roots: ['<rootDir>/tests'],
       testMatch: ['**/tests/architecture/**/*.test.ts'],
-      testPathIgnorePatterns: [
-        '/node_modules/',
-      ],
+      testPathIgnorePatterns: ['/node_modules/'],
     },
   ],
   coverageThreshold: {
@@ -183,7 +182,7 @@ export default {
       branches: 80,
       functions: 80,
       lines: 80,
-      statements: 80
-    }
-  }
+      statements: 80,
+    },
+  },
 };

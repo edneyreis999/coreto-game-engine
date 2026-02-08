@@ -1,9 +1,9 @@
 import React, { useState, useCallback } from 'react'
-import { ProjectSelectionPanel, ConfigurationPanel, ExecutionPanel, ResultsPanel } from '@/components'
+import { ProjectSelectionPanel, ConfigurationPanel, ExecutionPanel, ResultsPanel, HistoryPanel } from '@/components'
 import type { ProjectConfigFormData } from '@/components/ConfigurationPanel'
 import type { SimulationConfigData } from '@coreto/electron/domain/services'
-import { extractProjectName, mapToSimulationConfig } from '@coreto/electron/domain/services'
-import { useLogger } from '@/hooks'
+import { useLogger, useConfigSave } from '@/hooks'
+import { mapSimulationReportToReportData } from '@coreto/electron/domain/mappers'
 
 /**
  * Root App Component
@@ -14,13 +14,16 @@ import { useLogger } from '@/hooks'
  * - Configuration panel (task #7)
  * - Execution panel with progress tracking (task #8)
  * - Results panel with color-coded cards (task #9)
+ * - History panel for simulation history (task #11)
  */
 
 export default function App(): React.ReactElement {
   const logger = useLogger()
+  const { saveConfig } = useConfigSave()
   const [selectedProjectPath, setSelectedProjectPath] = useState<string | null>(null)
   const [simulationConfig, setSimulationConfig] = useState<SimulationConfigData | null>(null)
   const [simulationCompleted, setSimulationCompleted] = useState<boolean>(false)
+  const [historicalReport, setHistoricalReport] = useState<import('@coreto/electron/domain/types').ReportData | null>(null)
 
   const handleProjectSelected = useCallback((projectPath: string): void => {
     // Only reset if project actually changed
@@ -33,43 +36,35 @@ export default function App(): React.ReactElement {
   }, [selectedProjectPath])
 
   const handleConfigSaved = useCallback(async (config: ProjectConfigFormData): Promise<void> => {
-    try {
-      // Call IPC to save config with the full trecho data
-      const response = await window.coreto.config.save(config.projectPath, {
-        version: '1.0',
-        trechos: config.trechos,
-        globalSettings: config.globalSettings,
-        metadata: {
-          projectName: extractProjectName(config.projectPath),
-          lastModified: Date.now(),
-        },
-      })
-
-      if (response.success) {
-        // Convert to SimulationConfigData using domain mapper
-        const simConfig = mapToSimulationConfig(
-          config.projectPath,
-          response.data.configPath,
-          config.trechos.map(t => ({
-            id: t.id,
-            name: t.name,
-            troopIds: t.troopIds,
-          })),
-          config.globalSettings
-        )
-        setSimulationConfig(simConfig)
-      } else {
-        logger.error(`Failed to save configuration: ${JSON.stringify(response.error)}`)
-      }
-    } catch (error) {
-      logger.error(`Error saving configuration: ${String(error)}`)
+    const result = await saveConfig({ config, logger })
+    if (result.success && result.simConfig) {
+      setSimulationConfig(result.simConfig)
     }
-  }, [logger])
+  }, [saveConfig, logger])
 
-  const handleSimulationComplete = (result: unknown): void => {
+  const handleSimulationComplete = (_result: unknown): void => {
     // Show Results Panel after simulation completes
     setSimulationCompleted(true)
+    // Clear historical report when new simulation completes
+    setHistoricalReport(null)
   }
+
+  const handleLoadReport = useCallback((simulationId: string, report: import('@/types/preload').SimulationReport) => {
+    // Load historical report data into ResultsPanel
+    // Convert SimulationReport to ReportData format using domain mapper
+    const reportData = mapSimulationReportToReportData(simulationId, report)
+
+    setHistoricalReport(reportData)
+    setSimulationCompleted(true)
+
+    // Scroll to ResultsPanel
+    setTimeout(() => {
+      const resultsPanel = document.querySelector('[data-results-panel]')
+      if (resultsPanel) {
+        resultsPanel.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+    }, 100)
+  }, [])
 
   return (
     <div className="app-container">
@@ -93,7 +88,14 @@ export default function App(): React.ReactElement {
             />
           )}
           {simulationCompleted && (
-            <ResultsPanel isVisible={true} />
+            <ResultsPanel isVisible={true} currentData={historicalReport} />
+          )}
+          {selectedProjectPath && (
+            <HistoryPanel
+              projectPath={selectedProjectPath}
+              simulationCompleted={simulationCompleted}
+              onLoadReport={handleLoadReport}
+            />
           )}
         </div>
       </main>

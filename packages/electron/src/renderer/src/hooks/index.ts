@@ -15,6 +15,7 @@ export {
   getValidationMessage,
 } from './useProject';
 export { useConfig } from './useConfig';
+export { useConfigSave } from './useConfigSave';
 export { useSimulationProgress } from './useSimulationProgress';
 export { useSimulationHistory } from './useSimulationHistory';
 export { useFieldValidation } from './useFieldValidation';

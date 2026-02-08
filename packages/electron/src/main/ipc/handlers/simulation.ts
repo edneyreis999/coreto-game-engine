@@ -21,10 +21,13 @@ import type { IPCResult } from '../protocol-types.js';
 import type {
   SimulationResult,
   ReportData,
-} from '../types.js';
+} from '@coreto/electron/domain/types';
+import type { IReportBuilder } from '@coreto/electron/domain/ports';
 import { SimulationRunPayloadSchema } from '../types.js';
 import { wrapHandler } from '../ipc-response.js';
 import { simulationController } from '../../services/index.js';
+import { IReportBuilderToken } from '../../di/tokens.js';
+import { saveSimulationToHistory, generateSimulationId } from './history-handlers.js';
 
 /**
  * Validates an IPC payload against its Zod schema.
@@ -63,6 +66,7 @@ export async function handleSimulationRun(
     const configLoader = resolve<IConfigLoader>(IConfigLoaderToken);
     const dataLoader = resolve<IDataLoader>(IDataLoaderToken);
     const simulator = resolve<IBattleSimulator>(IBattleSimulatorToken);
+    const reportBuilder = resolve<IReportBuilder>(IReportBuilderToken);
 
     logger.info(
       `[IPC] Running simulation: project=${projectPath}, trecho=${trechoId}, troop=${troopId}`
@@ -108,10 +112,11 @@ export async function handleSimulationRun(
 
         simulationController.updateProgress({ current: 1, total: 1, percentage: 100 });
 
-        return {
+        // Build SimulationResult
+        const simulationResult: SimulationResult = {
           trechoId: trechoId ?? 'single-troop',
           troopId,
-          troopName: `Troop ${troopId}`,
+          troopName: result.troopName,
           battleResult: {
             troopId: result.troopId,
             troopName: result.troopName,
@@ -125,6 +130,20 @@ export async function handleSimulationRun(
           passed: result.outcome === 'victory',
           warnings: [],
         };
+
+        // Persist results using injected report builder (convert SimulationResult to ReportData)
+        const reportData = reportBuilder.buildReport({
+          simulationResult,
+          trechoName: trechoId ?? 'Single Troop',
+        });
+        simulationController.setLastResults(reportData);
+
+        // Save to history (non-blocking - errors logged but don't throw)
+        const simulationId = generateSimulationId();
+        await saveSimulationToHistory(simulationId, reportData, projectPath);
+
+        // Return SimulationResult for backward compatibility
+        return simulationResult;
       }
 
       // If trechoId provided, run all troops in that trecho
@@ -162,7 +181,8 @@ export async function handleSimulationRun(
       // Trecho class has flat properties: targetTtkTurns, targetTtkActions, tolerancePercent
       const passed = trecho.isWithinTolerance(result.ttkTurns, result.ttkActions);
 
-      return {
+      // Build SimulationResult
+      const simulationResult: SimulationResult = {
         trechoId: trecho.id,
         troopId: firstTroopId,
         troopName: result.troopName,
@@ -179,6 +199,20 @@ export async function handleSimulationRun(
         passed,
         warnings: passed ? [] : ['TTK outside tolerance range'],
       };
+
+      // Persist results using injected report builder (convert SimulationResult to ReportData)
+      const reportData = reportBuilder.buildReport({
+        simulationResult,
+        trechoName: trecho.name,
+      });
+      simulationController.setLastResults(reportData);
+
+      // Save to history (non-blocking - errors logged but don't throw)
+      const simulationId = generateSimulationId();
+      await saveSimulationToHistory(simulationId, reportData, projectPath);
+
+      // Return SimulationResult for backward compatibility
+      return simulationResult;
     } finally {
       simulationController.resetProgress();
     }
