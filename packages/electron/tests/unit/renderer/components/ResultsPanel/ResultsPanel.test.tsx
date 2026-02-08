@@ -311,5 +311,66 @@ describe('ResultsPanel', () => {
         expect(mockRefresh).toHaveBeenCalled()
       })
     })
+
+    it('should transition from loading to showing results', async () => {
+      const mockRefresh = jest.fn()
+
+      // Start with loading state
+      useSimulationResults.mockReturnValue({
+        report: null,
+        error: null,
+        isLoading: true,
+        hasResults: false,
+        refresh: mockRefresh,
+      })
+
+      const { rerender } = render(<ResultsPanel isVisible={true} />)
+
+      // Should show loading state
+      expect(screen.getByText('Loading results...')).toBeInTheDocument()
+
+      // Transition to loaded state with results
+      useSimulationResults.mockReturnValue({
+        report: mockReportData,
+        error: null,
+        isLoading: false,
+        hasResults: true,
+        refresh: mockRefresh,
+      })
+
+      rerender(<ResultsPanel isVisible={true} />)
+
+      // Should show results, not loading
+      await waitFor(() => {
+        expect(screen.queryByText('Loading results...')).not.toBeInTheDocument()
+      })
+      expect(screen.getByText(/Total Trechos: 2/)).toBeInTheDocument()
+    })
+
+    it('should not cause infinite refresh loops', async () => {
+      const mockRefresh = jest.fn()
+
+      // Simulate the state that could cause infinite loops
+      useSimulationResults.mockReturnValue({
+        report: mockReportData,
+        error: null,
+        isLoading: false,
+        hasResults: true,
+        refresh: mockRefresh,
+      })
+
+      render(<ResultsPanel isVisible={true} />)
+
+      // Clear initial calls
+      mockRefresh.mockClear()
+
+      // Wait a bit to ensure no additional refresh calls are made
+      await waitFor(
+        () => {
+          expect(mockRefresh).not.toHaveBeenCalled()
+        },
+        { timeout: 100 }
+      )
+    })
   })
 })
