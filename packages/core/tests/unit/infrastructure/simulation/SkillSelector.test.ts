@@ -45,6 +45,22 @@ function createMockSkillData(
 }
 
 /**
+ * Create mock enemy objects.
+ * These must be defined outside the describe block so they are available
+ * when test.each() tables are evaluated at module load time.
+ */
+const createMockEnemy = (id: number, hp: number, name: string) => ({
+  enemyId: id,
+  hp,
+  name,
+  isAlive: jest.fn(() => true),
+});
+
+// Pre-create mock enemies for use in test.each() tables
+const mockEnemy1 = createMockEnemy(1, 100, 'Slime');
+const mockEnemy2 = createMockEnemy(2, 80, 'Bat');
+
+/**
  * Unit tests for SkillSelector.
  *
  * Tests the MVP implementation of skill selection (ADR-004, ADR-019):
@@ -56,8 +72,6 @@ describe('SkillSelector', () => {
   let selector: SkillSelector;
   let mockGlobal: any;
   let mockActor: any;
-  let mockEnemy1: any;
-  let mockEnemy2: any;
 
   beforeEach(() => {
     selector = new SkillSelector();
@@ -72,20 +86,9 @@ describe('SkillSelector', () => {
       name: 'TestActor',
     };
 
-    // Mock enemies
-    mockEnemy1 = {
-      enemyId: 1,
-      hp: 100,
-      name: 'Slime',
-      isAlive: jest.fn(() => true),
-    };
-
-    mockEnemy2 = {
-      enemyId: 2,
-      hp: 80,
-      name: 'Bat',
-      isAlive: jest.fn(() => true),
-    };
+    // Reset mock function calls for each test
+    mockEnemy1.isAlive.mockClear();
+    mockEnemy2.isAlive.mockClear();
 
     // Mock $dataSkills
     mockGlobal.$dataSkills = [
