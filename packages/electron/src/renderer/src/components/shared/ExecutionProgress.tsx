@@ -194,7 +194,10 @@ function getStatusIcon(
 /**
  * Get status color classes.
  */
-function getStatusClasses(status: ExecutionStatus) {
+function getStatusClasses(status: ExecutionStatus): {
+  icon: string;
+  message: string;
+} {
   switch (status) {
     case 'running':
       return {

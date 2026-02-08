@@ -34,7 +34,6 @@ import type {
 import type {
   ConfigurationPanelProps,
   TrechoFormData,
-  ProjectConfigFormData,
   GlobalSettingsFormData,
   ProjectDropdownData,
 } from './types';

@@ -78,7 +78,10 @@ function getSeverityIcon(severity: ValidationSeverity): FC<{ className?: string 
 /**
  * Get color classes for severity level.
  */
-function getSeverityClasses(severity: ValidationSeverity) {
+function getSeverityClasses(severity: ValidationSeverity): {
+  icon: string;
+  message: string;
+} {
   switch (severity) {
     case 'error':
       return {

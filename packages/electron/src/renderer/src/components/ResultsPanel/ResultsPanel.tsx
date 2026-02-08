@@ -23,8 +23,9 @@
 
 import {
   type FC,
-  useRef,
   useEffect,
+  useMemo,
+  useRef,
 } from 'react';
 import {
   BarChart3,
@@ -52,6 +53,13 @@ export interface ResultsPanelProps {
    * Panel is hidden until a simulation completes.
    */
   isVisible?: boolean;
+
+  /**
+   * Optional pre-loaded report data to display.
+   * When provided, the panel will use this data instead of fetching via IPC.
+   * Useful for loading historical reports from HistoryPanel.
+   */
+  currentData?: ReportData | null;
 
   /**
    * Additional CSS class names for styling.
@@ -218,28 +226,78 @@ const ResultsSummary: FC<ResultsSummaryProps> = ({ report, className }) => {
  */
 export const ResultsPanel: FC<ResultsPanelProps> = ({
   isVisible = true,
+  currentData = null,
   className,
 }) => {
-  const { report, error, isLoading, hasResults, refresh } = useSimulationResults();
+  const { report: ipcReport, error, isLoading, hasResults: hasIpcResults, refresh } = useSimulationResults();
 
   /**
-   * Auto-refresh results when simulation completes.
-   * This ensures results are displayed as soon as they're available.
-   * Using useRef to track whether we've already fetched for this visibility change.
+   * Use currentData if provided, otherwise fall back to IPC report.
+   * This allows displaying historical data without additional IPC calls.
+   */
+  const report = useMemo(() => {
+    const result = currentData ?? ipcReport;
+    return result;
+  }, [currentData, ipcReport]);
+
+  /**
+   * Determine if we have results to display.
+   * Use currentData if available, otherwise check IPC results.
+   */
+  const hasResults = useMemo(() => {
+    const result = currentData !== null || hasIpcResults;
+    return result;
+  }, [currentData, hasIpcResults]);
+
+  /**
+   * Determine if we should show loading state.
+   * Only show loading if we're fetching from IPC and no currentData is provided.
+   */
+  const shouldShowLoading = useMemo(() => {
+    const result = currentData === null && isLoading;
+    return result;
+  }, [currentData, isLoading]);
+
+  /**
+   * Track previous visibility to detect when panel becomes visible.
+   * This ensures we only call refresh() when transitioning from hidden to visible,
+   * not on initial mount when invokeOnMount already handles the first fetch.
+   */
+  const wasVisibleRef = useRef(isVisible);
+
+  /**
+   * Track whether we've already fetched for this visibility cycle.
+   * Prevents duplicate refresh calls when the panel stays visible but state changes.
    */
   const hasFetchedRef = useRef(false);
 
+  /**
+   * Auto-refresh results when panel becomes visible and no data is available.
+   * This ensures results are displayed as soon as they're available.
+   *
+   * NOTE: The useIpc hook already calls invoke() on mount (invokeOnMount: true),
+   * so we only call refresh() here when transitioning from hidden → visible,
+   * not on initial mount when already visible.
+   *
+   * The refresh() function is still available for manual refresh via the retry button.
+   */
   useEffect(() => {
-    if (isVisible && !isLoading && !hasResults && !hasFetchedRef.current) {
-      // Attempt to fetch results when panel becomes visible
+    const wasVisible = wasVisibleRef.current;
+    wasVisibleRef.current = isVisible;
+
+    // Only fetch when transitioning from hidden to visible
+    // This avoids calling refresh() on initial mount (invokeOnMount handles that)
+    // and ensures we fetch when panel becomes visible after simulation
+    if (isVisible && !wasVisible && !hasResults && !hasFetchedRef.current && !currentData) {
       hasFetchedRef.current = true;
       refresh();
     }
-    // Reset fetch flag when panel hides
+
+    // Reset fetch flag when panel hides, so we fetch again when it becomes visible
     if (!isVisible) {
       hasFetchedRef.current = false;
     }
-  }, [isVisible, isLoading, hasResults, refresh]);
+  }, [isVisible, hasResults, currentData, refresh]);
 
   // Hide panel if not visible
   if (!isVisible) {
@@ -253,22 +311,22 @@ export const ResultsPanel: FC<ResultsPanelProps> = ({
   /**
    * Whether to show empty state.
    */
-  const showEmptyState = !isLoading && !hasResults && !error;
+  const showEmptyState = !shouldShowLoading && !hasResults && !error;
 
   /**
    * Whether to show loading state.
    */
-  const showLoading = isLoading;
+  const showLoading = shouldShowLoading;
 
   /**
    * Whether to show error state.
    */
-  const showError = !isLoading && error !== null;
+  const showError = !shouldShowLoading && error !== null;
 
   /**
    * Whether to show results.
    */
-  const showResults = !isLoading && hasResults && !error;
+  const showResults = !shouldShowLoading && hasResults && !error;
 
   // ========================================================================
   // Render
@@ -276,6 +334,7 @@ export const ResultsPanel: FC<ResultsPanelProps> = ({
 
   return (
     <div
+      data-results-panel="true"
       className={cn(
         'flex flex-col gap-6 p-6 bg-background rounded-lg border border-border',
         className

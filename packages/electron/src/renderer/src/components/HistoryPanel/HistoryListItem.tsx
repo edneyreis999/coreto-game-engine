@@ -16,6 +16,7 @@
 
 import {
   type FC,
+  type ComponentType,
   useCallback,
 } from 'react';
 import {
@@ -75,7 +76,12 @@ export interface HistoryListItemProps {
 /**
  * Get status icon and color classes.
  */
-function getStatusInfo(status: HistoryEntry['status']) {
+function getStatusInfo(status: HistoryEntry['status']): {
+  Icon: ComponentType<{ className?: string }>;
+  iconBg: string;
+  iconColor: string;
+  border: string;
+} {
   switch (status) {
     case 'SUCCESS':
       return {

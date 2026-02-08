@@ -19,7 +19,7 @@
 import {
   type FC,
   useCallback,
-  useState,
+  useEffect,
 } from 'react';
 import {
   History,
@@ -61,6 +61,12 @@ export interface HistoryPanelProps {
    * @param report - Simulation report data
    */
   onLoadReport?: (simulationId: string, report: import('@/types/preload').SimulationReport) => void;
+
+  /**
+   * Whether a simulation just completed.
+   * Triggers auto-refresh when true.
+   */
+  simulationCompleted?: boolean;
 
   /**
    * Additional CSS class names.
@@ -201,10 +207,10 @@ export const HistoryPanel: FC<HistoryPanelProps> = ({
   projectPath,
   limit = 50,
   onLoadReport,
+  simulationCompleted = false,
   className,
 }) => {
   const logger = useLogger();
-  const [exportingId, setExportingId] = useState<string | null>(null);
 
   const {
     history,
@@ -220,6 +226,16 @@ export const HistoryPanel: FC<HistoryPanelProps> = ({
     limit,
     autoLoad: true,
   });
+
+  /**
+   * Auto-refresh history when simulation completes.
+   * This ensures new simulation entries appear immediately.
+   */
+  useEffect(() => {
+    if (simulationCompleted) {
+      refresh();
+    }
+  }, [simulationCompleted, refresh]);
 
   /**
    * Handle load button click.

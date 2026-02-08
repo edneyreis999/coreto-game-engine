@@ -139,7 +139,13 @@ function getSeverityIcon(severity: ErrorSeverity): FC<{ className?: string }> {
 /**
  * Get color classes for severity level.
  */
-function getSeverityClasses(severity: ErrorSeverity) {
+function getSeverityClasses(severity: ErrorSeverity): {
+  bg: string;
+  border: string;
+  icon: string;
+  title: string;
+  message: string;
+} {
   switch (severity) {
     case 'error':
       return {
