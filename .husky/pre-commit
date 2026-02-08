@@ -1,0 +1,28 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Pre-commit hook validations based on task 00 baseline requirements
+# Runs type-check, lint, build and tests for both @coreto/core and @coreto/electron
+
+echo "🔍 Running pre-commit validations..."
+
+# Type check both packages
+echo "📝 Type checking..."
+pnpm --filter @coreto/core type-check || exit 1
+pnpm --filter @coreto/electron type-check || exit 1
+
+# Lint all packages
+echo "🧹 Linting..."
+pnpm lint || exit 1
+
+# Build both packages (core first, then electron)
+echo "🏗️  Building..."
+pnpm --filter @coreto/core build || exit 1
+pnpm --filter @coreto/electron build || exit 1
+
+# Run tests for both packages
+echo "🧪 Testing..."
+pnpm --filter @coreto/core test || exit 1
+pnpm --filter @coreto/electron test || exit 1
+
+echo "✅ All validations passed!"

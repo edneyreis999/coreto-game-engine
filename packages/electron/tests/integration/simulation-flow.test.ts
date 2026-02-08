@@ -192,41 +192,41 @@ describe('Simulation Run → Results Persistence Integration', () => {
       const result = await handleSimulationRun(null, payload);
 
       // Assert: Handler returns SimulationResult (backward compatibility)
-      expect(result.success).toBe(true);
+      expect(result.success).toBe(true); // IPC handler should return success for valid simulation request
       if (result.success && result.data) {
         const simulationResult = result.data;
-        expect(simulationResult.trechoId).toBe(testTrechoId);
-        expect(simulationResult.troopId).toBe(testTroopId);
-        expect(simulationResult.passed).toBe(true);
-        expect(simulationResult.warnings).toEqual([]);
+        expect(simulationResult.trechoId).toBe(testTrechoId); // Handler should return trechoId for result correlation
+        expect(simulationResult.troopId).toBe(testTroopId); // Handler should return troopId for battle identification
+        expect(simulationResult.passed).toBe(true); // Simulation should pass when TTK within tolerance
+        expect(simulationResult.warnings).toEqual([]); // No warnings should be present for passing simulation
       }
 
-      // Assert: Results are persisted in simulationController
+      // Assert: Results are persisted in simulationController - Validates IPC handler persistence flow
       const persistedResults = simulationController.getLastResults();
-      expect(persistedResults).not.toBeNull();
-      expect(persistedResults).toBeDefined();
+      expect(persistedResults).not.toBeNull(); // Results should be persisted to simulationController for later retrieval
+      expect(persistedResults).toBeDefined(); // Persisted results should be accessible via getLastResults()
 
-      // Assert: Persisted data is ReportData format
+      // Assert: Persisted data is ReportData format - Validates data structure for UI consumption
       if (persistedResults) {
-        expect(persistedResults.trechos).toHaveLength(1);
-        expect(persistedResults.totalBattles).toBe(1);
-        expect(persistedResults.timestamp).toBeDefined();
+        expect(persistedResults.trechos).toHaveLength(1); // ReportData should contain one trecho summary
+        expect(persistedResults.totalBattles).toBe(1); // ReportData should count total battles executed
+        expect(persistedResults.timestamp).toBeDefined(); // ReportData should have timestamp for result tracking
 
         const trechoSummary = persistedResults.trechos[0];
-        expect(trechoSummary.id).toBeDefined();
-        expect(trechoSummary.name).toBeDefined();
-        expect(trechoSummary.passed).toBe(true);
-        expect(trechoSummary.battleCount).toBe(1);
-        expect(trechoSummary.successRate).toBe(1.0);
-        expect(trechoSummary.battles).toHaveLength(1);
-        expect(trechoSummary.warnings).toHaveLength(0);
+        expect(trechoSummary.id).toBeDefined(); // Trecho summary should have ID for identification
+        expect(trechoSummary.name).toBeDefined(); // Trecho summary should have name for display
+        expect(trechoSummary.passed).toBe(true); // Trecho should be marked as passed when TTK within tolerance
+        expect(trechoSummary.battleCount).toBe(1); // Trecho summary should count battles in this trecho
+        expect(trechoSummary.successRate).toBe(1.0); // Success rate should be 1.0 (100%) when all battles pass
+        expect(trechoSummary.battles).toHaveLength(1); // Trecho should contain battle result array
+        expect(trechoSummary.warnings).toHaveLength(0); // No warnings should be present for passing trecho
 
         const battle = trechoSummary.battles[0];
-        expect(battle.troopId).toBe(testTroopId);
-        expect(battle.troopName).toBe('Goblin Scout');
-        expect(battle.outcome).toBe('victory');
-        expect(battle.ttkTurns).toBe(4);
-        expect(battle.ttkActions).toBe(10);
+        expect(battle.troopId).toBe(testTroopId); // Battle should record troopId for enemy identification
+        expect(battle.troopName).toBe('Goblin Scout'); // Battle should record troopName for display
+        expect(battle.outcome).toBe('victory'); // Battle outcome should be victory when defeated enemy
+        expect(battle.ttkTurns).toBe(4); // Battle should record TTK turns for balance analysis
+        expect(battle.ttkActions).toBe(10); // Battle should record TTK actions for balance analysis
       }
     });
 
@@ -247,26 +247,26 @@ describe('Simulation Run → Results Persistence Integration', () => {
       // Act: Run simulation
       const result = await handleSimulationRun(null, payload);
 
-      // Assert: Handler returns SimulationResult with failed status
-      expect(result.success).toBe(true);
+      // Assert: Handler returns SimulationResult with failed status - Validates tolerance check failure detection
+      expect(result.success).toBe(true); // IPC handler should complete successfully even when tolerance check fails
       if (result.success && result.data) {
         const simulationResult = result.data;
-        expect(simulationResult.passed).toBe(false);
-        expect(simulationResult.warnings).toContain('TTK outside tolerance range');
+        expect(simulationResult.passed).toBe(false); // Simulation should be marked as failed when TTK outside tolerance
+        expect(simulationResult.warnings).toContain('TTK outside tolerance range'); // Warnings should indicate tolerance violation for developer feedback
       }
 
-      // Assert: Persisted ReportData reflects failure
+      // Assert: Persisted ReportData reflects failure - Validates failure state persistence
       const persistedResults = simulationController.getLastResults();
-      expect(persistedResults).not.toBeNull();
+      expect(persistedResults).not.toBeNull(); // Failed simulation results should be persisted
 
       if (persistedResults) {
         const trechoSummary = persistedResults.trechos[0];
-        expect(trechoSummary.passed).toBe(false);
-        expect(trechoSummary.successRate).toBe(0.0);
-        expect(trechoSummary.warnings).toHaveLength(1);
-        expect(trechoSummary.warnings[0].message).toBe('TTK outside tolerance range');
-        expect(trechoSummary.warnings[0].type).toBe('tolerance');
-        expect(trechoSummary.warnings[0].severity).toBe('warning');
+        expect(trechoSummary.passed).toBe(false); // Persisted trecho should be marked as failed
+        expect(trechoSummary.successRate).toBe(0.0); // Success rate should be 0.0 when TTK check fails
+        expect(trechoSummary.warnings).toHaveLength(1); // One warning should be present for tolerance violation
+        expect(trechoSummary.warnings[0].message).toBe('TTK outside tolerance range'); // Warning message should explain the failure reason
+        expect(trechoSummary.warnings[0].type).toBe('tolerance'); // Warning type should be "tolerance" for categorization
+        expect(trechoSummary.warnings[0].severity).toBe('warning'); // Warning severity should be "warning" (non-blocking)
       }
     });
 
@@ -284,17 +284,17 @@ describe('Simulation Run → Results Persistence Integration', () => {
       // Act: Run single troop simulation
       const result = await handleSimulationRun(null, payload);
 
-      // Assert: Handler returns success
-      expect(result.success).toBe(true);
+      // Assert: Handler returns success - Validates single troop simulation path
+      expect(result.success).toBe(true); // Single troop simulation should complete successfully
 
-      // Assert: Results are persisted with default trecho name
+      // Assert: Results are persisted with default trecho name - Validates default trecho creation
       const persistedResults = simulationController.getLastResults();
-      expect(persistedResults).not.toBeNull();
+      expect(persistedResults).not.toBeNull(); // Single troop results should be persisted
 
       if (persistedResults) {
-        expect(persistedResults.trechos).toHaveLength(1);
-        expect(persistedResults.trechos[0].id).toBe('single-troop');
-        expect(persistedResults.trechos[0].name).toBe('Single Troop');
+        expect(persistedResults.trechos).toHaveLength(1); // One trecho should be created for single troop simulation
+        expect(persistedResults.trechos[0].id).toBe('single-troop'); // Default trecho ID should be "single-troop"
+        expect(persistedResults.trechos[0].name).toBe('Single Troop'); // Default trecho name should be "Single Troop"
       }
     });
   });

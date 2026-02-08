@@ -20,3 +20,5 @@ export { WorkerToMainMessageFakeBuilder } from './WorkerToMainMessageFakeBuilder
 export { RecentProjectFakeBuilder } from './RecentProjectFakeBuilder.js';
 export { ErrorPayloadFakeBuilder } from './ErrorPayloadFakeBuilder.js';
 export { SimulationResultPayloadFakeBuilder } from './SimulationResultPayloadFakeBuilder.js';
+export { TrechoFakeBuilder } from './TrechoFakeBuilder.js';
+export { BattleResultFakeBuilder } from './BattleResultFakeBuilder.js';

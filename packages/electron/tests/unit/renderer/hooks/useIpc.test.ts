@@ -2,6 +2,22 @@
  * useIpc Hook Tests
  *
  * Tests for the useIpc custom hook.
+ *
+ * Parameterized Test Pattern:
+ * This file uses Jest's test.each for data-driven testing to reduce code duplication.
+ * Pattern: test.each<[name, param1, param2, ...]>(table)('%s', async (name, param1, param2, ...) => { ... })
+ *
+ * Benefits:
+ * - Reduced test code duplication (~30% reduction)
+ * - Easier to extend (add new test cases to table)
+ * - Clear test intent through table structure
+ * - Consistent test structure for similar scenarios
+ *
+ * Usage:
+ * 1. Define test table with [description, input1, input2, ... expected] tuples
+ * 2. Use %s placeholder in test name for description interpolation
+ * 3. Access parameters in test callback in table order
+ * 4. Add assertions that work across all parameter combinations
  */
 
 import { renderHook, waitFor, act } from '@testing-library/react'
@@ -129,38 +145,12 @@ describe('useIpc', () => {
   })
 
   describe('invoke', () => {
-    it('should invoke IPC call manually', async () => {
-      const mockData = {
-        theme: 'dark' as const,
-        lastProjectPath: null,
-      }
-
-      const mockCoreto = createMinimalCoretoMock({
-        preferences: { get: jest.fn().mockResolvedValue({
-          success: true,
-          data: mockData,
-        }),
-        },
-      })
-
-      Object.defineProperty(window, 'coreto', {
-        value: mockCoreto,
-        writable: true,
-      })
-
-      const { result } = renderHook(() =>
-        useIpc(() => mockCoreto.preferences.get(), { invokeOnMount: false })
-      )
-
-      await act(async () => {
-        await result.current.invoke()
-      })
-
-      expect(result.current.data).toEqual(mockData)
-      expect(mockCoreto.preferences.get).toHaveBeenCalledTimes(1)
-    })
-
-    it('should handle multiple invocations', async () => {
+    // Parameterized tests for invoke behavior
+    // Pattern: [description, invokeCount, expectedCallCount]
+    test.each([
+      ['single invocation', 1, 1],
+      ['multiple invocations', 2, 2],
+    ] as const)('should handle %s', async (_description, invokeCount, expectedCallCount) => {
       const mockCoreto = createMinimalCoretoMock({
         preferences: { get: jest.fn().mockResolvedValue({
           success: true,
@@ -181,16 +171,15 @@ describe('useIpc', () => {
         useIpc(() => mockCoreto.preferences.get(), { invokeOnMount: false })
       )
 
-      await act(async () => {
-        await result.current.invoke()
-      })
-
-      await act(async () => {
-        await result.current.invoke()
-      })
+      // Invoke the specified number of times
+      for (let i = 0; i < invokeCount; i++) {
+        await act(async () => {
+          await result.current.invoke()
+        })
+      }
 
       expect(result.current.data).not.toBeNull()
-      expect(mockCoreto.preferences.get).toHaveBeenCalledTimes(2)
+      expect(mockCoreto.preferences.get).toHaveBeenCalledTimes(expectedCallCount)
     })
   })
 
@@ -237,44 +226,36 @@ describe('useIpcWithArg', () => {
   })
 
   describe('basic usage', () => {
-    it('should invoke IPC call with argument', async () => {
-      const mockData = {
-        path: '/path/to/project',
-        name: 'Test Project',
-        isValid: true,
-        troopsCount: 1,
-        classesCount: 1,
-        enemiesCount: 1,
-      }
-
-      const mockCoreto = createMinimalCoretoMock({
-        project: { open: jest.fn().mockResolvedValue({
+    // Parameterized tests for IPC calls with arguments
+    // Pattern: [description, mockResponse, testPath, expectedDataOrNull, expectedErrorOrNull]
+    test.each([
+      [
+        'successful IPC call with argument',
+        {
           success: true,
-          data: mockData,
-        }),
+          data: {
+            path: '/path/to/project',
+            name: 'Test Project',
+            isValid: true,
+            troopsCount: 1,
+            classesCount: 1,
+            enemiesCount: 1,
+          },
         },
-      })
-
-      Object.defineProperty(window, 'coreto', {
-        value: mockCoreto,
-        writable: true,
-      })
-
-      const { result } = renderHook(() =>
-        useIpcWithArg((path: string) => mockCoreto.project.open(path))
-      )
-
-      await act(async () => {
-        await result.current.invoke('/path/to/project')
-      })
-
-      expect(result.current.data).toEqual(mockData)
-      expect(mockCoreto.project.open).toHaveBeenCalledWith('/path/to/project')
-    })
-
-    it('should handle IPC errors with argument', async () => {
-      const mockCoreto = createMinimalCoretoMock({
-        project: { open: jest.fn().mockResolvedValue({
+        '/path/to/project',
+        {
+          path: '/path/to/project',
+          name: 'Test Project',
+          isValid: true,
+          troopsCount: 1,
+          classesCount: 1,
+          enemiesCount: 1,
+        },
+        null,
+      ],
+      [
+        'IPC error with argument',
+        {
           success: false,
           error: {
             name: 'IPCError',
@@ -283,26 +264,41 @@ describe('useIpcWithArg', () => {
             context: {},
             timestamp: new Date().toISOString(),
           },
-        }),
         },
-      })
+        '/invalid/path',
+        null,
+        'Invalid project path',
+      ],
+    ] as const)(
+      'should handle %s',
+      async (_description, mockResponse, testPath, expectedData, expectedError) => {
+        const mockCoreto = createMinimalCoretoMock({
+          project: { open: jest.fn().mockResolvedValue(mockResponse) },
+        })
 
-      Object.defineProperty(window, 'coreto', {
-        value: mockCoreto,
-        writable: true,
-      })
+        Object.defineProperty(window, 'coreto', {
+          value: mockCoreto,
+          writable: true,
+        })
 
-      const { result } = renderHook(() =>
-        useIpcWithArg((path: string) => mockCoreto.project.open(path))
-      )
+        const { result } = renderHook(() =>
+          useIpcWithArg((path: string) => mockCoreto.project.open(path))
+        )
 
-      await act(async () => {
-        await result.current.invoke('/invalid/path')
-      })
+        await act(async () => {
+          await result.current.invoke(testPath)
+        })
 
-      expect(result.current.data).toBeNull()
-      expect(result.current.error).not.toBeNull()
-      expect(result.current.error?.message).toBe('Invalid project path')
-    })
+        if (expectedError) {
+          expect(result.current.data).toBeNull()
+          expect(result.current.error).not.toBeNull()
+          expect(result.current.error?.message).toBe(expectedError)
+        } else {
+          expect(result.current.data).toEqual(expectedData)
+          expect(result.current.error).toBeNull()
+        }
+        expect(mockCoreto.project.open).toHaveBeenCalledWith(testPath)
+      }
+    )
   })
 })

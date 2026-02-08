@@ -38,12 +38,12 @@ describe('Enemy', () => {
     it('should throw ValidationError when params length is not 8', () => {
       expect(() =>
         new EnemyFakeBuilder()
-          .withParams([50, 0, 10] as any)
+          .withInvalidParams()
           .build(),
       ).toThrow(ValidationError);
       expect(() =>
         new EnemyFakeBuilder()
-          .withParams([50, 0, 10] as any)
+          .withInvalidParams()
           .build(),
       ).toThrow('Enemy params must have exactly 8 values');
     });
@@ -407,17 +407,19 @@ describe('Enemy', () => {
 
     it('should not allow modification of params', () => {
       const enemy = new EnemyFakeBuilder().build();
+      const mutator = new EnemyFakeBuilder().withParamsMutation();
 
       expect(() => {
-        (enemy.params as any)[0] = 999;
+        mutator(enemy.params);
       }).toThrow();
     });
 
     it('should not allow modification of actions', () => {
       const enemy = new EnemyFakeBuilder().build();
+      const mutator = new EnemyFakeBuilder().withActionsMutation();
 
       expect(() => {
-        (enemy.actions as any).push({ skillId: 99, rating: 5, conditionType: 0 });
+        mutator(enemy.actions);
       }).toThrow();
     });
 

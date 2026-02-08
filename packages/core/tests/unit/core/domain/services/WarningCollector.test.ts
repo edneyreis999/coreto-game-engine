@@ -1,6 +1,25 @@
 import { WarningCollector } from '@coreto/core';
 import { Warning, type WarningData } from '@coreto/core';
 
+/**
+ * Helper function for testing array immutability.
+ * Attempts to mutate a readonly array by pushing a new element.
+ * Used in tests to verify that arrays are properly frozen/readonly.
+ *
+ * @param array - The array to attempt mutation on
+ * @returns A function that performs the mutation attempt
+ */
+function withArrayMutation<T>(array: readonly T[]): () => void {
+  return () => {
+    (array as unknown as T[]).push(new Warning({
+      type: 'troop_not_found',
+      severity: 'critical',
+      message: 'Hacked',
+      context: {},
+    }) as unknown as T);
+  };
+}
+
 describe('WarningCollector', () => {
   let collector: WarningCollector;
 
@@ -167,14 +186,8 @@ describe('WarningCollector', () => {
       });
 
       const warnings = collector.getWarnings();
-      (warnings as any).push(
-        new Warning({
-          type: 'troop_not_found',
-          severity: 'critical',
-          message: 'Hacked',
-          context: {},
-        })
-      );
+      const mutateArray = withArrayMutation(warnings);
+      mutateArray();
 
       // Original should still have 1 warning
       expect(collector.count()).toBe(1);

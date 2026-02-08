@@ -82,4 +82,56 @@ export class EnemyFakeBuilder extends FakeBuilder<Enemy> {
   withInvalidData(): this {
     return this.withId(0);
   }
+
+  /**
+   * Create an enemy with invalid params length (for validation testing).
+   * Tests that Enemy constructor rejects params arrays not of length 8.
+   *
+   * @example
+   * ```typescript
+   * expect(() => new EnemyFakeBuilder()
+   *   .withInvalidParams()
+   *   .build()).toThrow(ValidationError);
+   * ```
+   */
+  withInvalidParams(): this {
+    this.params = [50, 0, 10] as unknown as [number, number, number, number, number, number, number, number];
+    return this;
+  }
+
+  /**
+   * Create a mutable params array reference (for immutability testing).
+   * Returns a function that attempts to mutate the params array.
+   * This should throw when the Enemy object is properly frozen.
+   *
+   * @example
+   * ```typescript
+   * const enemy = new EnemyFakeBuilder().build();
+   * const mutator = new EnemyFakeBuilder().withParamsMutation();
+   * expect(() => mutator(enemy.params)).toThrow();
+   * ```
+   */
+  withParamsMutation(): (params: readonly number[]) => void {
+    return (params: readonly number[]) => {
+      (params as unknown as number[])[0] = 999;
+    };
+  }
+
+  /**
+   * Create a mutable actions array reference (for immutability testing).
+   * Returns a function that attempts to mutate the actions array.
+   * This should throw when the Enemy object is properly frozen.
+   *
+   * @example
+   * ```typescript
+   * const enemy = new EnemyFakeBuilder().build();
+   * const mutator = new EnemyFakeBuilder().withActionsMutation();
+   * expect(() => mutator(enemy.actions)).toThrow();
+   * ```
+   */
+  withActionsMutation(): (actions: readonly unknown[]) => void {
+    return (actions: readonly unknown[]) => {
+      (actions as unknown as unknown[]).push({ skillId: 99, rating: 5, conditionType: 0 });
+    };
+  }
 }

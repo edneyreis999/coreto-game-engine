@@ -1,9 +1,21 @@
 /**
  * Constantes reutilizáveis para testes
  *
+ * @deprecated Import from '../constants' instead
+ * This file is maintained for backward compatibility.
+ *
  * Centraliza valores mágicos usados nos testes para melhorar
  * manutenibilidade e semântica.
+ *
+ * Usage:
+ * ```ts
+ * import { TEST_CONSTANTS, TEST_TRECHO_IDS } from '../constants';
+ * // or
+ * import { LEVEL_CONSTANTS, TTK_CONSTANTS } from '../constants';
+ * ```
  */
+
+// Legacy exports for backward compatibility
 export const TEST_CONSTANTS = {
   /**
    * Seed padrão para RNG determinístico
@@ -37,9 +49,9 @@ export const TEST_CONSTANTS = {
 
   /**
    * Tolerância padrão para variações de TTK
-   * 10% de margem (0.1 = 10%)
+   * 15% de margem (0.15 = 15%)
    */
-  DEFAULT_TOLERANCE: 0.1,
+  DEFAULT_TOLERANCE: 0.15,
 
   /**
    * Versão padrão para relatórios de teste

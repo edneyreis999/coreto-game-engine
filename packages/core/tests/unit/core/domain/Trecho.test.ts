@@ -11,12 +11,12 @@ describe('Trecho', () => {
 
       expect(trecho.id).toBe('ato1-nivel1-10');
       expect(trecho.name).toBe('Ato 1 - Níveis 1-10');
-      expect(trecho.anchorLevelMin).toBe(1);
-      expect(trecho.anchorLevelMax).toBe(10);
-      expect(trecho.targetTtkTurns).toBe(3);
-      expect(trecho.targetTtkActions).toBe(8);
-      expect(trecho.tolerancePercent).toBe(15);
-      expect(trecho.troopIds).toEqual([1, 2, 3]);
+      expect(trecho.anchorLevelMin).toBe(1); // Default from FakeBuilder
+      expect(trecho.anchorLevelMax).toBe(10); // Default from FakeBuilder
+      expect(trecho.targetTtkTurns).toBe(3); // Default from FakeBuilder
+      expect(trecho.targetTtkActions).toBe(8); // Default from FakeBuilder
+      expect(trecho.tolerancePercent).toBe(15); // Default from FakeBuilder
+      expect(trecho.troopIds).toEqual([1, 2, 3]); // Default from FakeBuilder
       expect(trecho.party).toBe(validParty);
     });
 
@@ -41,7 +41,7 @@ describe('Trecho', () => {
       expect(() => builder.build()).toThrow('Anchor level must be 1-99');
     });
 
-    it('should throw ValidationError when anchorLevelMax exceeds 99', () => {
+    it('should throw ValidationError when anchorLevelMax exceeds LEVEL_CONSTANTS.MAX_LEVEL', () => {
       const builder = new TrechoFakeBuilder().withAboveMaxLevel();
 
       expect(() => builder.build()).toThrow(ValidationError);

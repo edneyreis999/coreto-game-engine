@@ -1,5 +1,6 @@
 import { ValidationError } from '../../../../src/core/errors/ValidationError.js';
 import { SkillFakeBuilder } from '../../../fakes';
+import type { DamageType } from '../../../../src/core/domain/Skill.js';
 
 describe('Skill', () => {
   describe('constructor', () => {
@@ -128,7 +129,7 @@ describe('Skill', () => {
       ['none', false, 'no damage type'],
     ])('should return %p for damage type %s', (damageType, expected, _description) => {
       const skill = new SkillFakeBuilder()
-        .withDamageType(damageType as any)
+        .withDamageType(damageType as DamageType)
         .build();
 
       expect(skill.isDamageSkill()).toBe(expected);
@@ -145,7 +146,7 @@ describe('Skill', () => {
       ['none', false, 'no damage type'],
     ])('should return %p for damage type %s', (damageType, expected, _description) => {
       const skill = new SkillFakeBuilder()
-        .withDamageType(damageType as any)
+        .withDamageType(damageType as DamageType)
         .build();
 
       expect(skill.isHealingSkill()).toBe(expected);
@@ -423,9 +424,10 @@ describe('Skill', () => {
 
     it('should not allow modification of damage', () => {
       const skill = new SkillFakeBuilder().build();
+      const mutator = new SkillFakeBuilder().withDamageMutation();
 
       expect(() => {
-        (skill.damage as any).type = 'hp_recover';
+        mutator(skill.damage);
       }).toThrow();
     });
 

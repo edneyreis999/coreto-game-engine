@@ -14,17 +14,25 @@
  * - Uses temp directory for report file storage
  * - Mocks core dependencies (ILogger, IDataLoader, IBattleSimulator, etc.)
  *
+ * CLEANUP STRATEGY:
+ * - Unique IDs per test using generateTestId() to prevent 409 conflicts
+ * - Database truncation in afterEach hook via truncateDatabaseTables()
+ * - Temp directories cleaned up after each test
+ * - Tests can run in any order without data pollution
+ * - Manual clearLastResults() calls removed in favor of automated cleanup
+ *
  * @see packages/electron/src/main/ipc/handlers/simulation.ts
  * @see packages/electron/src/main/ipc/handlers/history-handlers.ts
  * @see packages/electron/src/main/services/report-storage.ts
  * @see packages/electron/src/main/database/schema.ts
+ * @see packages/electron/tests/helpers/test-utils.ts
  */
 
 import 'reflect-metadata';
 import { container } from 'tsyringe';
 import path from 'node:path';
 import fs from 'node:fs/promises';
-import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach, afterAll, jest } from '@jest/globals';
 import type { app } from 'electron';
 import type {
   ILogger,
@@ -46,6 +54,14 @@ import type { SimulationResult, ReportData } from '@coreto/electron/domain/types
 import { simulationController } from '../../src/main/services/index.js';
 import { registerMainDependencies } from '../../src/main/di/container.js';
 import { resetDatabaseSingleton, initDatabase, closeDatabase } from '../../src/main/database/index.js';
+
+// Test utilities for cleanup and unique ID generation
+import {
+  generateTestId,
+  generateTestProjectPath,
+  truncateDatabaseTables,
+  isDatabaseClean,
+} from '../helpers/test-utils.js';
 
 // Mock Electron app.getPath for userData directory
 const mockUserDataDir = '/tmp/coreto-test-reports';
@@ -70,10 +86,10 @@ describe('Simulation Run → History Persistence Integration', () => {
   let mockDataLoader: jest.Mocked<IDataLoader>;
   let mockSimulator: jest.Mocked<IBattleSimulator>;
 
-  // Test data
-  const testProjectPath = '/Users/dev/test-project';
-  const testConfigPath = '/Users/dev/test-project/config.json';
-  const testTrechoId = 'trecho-001';
+  // Test data - use unique IDs per test file to prevent conflicts
+  const testProjectPath = generateTestProjectPath();
+  const testConfigPath = `${testProjectPath}/config.json`;
+  const testTrechoId = `trecho-${generateTestId()}`;
   const testTrechoName = 'Forest Path - Levels 1-10';
   const testTroopId = 42;
   const testSeed = 12345;
@@ -217,6 +233,9 @@ describe('Simulation Run → History Persistence Integration', () => {
     simulationController.clearLastResults();
     simulationController.resetProgress();
 
+    // Truncate database tables to prevent data pollution between tests
+    truncateDatabaseTables();
+
     // Close database connection
     closeDatabase();
 
@@ -228,12 +247,18 @@ describe('Simulation Run → History Persistence Integration', () => {
     }
   });
 
+  afterAll(() => {
+    // Verify no orphaned test data after all tests complete
+    if (!isDatabaseClean()) {
+      console.warn(
+        '[Test Cleanup Warning] Test data detected after suite completion. ' +
+          'Tests should clean up after themselves.'
+      );
+    }
+  });
+
   describe('simulation:run → history export flow', () => {
     it('should save simulation to history after successful simulation', async () => {
-      // Arrange: Clear simulation controller state
-      simulationController.clearLastResults();
-      simulationController.resetProgress();
-
       // Import handler after mocks are registered
       const { handleSimulationRun } = await import('../../src/main/ipc/handlers/simulation.js');
 

@@ -229,36 +229,36 @@ describe('Integration: Full Pipeline - run-ttk command', () => {
       // Act
       const { report, reportPath } = await executePipeline(setup.configPath);
 
-      // Assert: Report structure
-      expect(report).toBeDefined();
-      expect(report.metadata).toBeDefined();
-      expect(report.metadata.version).toBe('1.0.0');
-      expect(report.metadata.seed).toBe(12345);
-      expect(report.metadata.projectPath).toBe(setup.projectPath);
+      // Assert: Report structure - Validates report generation with required metadata fields
+      expect(report).toBeDefined(); // Report should be generated after pipeline execution
+      expect(report.metadata).toBeDefined(); // Report should contain metadata for traceability
+      expect(report.metadata.version).toBe('1.0.0'); // Report version should match schema (1.0.0)
+      expect(report.metadata.seed).toBe(12345); // Report metadata should preserve the seed for reproducibility
+      expect(report.metadata.projectPath).toBe(setup.projectPath); // Report should record source project path
 
-      // Assert: Summary
-      expect(report.summary).toBeDefined();
-      expect(report.summary.totalBattles).toBeGreaterThan(0);
-      expect(report.summary.totalTrechos).toBeGreaterThan(0);
-      expect(report.summary.successRate).toBeGreaterThanOrEqual(0);
-      expect(report.summary.successRate).toBeLessThanOrEqual(1);
+      // Assert: Summary - Validates summary metrics for business reporting
+      expect(report.summary).toBeDefined(); // Report should contain summary statistics
+      expect(report.summary.totalBattles).toBeGreaterThan(0); // Summary should count battles executed
+      expect(report.summary.totalTrechos).toBeGreaterThan(0); // Summary should count trechos validated
+      expect(report.summary.successRate).toBeGreaterThanOrEqual(0); // Success rate should be between 0-1 (inclusive)
+      expect(report.summary.successRate).toBeLessThanOrEqual(1); // Success rate should be between 0-1 (inclusive)
 
-      // Assert: Trechos
-      expect(report.trechos).toBeDefined();
-      expect(report.trechos.length).toBeGreaterThan(0);
+      // Assert: Trechos - Validates trecho results structure for game design validation
+      expect(report.trechos).toBeDefined(); // Report should contain trecho battle results
+      expect(report.trechos.length).toBeGreaterThan(0); // Report should include at least one trecho result
 
-      // Assert: Report file exists
-      expect(fs.existsSync(reportPath)).toBe(true);
+      // Assert: Report file exists - Validates file system persistence for audit trail
+      expect(fs.existsSync(reportPath)).toBe(true); // Report file should be persisted to disk for review
 
-      // Assert: Report is valid JSON
+      // Assert: Report is valid JSON - Validates serialization for cross-tool compatibility
       const reportContent = fs.readFileSync(reportPath, 'utf-8');
       const parsedReport = JSON.parse(reportContent);
-      expect(parsedReport.seed).toBe(12345);
-      expect(parsedReport.projectPath).toBe(setup.projectPath);
+      expect(parsedReport.seed).toBe(12345); // Persisted report should preserve seed for reproducibility
+      expect(parsedReport.projectPath).toBe(setup.projectPath); // Persisted report should record source project
 
-      // Assert: Read-only constraint (CA-021)
+      // Assert: Read-only constraint (CA-021) - Validates runtime guard prevents game project corruption
       const readOnlyRespected = verifyReadOnlyConstraint(setup.projectPath, initialSnapshot);
-      expect(readOnlyRespected).toBe(true);
+      expect(readOnlyRespected).toBe(true); // Pipeline should not modify any game project files (read-only guarantee)
     }, 30000);
 
     it('should execute battles with expected TTK metrics', async () => {
@@ -270,17 +270,17 @@ describe('Integration: Full Pipeline - run-ttk command', () => {
 
       // Assert: Find the happy path trecho
       const happyTrecho = report.trechos.find((t) => t.trechoId === 'test-trecho-happy');
-      expect(happyTrecho).toBeDefined();
+      expect(happyTrecho).toBeDefined(); // Report should contain configured trecho by ID
 
-      // Assert: Battle results
-      expect(happyTrecho!.battles).toBeDefined();
-      expect(happyTrecho!.battles.length).toBeGreaterThan(0);
+      // Assert: Battle results - Validates battle execution captured TTK metrics
+      expect(happyTrecho!.battles).toBeDefined(); // Trecho should contain battle execution results
+      expect(happyTrecho!.battles.length).toBeGreaterThan(0); // Trecho should have at least one battle result
 
       const battle = happyTrecho!.battles[0];
-      expect(battle).toBeDefined();
-      expect(battle!.ttkTurns).toBeGreaterThan(0);
-      expect(battle!.ttkActions).toBeGreaterThan(0);
-      expect(battle!.outcome).toBeDefined();
+      expect(battle).toBeDefined(); // Battle result should exist
+      expect(battle!.ttkTurns).toBeGreaterThan(0); // TTK turns should be positive (battle completed)
+      expect(battle!.ttkActions).toBeGreaterThan(0); // TTK actions should be positive (combat occurred)
+      expect(battle!.outcome).toBeDefined(); // Battle should have a valid outcome (victory/defeat/timeout)
     }, 30000);
   });
 
@@ -303,14 +303,14 @@ describe('Integration: Full Pipeline - run-ttk command', () => {
       const outToleranceTrecho = report.trechos.find(
         (t) => t.trechoId === 'test-trecho-out-tolerance'
       );
-      expect(outToleranceTrecho).toBeDefined();
+      expect(outToleranceTrecho).toBeDefined(); // Report should contain out-of-tolerance trecho
 
-      // Assert: Warnings exist
-      expect(report.summary.totalWarnings).toBeGreaterThan(0);
+      // Assert: Warnings exist - Validates tolerance check generates warnings
+      expect(report.summary.totalWarnings).toBeGreaterThan(0); // Summary should count tolerance violations
 
-      // Assert: Out-of-tolerance trecho has warnings
-      expect(outToleranceTrecho!.warnings.length).toBeGreaterThan(0);
-      expect(outToleranceTrecho!.warnings[0]!.type).toBe('ttk_out_of_tolerance');
+      // Assert: Out-of-tolerance trecho has warnings - Validates warning generation for game design feedback
+      expect(outToleranceTrecho!.warnings.length).toBeGreaterThan(0); // Trecho should have warnings for TTK violations
+      expect(outToleranceTrecho!.warnings[0]!.type).toBe('ttk_out_of_tolerance'); // Warning should identify TTK tolerance violation
 
       // Note: Success rate is 100% because warnings have 'warning' severity, not 'critical'
       // Only critical warnings affect success rate (per JsonReporter implementation)
@@ -323,16 +323,16 @@ describe('Integration: Full Pipeline - run-ttk command', () => {
       // Act
       const { report } = await executePipeline(setup.configPath);
 
-      // Assert: Check warnings array
+      // Assert: Check warnings array - Validates warning structure for developer feedback
       const allWarnings = report.trechos.flatMap((t) => t.warnings);
-      expect(allWarnings.length).toBeGreaterThan(0);
+      expect(allWarnings.length).toBeGreaterThan(0); // Report should aggregate warnings across all trechos
 
       const warning = allWarnings[0];
-      expect(warning).toBeDefined();
-      expect(warning!.type).toBeDefined();
-      expect(warning!.severity).toBeDefined();
-      expect(warning!.message).toBeDefined();
-      expect(warning!.context).toBeDefined();
+      expect(warning).toBeDefined(); // Warning should exist
+      expect(warning!.type).toBeDefined(); // Warning should have type for categorization
+      expect(warning!.severity).toBeDefined(); // Warning should have severity for prioritization
+      expect(warning!.message).toBeDefined(); // Warning should have message for developer action
+      expect(warning!.context).toBeDefined(); // Warning should have context for debugging (troop, TTK, targets)
     }, 30000);
   });
 
@@ -352,18 +352,18 @@ describe('Integration: Full Pipeline - run-ttk command', () => {
       // Act
       const { report } = await executePipeline(setup.configPath);
 
-      // Assert: Report generated despite timeout
-      expect(report).toBeDefined();
-      expect(report.summary.totalBattles).toBeGreaterThan(0);
+      // Assert: Report generated despite timeout - Validates graceful handling of long battles
+      expect(report).toBeDefined(); // Report should be generated even when battles timeout
+      expect(report.summary.totalBattles).toBeGreaterThan(0); // Summary should count timeout battles
 
       // Assert: Find timeout trecho
       const timeoutTrecho = report.trechos.find((t) => t.trechoId === 'test-trecho-timeout');
-      expect(timeoutTrecho).toBeDefined();
+      expect(timeoutTrecho).toBeDefined(); // Report should contain timeout trecho
 
-      // Assert: Battle has timeout outcome
+      // Assert: Battle has timeout outcome - Validates timeout detection for game design limits
       const battle = timeoutTrecho!.battles[0];
-      expect(battle).toBeDefined();
-      expect(battle!.outcome).toBe('timeout');
+      expect(battle).toBeDefined(); // Timeout battle result should exist
+      expect(battle!.outcome).toBe('timeout'); // Battle outcome should be marked as timeout (exceeded maxBattleTurns)
     }, 30000);
 
     it('should generate timeout warning', async () => {
@@ -374,12 +374,12 @@ describe('Integration: Full Pipeline - run-ttk command', () => {
       // Act
       const { report } = await executePipeline(setup.configPath);
 
-      // Assert: Timeout warning exists
+      // Assert: Timeout warning exists - Validates timeout warning generation for developer awareness
       const timeoutTrecho = report.trechos.find((t) => t.trechoId === 'test-trecho-timeout');
-      expect(timeoutTrecho).toBeDefined();
+      expect(timeoutTrecho).toBeDefined(); // Report should contain timeout trecho
 
       const timeoutWarnings = timeoutTrecho!.warnings.filter((w) => w.type === 'battle_timeout');
-      expect(timeoutWarnings.length).toBeGreaterThan(0);
+      expect(timeoutWarnings.length).toBeGreaterThan(0); // Trecho should have timeout warning for maxTurns exceeded
     }, 30000);
   });
 
@@ -424,7 +424,7 @@ describe('Integration: Full Pipeline - run-ttk command', () => {
         results.push(report);
       }
 
-      // Assert: All executions have identical TTK values
+      // Assert: All executions have identical TTK values - Validates determinism guarantee (CA-007)
       const firstResult = results[0];
       const firstBattle = firstResult.trechos[0].battles[0];
 
@@ -432,9 +432,9 @@ describe('Integration: Full Pipeline - run-ttk command', () => {
         const currentResult = results[i];
         const currentBattle = currentResult.trechos[0].battles[0];
 
-        expect(currentBattle.ttkTurns).toBe(firstBattle.ttkTurns);
-        expect(currentBattle.ttkActions).toBe(firstBattle.ttkActions);
-        expect(currentBattle.outcome).toBe(firstBattle.outcome);
+        expect(currentBattle.ttkTurns).toBe(firstBattle.ttkTurns); // Execution ${i + 1}: TTK turns should match execution 1 (same seed = same result)
+        expect(currentBattle.ttkActions).toBe(firstBattle.ttkActions); // Execution ${i + 1}: TTK actions should match execution 1 (same seed = same result)
+        expect(currentBattle.outcome).toBe(firstBattle.outcome); // Execution ${i + 1}: Battle outcome should match execution 1 (same seed = same result)
       }
     }, 60000);
 
@@ -463,7 +463,8 @@ describe('Integration: Full Pipeline - run-ttk command', () => {
       const normalized2 = normalize(report2);
 
       // Assert: Reports are byte-identical (excluding timestamp and peakMemoryMB)
-      expect(JSON.stringify(normalized1)).toBe(JSON.stringify(normalized2));
+      // This validates the determinism guarantee: same seed → byte-identical reports (CA-007)
+      expect(JSON.stringify(normalized1)).toBe(JSON.stringify(normalized2)); // Reports with same seed should be byte-identical (determinism guarantee)
     }, 60000);
 
     // TODO: Re-enable when mocks use RNG for battle calculations
@@ -512,8 +513,8 @@ describe('Integration: Full Pipeline - run-ttk command', () => {
 
       const duration = Date.now() - startTime;
 
-      // Assert: Battle completes in < 2000ms
-      expect(duration).toBeLessThan(2000);
+      // Assert: Battle completes in < 2000ms - Validates performance target (CA-012)
+      expect(duration).toBeLessThan(2000); // Battle execution should complete in < 2000ms (actual: ${duration}ms) - Performance target CA-012
 
       await battleSimulator.cleanup();
     }, 30000);
@@ -527,8 +528,8 @@ describe('Integration: Full Pipeline - run-ttk command', () => {
       await executePipeline(setup.configPath);
       const duration = Date.now() - startTime;
 
-      // Assert: Full pipeline completes in < 10 seconds (2 battles)
-      expect(duration).toBeLessThan(10000);
+      // Assert: Full pipeline completes in < 10 seconds (2 battles) - Validates pipeline efficiency (CA-013)
+      expect(duration).toBeLessThan(10000); // Full pipeline should complete in < 10000ms (actual: ${duration}ms) - Pipeline overhead check CA-013
     }, 30000);
   });
 
@@ -547,9 +548,9 @@ describe('Integration: Full Pipeline - run-ttk command', () => {
       // Act
       await executePipeline(setup.configPath);
 
-      // Assert: No files modified
+      // Assert: No files modified - Validates read-only constraint prevents game project corruption (CA-021)
       const readOnlyRespected = verifyReadOnlyConstraint(setup.projectPath, snapshot);
-      expect(readOnlyRespected).toBe(true);
+      expect(readOnlyRespected).toBe(true); // Pipeline should not write any files to game project directory (read-only guarantee CA-021)
     }, 30000);
   });
 });

@@ -138,4 +138,23 @@ export class SkillFakeBuilder extends FakeBuilder<Skill> {
   withInvalidData(): this {
     return this.withId(0);
   }
+
+  /**
+   * Create a damage object mutator (for immutability testing).
+   * Returns a function that attempts to mutate the damage object.
+   * This should throw when the Skill object is properly frozen.
+   *
+   * @example
+   * ```typescript
+   * const skill = new SkillFakeBuilder().build();
+   * const mutator = new SkillFakeBuilder().withDamageMutation();
+   * expect(() => mutator(skill.damage)).toThrow();
+   * ```
+   */
+  withDamageMutation(): (damage: unknown) => void {
+    return (damage: unknown) => {
+      const dmg = damage as { type: string };
+      dmg.type = 'hp_recover';
+    };
+  }
 }
