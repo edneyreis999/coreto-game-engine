@@ -715,12 +715,12 @@ describe('Architecture Rule 4: Domain Structure', () => {
     // Check that key use case files exist
     const expectedUseCases = [
       'run-simulation',
-      'save-project-config-as-core-format',
       'load-project-config',
       'save-project-config',
       'validate-trecho',
       'validate-project',
       'load-game-data',
+      'build-simulation-report',
       // Note: index.ts is filtered out by findTsFiles (.test.ts filter)
     ];
 

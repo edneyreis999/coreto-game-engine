@@ -9,6 +9,5 @@ export * from './validate-project';
 export * from './load-game-data';
 export * from './load-project-config';
 export * from './save-project-config';
-export * from './save-project-config-as-core-format';
 export * from './run-simulation';
 export * from './build-simulation-report';

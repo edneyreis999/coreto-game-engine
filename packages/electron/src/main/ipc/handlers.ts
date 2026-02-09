@@ -47,7 +47,7 @@ import {
 import { createProjectValidator, createGameDataLoader } from '../adapters/index.js';
 
 // Domain layer (cross-layer - module aliases)
-import { validateTrecho, runSimulation } from '@coreto/electron/domain/use-cases';
+import { runSimulation } from '@coreto/electron/domain/use-cases';
 
 // Infrastructure layer (same layer - relative imports)
 import type {
@@ -58,7 +58,6 @@ import type {
   SimulationResult,
   SimulationProgress,
   ReportData,
-  ProjectConfigResponse,
   TroopData,
   ClassData,
   EnemyData,
@@ -68,24 +67,17 @@ import type {
   PreferencesGetResponse,
   PreferencesSetResponse,
   OpenDirectoryResponse,
-  ConfigUpdateTrechoResponse,
-  ConfigDeleteTrechoResponse,
-  ConfigUpdateGlobalSettingsResponse,
 } from './types.js';
 import {
   ProjectOpenPayloadSchema,
   ProjectValidatePayloadSchema,
   SimulationRunPayloadSchema,
-  ConfigLoadPayloadSchema,
   DataGetTroopsPayloadSchema,
   DataGetClassesPayloadSchema,
   DataGetEnemiesPayloadSchema,
   RecentListPayloadSchema,
   RecentAddPayloadSchema,
   PreferencesSetPayloadSchema,
-  ConfigUpdateTrechoPayloadSchema,
-  ConfigDeleteTrechoPayloadSchema,
-  ConfigUpdateGlobalSettingsPayloadSchema,
 } from './types.js';
 import { getDatabase } from '../database/index.js';
 import { getUserPreferences, updateUserPreferences } from '../database/index.js';
@@ -93,6 +85,8 @@ import { CONFIG_IPC_HANDLERS } from './config-handlers.js';
 import { HISTORY_IPC_HANDLERS } from './history-handlers.js';
 import { wrapHandler } from './ipc-response.js';
 import { createRecentProjectsRepository } from '../database/repositories/sqlite-recent-projects-repository.js';
+import { handleConfigLoad } from './handlers/config.js';
+import { handleConfigUpdateTrecho, handleConfigDeleteTrecho, handleConfigUpdateGlobalSettings } from './handlers/config.js';
 
 // ============================================================================
 // Progress State Management
@@ -386,162 +380,25 @@ async function handleSimulationGetResults(
 // ============================================================================
 // Configuration Handlers
 // ============================================================================
-
-/**
- * Handler: config:load
- *
- * Loads a project configuration file.
- */
-async function handleConfigLoad(
-  _event: IpcMainInvokeEvent,
-  payload: unknown
-): Promise<IPCResult<ProjectConfigResponse>> {
-  return wrapHandler(async () => {
-    validatePayload('config:load', payload, ConfigLoadPayloadSchema);
-
-    const { configPath } = payload;
-    const logger = resolve<ILogger>(ILoggerToken);
-    const configLoader = resolve<IConfigLoader>(IConfigLoaderToken);
-
-    logger.info(`[IPC] Loading config: ${configPath}`);
-
-    const config = await configLoader.loadConfig(configPath);
-    const trechos = await configLoader.loadTrechos(config);
-
-    const response: ProjectConfigResponse = {
-      projectPath: config.projectPath,
-      reportOutputPath: config.reportOutputPath,
-      seed: config.seed ?? 12345,
-      trechos: trechos.map((t) => ({
-        id: t.id,
-        name: t.name,
-        anchorLevelMin: t.anchorLevelMin,
-        anchorLevelMax: t.anchorLevelMax,
-        targetTtkTurns: t.targetTtkTurns,
-        targetTtkActions: t.targetTtkActions,
-        tolerancePercent: t.tolerancePercent,
-        troopIds: [...t.troopIds],
-        party: {
-          members: t.party.members.map((m) => ({
-            classId: m.classId,
-            level: m.level,
-          })),
-        },
-      })),
-    };
-
-    // Only include maxBattleTurns if defined
-    if (config.maxBattleTurns !== undefined) {
-      response.maxBattleTurns = config.maxBattleTurns;
-    }
-
-    return response;
-  });
-}
+// config:load handler is now in handlers/config.ts (returns SimulationConfigData)
+// config:updateTrecho, config:deleteTrecho, config:updateGlobalSettings are in handlers/config.ts
+// config:save and config:exists handlers are in config-handlers.ts
+//
+// NOTE: config:getTrechos is deprecated and not implemented (returns empty array)
 
 /**
  * Handler: config:getTrechos
  *
- * Returns all trechos from the currently loaded config.
- * For MVP, returns empty array - will be integrated with database later.
+ * @deprecated This handler is deprecated and returns empty array.
+ * Use config:load instead to get the full configuration including trechos.
  */
 async function handleConfigGetTrechos(
   _event: IpcMainInvokeEvent,
   _payload: unknown
 ): Promise<IPCResult<TrechoData[]>> {
   return wrapHandler(async () => {
-    // For MVP, return empty array
-    // Full implementation will load from database or last loaded config
+    // Deprecated: returns empty array
     return [];
-  });
-}
-
-/**
- * Handler: config:updateTrecho
- *
- * Adds or updates a trecho configuration.
- * For MVP, validates and returns the trecho - will persist to database later.
- */
-async function handleConfigUpdateTrecho(
-  _event: IpcMainInvokeEvent,
-  payload: unknown
-): Promise<IPCResult<ConfigUpdateTrechoResponse>> {
-  return wrapHandler(async () => {
-    validatePayload('config:updateTrecho', payload, ConfigUpdateTrechoPayloadSchema);
-
-    const { trecho } = payload;
-    const logger = resolve<ILogger>(ILoggerToken);
-
-    logger.info(`[IPC] Updating trecho: ${trecho.id}`);
-
-    // Validate using the domain use case
-    const result = validateTrecho(trecho);
-
-    // TODO: Persist to database in future iteration
-    // For MVP, just return the validated trecho
-    return result;
-  });
-}
-
-/**
- * Handler: config:deleteTrecho
- *
- * Removes a trecho from the configuration.
- * For MVP, validates and returns the deleted ID - will update database later.
- */
-async function handleConfigDeleteTrecho(
-  _event: IpcMainInvokeEvent,
-  payload: unknown
-): Promise<IPCResult<ConfigDeleteTrechoResponse>> {
-  return wrapHandler(async () => {
-    validatePayload('config:deleteTrecho', payload, ConfigDeleteTrechoPayloadSchema);
-
-    const { trechoId } = payload;
-    const logger = resolve<ILogger>(ILoggerToken);
-
-    logger.info(`[IPC] Deleting trecho: ${trechoId}`);
-
-    // TODO: Remove from database in future iteration
-    // For MVP, just return the deleted ID
-    return {
-      deletedTrechoId: trechoId,
-    };
-  });
-}
-
-/**
- * Handler: config:updateGlobalSettings
- *
- * Updates global configuration settings.
- * For MVP, validates and returns the settings - will persist to database later.
- */
-async function handleConfigUpdateGlobalSettings(
-  _event: IpcMainInvokeEvent,
-  payload: unknown
-): Promise<IPCResult<ConfigUpdateGlobalSettingsResponse>> {
-  return wrapHandler(async () => {
-    validatePayload(
-      'config:updateGlobalSettings',
-      payload,
-      ConfigUpdateGlobalSettingsPayloadSchema
-    );
-
-    const { seed, maxBattleTurns } = payload;
-    const logger = resolve<ILogger>(ILoggerToken);
-
-    logger.info(`[IPC] Updating global settings: seed=${seed}`);
-
-    // TODO: Persist to database in future iteration
-    // For MVP, just return the validated settings
-    const response: ConfigUpdateGlobalSettingsResponse = {
-      seed: seed ?? 12345,
-    };
-
-    if (maxBattleTurns !== undefined) {
-      response.maxBattleTurns = maxBattleTurns;
-    }
-
-    return response;
   });
 }
 
@@ -772,14 +629,14 @@ export const IPC_HANDLERS: Record<
   'simulation:getProgress': handleSimulationGetProgress,
   'simulation:cancel': handleSimulationCancel,
   'simulation:getResults': handleSimulationGetResults,
-  'config:load': handleConfigLoad,
-  // Config handlers (from registry)
-  'config:save': getRegistryHandler(CONFIG_IPC_HANDLERS, 'config:save'),
-  'config:exists': getRegistryHandler(CONFIG_IPC_HANDLERS, 'config:exists'),
-  'config:getTrechos': handleConfigGetTrechos,
-  'config:updateTrecho': handleConfigUpdateTrecho,
-  'config:deleteTrecho': handleConfigDeleteTrecho,
-  'config:updateGlobalSettings': handleConfigUpdateGlobalSettings,
+  // Config handlers (from handlers/config.ts and config-handlers.ts)
+  'config:load': handleConfigLoad,  // From handlers/config.ts (returns SimulationConfigData)
+  'config:save': getRegistryHandler(CONFIG_IPC_HANDLERS, 'config:save'),  // From config-handlers.ts
+  'config:exists': getRegistryHandler(CONFIG_IPC_HANDLERS, 'config:exists'),  // From config-handlers.ts
+  'config:getTrechos': handleConfigGetTrechos,  // Deprecated, returns empty array
+  'config:updateTrecho': handleConfigUpdateTrecho,  // From handlers/config.ts
+  'config:deleteTrecho': handleConfigDeleteTrecho,  // From handlers/config.ts
+  'config:updateGlobalSettings': handleConfigUpdateGlobalSettings,  // From handlers/config.ts
   'data:getTroops': handleDataGetTroops,
   'data:getClasses': handleDataGetClasses,
   'data:getEnemies': handleDataGetEnemies,
