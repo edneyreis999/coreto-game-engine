@@ -92,6 +92,12 @@ export interface ConfigurationPanelProps {
   projectPath: string;
 
   /**
+   * Initial trechos to load from database (auto-load feature).
+   * When provided, the panel will populate with these trechos on mount.
+   */
+  initialTrechos?: TrechoFormData[];
+
+  /**
    * Callback when configuration is saved.
    */
   onConfigSaved?: (config: ProjectConfigFormData) => void;

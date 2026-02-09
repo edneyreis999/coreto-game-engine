@@ -53,11 +53,7 @@ export function mapToSimulationConfig(
   return {
     projectPath,
     configPath,
-    trechos: trechos.map((t) => ({
-      id: t.id,
-      name: t.name,
-      troopIds: t.troopIds,
-    })),
+    trechos: trechos.map((t) => ({ id: t.id, name: t.name, troopIds: t.troopIds })),
     globalSettings,
   };
 }

@@ -12,7 +12,7 @@
  * @see Task #7 - Extract business logic from ConfigurationPanel
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { TrechoFormData } from '@coreto/electron/domain/types';
 
 /**
@@ -90,6 +90,17 @@ export function useConfigurationManager(
 ): UseConfigurationManagerReturn {
   const [trechos, setTrechos] = useState<TrechoFormData[]>(initialTrechos);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+
+  /**
+   * Sincroniza o estado interno quando initialTrechos muda.
+   *
+   * useState só usa o valor inicial na primeira renderização.
+   * Quando o pai passa novos initialTrechos (ex: carregar config do banco),
+   * precisamos atualizar o estado explicitamente via useEffect.
+   */
+  useEffect(() => {
+    setTrechos(initialTrechos);
+  }, [initialTrechos]);
 
   /**
    * Save a trecho (create or update based on editingIndex).

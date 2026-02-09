@@ -9,8 +9,6 @@ import type { ILogger } from '@coreto/core';
 import { ILoggerToken, resolve } from '@coreto/core';
 import type { IConfigStorage } from '@coreto/electron/domain/ports';
 import { IConfigStorageToken } from '../../di/tokens.js';
-import type { SimulationConfigData } from '@coreto/electron/domain/services';
-import { mapToSimulationConfig } from '@coreto/electron/domain/services';
 import { ProjectConfigSchema, type UIProjectConfig } from '@coreto/electron/domain/schemas';
 import { normalizeSchema } from '@coreto/electron/domain/services';
 
@@ -53,14 +51,14 @@ function validatePayload<T extends unknown>(
  *
  * Loads a project configuration from SQLite database.
  * Uses IConfigStorage port to read from project_configs table.
- * Returns SimulationConfigData format for auto-load functionality.
+ * Returns complete UIProjectConfig with all trecho data for ConfigurationPanel.
  *
  * Returns null gracefully if no saved config exists for the project.
  */
 export async function handleConfigLoad(
   _event: IpcMainInvokeEvent,
   payload: unknown
-): Promise<IPCResult<SimulationConfigData | null>> {
+): Promise<IPCResult<UIProjectConfig | null>> {
   return wrapHandler(async () => {
     validatePayload('config:load', payload, ConfigExistsPayloadSchema);
 
@@ -88,24 +86,8 @@ export async function handleConfigLoad(
 
       logger.info(`[IPC] Successfully loaded config with ${config.trechos.length} trechos`);
 
-      // Map to SimulationConfigData format (same as handleConfigSaved)
-      const trechosForSimConfig = config.trechos.map((t) => ({
-        id: t.id,
-        name: t.name,
-        troopIds: t.troopIds,
-      }));
-
-      const globalSettings = {
-        seed: config.metadata?.seed,
-        maxBattleTurns: config.metadata?.maxBattleTurns,
-      };
-
-      return mapToSimulationConfig(
-        projectPath,
-        storage.getConfigPath(projectPath),
-        trechosForSimConfig,
-        globalSettings
-      );
+      // Return complete config with full trecho data for ConfigurationPanel
+      return config;
     } catch (error) {
       // Check if this is a Zod validation error (incomplete/corrupt data)
       if (error && typeof error === 'object' && 'issues' in error) {

@@ -23,8 +23,8 @@ import type {
   LogBundle,
 } from '@coreto/electron/domain/types';
 
-// Import SimulationConfigData from domain services
-import type { SimulationConfigData } from '@coreto/electron/domain/services';
+// Import UIProjectConfig for config load
+import type { UIProjectConfig } from '@coreto/electron/domain/schemas';
 
 /**
  * Preload Script - IPC Bridge
@@ -276,9 +276,9 @@ const configAPI = {
   /**
    * Loads a project configuration from SQLite database.
    * @param projectPath - Absolute path to the project directory
-   * @returns Simulation config data or null if not found
+   * @returns Complete project config with trechos or null if not found
    */
-  load: (projectPath: string): Promise<IPCResult<SimulationConfigData | null>> =>
+  load: (projectPath: string): Promise<IPCResult<UIProjectConfig | null>> =>
     ipcRenderer.invoke('config:load', { projectPath }),
 
   /**

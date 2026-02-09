@@ -65,6 +65,7 @@ import { GlobalSettingsSection } from './GlobalSettingsSection';
  */
 export const ConfigurationPanel: FC<ConfigurationPanelProps> = ({
   projectPath,
+  initialTrechos = [],
   onConfigSaved,
   className,
 }) => {
@@ -91,7 +92,7 @@ export const ConfigurationPanel: FC<ConfigurationPanelProps> = ({
     startEdit,
     cancelEdit,
     getEditingTrecho,
-  } = useConfigurationManager();
+  } = useConfigurationManager(initialTrechos);
 
   /**
    * Global settings (seed, maxBattleTurns).

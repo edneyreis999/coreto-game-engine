@@ -169,6 +169,22 @@ const invoke = useCallback(async () => {
 
 **Also:** Never use `jest.useFakeTimers()` with `waitFor()` — conflicts cause hangs. Remove fake timers if tests use async assertions.
 
+### useState Initial Value Bug
+
+**Symptom:** Hook receives prop updates but state stays stale.
+
+**Cause:** `useState(initialValue)` only uses `initialValue` on first render. Subsequent prop changes are ignored.
+
+**Fix:** Sync state with `useEffect`:
+
+```typescript
+const [state, setState] = useState(initialValue);
+
+useEffect(() => {
+  setState(initialValue);
+}, [initialValue]);
+```
+
 ## Agent Army
 
 Use these specialized agents as a coordinated "army" to solve complex problems faster.

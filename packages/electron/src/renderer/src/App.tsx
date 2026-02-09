@@ -1,9 +1,11 @@
-import React, { useState, useCallback, useRef } from 'react'
+import React, { useState, useCallback, useRef, useMemo } from 'react'
 import { ProjectSelectionPanel, ConfigurationPanel, ExecutionPanel, ResultsPanel, HistoryPanel, LogExportButton } from '@/components'
 import type { ProjectConfigFormData } from '@/components/ConfigurationPanel'
 import type { SimulationConfigData } from '@coreto/electron/domain/services'
+import type { UIProjectConfig } from '@coreto/electron/domain/schemas'
 import { useLogger, useConfigSave } from '@/hooks'
 import { mapSimulationReportToReportData } from '@coreto/electron/domain/mappers'
+import { mapToSimulationConfig } from '@coreto/electron/domain/services'
 
 /**
  * Root App Component
@@ -21,7 +23,7 @@ export default function App(): React.ReactElement {
   const logger = useLogger()
   const { saveConfig } = useConfigSave()
   const [selectedProjectPath, setSelectedProjectPath] = useState<string | null>(null)
-  const [simulationConfig, setSimulationConfig] = useState<SimulationConfigData | null>(null)
+  const [loadedConfig, setLoadedConfig] = useState<UIProjectConfig | null>(null)
   const [simulationCompleted, setSimulationCompleted] = useState<boolean>(false)
   const [historicalReport, setHistoricalReport] = useState<import('@coreto/electron/domain/types').ReportData | null>(null)
 
@@ -33,34 +35,63 @@ export default function App(): React.ReactElement {
     if (projectPath !== selectedProjectPath) {
       setSelectedProjectPath(projectPath)
       projectPathRef.current = projectPath
+
       // Reset simulation config when project changes
-      setSimulationConfig(null)
+      setLoadedConfig(null)
       setSimulationCompleted(false)
 
       // Auto-load saved trechos from SQLite (Task 11)
       try {
         const response = await window.coreto.config.load(projectPath)
+
         // Race condition guard: ensure project hasn't changed during async load (D011-RACE)
         if (projectPathRef.current === projectPath) {
-          if (response.success && response.data?.trechos && response.data.trechos.length > 0) {
-            // Only set config if loaded trechos exist (D011-COND)
-            setSimulationConfig(response.data)
+          if (response.success && response.data) {
+            setLoadedConfig(response.data)
           }
         }
       } catch (error) {
         // Graceful error handling: null if load fails
         logger?.error('Failed to load config:', error)
-        setSimulationConfig(null)
+        setLoadedConfig(null)
       }
     }
   }, [selectedProjectPath, logger])
 
   const handleConfigSaved = useCallback(async (config: ProjectConfigFormData): Promise<void> => {
     const result = await saveConfig({ config, logger })
-    if (result.success && result.simConfig) {
-      setSimulationConfig(result.simConfig)
+    if (result.success) {
+      // Build UIProjectConfig from the saved config for ConfigurationPanel
+      const uiConfig: UIProjectConfig = {
+        version: '1.0',
+        trechos: config.trechos,
+        globalSettings: config.globalSettings,
+        metadata: {
+          projectName: config.projectPath.split('/').pop() ?? 'Unknown Project',
+          lastModified: Date.now(),
+        },
+      }
+      setLoadedConfig(uiConfig)
     }
   }, [saveConfig, logger])
+
+  // Convert loaded config to SimulationConfigData for ExecutionPanel
+  const simulationConfig = useMemo(() => {
+    if (!loadedConfig) return null
+
+    const trechosForSim = loadedConfig.trechos.map((t) => ({
+      id: t.id,
+      name: t.name,
+      troopIds: t.troopIds,
+    }))
+
+    return mapToSimulationConfig(
+      selectedProjectPath ?? '',
+      selectedProjectPath ?? '',
+      trechosForSim,
+      loadedConfig.globalSettings ?? { seed: 12345 }
+    )
+  }, [loadedConfig, selectedProjectPath])
 
   const handleSimulationComplete = (_result: unknown): void => {
     // Show Results Panel after simulation completes
@@ -103,6 +134,7 @@ export default function App(): React.ReactElement {
           {selectedProjectPath && (
             <ConfigurationPanel
               projectPath={selectedProjectPath}
+              initialTrechos={loadedConfig?.trechos ?? []}
               onConfigSaved={handleConfigSaved}
             />
           )}
