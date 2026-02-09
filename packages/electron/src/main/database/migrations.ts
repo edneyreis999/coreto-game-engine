@@ -110,6 +110,30 @@ export const MIGRATIONS: readonly Migration[] = [
       ${SIMULATION_HISTORY_V2_INDEXES_SQL}
     `,
   },
+  {
+    version: 3,
+    description: 'Add project_configs table for SQLite-based config storage (replaces temp/project.config.json)',
+    sql: `
+      -- Create project_configs table
+      CREATE TABLE IF NOT EXISTS project_configs (
+        project_path TEXT PRIMARY KEY,
+        config_json TEXT NOT NULL,
+        last_modified INTEGER NOT NULL,
+        created_at INTEGER NOT NULL
+      );
+
+      -- Create trigger for automatic last_modified timestamp updates
+      CREATE TRIGGER IF NOT EXISTS update_project_configs_timestamp
+      AFTER UPDATE ON project_configs
+      FOR EACH ROW
+      WHEN NEW.last_modified = OLD.last_modified
+      BEGIN
+        UPDATE project_configs
+        SET last_modified = strftime('%s', 'now') * 1000
+        WHERE project_path = NEW.project_path;
+      END;
+    `,
+  },
   // Add future migrations here
   // {
   //   version: 3,

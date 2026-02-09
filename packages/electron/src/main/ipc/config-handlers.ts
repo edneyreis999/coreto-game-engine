@@ -2,33 +2,48 @@
  * Config-Specific IPC Handlers
  *
  * IPC handlers for project configuration management.
- * Uses ConfigService for loading/saving configs with schema normalization.
+ * Uses SQLite database for config storage with IConfigStorage port.
  *
  * Handlers:
- * - config:save - Save project config to temp/project.config.json
- * - config:exists - Check if config file exists
+ * - config:load - Load project config from SQLite database
+ * - config:save - Save project config to SQLite database (UPSERT)
+ * - config:exists - Check if config exists in SQLite database
  *
  * @see planos/005-run-ttk-electron/tasks/04_task.md
- * @see packages/electron/src/main/services/config-service.ts
+ * @see packages/electron/src/main/adapters/sqlite-config-storage-adapter.ts
+ * @see packages/electron/src/main/database/migrations.ts (Migration v3)
  */
 
 import { ipcMain, IpcMainInvokeEvent } from 'electron';
-import {
-  configService,
-  ConfigNotFoundError,
-  ConfigValidationError,
-} from '../services/config-service.js';
 import type { IPCResponse, IPCResult, IPCError, ConfigSaveResponse, ConfigExistsResponse } from './types.js';
 import type { ConfigSavePayload, ConfigExistsPayload } from './types.js';
 import { ConfigSavePayloadSchema, ConfigExistsPayloadSchema } from './types.js';
-import { getLogger } from '../di/container.js';
-import {
-  loadProjectConfig,
-  saveProjectConfigAsCoreFormat,
-} from '@coreto/electron/domain/use-cases';
-import { createFileConfigStorage } from '../adapters/file-config-storage-adapter.js';
+import { getLogger, resolve } from '../di/container.js';
+import { loadProjectConfig } from '@coreto/electron/domain/use-cases';
 import { normalizeSchema } from '@coreto/electron/domain/services';
 import { ProjectConfigSchema, CURRENT_SCHEMA_VERSION, type UIProjectConfig } from '@coreto/electron/domain/schemas';
+import type { IConfigStorage } from '@coreto/electron/domain/ports';
+import { IConfigStorageToken } from '../di/tokens.js';
+
+/**
+ * Error thrown when project config is not found in storage.
+ */
+export class ConfigNotFoundError extends Error {
+  constructor(projectPath: string) {
+    super(`Project config not found for: ${projectPath}`);
+    this.name = 'ConfigNotFoundError';
+  }
+}
+
+/**
+ * Error thrown when config validation fails.
+ */
+export class ConfigValidationError extends Error {
+  constructor(validationErrors: string[]) {
+    super(`Config validation failed:\n${validationErrors.join('\n')}`);
+    this.name = 'ConfigValidationError';
+  }
+}
 
 // Lazy initialization to avoid calling getLogger() before DI container is ready
 let logger: ReturnType<typeof getLogger> | null = null;
@@ -183,11 +198,8 @@ function validateSchema(data: unknown): UIProjectConfig {
 /**
  * Handler: config:load
  *
- * Loads a project configuration from temp/project.config.json.
- * Uses domain use case for Clean Architecture compliance.
- *
- * NEW HANDLER: Demonstrates Clean Architecture pattern with use cases.
- * Use this pattern for new handlers instead of direct ConfigService usage.
+ * Loads a project configuration from SQLite database.
+ * Uses domain use case with IConfigStorage port for Clean Architecture compliance.
  */
 async function handleConfigLoad(
   _event: IpcMainInvokeEvent,
@@ -202,10 +214,12 @@ async function handleConfigLoad(
 
     const { projectPath } = validated;
 
-    ensureLogger().info('[config:load] Loading config', { projectPath });
+    ensureLogger().info('[config:load] Loading config from SQLite', { projectPath });
+
+    // Resolve IConfigStorage from DI container (SQLite adapter)
+    const storage = resolve<IConfigStorage>(IConfigStorageToken as unknown as string);
 
     // Use domain use case with injected dependencies
-    const storage = createFileConfigStorage();
     const result = await loadProjectConfig(
       { projectPath },
       {
@@ -230,8 +244,17 @@ async function handleConfigLoad(
 /**
  * Handler: config:save
  *
- * Saves a project configuration to temp/project.config.json.
- * Thin adapter - delegates to domain use case for transformation and saving.
+ * Saves a project configuration to SQLite database via UPSERT.
+ * Uses IConfigStorage port for Clean Architecture compliance.
+ *
+ * Storage behavior:
+ * - Writes to project_configs table (SQLite)
+ * - UPSERT mode: INSERT OR REPLACE for automatic updates
+ * - lastModified timestamp updated automatically via trigger
+ * - No filesystem operations (no temp/ directory creation)
+ *
+ * @see packages/electron/src/main/database/migrations.ts (Migration v3)
+ * @see packages/electron/src/main/adapters/sqlite-config-storage-adapter.ts
  */
 async function handleConfigSave(
   _event: IpcMainInvokeEvent,
@@ -246,38 +269,38 @@ async function handleConfigSave(
 
     const { projectPath, config } = validated;
 
-    ensureLogger().info('[config:save] Saving config', {
+    ensureLogger().info('[config:save] Saving config to SQLite', {
       projectPath,
       trechosCount: config.trechos.length,
     });
 
-    // Delegate to domain use case for transformation and saving
-    const storage = createFileConfigStorage();
-    const result = await saveProjectConfigAsCoreFormat(
-      {
-        projectPath,
-        config,
-      },
-      {
-        storage,
-      }
-    );
+    // Resolve IConfigStorage from DI container (SQLite adapter)
+    const storage = resolve<IConfigStorage>(IConfigStorageToken as unknown as string);
 
-    ensureLogger().info('[config:save] Config saved successfully', {
-      configPath: result.configPath,
+    // Save UI format directly to SQLite (no transformation to Core format)
+    // Transformation happens in SQLiteConfigLoader.loadTrechos() when creating Trecho entities
+    const configJson = JSON.stringify(config);
+    await storage.write(projectPath, configJson);
+
+    ensureLogger().info('[config:save] Config saved successfully to SQLite', {
+      projectPath,
     });
 
-    return result;
+    // Return backward-compatible response format
+    return {
+      success: true,
+      configPath: storage.getConfigPath(projectPath),
+    };
   });
 }
 
 /**
  * Handler: config:exists
  *
- * Checks if a project config file exists.
- * Returns true if temp/project.config.json exists.
+ * Checks if a project config exists in SQLite database.
+ * Returns true if config exists in project_configs table.
  *
- * Uses domain use case for Clean Architecture compliance.
+ * Uses IConfigStorage port for Clean Architecture compliance.
  */
 async function handleConfigExists(
   _event: IpcMainInvokeEvent,
@@ -292,13 +315,13 @@ async function handleConfigExists(
 
     const { projectPath } = validated;
 
-    // Use ConfigService for now (maintains backward compatibility)
-    // TODO: Consider using IConfigStorage directly if needed
-    const exists = await configService.configExists(projectPath);
+    // Resolve IConfigStorage from DI container (SQLite adapter)
+    const storage = resolve<IConfigStorage>(IConfigStorageToken as unknown as string);
+    const exists = await storage.exists(projectPath);
 
     return {
       exists,
-      configPath: `${projectPath}/temp/project.config.json`,
+      configPath: storage.getConfigPath(projectPath),
     };
   });
 }

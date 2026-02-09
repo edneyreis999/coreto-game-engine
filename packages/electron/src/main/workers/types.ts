@@ -25,14 +25,15 @@ export type {
 /**
  * Simulation parameters sent from main process to worker.
  * Contains all configuration needed to run a TTK validation.
+ *
+ * Task 09: Config loading now uses SQLite storage.
+ * Config is loaded from database using projectPath key (no configPath needed).
  */
 export interface SimulationParams {
   /** Unique simulation identifier (UUID v4) */
   simulationId: string;
   /** Absolute path to RPG Maker MZ project directory */
   projectPath: string;
-  /** Absolute path to project.config.json (usually temp/project.config.json) */
-  configPath: string;
   /** Optional RNG seed override for reproducible results */
   seed?: number;
   /** Enable diagnostic mode (performance profiling, verbose logging) */

@@ -9,6 +9,7 @@
 
 import { registerDependencies, clearContainer } from '@coreto/core';
 import { registerHandlers as registerIpcHandlers } from './handlers/index.js';
+import { registerMainDependencies } from '../di/container.js';
 
 /**
  * Sets the main window reference for simulation event forwarding.
@@ -27,11 +28,12 @@ export function setMainWindowReference(_window: unknown): void {
  * Setup IPC handlers for communication between main and renderer processes.
  *
  * This function:
- * 1. Registers all core dependencies in the DI container
- * 2. Registers all IPC handlers with ipcMain
- * 3. Registers config-specific handlers with ipcMain
- * 4. Registers simulation handlers (event streaming)
- * 5. Enables type-safe communication via the preload script
+ * 1. Registers all core dependencies in DI container
+ * 2. Registers Electron-specific dependencies (overrides core defaults)
+ * 3. Registers all IPC handlers with ipcMain
+ * 4. Registers config-specific handlers with ipcMain
+ * 5. Registers simulation handlers (event streaming)
+ * 6. Enables type-safe communication via the preload script
  *
  * Should be called once during app initialization after app.whenReady().
  *
@@ -49,6 +51,9 @@ export function setMainWindowReference(_window: unknown): void {
 export function setupIpcHandlers(): void {
   // Register all core dependencies in DI container
   registerDependencies();
+
+  // Register Electron-specific dependencies (overrides core defaults)
+  registerMainDependencies();
 
   // Register all IPC handlers with ipcMain
   registerIpcHandlers();

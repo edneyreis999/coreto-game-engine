@@ -25,7 +25,6 @@ import type {
   ValidationResult,
   SimulationResult,
   ReportData,
-  ProjectConfigResponse,
   TrechoData,
   TroopData,
   ClassData,
@@ -42,6 +41,9 @@ import type {
   // Log Types
   LogBundle,
 } from '@coreto/electron/domain/types';
+
+// Import SimulationConfigData from domain services
+import type { SimulationConfigData } from '@coreto/electron/domain/services';
 
 // ============================================================================
 // Standard Electron API
@@ -259,17 +261,18 @@ interface ConfigAPI {
   ): Promise<IPCResult<{ success: boolean; configPath: string }>>;
 
   /**
-   * Loads a project configuration file.
-   * @param configPath - Absolute path to the config file
-   * @returns Promise with project configuration
+   * Loads a project configuration from SQLite database.
+   * @param projectPath - Absolute path to the project directory
+   * @returns Promise with simulation config data or null if not found
    *
    * @example
-   * const result = await window.coreto.config.load('/path/to/config.json');
-   * if (result.success) {
+   * const result = await window.coreto.config.load('/path/to/project');
+   * if (result.success && result.data) {
    *   console.log('Trechos:', result.data.trechos.length);
+   *   console.log('Project path:', result.data.projectPath);
    * }
    */
-  load(configPath: string): Promise<IPCResult<ProjectConfigResponse>>;
+  load(projectPath: string): Promise<IPCResult<SimulationConfigData | null>>;
 
   /**
    * Gets all trechos from the currently loaded config.
@@ -521,8 +524,8 @@ declare global {
      * // Project operations
      * const project = await window.coreto.project.open('/path/to/project')
      *
-     * // Simulation operations
-     * await window.coreto.simulation.start({ projectPath, configPath })
+     * // Simulation operations (Task 09: config loaded from SQLite using projectPath)
+     * await window.coreto.simulation.start({ projectPath })
      * window.coreto.simulation.onProgress((progress) => { ... })
      *
      * // Configuration management

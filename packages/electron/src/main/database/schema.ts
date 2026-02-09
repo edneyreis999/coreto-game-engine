@@ -22,7 +22,7 @@ import { z } from 'zod';
 /**
  * Current schema version. Increment when schema changes.
  */
-export const CURRENT_SCHEMA_VERSION = 2;
+export const CURRENT_SCHEMA_VERSION = 3;
 
 /**
  * SQL for recent_projects table.

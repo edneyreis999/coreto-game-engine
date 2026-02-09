@@ -10,10 +10,12 @@ import type { ILogger } from '@coreto/core';
 import { ConsoleLogger } from '../services/ConsoleLogger.js';
 import { createProjectValidator } from '../adapters/index.js';
 import { createGameDataLoader } from '../adapters/index.js';
-import { createFileConfigStorage } from '../adapters/index.js';
+import { createSQLiteConfigStorage } from '../adapters/index.js';
+import { createSQLiteConfigLoader } from '../adapters/index.js';
 import type { IProjectValidator, IGameDataLoader, IConfigStorage, IReportBuilder } from '@coreto/electron/domain/ports';
-import { NodeFileSystem, RmmzDataLoader } from '@coreto/core';
+import { NodeFileSystem, RmmzDataLoader, IConfigLoaderToken } from '@coreto/core';
 import { createSimulationReportBuilder } from '@coreto/electron/domain/use-cases';
+import { getDatabase } from '../database/index.js';
 
 // Import tokens
 import {
@@ -31,7 +33,8 @@ import {
  * - ILogger: ConsoleLogger implementation
  * - IProjectValidator: Project validator adapter
  * - IGameDataLoader: Game data loader adapter
- * - IConfigStorage: File config storage adapter
+ * - IConfigStorage: SQLite config storage adapter
+ * - IConfigLoader: SQLite config loader adapter (bridges core and electron)
  * - IReportBuilder: Simulation report builder use case
  */
 export function registerMainDependencies(): void {
@@ -63,7 +66,17 @@ export function registerMainDependencies(): void {
   // IConfigStorage - factory function
   container.register<IConfigStorage>(IConfigStorageToken as unknown as string, {
     useFactory: () => {
-      return createFileConfigStorage();
+      const db = getDatabase();
+      return createSQLiteConfigStorage(db);
+    },
+  });
+
+  // IConfigLoader - factory function (Task 09: SQLite-based config loading)
+  container.register(IConfigLoaderToken as unknown as string, {
+    useFactory: () => {
+      const storage = container.resolve<IConfigStorage>(IConfigStorageToken as unknown as string);
+      const loader = createSQLiteConfigLoader(storage);
+      return loader;
     },
   });
 

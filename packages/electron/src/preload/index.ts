@@ -6,7 +6,6 @@ import type {
   ValidationResult,
   SimulationResult,
   ReportData,
-  ProjectConfigResponse,
   TrechoData,
   TroopData,
   ClassData,
@@ -23,6 +22,9 @@ import type {
   // Logs Types
   LogBundle,
 } from '@coreto/electron/domain/types';
+
+// Import SimulationConfigData from domain services
+import type { SimulationConfigData } from '@coreto/electron/domain/services';
 
 /**
  * Preload Script - IPC Bridge
@@ -272,12 +274,12 @@ const configAPI = {
     ipcRenderer.invoke('config:save', { projectPath, config }),
 
   /**
-   * Loads a project configuration file.
-   * @param configPath - Absolute path to the config file
-   * @returns Project configuration with all trechos
+   * Loads a project configuration from SQLite database.
+   * @param projectPath - Absolute path to the project directory
+   * @returns Simulation config data or null if not found
    */
-  load: (configPath: string): Promise<IPCResult<ProjectConfigResponse>> =>
-    ipcRenderer.invoke('config:load', { configPath }),
+  load: (projectPath: string): Promise<IPCResult<SimulationConfigData | null>> =>
+    ipcRenderer.invoke('config:load', { projectPath }),
 
   /**
    * Gets all trechos from the currently loaded config.
@@ -499,8 +501,8 @@ const logsAPI = {
  * // Project operations
  * await window.coreto.project.open('/path/to/project');
  *
- * // Simulation operations
- * await window.coreto.simulation.start({ projectPath, configPath });
+ * // Simulation operations (Task 09: config loaded from SQLite using projectPath)
+ * await window.coreto.simulation.start({ projectPath });
  * window.coreto.simulation.onProgress((progress) => { ... });
  *
  * // Configuration management

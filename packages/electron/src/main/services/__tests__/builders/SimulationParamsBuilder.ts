@@ -2,6 +2,8 @@
  * Builder for SimulationParams in tests.
  * Provides sensible defaults and fluent interface.
  *
+ * Task 09: Config loading now uses SQLite storage (no configPath needed).
+ *
  * @see packages/electron/src/main/workers/types.ts
  */
 
@@ -13,7 +15,6 @@ import type { SimulationParams } from '../../../workers/types.js';
 export class SimulationParamsBuilder {
   private simulationId: string = 'test-simulation-id';
   private projectPath: string = '/test/project';
-  private configPath: string = '/test/project/temp/project.config.json';
   private seed: number = 12345;
   private diagnostic: boolean = false;
 
@@ -30,14 +31,6 @@ export class SimulationParamsBuilder {
    */
   withProjectPath(path: string): this {
     this.projectPath = path;
-    return this;
-  }
-
-  /**
-   * Sets the config path.
-   */
-  withConfigPath(path: string): this {
-    this.configPath = path;
     return this;
   }
 
@@ -64,7 +57,6 @@ export class SimulationParamsBuilder {
   buildWithoutId(): Omit<SimulationParams, 'simulationId'> {
     return {
       projectPath: this.projectPath,
-      configPath: this.configPath,
       seed: this.seed,
       diagnostic: this.diagnostic,
     };
@@ -77,7 +69,6 @@ export class SimulationParamsBuilder {
     return {
       simulationId: this.simulationId,
       projectPath: this.projectPath,
-      configPath: this.configPath,
       seed: this.seed,
       diagnostic: this.diagnostic,
     };

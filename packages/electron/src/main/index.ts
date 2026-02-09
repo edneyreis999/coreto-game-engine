@@ -6,7 +6,7 @@ import { initDatabase, closeDatabase, setDatabasePath } from './database/index.j
 import { simulationController, initializeLogCapture } from './services/index.js';
 import { createWindowConfig, getWindowUrl } from './window-config.js';
 import type { WorkerToMainMessage } from './workers/types.js';
-import { registerMainDependencies, getLogger } from './di/container.js';
+import { getLogger } from './di/container.js';
 
 /**
  * Main Process Entry Point
@@ -117,15 +117,15 @@ export function registerAppLifecycleHandlers(): void {
 export async function startApp(): Promise<void> {
   await app.whenReady();
 
-  // Initialize DI container first
-  registerMainDependencies();
+  // Initialize DI container BEFORE any logger usage
+  setupIpcHandlers(); // This registers both core and main dependencies
+
   const logger = getLogger();
   logger.info('Electron app starting...');
 
   const dbPath = path.join(app.getPath('userData'), 'coreto.db');
   setDatabasePath(dbPath);
   initDatabase();
-  setupIpcHandlers();
   createWindow();
   registerAppLifecycleHandlers();
 

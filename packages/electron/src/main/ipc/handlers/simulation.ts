@@ -20,7 +20,6 @@ import {
   resolve,
   PartyConfig,
 } from '@coreto/core';
-import type { Trecho } from '@coreto/core';
 
 import type { IPCResult } from '../protocol-types.js';
 import type {
@@ -59,6 +58,9 @@ function validatePayload<T extends unknown>(
  * Executes a TTK battle simulation.
  * Runs a single battle or all trechos based on payload.
  * Supports cancellation via abort signal (checks at start and during execution).
+ *
+ * Task 09: Config loading now uses SQLite storage via IConfigLoader.
+ * Config is loaded from database using projectPath key (no configPath needed).
  */
 export async function handleSimulationRun(
   _event: IpcMainInvokeEvent,
@@ -67,7 +69,7 @@ export async function handleSimulationRun(
   return wrapHandler(async () => {
     validatePayload('simulation:run', payload, SimulationRunPayloadSchema);
 
-    const { projectPath, configPath, trechoId, troopId, seed = 12345, maxTurns = 100 } = payload;
+    const { projectPath, trechoId, troopId, seed = 12345, maxTurns = 100 } = payload;
 
     const logger = resolve<ILogger>(ILoggerToken);
     const configLoader = resolve<IConfigLoader>(IConfigLoaderToken);
@@ -96,6 +98,11 @@ export async function handleSimulationRun(
     simulationController.updateProgress({ isRunning: true, current: 0, total: 1 });
 
     try {
+      // Load config from SQLite (Task 09: now uses IConfigLoader with projectPath)
+      checkAbortSignal(signal, 'loading configuration from SQLite');
+      const config = await configLoader.loadConfig(projectPath);
+      const configTrechos = await configLoader.loadTrechos(config);
+
       // Load RPG Maker MZ data
       checkAbortSignal(signal, 'loading database');
       const database = await dataLoader.loadDatabase(projectPath);
@@ -104,14 +111,6 @@ export async function handleSimulationRun(
       checkAbortSignal(signal, 'initializing simulator');
       await simulator.initialize(database, projectPath);
       logger.info('[IPC] Simulator initialized successfully');
-
-      // Load config if provided
-      let configTrechos: Trecho[] = [];
-      if (configPath) {
-        checkAbortSignal(signal, 'loading configuration');
-        const config = await configLoader.loadConfig(configPath);
-        configTrechos = await configLoader.loadTrechos(config);
-      }
 
       // If specific troopId provided, run single battle
       if (troopId !== undefined) {

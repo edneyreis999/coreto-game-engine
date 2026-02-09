@@ -59,7 +59,7 @@ describe('Worker Types', () => {
 
     it('should enforce type discrimination', () => {
       const messages: MainToWorkerMessage[] = [
-        { type: 'start', payload: { simulationId: '', projectPath: '', configPath: '' } },
+        { type: 'start', payload: { simulationId: '', projectPath: '' } },
         { type: 'cancel' },
       ];
 

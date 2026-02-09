@@ -8,7 +8,6 @@
 
 export { SimulationController, simulationController } from './simulation-controller.js';
 export { ReportStorageService, generateSimulationId } from './report-storage.js';
-export { ConfigService, configService } from './config-service.js';
 export { initializeLogCapture, logCapture, logAggregator } from './log-capture.js';
 
 // Type exports

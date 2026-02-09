@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useRef } from 'react'
 import { ProjectSelectionPanel, ConfigurationPanel, ExecutionPanel, ResultsPanel, HistoryPanel, LogExportButton } from '@/components'
 import type { ProjectConfigFormData } from '@/components/ConfigurationPanel'
 import type { SimulationConfigData } from '@coreto/electron/domain/services'
@@ -25,15 +25,35 @@ export default function App(): React.ReactElement {
   const [simulationCompleted, setSimulationCompleted] = useState<boolean>(false)
   const [historicalReport, setHistoricalReport] = useState<import('@coreto/electron/domain/types').ReportData | null>(null)
 
-  const handleProjectSelected = useCallback((projectPath: string): void => {
+  // Ref to track the latest project path for race condition detection (Task 11)
+  const projectPathRef = useRef<string | null>(null)
+
+  const handleProjectSelected = useCallback(async (projectPath: string): Promise<void> => {
     // Only reset if project actually changed
     if (projectPath !== selectedProjectPath) {
       setSelectedProjectPath(projectPath)
+      projectPathRef.current = projectPath
       // Reset simulation config when project changes
       setSimulationConfig(null)
       setSimulationCompleted(false)
+
+      // Auto-load saved trechos from SQLite (Task 11)
+      try {
+        const response = await window.coreto.config.load(projectPath)
+        // Race condition guard: ensure project hasn't changed during async load (D011-RACE)
+        if (projectPathRef.current === projectPath) {
+          if (response.success && response.data?.trechos && response.data.trechos.length > 0) {
+            // Only set config if loaded trechos exist (D011-COND)
+            setSimulationConfig(response.data)
+          }
+        }
+      } catch (error) {
+        // Graceful error handling: null if load fails
+        logger?.error('Failed to load config:', error)
+        setSimulationConfig(null)
+      }
     }
-  }, [selectedProjectPath])
+  }, [selectedProjectPath, logger])
 
   const handleConfigSaved = useCallback(async (config: ProjectConfigFormData): Promise<void> => {
     const result = await saveConfig({ config, logger })

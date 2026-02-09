@@ -171,13 +171,15 @@ export type ProjectValidatePayload = z.infer<typeof ProjectValidatePayloadSchema
 
 /**
  * Zod schema for simulation:run payload.
+ *
+ * Task 09: Config loading now uses SQLite storage.
+ * Config is loaded from database using projectPath key (no configPath needed).
  */
 export const SimulationRunPayloadSchema = z.object({
   projectPath: z
     .string()
     .min(1, 'Project path cannot be empty')
     .refine((p) => !p.includes('..'), 'Path traversal not allowed'),
-  configPath: z.string().optional(),
   trechoId: z.string().optional(),
   troopId: z.number().int().positive().optional(),
   seed: z.number().int().optional(),

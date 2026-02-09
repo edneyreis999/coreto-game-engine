@@ -7,6 +7,9 @@
  * Process Architecture:
  * Renderer (React) → Main (IPC) → UtilityProcess (this file) → @coreto/core
  *
+ * Task 09: Config loading now uses SQLite storage via IConfigLoader.
+ * Config is loaded from database using projectPath key (no configPath in SimulationParams).
+ *
  * @see planos/005-run-ttk-electron/TECHSPEC-round2.md Section 2.3
  */
 
@@ -91,9 +94,10 @@ function handleCancellation(): void {
  * 1. Create child container (isolated state per simulation)
  * 2. Emit initialization event
  * 3. Setup event listeners for trecho/battle progress
- * 4. Run simulation via @coreto/core
- * 5. Emit completion event with results
- * 6. Cleanup child container (prevent memory leaks)
+ * 4. Load config from SQLite using IConfigLoader (Task 09)
+ * 5. Run simulation via @coreto/core
+ * 6. Emit completion event with results
+ * 7. Cleanup child container (prevent memory leaks)
  *
  * @param params - Simulation parameters from main process
  */

@@ -2,13 +2,13 @@
  * IConfigStorage Port
  *
  * Port interface for project configuration storage operations.
- * Abstracts filesystem interactions to enable testability and Clean Architecture.
+ * Abstracts storage interactions to enable testability and Clean Architecture.
  *
  * Implementation examples:
- * - FileConfigStorageAdapter - Production adapter using Node.js fs/path
+ * - SQLiteConfigStorageAdapter - Production adapter using better-sqlite3
  * - InMemoryConfigStorageAdapter - Test adapter using Map
  *
- * @see packages/electron/src/main/adapters/file-config-storage-adapter.ts
+ * @see packages/electron/src/main/adapters/sqlite-config-storage-adapter.ts
  * @see packages/electron/src/domain/use-cases/load-project-config.ts
  */
 
@@ -66,14 +66,14 @@ export interface IConfigStorage {
   delete(projectPath: string): Promise<void>;
 
   /**
-   * Gets the full path where config should be stored.
+   * Gets the identifier where config should be stored.
    *
-   * This method allows adapters to control path conventions.
-   * For filesystem adapters, this typically returns:
-   * {projectPath}/temp/project.config.json
+   * This method allows adapters to control identification conventions.
+   * - For SQLite adapters: returns the projectPath (used as primary key)
+   * - For filesystem adapters: returns {projectPath}/temp/project.config.json
    *
    * @param projectPath - Absolute path to the RPG Maker MZ project
-   * @returns Absolute path to the config file
+   * @returns Config identifier (path or key)
    */
   getConfigPath(projectPath: string): string;
 }
