@@ -275,12 +275,7 @@ describe('GenerateReportUseCase', () => {
     it('should propagate write errors', async () => {
       // Arrange
       const reporter = new FakeReporter();
-
-      // Make writeReport reject
-      reporter.writeReportCalls.push({} as any);
-      Object.defineProperty(reporter, 'writeReport', {
-        value: jest.fn(() => Promise.reject(new Error('Write failed'))),
-      });
+      reporter.throwOnWrite(new Error('Write failed'));
 
       const useCase = new GenerateReportUseCase(reporter);
 

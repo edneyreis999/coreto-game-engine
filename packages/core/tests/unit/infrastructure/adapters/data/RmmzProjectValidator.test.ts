@@ -9,6 +9,9 @@ import * as path from 'path';
 import * as os from 'os';
 import { DataLoadError, NodeFileSystem, RmmzProjectValidator } from '@coreto/core';
 
+/** Test-specific constant for temporary directory prefix */
+const TEST_TEMP_DIR_PREFIX = 'rmmz-validator-test-';
+
 describe('RmmzProjectValidator', () => {
   let validator: RmmzProjectValidator;
   let fileSystem: NodeFileSystem;
@@ -17,7 +20,7 @@ describe('RmmzProjectValidator', () => {
 
   beforeEach(() => {
     // Create temporary directory for tests
-    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rmmz-validator-test-'));
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), TEST_TEMP_DIR_PREFIX));
     validProjectPath = path.join(tempDir, 'valid-project');
 
     // Create minimal valid RPG Maker MZ project structure

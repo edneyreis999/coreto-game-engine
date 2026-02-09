@@ -41,6 +41,9 @@ export class FakeReporter implements IReporter {
   /** Track exportContext calls for verification */
   public exportContextCalls: Array<{ report: Report; dir: string }> = [];
 
+  /** Optional error to throw on writeReport call */
+  private writeError: Error | null = null;
+
   /**
    * Optional Report constructor override for testing.
    * Allows injecting a mock Report class if needed.
@@ -105,8 +108,21 @@ export class FakeReporter implements IReporter {
     });
   }
 
+  /**
+   * Configure writeReport to throw an error on next call.
+   * Useful for testing error handling.
+   *
+   * @param error - The error to throw
+   */
+  throwOnWrite(error: Error): void {
+    this.writeError = error;
+  }
+
   async writeReport(report: Report, outputPath: string): Promise<void> {
     this.writeReportCalls.push({ report, path: outputPath });
+    if (this.writeError) {
+      throw this.writeError;
+    }
   }
 
   async exportContext(report: Report, outputDir: string): Promise<void> {

@@ -179,72 +179,191 @@ describe('Warning', () => {
   });
 
   describe('equals', () => {
-    it('should return true for identical warnings', () => {
-      const warning1 = new WarningFakeBuilder()
-        .withMessage('Test')
-        .withContext({ troopId: 1 })
-        .build();
+    /**
+     * Data-driven equality tests using test.each.
+     * Tests various scenarios for Warning equality comparison.
+     *
+     * @param description - Test description
+     * @param builder1 - First warning builder configuration
+     * @param builder2 - Second warning builder configuration
+     * @param expected - Expected equality result
+     */
+    const buildWarning = (config: {
+      type?: string;
+      severity?: string;
+      message: string;
+      context?: Record<string, unknown>;
+    }) => {
+      const builder = new WarningFakeBuilder().withMessage(config.message);
+      if (config.type) builder.withType(config.type as any);
+      if (config.severity) builder.withSeverity(config.severity as 'critical' | 'warning' | 'info');
+      if (config.context) builder.withContext(config.context);
+      return builder.build();
+    };
 
-      const warning2 = new WarningFakeBuilder()
-        .withMessage('Test')
-        .withContext({ troopId: 1 })
-        .build();
-
-      expect(warning1.equals(warning2)).toBe(true);
-    });
-
-    it('should return false for different type', () => {
-      const warning1 = new WarningFakeBuilder()
-        .withType('ttk_out_of_tolerance')
-        .withMessage('Test')
-        .build();
-
-      const warning2 = new WarningFakeBuilder()
-        .withType('troop_not_found')
-        .withMessage('Test')
-        .build();
-
-      expect(warning1.equals(warning2)).toBe(false);
-    });
-
-    it('should return false for different severity', () => {
-      const warning1 = new WarningFakeBuilder()
-        .withWarningSeverity()
-        .withMessage('Test')
-        .build();
-
-      const warning2 = new WarningFakeBuilder()
-        .withCriticalSeverity()
-        .withMessage('Test')
-        .build();
-
-      expect(warning1.equals(warning2)).toBe(false);
-    });
-
-    it('should return false for different message', () => {
-      const warning1 = new WarningFakeBuilder()
-        .withMessage('Test 1')
-        .build();
-
-      const warning2 = new WarningFakeBuilder()
-        .withMessage('Test 2')
-        .build();
-
-      expect(warning1.equals(warning2)).toBe(false);
-    });
-
-    it('should return false for different context', () => {
-      const warning1 = new WarningFakeBuilder()
-        .withMessage('Test')
-        .withContext({ troopId: 1 })
-        .build();
-
-      const warning2 = new WarningFakeBuilder()
-        .withMessage('Test')
-        .withContext({ troopId: 2 })
-        .build();
-
-      expect(warning1.equals(warning2)).toBe(false);
+    test.each([
+      [
+        'identical warnings',
+        { message: 'Test', context: { troopId: 1 } },
+        { message: 'Test', context: { troopId: 1 } },
+        true,
+      ],
+      [
+        'different type',
+        { type: 'ttk_out_of_tolerance', message: 'Test' },
+        { type: 'troop_not_found', message: 'Test' },
+        false,
+      ],
+      [
+        'different severity',
+        { severity: 'warning', message: 'Test' },
+        { severity: 'critical', message: 'Test' },
+        false,
+      ],
+      [
+        'different message',
+        { message: 'Test 1' },
+        { message: 'Test 2' },
+        false,
+      ],
+      [
+        'different context',
+        { message: 'Test', context: { troopId: 1 } },
+        { message: 'Test', context: { troopId: 2 } },
+        false,
+      ],
+      [
+        'nested objects in context - equal',
+        {
+          type: 'skill_formula_error',
+          message: 'Test',
+          context: {
+            skill: { id: 1, name: 'Attack' },
+            enemy: { id: 2, name: 'Slime' },
+          },
+        },
+        {
+          type: 'skill_formula_error',
+          message: 'Test',
+          context: {
+            skill: { id: 1, name: 'Attack' },
+            enemy: { id: 2, name: 'Slime' },
+          },
+        },
+        true,
+      ],
+      [
+        'nested objects in context - different',
+        {
+          type: 'skill_formula_error',
+          message: 'Test',
+          context: { skill: { id: 1, name: 'Attack' } },
+        },
+        {
+          type: 'skill_formula_error',
+          message: 'Test',
+          context: { skill: { id: 2, name: 'Attack' } },
+        },
+        false,
+      ],
+      [
+        'arrays in context - equal',
+        {
+          type: 'battle_timeout',
+          severity: 'info',
+          message: 'Test',
+          context: { turns: [1, 2, 3, 4, 5] },
+        },
+        {
+          type: 'battle_timeout',
+          severity: 'info',
+          message: 'Test',
+          context: { turns: [1, 2, 3, 4, 5] },
+        },
+        true,
+      ],
+      [
+        'arrays in context - different values',
+        {
+          type: 'battle_timeout',
+          severity: 'info',
+          message: 'Test',
+          context: { turns: [1, 2, 3] },
+        },
+        {
+          type: 'battle_timeout',
+          severity: 'info',
+          message: 'Test',
+          context: { turns: [1, 2, 4] },
+        },
+        false,
+      ],
+      [
+        'arrays in context - different length',
+        {
+          type: 'battle_timeout',
+          severity: 'info',
+          message: 'Test',
+          context: { turns: [1, 2, 3] },
+        },
+        {
+          type: 'battle_timeout',
+          severity: 'info',
+          message: 'Test',
+          context: { turns: [1, 2] },
+        },
+        false,
+      ],
+      [
+        'null values in context - equal',
+        { type: 'skill_formula_error', message: 'Test', context: { error: null } },
+        { type: 'skill_formula_error', message: 'Test', context: { error: null } },
+        true,
+      ],
+      [
+        'null vs undefined in context',
+        { type: 'skill_formula_error', message: 'Test', context: { error: null } },
+        { type: 'skill_formula_error', message: 'Test', context: { error: undefined } },
+        false,
+      ],
+      [
+        'deeply nested structures - equal',
+        {
+          type: 'skill_formula_error',
+          message: 'Test',
+          context: {
+            battle: {
+              troop: {
+                id: 1,
+                members: [{ enemyId: 1, x: 100, y: 200 }],
+              },
+            },
+          },
+        },
+        {
+          type: 'skill_formula_error',
+          message: 'Test',
+          context: {
+            battle: {
+              troop: {
+                id: 1,
+                members: [{ enemyId: 1, x: 100, y: 200 }],
+              },
+            },
+          },
+        },
+        true,
+      ],
+      [
+        'array vs object in context',
+        { type: 'skill_formula_error', message: 'Test', context: { data: [1, 2, 3] } },
+        { type: 'skill_formula_error', message: 'Test', context: { data: { 0: 1, 1: 2, 2: 3 } } },
+        false,
+      ],
+    ])('should return %p for %s', (_description, config1, config2, expected) => {
+      const warning1 = buildWarning(config1 as any);
+      const warning2 = buildWarning(config2 as any);
+      expect(warning1.equals(warning2)).toBe(expected);
     });
 
     it('should return true for same warning instance', () => {
@@ -253,204 +372,6 @@ describe('Warning', () => {
         .build();
 
       expect(warning.equals(warning)).toBe(true);
-    });
-
-    it('should handle nested objects in context', () => {
-      const warning1 = new WarningFakeBuilder()
-        .withType('skill_formula_error')
-        .withMessage('Test')
-        .withContext({
-          skill: { id: 1, name: 'Attack' },
-          enemy: { id: 2, name: 'Slime' },
-        })
-        .build();
-
-      const warning2 = new WarningFakeBuilder()
-        .withType('skill_formula_error')
-        .withMessage('Test')
-        .withContext({
-          skill: { id: 1, name: 'Attack' },
-          enemy: { id: 2, name: 'Slime' },
-        })
-        .build();
-
-      expect(warning1.equals(warning2)).toBe(true);
-    });
-
-    it('should detect differences in nested objects', () => {
-      const warning1 = new WarningFakeBuilder()
-        .withType('skill_formula_error')
-        .withMessage('Test')
-        .withContext({
-          skill: { id: 1, name: 'Attack' },
-        })
-        .build();
-
-      const warning2 = new WarningFakeBuilder()
-        .withType('skill_formula_error')
-        .withMessage('Test')
-        .withContext({
-          skill: { id: 2, name: 'Attack' },
-        })
-        .build();
-
-      expect(warning1.equals(warning2)).toBe(false);
-    });
-
-    it('should handle arrays in context', () => {
-      const warning1 = new WarningFakeBuilder()
-        .withType('battle_timeout')
-        .withSeverity('info')
-        .withMessage('Test')
-        .withContext({
-          turns: [1, 2, 3, 4, 5],
-        })
-        .build();
-
-      const warning2 = new WarningFakeBuilder()
-        .withType('battle_timeout')
-        .withSeverity('info')
-        .withMessage('Test')
-        .withContext({
-          turns: [1, 2, 3, 4, 5],
-        })
-        .build();
-
-      expect(warning1.equals(warning2)).toBe(true);
-    });
-
-    it('should detect differences in arrays', () => {
-      const warning1 = new WarningFakeBuilder()
-        .withType('battle_timeout')
-        .withSeverity('info')
-        .withMessage('Test')
-        .withContext({
-          turns: [1, 2, 3],
-        })
-        .build();
-
-      const warning2 = new WarningFakeBuilder()
-        .withType('battle_timeout')
-        .withSeverity('info')
-        .withMessage('Test')
-        .withContext({
-          turns: [1, 2, 4],
-        })
-        .build();
-
-      expect(warning1.equals(warning2)).toBe(false);
-    });
-
-    it('should detect array length differences', () => {
-      const warning1 = new WarningFakeBuilder()
-        .withType('battle_timeout')
-        .withSeverity('info')
-        .withMessage('Test')
-        .withContext({
-          turns: [1, 2, 3],
-        })
-        .build();
-
-      const warning2 = new WarningFakeBuilder()
-        .withType('battle_timeout')
-        .withSeverity('info')
-        .withMessage('Test')
-        .withContext({
-          turns: [1, 2],
-        })
-        .build();
-
-      expect(warning1.equals(warning2)).toBe(false);
-    });
-
-    it('should handle null values in context', () => {
-      const warning1 = new WarningFakeBuilder()
-        .withType('skill_formula_error')
-        .withMessage('Test')
-        .withContext({
-          error: null,
-        })
-        .build();
-
-      const warning2 = new WarningFakeBuilder()
-        .withType('skill_formula_error')
-        .withMessage('Test')
-        .withContext({
-          error: null,
-        })
-        .build();
-
-      expect(warning1.equals(warning2)).toBe(true);
-    });
-
-    it('should distinguish null from undefined', () => {
-      const warning1 = new WarningFakeBuilder()
-        .withType('skill_formula_error')
-        .withMessage('Test')
-        .withContext({
-          error: null,
-        })
-        .build();
-
-      const warning2 = new WarningFakeBuilder()
-        .withType('skill_formula_error')
-        .withMessage('Test')
-        .withContext({
-          error: undefined,
-        })
-        .build();
-
-      expect(warning1.equals(warning2)).toBe(false);
-    });
-
-    it('should handle deeply nested structures', () => {
-      const warning1 = new WarningFakeBuilder()
-        .withType('skill_formula_error')
-        .withMessage('Test')
-        .withContext({
-          battle: {
-            troop: {
-              id: 1,
-              members: [{ enemyId: 1, x: 100, y: 200 }],
-            },
-          },
-        })
-        .build();
-
-      const warning2 = new WarningFakeBuilder()
-        .withType('skill_formula_error')
-        .withMessage('Test')
-        .withContext({
-          battle: {
-            troop: {
-              id: 1,
-              members: [{ enemyId: 1, x: 100, y: 200 }],
-            },
-          },
-        })
-        .build();
-
-      expect(warning1.equals(warning2)).toBe(true);
-    });
-
-    it('should distinguish between array and object', () => {
-      const warning1 = new WarningFakeBuilder()
-        .withType('skill_formula_error')
-        .withMessage('Test')
-        .withContext({
-          data: [1, 2, 3],
-        })
-        .build();
-
-      const warning2 = new WarningFakeBuilder()
-        .withType('skill_formula_error')
-        .withMessage('Test')
-        .withContext({
-          data: { 0: 1, 1: 2, 2: 3 },
-        })
-        .build();
-
-      expect(warning1.equals(warning2)).toBe(false);
     });
   });
 

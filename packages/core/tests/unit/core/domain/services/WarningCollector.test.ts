@@ -1,5 +1,6 @@
 import { WarningCollector } from '@coreto/core';
 import { Warning, type WarningData } from '@coreto/core';
+import { WarningFakeBuilder } from '../../../../fakes/index.js';
 
 /**
  * Helper function for testing array immutability.
@@ -11,12 +12,13 @@ import { Warning, type WarningData } from '@coreto/core';
  */
 function withArrayMutation<T>(array: readonly T[]): () => void {
   return () => {
-    (array as unknown as T[]).push(new Warning({
-      type: 'troop_not_found',
-      severity: 'critical',
-      message: 'Hacked',
-      context: {},
-    }) as unknown as T);
+    (array as unknown as T[]).push(
+      new WarningFakeBuilder()
+        .withTroopNotFound(999)
+        .withMessage('Hacked')
+        .withCriticalSeverity()
+        .build() as unknown as T
+    );
   };
 }
 

@@ -248,7 +248,20 @@ describe('HeadlessBattleSimulator', () => {
         seed: 12345,
       };
 
-      await expect(simulator.executeBattle(setup)).rejects.toThrow(/Party member count mismatch/);
+      await expect(simulator.executeBattle(setup)).rejects.toThrow(ValidationError);
+
+      // Verify error context contains expected and actual values
+      try {
+        await simulator.executeBattle(setup);
+        fail('Should have thrown ValidationError');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ValidationError);
+        const validationError = error as ValidationError;
+        expect(validationError.context).toMatchObject({
+          expected: 1,
+          actual: 0,
+        });
+      }
     });
   });
 

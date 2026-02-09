@@ -7,38 +7,48 @@
 
 import { DataLoadError, RmmzDataLoader, RmmzProjectValidator, type EnemyData, type IFileSystem, type RmmzDatabase, type SystemData, type TroopData } from '@coreto/core';
 
+/**
+ * Helper factory for creating test-specific IFileSystem mocks.
+ * Allows overriding specific methods while providing sensible defaults.
+ *
+ * @param overrides - Partial IFileSystem implementation to override defaults
+ * @returns A mock IFileSystem with test-specific behavior
+ */
+const createMockFileSystem = (overrides?: Partial<IFileSystem>): IFileSystem => ({
+  exists: jest.fn((filePath: string) =>
+    filePath.includes('data/') && !filePath.includes('NonExistent.json')
+  ),
+  readFileSync: jest.fn((filePath: string): string => {
+    // Return mock JSON data based on file name
+    if (filePath.includes('Enemies.json')) {
+      return JSON.stringify([
+        { id: 1, name: 'Goblin', params: [100, 50, 20, 15, 10, 10, 15, 10], actions: [], traits: [], dropItems: [], exp: 10, gold: 5, battlerName: '', battlerHue: 0, note: '' },
+      ]);
+    }
+    if (filePath.includes('InvalidJSON.json')) {
+      return 'not valid json{[}';
+    }
+    return '[]';
+  }),
+  writeFileSync: jest.fn(() => {
+    throw new Error('Write operations not supported in tests');
+  }),
+  validateProjectPath: jest.fn((projectPath: string) => {
+    if (!projectPath || projectPath === '/invalid/project') {
+      throw new Error('Invalid project path');
+    }
+  }),
+  ...overrides,
+});
+
 describe('RmmzDataLoader', () => {
   let loader: RmmzDataLoader;
   let mockFileSystem: IFileSystem;
   let mockValidator: RmmzProjectValidator;
 
   beforeEach(() => {
-    // Mock IFileSystem
-    mockFileSystem = {
-      exists: (filePath: string): boolean => {
-        return filePath.includes('data/') && !filePath.includes('NonExistent.json');
-      },
-      readFileSync: (filePath: string): string => {
-        // Return mock JSON data based on file name
-        if (filePath.includes('Enemies.json')) {
-          return JSON.stringify([
-            { id: 1, name: 'Goblin', params: [100, 50, 20, 15, 10, 10, 15, 10], actions: [], traits: [], dropItems: [], exp: 10, gold: 5, battlerName: '', battlerHue: 0, note: '' },
-          ]);
-        }
-        if (filePath.includes('InvalidJSON.json')) {
-          return 'not valid json{[}';
-        }
-        return '[]';
-      },
-      writeFileSync: (): void => {
-        throw new Error('Write operations not supported in tests');
-      },
-      validateProjectPath: (projectPath: string): void => {
-        if (!projectPath || projectPath === '/invalid/project') {
-          throw new Error('Invalid project path');
-        }
-      },
-    };
+    // Mock IFileSystem with helper factory
+    mockFileSystem = createMockFileSystem();
 
     // Mock RmmzProjectValidator
     mockValidator = {
