@@ -304,7 +304,9 @@ describe('Regression: Bug #2 - DI Container Registration Order', () => {
     const fs = await import('node:fs/promises');
     const path = await import('node:path');
 
-    const ipcIndexPath = path.join(process.cwd(), 'src/main/ipc/index.ts');
+    // Resolve path from current working directory
+    // Jest runs with cwd as packages/electron, so we can use relative path
+    const ipcIndexPath = path.resolve(process.cwd(), 'src', 'main', 'ipc', 'index.ts');
     const sourceCode = await fs.readFile(ipcIndexPath, 'utf-8');
 
     // Verify registerDependencies comes before registerMainDependencies

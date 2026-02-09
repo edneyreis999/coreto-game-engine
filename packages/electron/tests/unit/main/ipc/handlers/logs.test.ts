@@ -34,6 +34,7 @@ const createMockEvent = (): IpcMainInvokeEvent => {
 };
 
 // Test reports directory for log file writes
+// Logs are saved to monorepo root: /Users/edney/projects/coreto/game-engine/reports/application-logs
 const mockReportsDir = path.join(process.cwd(), 'reports', 'application-logs');
 
 // Mock electron module (handler now uses process.cwd() instead of app.getPath)
