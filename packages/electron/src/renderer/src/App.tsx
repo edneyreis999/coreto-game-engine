@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react'
-import { ProjectSelectionPanel, ConfigurationPanel, ExecutionPanel, ResultsPanel, HistoryPanel } from '@/components'
+import { ProjectSelectionPanel, ConfigurationPanel, ExecutionPanel, ResultsPanel, HistoryPanel, LogExportButton } from '@/components'
 import type { ProjectConfigFormData } from '@/components/ConfigurationPanel'
 import type { SimulationConfigData } from '@coreto/electron/domain/services'
 import { useLogger, useConfigSave } from '@/hooks'
@@ -69,8 +69,13 @@ export default function App(): React.ReactElement {
   return (
     <div className="app-container">
       <header className="app-header">
-        <h1>Coreto Dev Portal</h1>
-        <p>Time-to-Kill (TTK) Validation System for RPG Maker MZ</p>
+        <div className="flex items-center justify-between w-full">
+          <div>
+            <h1>Coreto Dev Portal</h1>
+            <p>Time-to-Kill (TTK) Validation System for RPG Maker MZ</p>
+          </div>
+          <LogExportButton />
+        </div>
       </header>
       <main className="app-main">
         <div className="flex flex-col gap-6">

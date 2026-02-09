@@ -18,3 +18,6 @@ export type { ResultsPanelProps } from './ResultsPanel';
 
 export { HistoryPanel } from './HistoryPanel/HistoryPanel';
 export type { HistoryPanelProps } from './HistoryPanel/HistoryPanel';
+
+export { LogExportButton } from './LogExportButton';
+export type { LogExportButtonProps } from './LogExportButton';

@@ -112,6 +112,8 @@ export type {
   EnemyData,
   RecentProject,
   UserPreferences,
+  LogEntry,
+  LogBundle,
 } from '@coreto/electron/domain/types';
 
 // ============================================================================
@@ -622,6 +624,20 @@ export interface HistoryGenerateIdResponse {
 // No payload for history:generateId
 
 // ============================================================================
+// Logs Handlers
+// ============================================================================
+
+/**
+ * Response format for logs:export handler.
+ */
+export interface LogsExportResponse {
+  bundle: LogBundle;
+  downloadPath: string;
+}
+
+// No payload for logs:export
+
+// ============================================================================
 // Handler Response Types
 // ============================================================================
 
@@ -655,7 +671,8 @@ export type IPCResponse =
   | HistoryLoadReportResponse
   | HistoryExportResponse
   | HistoryDeleteResponse
-  | HistoryGenerateIdResponse;
+  | HistoryGenerateIdResponse
+  | LogsExportResponse;
 
 /**
  * IPCErrorResponse, IPCSuccessResponse, IPCResult are re-exported from domain layer above.
@@ -696,6 +713,7 @@ export const IPCPayloadSchemas = {
   'history:export': HistoryExportPayloadSchema,
   'history:delete': HistoryDeletePayloadSchema,
   'history:generateId': z.void(), // No payload
+  'logs:export': z.void(), // No payload
 } as const satisfies Record<IPCChannel, z.ZodTypeAny>;
 
 /**

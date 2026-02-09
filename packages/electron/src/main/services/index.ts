@@ -9,9 +9,11 @@
 export { SimulationController, simulationController } from './simulation-controller.js';
 export { ReportStorageService, generateSimulationId } from './report-storage.js';
 export { ConfigService, configService } from './config-service.js';
+export { initializeLogCapture, logCapture, logAggregator } from './log-capture.js';
 
 // Type exports
 export type { SimulationSummary, SimulationReport, TrechoSummary } from './types.js';
 // Note: Renamed from ProjectConfig/TrechoConfig to UIProjectConfig/UITrechoConfig
 // to avoid naming collision with @coreto/core's types
 export type { UIProjectConfig, UITrechoConfig } from './schemas.js';
+export type { LogEntry, LogBundle } from './log-capture.js';

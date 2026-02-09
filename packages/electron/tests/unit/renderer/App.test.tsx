@@ -117,4 +117,32 @@ describe('App', () => {
       expect(screen.getByText('Select RPG Maker MZ Project')).toBeInTheDocument()
     })
   })
+
+  describe('LogExportButton integration', () => {
+    it('renders LogExportButton in header', () => {
+      const { container } = render(<App />)
+
+      // Verify LogExportButton is rendered in the header
+      const logExportButton = screen.getByText('Export Logs')
+      expect(logExportButton).toBeInTheDocument()
+
+      // Verify the header structure with flex layout
+      const header = container.querySelector('.app-header')
+      expect(header).toBeInTheDocument()
+      const headerContent = header?.querySelector('.flex.items-center.justify-between')
+      expect(headerContent).toBeInTheDocument()
+    })
+
+    it('positions LogExportButton correctly with Tailwind classes', () => {
+      const { container } = render(<App />)
+
+      // Verify the header uses flex with justify-between for right alignment
+      const header = container.querySelector('.app-header')
+      const headerFlex = header?.querySelector('.flex.items-center.justify-between')
+      expect(headerFlex).toHaveClass('flex', 'items-center', 'justify-between')
+
+      // Verify LogExportButton is present
+      expect(screen.getByText('Export Logs')).toBeInTheDocument()
+    })
+  })
 })

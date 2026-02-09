@@ -3,7 +3,7 @@ import { app, BrowserWindow, shell, utilityProcess, type UtilityProcess } from '
 import path from 'node:path';
 import { setupIpcHandlers, setMainWindowReference } from './ipc/index.js';
 import { initDatabase, closeDatabase, setDatabasePath } from './database/index.js';
-import { simulationController } from './services/index.js';
+import { simulationController, initializeLogCapture } from './services/index.js';
 import { createWindowConfig, getWindowUrl } from './window-config.js';
 import type { WorkerToMainMessage } from './workers/types.js';
 import { registerMainDependencies, getLogger } from './di/container.js';
@@ -14,6 +14,10 @@ import { registerMainDependencies, getLogger } from './di/container.js';
  * Initializes the Electron application, creates the main window,
  * and manages app lifecycle events.
  */
+
+// Task 07: Initialize log capture before any other initialization
+// This ensures all console output is captured from startup
+initializeLogCapture();
 
 let mainWindow: BrowserWindow | null = null;
 

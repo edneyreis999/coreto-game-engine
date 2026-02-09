@@ -273,3 +273,12 @@ Add new module aliases when:
 - Check PR diffs for import patterns
 - Flag violations during code review
 - Reference this document in review comments
+
+## Log Export
+
+All `console.log/warn/error/debug` calls are automatically captured via console override and exportable via the LogExportButton component.
+
+- **Buffer:** 1000 entries per process (FIFO eviction)
+- **Export location:** `reports/application-logs/coreto-logs-{timestamp}.json`
+- **Format:** JSON with LogBundle structure (id, timestamp, appVersion, logs array)
+- **Missing logs?** Check if buffer exceeded 1000 entries or capture initialized in `src/main/index.ts`

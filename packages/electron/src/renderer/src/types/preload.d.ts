@@ -39,6 +39,8 @@ import type {
   ProgressPayload,
   ErrorPayload,
   SimulationResultPayload,
+  // Log Types
+  LogBundle,
 } from '@coreto/electron/domain/types';
 
 // ============================================================================
@@ -434,6 +436,40 @@ interface RecentAPI {
 }
 
 /**
+ * Logs Export API Interface
+ *
+ * Manages log export functionality for debugging and monitoring.
+ */
+interface LogsAPI {
+  /**
+   * Exports aggregated logs from both main and renderer processes.
+   * Creates LogBundle with metadata and saves to temp directory.
+   * @returns Promise with log bundle and download path
+   *
+   * @example
+   * const result = await window.coreto.logs.export();
+   * if (result.success) {
+   *   console.log('Bundle ID:', result.data.bundle.id);
+   *   console.log('Download path:', result.data.downloadPath);
+   *   console.log('Log entries:', result.data.bundle.logs.length);
+   * }
+   */
+  export(): Promise<IPCResult<LogsExportResponse>>;
+}
+
+/**
+ * Response format for logs:export handler.
+ *
+ * Success response includes the complete log bundle and download path.
+ */
+interface LogsExportResponse {
+  /** Complete log bundle with metadata and log entries */
+  bundle: LogBundle;
+  /** File path where the log bundle was saved */
+  downloadPath: string;
+}
+
+/**
  * Coreto-specific IPC API (Domain-Segregated)
  *
  * Organizes API methods by domain concern for better discoverability and maintainability.
@@ -453,6 +489,8 @@ interface CoretoAPI {
   preferences: PreferencesAPI;
   /** Recent projects tracking */
   recent: RecentAPI;
+  /** Log export functionality */
+  logs: LogsAPI;
 }
 
 // ============================================================================
@@ -492,6 +530,12 @@ declare global {
      *
      * // Data access
      * const troops = await window.coreto.data.getTroops(projectPath)
+     *
+     * // Logs export
+     * const logsResult = await window.coreto.logs.export()
+     * if (logsResult.success) {
+     *   console.log('Logs exported to:', logsResult.data.downloadPath)
+     * }
      */
     coreto: CoretoAPI;
   }

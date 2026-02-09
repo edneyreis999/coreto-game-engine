@@ -22,3 +22,5 @@ export { ErrorPayloadFakeBuilder } from './ErrorPayloadFakeBuilder.js';
 export { SimulationResultPayloadFakeBuilder } from './SimulationResultPayloadFakeBuilder.js';
 export { TrechoFakeBuilder } from './TrechoFakeBuilder.js';
 export { BattleResultFakeBuilder } from './BattleResultFakeBuilder.js';
+export { LogBundleFakeBuilder, logBundleFake } from './LogBundleFakeBuilder.js';
+export { LogEntryFakeBuilder, logEntryFake } from './LogEntryFakeBuilder.js';

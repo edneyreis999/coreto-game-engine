@@ -92,6 +92,11 @@ const mockCoretoAPI = {
     delete: jest.fn(),
     generateId: jest.fn(),
   },
+
+  // Logs API
+  logs: {
+    export: jest.fn(),
+  },
 }
 
 Object.defineProperty(global.window, 'coreto', {

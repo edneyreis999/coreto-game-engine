@@ -10,7 +10,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { IPCResult } from '@coreto/electron/domain/types';
-import { useLogger } from './useLogger.js';
+import { useLogger } from './useLogger/index';
 
 // ============================================================================
 // Hook State

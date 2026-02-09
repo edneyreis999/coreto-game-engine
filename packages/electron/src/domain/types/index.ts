@@ -66,5 +66,13 @@ export type {
   HistoryEntry,
 } from './ipc-types.js';
 
+export type {
+  // Log Types
+  LogEntry,
+  LogBundle,
+  LogLevel,
+  LogSource,
+} from './logs.js';
+
 // Note: Worker communication types (ProgressStage, ProgressPayload, ErrorPayload, SimulationResultPayload)
 // have been moved to main/workers/protocol-types.ts as they are infrastructure concerns.

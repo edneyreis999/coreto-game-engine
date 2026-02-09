@@ -47,7 +47,8 @@ export type IPCChannel =
   | 'history:loadReport'
   | 'history:export'
   | 'history:delete'
-  | 'history:generateId';
+  | 'history:generateId'
+  | 'logs:export';
 
 /**
  * IPC error structure.

@@ -39,3 +39,13 @@ export {
   CLI_SCHEMA_VERSION,
   LEGACY_CLI_SCHEMA_VERSIONS,
 } from './cli-config.schema.js';
+
+// Log Export Schemas (used for logs:export IPC channel)
+export {
+  LogEntrySchema,
+  LogBundleSchema,
+  LogsExportResponseSchema,
+  type LogEntryDTO,
+  type LogBundleDTO,
+  type LogsExportResponseDTO,
+} from './logs.schema.js';

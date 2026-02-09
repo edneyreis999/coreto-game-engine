@@ -12,12 +12,39 @@ export default [
         ecmaVersion: 'latest',
         sourceType: 'module',
       },
+      globals: {
+        // Node.js globals (for main/preload processes)
+        console: 'readonly',
+        process: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        Buffer: 'readonly',
+        NodeJS: 'readonly',
+        global: 'readonly',
+        require: 'readonly',
+        module: 'readonly',
+        exports: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        BufferEncoding: 'readonly',
+        // Browser globals (for renderer process)
+        window: 'readonly',
+        document: 'readonly',
+        navigator: 'readonly',
+        localStorage: 'readonly',
+        sessionStorage: 'readonly',
+        React: 'readonly',
+        Electron: 'readonly',
+      },
     },
     plugins: {
       '@typescript-eslint': tseslint,
     },
     rules: {
       'no-console': ['error', { allow: ['warn', 'error'] }],
+      'no-undef': 'off', // Disable for TypeScript - TS compiler handles this
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-non-null-assertion': 'warn',
@@ -40,7 +67,7 @@ export default [
     },
   },
   {
-    files: ['src/renderer/src/hooks/useLogger.ts'],
+    files: ['src/renderer/src/hooks/useLogger.ts', 'src/renderer/src/main.tsx'],
     rules: {
       'no-console': 'off',
     },

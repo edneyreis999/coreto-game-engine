@@ -19,7 +19,13 @@ export { useConfigSave } from './useConfigSave';
 export { useSimulationProgress } from './useSimulationProgress';
 export { useSimulationHistory } from './useSimulationHistory';
 export { useFieldValidation } from './useFieldValidation';
-export { useLogger, type Logger } from './useLogger';
+export {
+  useLogger,
+  logBuffer,
+  createLogEntry,
+  type Logger,
+  type LogEntry,
+} from './useLogger/index';
 export {
   useConfigurationManager,
   type UseConfigurationManagerReturn,

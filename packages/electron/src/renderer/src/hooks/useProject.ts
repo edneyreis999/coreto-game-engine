@@ -10,7 +10,7 @@
 import { useCallback, useState } from 'react';
 
 import type { ProjectInfo } from '@coreto/electron/domain/types';
-import { useLogger } from './useLogger.js';
+import { useLogger } from './useLogger/index';
 
 // ============================================================================
 // Validation Status

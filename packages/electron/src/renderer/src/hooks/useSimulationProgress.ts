@@ -16,7 +16,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { useLogger } from './useLogger.js';
+import { useLogger } from './useLogger/index';
 import type {
   ProgressPayload,
   ErrorPayload,

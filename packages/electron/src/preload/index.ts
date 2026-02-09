@@ -20,6 +20,8 @@ import type {
   ProgressPayload,
   ErrorPayload,
   SimulationResultPayload,
+  // Logs Types
+  LogBundle,
 } from '@coreto/electron/domain/types';
 
 /**
@@ -461,6 +463,28 @@ const historyAPI = {
     ipcRenderer.invoke('history:generateId', undefined),
 };
 
+/**
+ * Logs API
+ *
+ * Manages application log export (bundle and download).
+ */
+const logsAPI = {
+  /**
+   * Exports application logs from both main and renderer processes.
+   * Creates a LogBundle with metadata and saves to temp directory.
+   * @returns Promise resolving to log bundle and download path
+   *
+   * @example
+   * const response = await window.coreto.logs.export();
+   * if (response.success) {
+   *   console.log('Logs exported to:', response.data.downloadPath);
+   *   console.log('Bundle contains', response.data.bundle.logs.length, 'entries');
+   * }
+   */
+  export: (): Promise<IPCResult<{ bundle: LogBundle; downloadPath: string }>> =>
+    ipcRenderer.invoke('logs:export', undefined),
+};
+
 // ============================================================================
 // Context Bridge Exposure
 // ============================================================================
@@ -493,6 +517,12 @@ const historyAPI = {
  *
  * // Recent projects
  * await window.coreto.recent.add(path, name);
+ *
+ * // Logs export
+ * const result = await window.coreto.logs.export();
+ * if (result.success) {
+ *   console.log('Logs saved to:', result.data.downloadPath);
+ * }
  */
 const coretoAPI = {
   project: projectAPI,
@@ -502,6 +532,7 @@ const coretoAPI = {
   history: historyAPI,
   preferences: preferencesAPI,
   recent: recentAPI,
+  logs: logsAPI,
 };
 
 /**
