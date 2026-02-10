@@ -39,7 +39,7 @@ import type {
   ErrorPayload,
   SimulationResultPayload,
   // Log Types
-  LogBundle,
+  LogEntry,
 } from '@coreto/electron/domain/types';
 
 // Import SimulationConfigData from domain services
@@ -445,8 +445,22 @@ interface RecentAPI {
  */
 interface LogsAPI {
   /**
+   * Flushes renderer process logs to main process before export.
+   * Should be called before export() to ensure renderer logs are included.
+   * @param logs - Array of log entries from renderer's circular buffer
+   * @returns Promise resolving when logs are flushed
+   *
+   * @example
+   * const rendererLogs = logger.getLogs();
+   * await window.coreto.logs.flushRendererLogs(rendererLogs);
+   * const result = await window.coreto.logs.export();
+   */
+  flushRendererLogs(logs: LogEntry[]): Promise<IPCResult<void>>;
+
+  /**
    * Exports aggregated logs from both main and renderer processes.
    * Creates LogBundle with metadata and saves to temp directory.
+   * Note: Call flushRendererLogs() before this to include renderer logs.
    * @returns Promise with log bundle and download path
    *
    * @example
@@ -463,13 +477,17 @@ interface LogsAPI {
 /**
  * Response format for logs:export handler.
  *
- * Success response includes the complete log bundle and download path.
+ * Success response includes download path and log statistics.
  */
 interface LogsExportResponse {
-  /** Complete log bundle with metadata and log entries */
-  bundle: LogBundle;
   /** File path where the log bundle was saved */
   downloadPath: string;
+  /** Number of main process log entries */
+  mainLogCount: number;
+  /** Number of renderer process log entries */
+  rendererLogCount: number;
+  /** Total number of log entries */
+  totalCount: number;
 }
 
 /**

@@ -20,7 +20,7 @@ import type {
   ErrorPayload,
   SimulationResultPayload,
   // Logs Types
-  LogBundle,
+  LogEntry,
 } from '@coreto/electron/domain/types';
 
 // Import UIProjectConfig for config load
@@ -472,18 +472,41 @@ const historyAPI = {
  */
 const logsAPI = {
   /**
+   * Flushes renderer process logs to main process before export.
+   * Should be called before export() to ensure renderer logs are included.
+   * @param logs - Array of log entries from renderer's circular buffer
+   * @returns Promise resolving when logs are flushed
+   *
+   * @example
+   * const rendererLogs = logger.getLogs();
+   * await window.coreto.logs.flushRendererLogs(rendererLogs);
+   * const result = await window.coreto.logs.export();
+   */
+  flushRendererLogs: (logs: LogEntry[]): Promise<IPCResult<void>> =>
+    ipcRenderer.invoke('logs:flushRendererLogs', { logs }),
+
+  /**
    * Exports application logs from both main and renderer processes.
    * Creates a LogBundle with metadata and saves to temp directory.
-   * @returns Promise resolving to log bundle and download path
+   * Logs are separated by source (mainLogs, rendererLogs) for easier analysis.
+   * Note: Call flushRendererLogs() before this to include renderer logs.
+   * @returns Promise resolving to download path and log statistics
    *
    * @example
    * const response = await window.coreto.logs.export();
    * if (response.success) {
    *   console.log('Logs exported to:', response.data.downloadPath);
-   *   console.log('Bundle contains', response.data.bundle.logs.length, 'entries');
+   *   console.log('Main logs:', response.data.mainLogCount);
+   *   console.log('Renderer logs:', response.data.rendererLogCount);
+   *   console.log('Total:', response.data.totalCount);
    * }
    */
-  export: (): Promise<IPCResult<{ bundle: LogBundle; downloadPath: string }>> =>
+  export: (): Promise<IPCResult<{
+    downloadPath: string;
+    mainLogCount: number;
+    rendererLogCount: number;
+    totalCount: number;
+  }>> =>
     ipcRenderer.invoke('logs:export', undefined),
 };
 
