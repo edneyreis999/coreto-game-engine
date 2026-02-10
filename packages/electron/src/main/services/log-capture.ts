@@ -29,7 +29,8 @@ export interface LogBundle {
   electronVersion: string;
   platform: string;
   projectPath?: string;
-  logs: LogEntry[];
+  mainLogs: LogEntry[];
+  rendererLogs: LogEntry[];
   userActions?: string[]; // Phase 2
   stateSnapshot?: unknown; // Phase 2
 }
@@ -256,6 +257,8 @@ class LogAggregator {
   /**
    * Creates a LogBundle with aggregated logs and metadata.
    *
+   * Logs are separated by source (main/renderer) for easier analysis.
+   *
    * @param projectPath - Optional project path for context
    * @returns Complete LogBundle ready for export
    */
@@ -263,8 +266,11 @@ class LogAggregator {
     const mainCapture = logCapture;
     const mainLogs = mainCapture.getAll();
 
-    // Merge logs by timestamp
-    const allLogs = [...mainLogs, ...this.rendererLogs].sort((a, b) =>
+    // Sort logs by timestamp within each source
+    const sortedMainLogs = [...mainLogs].sort((a, b) =>
+      a.timestamp.localeCompare(b.timestamp)
+    );
+    const sortedRendererLogs = [...this.rendererLogs].sort((a, b) =>
       a.timestamp.localeCompare(b.timestamp)
     );
 
@@ -275,7 +281,8 @@ class LogAggregator {
       electronVersion: process.versions.electron || 'unknown',
       platform: process.platform,
       projectPath,
-      logs: allLogs,
+      mainLogs: sortedMainLogs,
+      rendererLogs: sortedRendererLogs,
     };
   }
 

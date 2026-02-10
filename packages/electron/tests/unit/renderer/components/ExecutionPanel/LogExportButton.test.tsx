@@ -14,13 +14,15 @@ import {
   SUCCESS_MESSAGE_AUTO_CLEAR_MS,
 } from '@/tests/constants/test-timeouts';
 
-// Mock window.coreto.logs.export
+// Mock window.coreto.logs.export and flushRendererLogs
 const mockCoreto = global.window.coreto as jest.Mocked<typeof global.window.coreto>;
 
 describe('LogExportButton', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.useFakeTimers();
+    // Mock flushRendererLogs to resolve immediately
+    mockCoreto.logs.flushRendererLogs.mockResolvedValue({ success: true });
   });
 
   afterEach(() => {
@@ -72,7 +74,12 @@ describe('LogExportButton', () => {
             setTimeout(() => {
               resolve({
                 success: true,
-                data: { downloadPath: '/path/to/logs.txt' },
+                data: {
+                  downloadPath: '/path/to/logs.txt',
+                  mainLogCount: 100,
+                  rendererLogCount: 50,
+                  totalCount: 150,
+                },
               });
             }, TEST_TIMEOUT_MS);
           })
@@ -105,7 +112,12 @@ describe('LogExportButton', () => {
     it('should call window.coreto.logs.export when clicked', async () => {
       mockCoreto.logs.export.mockResolvedValue({
         success: true,
-        data: { downloadPath: '/path/to/logs.txt' },
+        data: {
+          downloadPath: '/path/to/logs.txt',
+          mainLogCount: 100,
+          rendererLogCount: 50,
+          totalCount: 150,
+        },
       });
 
       render(<LogExportButton />);
@@ -141,12 +153,17 @@ describe('LogExportButton', () => {
       });
     });
 
-    it('should display success message with file path', async () => {
+    it('should display success message with file path and counts', async () => {
       const downloadPath = '/path/to/logs.txt';
 
       mockCoreto.logs.export.mockResolvedValue({
         success: true,
-        data: { downloadPath },
+        data: {
+          downloadPath,
+          mainLogCount: 100,
+          rendererLogCount: 50,
+          totalCount: 150,
+        },
       });
 
       render(<LogExportButton />);
@@ -158,7 +175,10 @@ describe('LogExportButton', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText(`Logs exported to: ${downloadPath}`)).toBeInTheDocument();
+        expect(screen.getByText(/Logs exported to:/i)).toBeInTheDocument();
+        expect(screen.getByText(/Main: 100/i)).toBeInTheDocument();
+        expect(screen.getByText(/Renderer: 50/i)).toBeInTheDocument();
+        expect(screen.getByText(/Total: 150/i)).toBeInTheDocument();
       });
     });
 
@@ -167,7 +187,12 @@ describe('LogExportButton', () => {
 
       mockCoreto.logs.export.mockResolvedValue({
         success: true,
-        data: { downloadPath },
+        data: {
+          downloadPath,
+          mainLogCount: 100,
+          rendererLogCount: 50,
+          totalCount: 150,
+        },
       });
 
       render(<LogExportButton />);
@@ -179,7 +204,7 @@ describe('LogExportButton', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText(`Logs exported to: ${downloadPath}`)).toBeInTheDocument();
+        expect(screen.getByText(/Logs exported to:/i)).toBeInTheDocument();
       });
 
       // Fast-forward 4 seconds - message should still be there
@@ -187,14 +212,14 @@ describe('LogExportButton', () => {
         jest.advanceTimersByTime(MESSAGE_CHECK_DELAY_MS);
       });
 
-      expect(screen.getByText(`Logs exported to: ${downloadPath}`)).toBeInTheDocument();
+      expect(screen.getByText(/Logs exported to:/i)).toBeInTheDocument();
 
       // Fast-forward another 2 seconds (total 6 seconds) - message should be gone
       act(() => {
         jest.advanceTimersByTime(MESSAGE_CLEARED_CHECK_DELAY_MS);
       });
 
-      expect(screen.queryByText(`Logs exported to: ${downloadPath}`)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Logs exported to:/i)).not.toBeInTheDocument();
     });
 
     it('should call onExportError callback when export fails', async () => {
@@ -304,7 +329,12 @@ describe('LogExportButton', () => {
       // First export - success
       mockCoreto.logs.export.mockResolvedValueOnce({
         success: true,
-        data: { downloadPath: '/path/to/logs1.txt' },
+        data: {
+          downloadPath: '/path/to/logs1.txt',
+          mainLogCount: 100,
+          rendererLogCount: 50,
+          totalCount: 150,
+        },
       });
 
       render(<LogExportButton />);
@@ -332,7 +362,7 @@ describe('LogExportButton', () => {
       await waitFor(() => {
         expect(screen.getByText('Second export failed')).toBeInTheDocument();
         // First success message should be gone
-        expect(screen.queryByText('/path/to/logs1.txt')).not.toBeInTheDocument();
+        expect(screen.queryByText(/logs1\.txt/i)).not.toBeInTheDocument();
       });
     });
 
@@ -361,7 +391,12 @@ describe('LogExportButton', () => {
       await act(async () => {
         resolveExport!({
           success: true,
-          data: { downloadPath: '/path/to/logs.txt' },
+          data: {
+            downloadPath: '/path/to/logs.txt',
+            mainLogCount: 100,
+            rendererLogCount: 50,
+            totalCount: 150,
+          },
         });
       });
 
@@ -373,7 +408,12 @@ describe('LogExportButton', () => {
     it('should remain disabled when disabled prop is true during loading', async () => {
       mockCoreto.logs.export.mockResolvedValue({
         success: true,
-        data: { downloadPath: '/path/to/logs.txt' },
+        data: {
+          downloadPath: '/path/to/logs.txt',
+          mainLogCount: 100,
+          rendererLogCount: 50,
+          totalCount: 150,
+        },
       });
 
       render(<LogExportButton disabled />);
@@ -394,11 +434,14 @@ describe('LogExportButton', () => {
 
   describe('dismissible messages', () => {
     it('should dismiss success message when dismiss button clicked', async () => {
-      const downloadPath = '/path/to/logs.txt';
-
       mockCoreto.logs.export.mockResolvedValue({
         success: true,
-        data: { downloadPath },
+        data: {
+          downloadPath: '/path/to/logs.txt',
+          mainLogCount: 100,
+          rendererLogCount: 50,
+          totalCount: 150,
+        },
       });
 
       render(<LogExportButton />);
@@ -410,7 +453,7 @@ describe('LogExportButton', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText(`Logs exported to: ${downloadPath}`)).toBeInTheDocument();
+        expect(screen.getByText(/Logs exported to:/i)).toBeInTheDocument();
       });
 
       // Find and click dismiss button
@@ -421,7 +464,7 @@ describe('LogExportButton', () => {
         fireEvent.click(dismissButton);
       });
 
-      expect(screen.queryByText(`Logs exported to: ${downloadPath}`)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Logs exported to:/i)).not.toBeInTheDocument();
     });
 
     it('should dismiss error message when dismiss button clicked', async () => {
@@ -461,11 +504,21 @@ describe('LogExportButton', () => {
       mockCoreto.logs.export
         .mockResolvedValueOnce({
           success: true,
-          data: { downloadPath: '/path/to/logs1.txt' },
+          data: {
+            downloadPath: '/path/to/logs1.txt',
+            mainLogCount: 100,
+            rendererLogCount: 50,
+            totalCount: 150,
+          },
         })
         .mockResolvedValueOnce({
           success: true,
-          data: { downloadPath: '/path/to/logs2.txt' },
+          data: {
+            downloadPath: '/path/to/logs2.txt',
+            mainLogCount: 200,
+            rendererLogCount: 75,
+            totalCount: 275,
+          },
         });
 
       render(<LogExportButton />);
@@ -478,7 +531,7 @@ describe('LogExportButton', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText(/Logs exported to: \/path\/to\/logs1\.txt/i)).toBeInTheDocument();
+        expect(screen.getByText(/logs1\.txt/i)).toBeInTheDocument();
       });
 
       // Clear first message
@@ -492,7 +545,7 @@ describe('LogExportButton', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText(/Logs exported to: \/path\/to\/logs2\.txt/i)).toBeInTheDocument();
+        expect(screen.getByText(/logs2\.txt/i)).toBeInTheDocument();
       });
 
       expect(mockCoreto.logs.export).toHaveBeenCalledTimes(2);

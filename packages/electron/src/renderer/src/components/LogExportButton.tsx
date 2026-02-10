@@ -10,8 +10,10 @@
  * - Success display with file location
  * - Error display with error message
  * - Consistent styling with shadcn/ui patterns
+ * - Flushes renderer logs before export (best-effort with timeout)
  *
  * @see Task 10 - Create LogExportButton Component
+ * @see planos/017-botao-export-logs/debug/consensus-summary.md - On-demand flush pattern
  */
 
 import {
@@ -26,6 +28,7 @@ import {
 
 import { cn } from '@/lib/utils';
 import { ErrorDisplay } from './shared/ErrorDisplay';
+import { logBuffer } from '@/hooks/useLogger/index';
 
 // ============================================================================
 // Types
@@ -112,7 +115,8 @@ export const LogExportButton: FC<LogExportButtonProps> = ({
 
   /**
    * Handles button click to export logs.
-   * Triggers the logs:export IPC call and handles the response.
+   * Flushes renderer logs to main process before export (best-effort with timeout).
+   * Then triggers the logs:export IPC call and handles the response.
    */
   const handleClick = useCallback(async () => {
     // Reset previous state
@@ -121,14 +125,47 @@ export const LogExportButton: FC<LogExportButtonProps> = ({
     setIsLoading(true);
 
     try {
-      // Call the logs:export IPC method
-      // Response format: { success: boolean, data?: { bundle: LogBundle, downloadPath: string }, error?: string }
+      // Step 1: Flush renderer logs to main process (best-effort with timeout)
+      // This ensures renderer logs are included in the export bundle
+      try {
+        const logs = logBuffer.getAll();
+
+        // Create a timeout promise (3 seconds as per consensus)
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Flush timeout')), 3000)
+        );
+
+        // Race between flush and timeout
+        await Promise.race([
+          (window as unknown as {
+            coreto?: {
+              logs?: {
+                flushRendererLogs: (logs: unknown[]) => Promise<{ success: boolean; error?: string }>;
+              };
+            };
+          }).coreto?.logs?.flushRendererLogs(logs),
+          timeoutPromise,
+        ]);
+      } catch (flushError) {
+        // If flush fails (timeout or error), continue without renderer logs
+        // This is the best-effort pattern from the consensus
+        console.warn('[LogExport] Failed to flush renderer logs:', flushError);
+        // Do NOT set errorMessage - we continue with export
+      }
+
+      // Step 2: Export logs (always works, with or without renderer logs)
+      // Response format: { success: boolean, data?: { downloadPath: string, mainLogCount: number, rendererLogCount: number, totalCount: number }, error?: string }
       const response = await (window as unknown as {
         coreto?: {
           logs?: {
             export: () => Promise<{
               success: boolean;
-              data?: { bundle: unknown; downloadPath: string };
+              data?: {
+                downloadPath: string;
+                mainLogCount: number;
+                rendererLogCount: number;
+                totalCount: number;
+              };
               error?: string;
             }>;
           };
@@ -136,8 +173,10 @@ export const LogExportButton: FC<LogExportButtonProps> = ({
       }).coreto?.logs?.export();
 
       if (response?.success && response.data?.downloadPath) {
-        const { downloadPath } = response.data;
-        setSuccessMessage(`Logs exported to: ${downloadPath}`);
+        const { downloadPath, mainLogCount, rendererLogCount, totalCount } = response.data;
+        setSuccessMessage(
+          `Logs exported to: ${downloadPath} (Main: ${mainLogCount}, Renderer: ${rendererLogCount}, Total: ${totalCount})`
+        );
         onExportSuccess?.(downloadPath);
 
         // Auto-clear success message after 5 seconds

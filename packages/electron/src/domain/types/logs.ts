@@ -222,17 +222,28 @@ export interface LogBundle {
   projectPath?: string;
 
   /**
-   * Array of log entries contained in this bundle.
+   * Log entries from the main process (Node.js backend).
    *
-   * Entries are typically ordered chronologically (newest first or
-   * oldest first depending on use case). Each entry includes full
-   * context with timestamp, level, source, message, and optional metadata.
+   * Contains IPC handlers, database operations, and server-side logic.
    *
    * @example
    * [
-   *   { timestamp: '...', level: 'info', source: 'main', message: '...' },
-   *   { timestamp: '...', level: 'error', source: 'renderer', message: '...', stack: '...' }
+   *   { timestamp: '...', level: 'info', source: 'main', message: 'Database connected' },
+   *   { timestamp: '...', level: 'error', source: 'main', message: 'IPC timeout', stack: '...' }
    * ]
    */
-  logs: LogEntry[];
+  mainLogs: LogEntry[];
+
+  /**
+   * Log entries from the renderer process (Chromium UI).
+   *
+   * Contains React component lifecycle, user interactions, and UI events.
+   *
+   * @example
+   * [
+   *   { timestamp: '...', level: 'info', source: 'renderer', message: 'Component mounted' },
+   *   { timestamp: '...', level: 'warn', source: 'renderer', message: 'Invalid prop type' }
+   * ]
+   */
+  rendererLogs: LogEntry[];
 }

@@ -580,8 +580,8 @@ describe('LogAggregator (via singleton)', () => {
 
       // Verify via createBundle
       const bundle = logAggregator.createBundle();
-      expect(bundle.logs).toContainEqual(rendererLogs[0]);
-      expect(bundle.logs).toContainEqual(rendererLogs[1]);
+      expect(bundle.rendererLogs).toContainEqual(rendererLogs[0]);
+      expect(bundle.rendererLogs).toContainEqual(rendererLogs[1]);
     });
 
     it('should replace existing renderer logs', () => {
@@ -607,9 +607,9 @@ describe('LogAggregator (via singleton)', () => {
       logAggregator.addRendererLogs(secondLogs);
 
       const bundle = logAggregator.createBundle();
-      expect(bundle.logs).toContainEqual(secondLogs[0]);
+      expect(bundle.rendererLogs).toContainEqual(secondLogs[0]);
       // First batch should be replaced
-      expect(bundle.logs).not.toContainEqual(firstLogs[0]);
+      expect(bundle.rendererLogs).not.toContainEqual(firstLogs[0]);
     });
   });
 
@@ -631,7 +631,8 @@ describe('LogAggregator (via singleton)', () => {
       logCapture.clear(); // Clear main logs to isolate renderer
       const bundle = logAggregator.createBundle();
 
-      expect(bundle.logs).toHaveLength(0);
+      expect(bundle.mainLogs).toHaveLength(0);
+      expect(bundle.rendererLogs).toHaveLength(0);
     });
   });
 
@@ -645,7 +646,8 @@ describe('LogAggregator (via singleton)', () => {
         appVersion: expect.any(String),
         electronVersion: expect.any(String),
         platform: expect.any(String),
-        logs: expect.any(Array),
+        mainLogs: expect.any(Array),
+        rendererLogs: expect.any(Array),
       });
     });
 
@@ -655,8 +657,8 @@ describe('LogAggregator (via singleton)', () => {
 
       const bundle = logAggregator.createBundle();
 
-      expect(bundle.logs.length).toBeGreaterThan(0);
-      const mainLog = bundle.logs.find((l) => l.message === 'Main process log');
+      expect(bundle.mainLogs.length).toBeGreaterThan(0);
+      const mainLog = bundle.mainLogs.find((l) => l.message === 'Main process log');
       expect(mainLog).toMatchObject({
         level: 'info',
         source: 'main',
@@ -678,10 +680,10 @@ describe('LogAggregator (via singleton)', () => {
       logAggregator.addRendererLogs(rendererLogs);
       const bundle = logAggregator.createBundle();
 
-      expect(bundle.logs).toContainEqual(rendererLogs[0]);
+      expect(bundle.rendererLogs).toContainEqual(rendererLogs[0]);
     });
 
-    it('should merge and sort logs by timestamp', () => {
+    it('should keep main and renderer logs separate', () => {
       logCapture.clear();
 
       // Add logs with specific timestamps
@@ -717,11 +719,15 @@ describe('LogAggregator (via singleton)', () => {
       logAggregator.addRendererLogs(rendererLogs);
       const bundle = logAggregator.createBundle();
 
-      expect(bundle.logs).toHaveLength(4);
-      expect(bundle.logs[0].message).toBe('Renderer log 0');
-      expect(bundle.logs[1].message).toBe('Main log 1');
-      expect(bundle.logs[2].message).toBe('Main log 2');
-      expect(bundle.logs[3].message).toBe('Renderer log 3');
+      // Logs are now separated by source
+      expect(bundle.mainLogs).toHaveLength(2);
+      expect(bundle.rendererLogs).toHaveLength(2);
+
+      // Each array is sorted by timestamp
+      expect(bundle.mainLogs[0].message).toBe('Main log 1');
+      expect(bundle.mainLogs[1].message).toBe('Main log 2');
+      expect(bundle.rendererLogs[0].message).toBe('Renderer log 0');
+      expect(bundle.rendererLogs[1].message).toBe('Renderer log 3');
     });
 
     it('should include project path when provided', () => {
@@ -755,7 +761,8 @@ describe('LogAggregator (via singleton)', () => {
       logAggregator.clearRendererLogs();
       const bundle = logAggregator.createBundle();
 
-      expect(bundle.logs).toEqual([]);
+      expect(bundle.mainLogs).toEqual([]);
+      expect(bundle.rendererLogs).toEqual([]);
     });
   });
 
@@ -820,7 +827,8 @@ describe('LogAggregator (via singleton)', () => {
       logAggregator.addRendererLogs(rendererLogs);
 
       const bundle = logAggregator.createBundle();
-      expect(bundle.logs.length).toBeGreaterThanOrEqual(4);
+      const totalLogs = bundle.mainLogs.length + bundle.rendererLogs.length;
+      expect(totalLogs).toBeGreaterThanOrEqual(4);
     });
 
     it('should handle mixed log levels in bundle', () => {
@@ -832,7 +840,8 @@ describe('LogAggregator (via singleton)', () => {
       console.error('Error');
 
       const bundle = logAggregator.createBundle();
-      const levels = new Set(bundle.logs.map((l) => l.level));
+      const allLogs = [...bundle.mainLogs, ...bundle.rendererLogs];
+      const levels = new Set(allLogs.map((l) => l.level));
 
       expect(levels).toContain('debug');
       expect(levels).toContain('info');
@@ -931,7 +940,8 @@ describe('TypeScript type safety', () => {
       appVersion: '1.0.0',
       electronVersion: '33.0.0',
       platform: 'darwin',
-      logs: [],
+      mainLogs: [],
+      rendererLogs: [],
     };
 
     expect(bundle.id).toBeDefined();
@@ -939,6 +949,7 @@ describe('TypeScript type safety', () => {
     expect(bundle.appVersion).toBeDefined();
     expect(bundle.electronVersion).toBeDefined();
     expect(bundle.platform).toBeDefined();
-    expect(bundle.logs).toBeDefined();
+    expect(bundle.mainLogs).toBeDefined();
+    expect(bundle.rendererLogs).toBeDefined();
   });
 });

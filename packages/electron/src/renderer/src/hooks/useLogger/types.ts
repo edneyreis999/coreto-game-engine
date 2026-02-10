@@ -15,6 +15,9 @@ export interface LogEntry {
   /** Log level */
   level: 'info' | 'warn' | 'error' | 'debug';
 
+  /** Process source (always 'renderer' for renderer logs) */
+  source: 'renderer';
+
   /** Formatted log message */
   message: string;
 

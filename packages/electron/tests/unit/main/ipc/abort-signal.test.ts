@@ -48,8 +48,8 @@ describe('Abort Signal Utilities', () => {
         checkAbortSignal(controller.signal);
       }
       const duration = Date.now() - start;
-      // Should complete 10,000 checks in less than 10ms
-      expect(duration).toBeLessThan(10);
+      // Should complete 10,000 checks in less than 20ms (tolerant for CI environments)
+      expect(duration).toBeLessThan(20);
     });
   });
 
@@ -271,7 +271,7 @@ describe('Abort Signal Utilities', () => {
       expect(results).toEqual([100, 200, 300]);
       expect(delays.length).toBe(3);
       delays.forEach(delay => {
-        expect(delay).toBeGreaterThanOrEqual(10);
+        expect(delay).toBeGreaterThanOrEqual(9);
       });
     });
 

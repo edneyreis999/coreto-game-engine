@@ -98,8 +98,10 @@ class CircularBuffer {
 export const logBuffer = new CircularBuffer(1000);
 
 /**
- * Create log entry with timestamp.
+ * Create log entry with timestamp and source.
  * Exported for console override in renderer entry point.
+ *
+ * Note: Message is sanitized via String() to prevent serialization failures.
  */
 export function createLogEntry(
   level: LogEntry['level'],
@@ -109,7 +111,8 @@ export function createLogEntry(
   return {
     timestamp: new Date().toISOString(),
     level,
-    message,
+    source: 'renderer',
+    message: String(message), // Sanitize to prevent serialization failures
     meta,
   };
 }

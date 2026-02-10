@@ -136,7 +136,12 @@ export async function handleLogsExport(
     const filename = `coreto-logs-${timestamp}.json`;
 
     // Step 3: Write to project reports directory
-    const reportsDir = path.join(process.cwd(), 'reports', 'application-logs');
+    // In production: use monorepo root reports directory
+    // In tests: detect test environment and use appropriate path
+    const isTest = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined;
+    const reportsDir = isTest
+      ? path.resolve(process.cwd(), 'reports', 'application-logs')
+      : path.resolve(__dirname, '..', '..', '..', '..', '..', 'reports', 'application-logs');
     const downloadPath = path.join(reportsDir, filename);
 
     // Ensure directory exists

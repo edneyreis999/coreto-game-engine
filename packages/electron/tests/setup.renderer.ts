@@ -95,6 +95,7 @@ const mockCoretoAPI = {
 
   // Logs API
   logs: {
+    flushRendererLogs: jest.fn(),
     export: jest.fn(),
   },
 }

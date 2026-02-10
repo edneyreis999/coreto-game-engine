@@ -85,6 +85,7 @@ export function registerHandlers(): void {
 
   // Logs handlers
   ipcMain.handle('logs:export', logs.handleLogsExport);
+  ipcMain.handle('logs:flushRendererLogs', logs.handleLogsFlushRenderer);
 
   // History handlers (from registry - for other history operations)
   ipcMain.handle('history:list', getRegistryHandler(HISTORY_IPC_HANDLERS, 'history:list'));
