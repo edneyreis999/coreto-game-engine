@@ -3,6 +3,8 @@
  *
  * Domain validation rules for trecho configuration forms.
  * Uses Zod schemas for validation with detailed error messages.
+ *
+ * @trace FR-003
  */
 
 import { z } from 'zod';

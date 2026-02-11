@@ -1,3 +1,10 @@
+/**
+ * Domain entity representing a game section (trecho) with TTK targets,
+ * anchor level ranges, and tolerance configuration.
+ *
+ * @trace FR-002
+ */
+
 import { ValidationError } from '../errors/index.js';
 import { PartyConfig } from './PartyConfig.js';
 

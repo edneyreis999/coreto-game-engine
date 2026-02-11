@@ -1,3 +1,10 @@
+/**
+ * Executes battle simulation with deterministic seed and configuration.
+ * Accepts project path, seed, and CLI overrides.
+ *
+ * @trace FR-001
+ */
+
 import { IBattleSimulator, BattleSetup } from '../ports/IBattleSimulator.js';
 import { BattleResult } from '../domain/BattleResult.js';
 import { PartyConfig } from '../domain/PartyConfig.js';

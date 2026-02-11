@@ -1,3 +1,10 @@
+/**
+ * Selects optimal skills based on HP/MP affordability constraints.
+ * MVP implementation with attack/guard fallback.
+ *
+ * @trace FR-005
+ */
+
 import { injectable } from 'tsyringe';
 
 /**

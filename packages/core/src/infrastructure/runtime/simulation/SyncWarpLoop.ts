@@ -9,6 +9,7 @@
  * Based on: docs/pesquisas/Headless RPG Maker MZ_ Node.js POC.md (Section 3, lines 186-253)
  * ADR: ADR-029 (Sync Warp Loop Architecture)
  *
+ * @trace FR-006
  * @module infrastructure/runtime/simulation
  */
 

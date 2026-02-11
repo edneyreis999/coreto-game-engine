@@ -7,6 +7,9 @@
  * @see docs/adrs/REPORTER/ADR-011-json-file-based-report-output-format.md
  * @see docs/adrs/REPORTER/ADR-012-statistical-aggregation-metrics.md
  * @see docs/adrs/REPORTER/ADR-013-typed-warning-system-with-severity-levels.md
+ *
+ * @trace FR-008
+ * @trace FR-009
  */
 
 import { injectable } from 'tsyringe';

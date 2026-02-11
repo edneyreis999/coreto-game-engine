@@ -85,6 +85,11 @@ Futuro (pós MVP v1)
 
 O sistema deve ler `project.config.json` contendo o caminho do projeto RPG Maker MZ e uma seed padrão para determinismo, com possibilidade de override via CLI.
 
+**Traceability:**
+- Code: `packages/core/src/infrastructure/config/ZodConfigLoader.ts`
+- Code: `packages/core/src/core/use-cases/ExecuteBattleUseCase.ts`
+- Tests: `packages/core/tests/unit/infrastructure/config/ZodConfigLoader.test.ts`
+
 **Fluxo principal**
 
 - Usuário cria ou atualiza `project.config.json` com `projectPath` e `seed`
@@ -109,6 +114,11 @@ O sistema deve ler `project.config.json` contendo o caminho do projeto RPG Maker
 
 O sistema deve suportar trechos do jogo com âncoras por nível e configuração de alvo e tolerância de TTK por trecho.
 
+**Traceability:**
+- Code: `packages/core/src/core/domain/Trecho.ts`
+- Code: `packages/core/src/infrastructure/config/ZodConfigLoader.ts` (validateTrechos)
+- Tests: `packages/core/tests/unit/core/domain/Trecho.test.ts`
+
 **Fluxo principal**
 
 - Usuário define um trecho com `anchorLevel` e metadados do trecho
@@ -131,6 +141,12 @@ O sistema deve suportar trechos do jogo com âncoras por nível e configuração
 #### FR-003 Seleção e validação de troops por trecho
 
 O sistema deve permitir que o usuário informe quais troops pertencem a um trecho, separado por vírgula, e validar essas troops e seus inimigos.
+
+**Traceability:**
+- Code: `packages/core/src/core/domain/Trecho.ts` (troopIds field)
+- Code: `packages/core/src/infrastructure/simulation/BattleSimulator.ts` (executeBattle)
+- Code: `packages/electron/src/domain/validation/trecho-validation.ts` (validateTroopIds)
+- Tests: `packages/core/tests/unit/infrastructure/simulation/BattleSimulator.unit.test.ts`
 
 **Fluxo principal**
 
@@ -156,6 +172,11 @@ O sistema deve permitir que o usuário informe quais troops pertencem a um trech
 
 O sistema deve permitir que o usuário informe a party como lista de `classId level`, separada por vírgula, e derivar as skills liberadas por nível.
 
+**Traceability:**
+- Code: `packages/core/src/core/domain/PartyConfig.ts`
+- Code: `packages/core/src/core/use-cases/ExecuteBattleUseCase.ts` (party parameter)
+- Tests: `packages/core/tests/unit/core/domain/PartyConfig.test.ts`
+
 **Fluxo principal**
 
 - Usuário informa a party no formato `classId level, classId level, ...`
@@ -180,6 +201,12 @@ O sistema deve permitir que o usuário informe a party como lista de `classId le
 
 Durante a simulação, cada personagem deve escolher a skill que maximize dano esperado por ação dentre as skills liberadas, respeitando apenas HP e MP na v1.
 
+**Traceability:**
+- Code: `packages/core/src/infrastructure/simulation/SkillSelector.ts`
+- Code: `packages/core/src/infrastructure/simulation/SkillSelector.ts` (canAffordSkill)
+- Tests: `packages/core/tests/unit/infrastructure/simulation/SkillSelector.test.ts`
+- Note: MVP uses HP/MP affordability only; damage estimation is a gap
+
 **Fluxo principal**
 
 - No turno do personagem, listar skills liberadas
@@ -202,6 +229,13 @@ Durante a simulação, cada personagem deve escolher a skill que maximize dano e
 #### FR-006 Execução de batalha real via engine em headless
 
 O sistema deve executar uma batalha real via engine (BattleManager e loop de turno) em modo headless para medir TTK fiel ao jogo final.
+
+**Traceability:**
+- Code: `packages/core/src/infrastructure/simulation/BattleSimulator.ts` (HeadlessBattleSimulator)
+- Code: `packages/core/src/infrastructure/runtime/HeadlessRuntimeBootstrapper.ts`
+- Code: `packages/core/src/infrastructure/runtime/simulation/SyncWarpLoop.ts`
+- Tests: `packages/core/tests/integration/simulation/BattleSimulator.integration.test.ts`
+- Tests: `packages/core/tests/integration/runtime/bootstrapper.integration.test.ts`
 
 **Fluxo principal**
 
@@ -228,6 +262,12 @@ O sistema deve executar uma batalha real via engine (BattleManager e loop de tur
 
 O sistema deve medir e registrar TTK por troop em turnos e em ações, e comparar com o alvo e tolerância do trecho.
 
+**Traceability:**
+- Code: `packages/core/src/infrastructure/simulation/TtkMeasurer.ts`
+- Code: `packages/core/src/infrastructure/simulation/BattleSimulator.ts` (measureTtkMetrics)
+- Code: `packages/core/src/core/use-cases/ValidateTrechoUseCase.ts`
+- Tests: `packages/core/tests/unit/infrastructure/simulation/TtkMeasurer.test.ts`
+
 **Fluxo principal**
 
 - Ao final de cada batalha, registrar `ttkTurns` e `ttkActions`
@@ -249,6 +289,12 @@ O sistema deve medir e registrar TTK por troop em turnos e em ações, e compara
 #### FR-008 Geração de relatório em JSON
 
 O sistema deve gerar `report/report.json` contendo resultados por trecho e por troop, seed, party, skills escolhidas, warnings e resumo.
+
+**Traceability:**
+- Code: `packages/core/src/infrastructure/adapters/reporter/JsonReporter.ts`
+- Code: `packages/core/src/core/use-cases/GenerateReportUseCase.ts`
+- Tests: `packages/core/tests/integration/reporter/report-generation.integration.test.ts`
+- Tests: `packages/core/tests/integration/cli/run-ttk.integration.test.ts`
 
 **Fluxo principal**
 
@@ -275,6 +321,12 @@ O sistema deve gerar `report/report.json` contendo resultados por trecho e por t
 #### FR-009 Export de contexto para IA a partir dos JSONs do MZ
 
 O sistema deve ajudar no uso de IA ao dividir os JSONs grandes do RPG Maker MZ em arquivos menores para consulta.
+
+**Traceability:**
+- Code: `packages/core/src/infrastructure/adapters/reporter/JsonReporter.ts` (exportContext - placeholder)
+- Code: `packages/core/src/infrastructure/adapters/reporter/JsonReporter.ts` (writeReport)
+- Tests: None (gap - implementation incomplete)
+- Note: Placeholder implementation only; full JSON splitting is a gap
 
 **Fluxo principal**
 

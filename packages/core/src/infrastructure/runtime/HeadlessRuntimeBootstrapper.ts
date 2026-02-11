@@ -1,3 +1,10 @@
+/**
+ * Sets up JSDOM environment with PIXI/Effekseer mocks for headless execution.
+ * Loads RPG Maker MZ scripts and initializes the runtime.
+ *
+ * @trace FR-006
+ */
+
 import { JSDOM } from 'jsdom';
 import { ScriptLoader } from './loaders/ScriptLoader.js';
 import { DatabaseLoader } from './loaders/DatabaseLoader.js';

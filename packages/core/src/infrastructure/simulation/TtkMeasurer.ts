@@ -1,3 +1,10 @@
+/**
+ * Measures Time-to-Kill (TTK) in both turns and actions with deviation tracking.
+ * Compares results against configured targets and tolerances.
+ *
+ * @trace FR-007
+ */
+
 import { injectable } from 'tsyringe';
 import { TtkMetrics } from '@coreto/core';
 import { TtkTarget } from '@coreto/core';

@@ -1,3 +1,10 @@
+/**
+ * Validates TTK results against configured targets and tolerances per trecho.
+ * Generates pass/fail status and warnings for out-of-tolerance results.
+ *
+ * @trace FR-007
+ */
+
 import { Trecho } from '../domain/Trecho.js';
 import { BattleResult } from '../domain/BattleResult.js';
 

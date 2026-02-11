@@ -1,3 +1,10 @@
+/**
+ * Executes real RPG Maker MZ battles via BattleManager in headless mode.
+ * Integrates with JSDOM environment and PIXI/Effekseer mocks.
+ *
+ * @trace FR-006
+ */
+
 import { inject, injectable } from 'tsyringe';
 import type { IBattleSimulator, BattleSetup } from '@coreto/core';
 import type { RmmzDatabase } from '@coreto/core';

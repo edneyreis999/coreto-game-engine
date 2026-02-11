@@ -6,6 +6,8 @@
  *
  * @see docs/adrs/ADR-008-schema-validation-library.md
  * @see docs/adrs/ADR-021-json-based-configuration-format.md
+ *
+ * @trace FR-001
  */
 
 import { injectable, inject } from 'tsyringe';

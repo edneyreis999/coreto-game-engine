@@ -1,3 +1,10 @@
+/**
+ * Domain entity representing party configuration with class and level assignments.
+ * Validates class existence and derives skills from learnings.
+ *
+ * @trace FR-004
+ */
+
 import { ValidationError } from '../errors/index.js';
 
 /**

@@ -1,3 +1,9 @@
+/**
+ * Orchestrates report generation from battle results and validation warnings.
+ *
+ * @trace FR-008
+ */
+
 import { IReporter, Warning } from '../ports/IReporter.js';
 import { Report, ReportMetadata, TrechoSummary } from '../domain/Report.js';
 import { TrechoValidationResult } from './ValidateTrechoUseCase.js';
