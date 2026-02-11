@@ -23,6 +23,8 @@ import type { JSDOM } from 'jsdom';
 /**
  * JSDOM-based headless runtime implementation.
  * Manages the complete lifecycle of RPG Maker MZ headless execution.
+ *
+ * @trace HLD-SEC-3.4
  */
 @injectable()
 export class JsdomHeadlessRuntime implements IHeadlessRuntime {

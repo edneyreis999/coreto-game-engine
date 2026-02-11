@@ -11,6 +11,8 @@ import type { ILogger } from '@coreto/core';
 /**
  * Console-based logger implementation.
  * Uses standard console methods for output.
+ *
+ * @trace HLD-SEC-9
  */
 @injectable()
 export class ConsoleLogger implements ILogger {

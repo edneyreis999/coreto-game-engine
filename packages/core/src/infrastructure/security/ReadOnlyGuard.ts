@@ -49,6 +49,8 @@ type WriteFileSyncOptions =
 /**
  * ReadOnlyGuard class.
  * Manages runtime protection for read-only paths.
+ *
+ * @trace HLD-SEC-8
  */
 export class ReadOnlyGuard {
   private protectedPaths: Set<string> = new Set();

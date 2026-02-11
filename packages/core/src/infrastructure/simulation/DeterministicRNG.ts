@@ -5,6 +5,7 @@
  * por uma função determinística baseada em seed.
  *
  * ADR-018: Determinism in Battle Simulation
+ * @trace HLD-SEC-3.5
  * - Todas as simulações com mesmo seed devem gerar sequências idênticas
  * - Override de Math.random deve ocorrer ANTES de carregar core scripts RMMZ
  * - Reset deve restaurar Math.random original

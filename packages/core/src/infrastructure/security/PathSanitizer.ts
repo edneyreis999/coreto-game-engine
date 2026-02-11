@@ -21,6 +21,8 @@ import { ValidationError } from '@coreto/core';
 /**
  * PathSanitizer utility class.
  * Provides static methods for path validation and sanitization.
+ *
+ * @trace HLD-SEC-8
  */
 export class PathSanitizer {
   /**

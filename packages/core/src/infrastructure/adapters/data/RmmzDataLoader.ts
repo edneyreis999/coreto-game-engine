@@ -32,6 +32,8 @@ import { DataMapper } from '../mappers/DataMapper.js';
 /**
  * RmmzDataLoader loads all RPG Maker MZ database files.
  * Implements IDataLoader port interface.
+ *
+ * @trace HLD-SEC-3.3
  */
 @injectable()
 export class RmmzDataLoader implements IDataLoader {

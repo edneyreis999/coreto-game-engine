@@ -19,6 +19,8 @@ import { DataLoadError } from '@coreto/core';
 /**
  * RmmzProjectValidator validates RPG Maker MZ project structure.
  * Checks for required marker files and directories.
+ *
+ * @trace HLD-SEC-3.3
  */
 @injectable()
 export class RmmzProjectValidator {
