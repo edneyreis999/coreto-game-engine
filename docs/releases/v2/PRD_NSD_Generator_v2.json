@@ -1,0 +1,478 @@
+{
+  "meta": {
+    "product": "Coreto Game Engine",
+    "feature": "NSD Generator e Portal Evoluído v2",
+    "prd_owner": "coreto game design",
+    "version": "1.0",
+    "date": "2026-02-10"
+  },
+  "context": {
+    "summary": "Evoluir o Coreto Game Engine v1 para v2 adicionando uma Home gamificada estilo Age of Mythology e uma nova ferramenta chamada NSD Generator. O NSD Generator permite que game designers façam upload de arquivos NSD (Narrative Structure Documents) em formato markdown, selecionem uma cena específica e gerem prompts técnicos otimizados para IA criar cenas jogáveis no RPG Maker MZ. A ferramenta analisa o projeto atual, identifica a variável de controle da quest e gera prompts para Event commands e Common Events, reduzindo o tempo de implementação de 3 dias para 0.5 dia por cena e garantindo consistência de 100% entre NSD e código.",
+    "target_audience": [
+      "Game designers da Coreto, responsáveis por implementação de cenas e quests no RPG Maker MZ",
+      "Desenvolvedores que trabalham com eventos e lógica de jogo no editor do RPG Maker MZ"
+    ],
+    "key_use_cases": [
+      "Designer precisa implementar uma nova cena baseada em NSD existente no projeto",
+      "Designer quer garantir que a cena implementada bate exatamente com o NSD documentado",
+      "Designer precisa iterar rapidamente em uma cena sem refazer todo o trabalho manual"
+    ],
+    "deployment_context": {
+      "type": "existing_system",
+      "description": "Portal Electron existente em packages/electron do Coreto Game Engine"
+    },
+    "problems": [
+      {
+        "description": "Implementar cenas manualmente no editor do RPG Maker MZ é lento e trabalhoso, levando em média 3 dias por cena incluindo implementação, testes e ajustes",
+        "impact": "Baixa velocidade de entrega, apenas 1-2 cenas por sprint no máximo",
+        "priority": "high"
+      },
+      {
+        "description": "Existe risco alto de inconsistência entre o NSD documentado e a implementação final, pois desenvolvedores frequentemente implementam algo mais legal durante o processo e não atualizam o NSD, gerando desincronização",
+        "impact": "Perda de garantia de que implementação bate com documentação, dificuldade de manutenção",
+        "priority": "high"
+      },
+      {
+        "description": "Curva de aprendizado do editor de eventos é alta e iterar em cenas existentes exige retrabalho manual significativo",
+        "impact": "Barreira de entrada para novos designers, lentidão em iterações",
+        "priority": "medium"
+      }
+    ]
+  },
+  "goals": [
+    {
+      "goal": "Reduzir tempo de implementação de cenas",
+      "metric": "Dias por cena (implementação + testes + ajustes)",
+      "target": "De 3 dias para 0.5 dia"
+    },
+    {
+      "goal": "Garantir consistência entre NSD e implementação",
+      "metric": "Percentual de cenas consistentes com NSD documentado",
+      "target": "100%"
+    },
+    {
+      "goal": "Facilitar iterações em cenas existentes",
+      "metric": "Tempo para refazer uma cena com alterações",
+      "target": "Redução significativa"
+    },
+    {
+      "goal": "Aumentar velocidade de entrega",
+      "metric": "Cenas implementadas por sprint",
+      "target": "5 cenas por sprint"
+    }
+  ],
+  "scope": {
+    "in_scope": [
+      "Home gamificada estilo Age of Mythology com dois portais circulares (TTK Validation e NSD Generator), incluindo ícones, animações hover, descrições e cenário ao fundo",
+      "Upload de arquivos NSD em formato markdown",
+      "Listagem de cenas disponíveis no NSD para referência do usuário",
+      "Campo de texto para usuário digitar o nome da cena que deseja implementar",
+      "Análise do projeto RPG Maker MZ existente (mapas, database completa, variáveis de quest), reaproveitando infraestrutura do @coreto/core e adicionando o que faltar",
+      "Integração com API GLM para geração de prompts técnicos",
+      "Geração de prompt técnico otimizado para criar Event commands e Common Events do RPG Maker MZ",
+      "Exibição do prompt gerado em caixa de texto com botão de copiar",
+      "Regeneração de prompt se resultado não for satisfatório",
+      "Configuração de API Key GLM via arquivo .env no projeto e binário compilado"
+    ],
+    "out_of_scope": [
+      "Aplicação automática do código gerado no projeto RPG Maker MZ (write direto em data/)",
+      "Validação visual ou preview da cena gerada",
+      "Versionamento de prompts gerados",
+      "Comparação automatizada entre NSD original e cena implementada",
+      "Gerenciamento de múltiplos NSDs simultâneos",
+      "Modificação ou escrita no banco do RPG Maker MZ",
+      "Segurança avançada (ferramenta de uso interno)"
+    ]
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-001",
+      "name": "Home gamificada estilo Age of Mythology",
+      "description": "O sistema deve apresentar uma tela inicial gamificada estilo seleção de divindades do Age of Mythology, com dois portais circulares representando as ferramentas disponíveis.",
+      "main_flow": [
+        "Usuário seleciona projeto RPG Maker MZ (tela existente mantida)",
+        "Sistema exibe Home gamificada com dois círculos/portais: Portal TTK Validation (ferramenta existente) e Portal NSD Generator (nova ferramenta)",
+        "Cada portal possui ícone ou imagem representativa",
+        "Ao passar o mouse sobre um portal, sistema exibe animação hover e descrição da ferramenta",
+        "Cenário ao fundo remete a ambiente de jogo (templo ou fantasia)",
+        "Usuário clica no portal desejado e é redirecionado para a ferramenta correspondente"
+      ],
+      "alternative_flows": [
+        "Usuário pode acessar diretamente uma ferramenta via atalho ou URL direta"
+      ],
+      "known_errors": [],
+      "priority": "medium"
+    },
+    {
+      "id": "FR-002",
+      "name": "Upload de arquivo NSD",
+      "description": "O sistema deve permitir que usuário faça upload de um arquivo NSD em formato markdown contendo a estrutura de cenas de uma quest.",
+      "main_flow": [
+        "Usuário clica no portal NSD Generator na Home",
+        "Sistema exibe tela de upload com botão para selecionar arquivo",
+        "Usuário seleciona arquivo .md ou .NSD.fluxo-cenas.md do seu computador",
+        "Sistema faz upload do arquivo e o armazena temporariamente em memória",
+        "Sistema consome o arquivo inteiro via IA (sem parsing manual do markdown)",
+        "Sistema extrai e lista todas as cenas disponíveis no NSD para referência do usuário",
+        "Sistema libera campo de texto para usuário digitar o nome da cena"
+      ],
+      "alternative_flows": [
+        "Usuário pode fazer upload de novo arquivo substituindo o anterior"
+      ],
+      "known_errors": [
+        "Arquivo selecionado não é um markdown válido (extensão .md ou formato incorreto)",
+        "Arquivo corrompido ou ilegível",
+        "Arquivo vazio ou sem estrutura de cenas reconhecível"
+      ],
+      "priority": "high"
+    },
+    {
+      "id": "FR-003",
+      "name": "Seleção de cena por digitação",
+      "description": "O sistema deve permitir que usuário digite o nome da cena que deseja implementar, baseado na lista extraída do NSD.",
+      "main_flow": [
+        "Sistema exibe campo de texto para digitação do nome da cena",
+        "Sistema exibe lista de cenas disponíveis no NSD como referência",
+        "Usuário digita o nome exato da cena que deseja implementar",
+        "Sistema valida se o nome digitado corresponde a uma cena existente no NSD",
+        "Se nome for válido, sistema libera botão Gerar Prompt",
+        "Se nome for inválido, sistema exibe mensagem de erro e mantém botão desabilitado"
+      ],
+      "alternative_flows": [
+        "Usuário pode corrigir o nome digitado antes de gerar o prompt"
+      ],
+      "known_errors": [
+        "Nome digitado não corresponde a nenhuma cena do NSD",
+        "Nome digitado está vazio ou em formato inválido"
+      ],
+      "priority": "high"
+    },
+    {
+      "id": "FR-004",
+      "name": "Análise de projeto RPG Maker MZ",
+      "description": "O sistema deve analisar o projeto RPG Maker MZ selecionado para extrair informações necessárias para geração do prompt, incluindo mapas, database completa e variáveis de controle de quests.",
+      "main_flow": [
+        "Sistema lê a estrutura de mapas do projeto (MapInfos.json, MapXXX.json)",
+        "Sistema lê a database completa (Classes.json, Skills.json, Items.json, Weapons.json, Armors.json, Enemies.json, Troops.json, States.json, Animations.json, CommonEvents.json, Switches.json, Variables.json)",
+        "Sistema identifica em qual mapa a cena selecionada deve ocorrer, baseado no NSD",
+        "Sistema identifica a variável de controle da quest associada à cena, considerando que um mapa pode conter múltiplas cenas e é crucial alterar apenas a cena escolhida sem afetar as outras",
+        "Sistema lista recursos disponíveis relevantes para a cena (sprites, battlebacks, BGMs, sound effects)",
+        "Sistema organiza todas as informações estruturadas para envio à IA"
+      ],
+      "alternative_flows": [
+        "Se mapa referenciado no NSD não existir, sistema gera warning mas permite continuar",
+        "Se recurso referenciado não estiver disponível, sistema sugere alternativas ou marca como placeholder"
+      ],
+      "known_errors": [
+        "Projeto RPG Maker MZ não possui estrutura válida (sem data/, sem MapInfos.json)",
+        "Arquivos da database corrompidos ou ilegíveis",
+        "Variável de controle da quest não pode ser identificada automaticamente"
+      ],
+      "priority": "high"
+    },
+    {
+      "id": "FR-005",
+      "name": "Geração de prompt técnico via IA",
+      "description": "O sistema deve integrar com API GLM para gerar um prompt técnico otimizado que permita a IA criar Event commands e Common Events do RPG Maker MZ correspondentes à cena selecionada.",
+      "main_flow": [
+        "Usuário clica no botão Gerar Prompt após digitar o nome da cena válido",
+        "Sistema coleta: NSD completo (arquivo markdown), cena selecionada, análise do projeto MZ (mapas, database, variável de quest, recursos)",
+        "Sistema envia todas as informações estruturadas para API GLM via requisição HTTP",
+        "Sistema aguarda processamento da IA (timeout de até 2 minutos)",
+        "IA analisa NSD, contexto do projeto MZ e cena específica, gerando um prompt técnico",
+        "Sistema recebe o prompt gerado da API GLM",
+        "Sistema exibe o prompt em caixa de texto grande e editável",
+        "Sistema habilita botão Copiar para área de transferência"
+      ],
+      "alternative_flows": [
+        "Se resultado não for satisfatório, usuário pode clicar em Gerar Prompt novamente para regenerar",
+        "Se primeira tentativa não gerar bom resultado, sistema pode aplicar engenharia de prompt em duas etapas (extrair estrutura NSD → gerar prompt final) em tentativas subsequentes",
+        "Usuário pode editar manualmente o prompt gerado antes de copiar"
+      ],
+      "known_errors": [
+        "API GLM não responde dentro do timeout de 2 minutos",
+        "API Key GLM inválida, expirada ou sem créditos disponíveis",
+        "Falha de conexão com API GLM (sem internet, servidor indisponível)",
+        "Resposta da IA não é válida ou está mal formatada"
+      ],
+      "priority": "high"
+    },
+    {
+      "id": "FR-006",
+      "name": "Configuração de API Key GLM",
+      "description": "O sistema deve permitir configuração de API Key para integração com API GLM, garantindo acesso controlado e seguro.",
+      "main_flow": [
+        "Administrador configura API Key GLM em arquivo .env na raiz do projeto",
+        "Durante build do binário Electron, API Key é embutida no executável",
+        "Sistema carrega API Key do ambiente ao inicializar o NSD Generator",
+        "Sistema utiliza API Key em todas as requisições à API GLM",
+        "Sistema não exibe a API Key em logs ou interface de usuário"
+      ],
+      "alternative_flows": [
+        "API Key pode ser atualizada rebuildando o binário com novo .env"
+      ],
+      "known_errors": [
+        "API Key não configurada ou ausente do ambiente",
+        "API Key inválida ou expirada (erro retornado pela API GLM)"
+      ],
+      "priority": "high"
+    },
+    {
+      "id": "FR-007",
+      "name": "Regeneração de prompt",
+      "description": "O sistema deve permitir que usuário regere o prompt se o resultado não for satisfatório, sem precisar refazer todo o fluxo desde o início.",
+      "main_flow": [
+        "Usuário visualiza prompt gerado na caixa de texto",
+        "Usuário clica no botão Gerar Prompt novamente (mesmo com resultado já exibido)",
+        "Sistema envia nova requisição à API GLM com os mesmos dados",
+        "Sistema exibe novo prompt gerado, substituindo o anterior",
+        "Usuário pode repetir o processo quantas vezes desejar"
+      ],
+      "alternative_flows": [
+        "Sistema pode aplicar variações na engenharia de prompt em tentativas subsequentes para melhorar resultado",
+        "Usuário pode ajustar manualmente o nome da cena entre tentativas"
+      ],
+      "known_errors": [
+        "API GLM atinge limite de taxa de requisições (rate limit)",
+        "Créditos da API Key esgotaram temporariamente"
+      ],
+      "priority": "medium"
+    },
+    {
+      "id": "FR-008",
+      "name": "Navegação e fluxo de telas",
+      "description": "O sistema deve prover navegação fluida entre as telas do NSD Generator e permitir que usuário retorne, cancele ou reinicie o fluxo a qualquer momento.",
+      "main_flow": [
+        "Tela inicial do NSD Generator exibe botão de upload de NSD",
+        "Após upload com sucesso, sistema exibe tela com campo de digitação de cena",
+        "Após gerar prompt com sucesso, sistema exibe tela com resultado",
+        "Cada tela possui botão Voltar para retornar à etapa anterior",
+        "Cada tela possui botão Cancelar para retornar à Home",
+        "Usuário pode reiniciar o fluxo a qualquer momento clicando em Cancelar ou voltando à Home"
+      ],
+      "alternative_flows": [
+        "Usuário pode fazer upload de novo NSD cancelando o fluxo atual",
+        "Sistema mantém estado do NSD carregado se usuário navegar entre telas"
+      ],
+      "known_errors": [
+        "Navegação interrompida por erro inesperado",
+        "Estado perdido ao navegar entre telas (raro)"
+      ],
+      "priority": "medium"
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "category": "performance",
+      "specifications": [
+        "Geração de prompt deve completar em até 1 a 2 minutos, dependendo da complexidade da cena e disponibilidade da API GLM",
+        "Upload de arquivo NSD deve completar em menos de 5 segundos para arquivos de até 1MB",
+        "Listagem de cenas do NSD deve ser exibida em menos de 10 segundos após upload",
+        "Análise do projeto MZ deve completar em menos de 30 segundos para projetos típicos"
+      ]
+    },
+    {
+      "category": "availability",
+      "specifications": [
+        "Funcionalidade de NSD Generator depende de disponibilidade da API GLM e acesso à internet",
+        "Se API GLM estiver indisponível, sistema deve exibir mensagem clara ao usuário",
+        "Se créditos da API Key esgotarem, sistema deve exibir mensagem orientando usuário a aguardar renovação"
+      ]
+    },
+    {
+      "category": "security",
+      "specifications": [
+        "Ferramenta de uso interno, sem necessidade de autenticação de usuário no escopo v2",
+        "API Key GLM deve ser protegida e não exposta em logs ou interface",
+        "Projetos RPG Maker MZ são acessados localmente sem necessidade de validação de permissões especiais"
+      ]
+    },
+    {
+      "category": "observability",
+      "specifications": [
+        "Seguir padrão de logs existente em packages/electron do projeto",
+        "Registrar eventos importantes: upload de NSD, geração de prompt, erros de API GLM",
+        "Logs devem incluir contexto suficiente para debug (nome do NSD, cena selecionada, status da requisição)",
+        "Não expor informações sensíveis (API Key, conteúdo completo de NSD) em logs"
+      ]
+    },
+    {
+      "category": "reliability",
+      "specifications": [
+        "Sistema não deve modificar o projeto RPG Maker MZ (read-only)",
+        "Sistema deve garantir que variável de quest identificada não afete outras cenas do mesmo mapa",
+        "Regeneração de prompt deve ser idempotente (mesmos dados → resultados consistentes)",
+        "Falhas na API GLM não devem corromper estado da aplicação"
+      ]
+    },
+    {
+      "category": "compatibility",
+      "specifications": [
+        "Funcionar em ambiente Electron (macOS, Windows, Linux)",
+        "Compatível com estrutura de projetos RPG Maker MZ padrão",
+        "Suportar arquivos NSD em formato markdown com codificação UTF-8",
+        "Integração via HTTP REST API com GLM"
+      ]
+    },
+    {
+      "category": "accessibility",
+      "specifications": [
+        "Interface seguir princípios básicos de acessibilidade (contraste, tamanho de fonte, navegação por teclado)",
+        "Botões e campos devem ter labels descritivos",
+        "Mensagens de erro devem ser claras e acionáveis"
+      ]
+    }
+  ],
+  "architecture": {
+    "approach": "Extensão do Portal Electron existente em packages/electron, adicionando Home gamificada e módulo NSD Generator. Arquitetura baseada em comunicação síncrona entre interface React, backend Node.js no processo principal do Electron e integração externa com API GLM via HTTP. NSD é consumido integralmente pela IA sem parsing manual do markdown, simplificando manutenção. Análise do projeto MZ reaproveita infraestrutura de @coreto/core (loader, validação) e adiciona novos analysers para mapas, database completa e variáveis de quest.",
+    "components": [
+      "Interface React: Home gamificada, tela de upload de NSD, tela de seleção de cena, tela de resultado com prompt gerado",
+      "Backend Node.js (Electron Main Process): orquestração do fluxo, integração com API GLM, análise de projeto MZ",
+      "Módulo de Análise MZ: leitura de MapInfos.json, MapXXX.json, database completa, identificação de variáveis de quest e recursos disponíveis",
+      "Cliente HTTP GLM: wrapper para requisições à API GLM com tratamento de erros e timeout",
+      "Config Manager: leitura de API Key do .env e gerenciamento de configurações"
+    ],
+    "integrations": [
+      "Projeto RPG Maker MZ local: leitura de arquivos de mapas e database via filesystem",
+      "API GLM externa: requisições HTTP POST para gerar prompts técnicos",
+      "@coreto/core existente: reaproveitamento de loaders e validadores de estrutura MZ"
+    ]
+  },
+  "decisions_tradeoffs": [
+    {
+      "decision": "Integração com API GLM em vez de OpenAI ou Claude",
+      "justification": "GLM é o provedor de IA escolhido pelo time, adequado para tarefa de geração de prompts técnicos em português",
+      "trade_off": "Dependência de um provedor específico pode limitar portabilidade para outros modelos de linguagem no futuro"
+    },
+    {
+      "decision": "Não fazer parsing manual do NSD, enviar arquivo inteiro para IA",
+      "justification": "Simplifica implementação e reduz manutenção de código de parsing, IA consegue consumir markdown diretamente",
+      "trade_off": "Se resultados não forem bons, será necessário engenharia de prompt em duas etapas, aumentando complexidade e custo de tokens"
+    },
+    {
+      "decision": "Usuário digita nome da cena em vez de selecionar de lista",
+      "justification": "Flexibilidade para usuário digitar exatamente o que deseja, permite escolher cenas que não estejam perfeitamente formatadas na lista",
+      "trade_off": "Possibilidade de erros de digitação, mitigada por validação contra NSD e exibição de lista como referência"
+    },
+    {
+      "decision": "Não fazer write automático no projeto RPG Maker MZ",
+      "justification": "Mantém consistência com filosofia read-only da v1, reduz risco de corrupção de dados, permite usuário revisar antes de aplicar",
+      "trade_off": "Requer passo manual de copiar prompt e colar na IA externa para gerar código, depois aplicar código no editor do RPG Maker MZ"
+    },
+    {
+      "decision": "Regeneração como mitigação principal para riscos",
+      "justification": "IA generativa tem variabilidade natural, regenerar é simples e eficaz para obter melhor resultado",
+      "trade_off": "Pode aumentar custo de tokens e tempo se usuário precisar regenerar múltiplas vezes"
+    }
+  ],
+  "dependencies": [
+    {
+      "type": "technical",
+      "title": "API Key GLM configurada",
+      "description": "Administrador do sistema deve configurar API Key da GLM em arquivo .env na raiz do projeto antes do build. Sem essa credencial, funcionalidade de NSD Generator não opera."
+    },
+    {
+      "type": "technical",
+      "title": "Acesso à internet",
+      "description": "Usuário deve ter acesso à internet ativo e estável durante uso do NSD Generator para comunicação com API GLM."
+    },
+    {
+      "type": "technical",
+      "title": "Projeto RPG Maker MZ válido e acessível",
+      "description": "Usuário deve ter um projeto RPG Maker MZ válido (com estrutura data/, MapInfos.json, database completa) acessível localmente para análise."
+    },
+    {
+      "type": "organizational",
+      "title": "Design visual da Home gamificada",
+      "description": "Design team deve fornecer especificações visuais detalhadas da Home gamificada baseadas em Figma existente para implementação pela equipe de frontend."
+    },
+    {
+      "type": "organizational",
+      "title": "Documentação de NSDs",
+      "description": "Equipe de game design deve manter NSDs atualizados e em formato markdown válido para uso efetivo da ferramenta."
+    }
+  ],
+  "risks": [
+    {
+      "risk": "IA gera código ou events errados, incompatíveis com RPG Maker MZ",
+      "probability": "medium",
+      "impact": "Usuário não consegue usar prompt gerado, precisa regenerar ou ajustar manualmente",
+      "mitigation": [
+        "Usuário pode regenerar prompt quantas vezes for necessário",
+        "Prompt gerado pode ser editado manualmente antes do uso",
+        "Engenharia de prompt iterativa para melhorar qualidade ao longo do tempo"
+      ],
+      "contingency_plan": "Se múltiplas regerações não resolverem, usuário pode ajustar manualmente o prompt ou reportar problema para equipe melhorar engenharia de prompt"
+    },
+    {
+      "risk": "Variável de quest identificada incorretamente, afetando outras cenas do mesmo mapa",
+      "probability": "medium",
+      "impact": "Quebra de cenas existentes no mapa, bugs em quests relacionadas",
+      "mitigation": [
+        "Algoritmo de identificação foca em contexto específico da cena selecionada no NSD",
+        "Usuário pode revisar prompt gerado e validar variável antes de usar",
+        "Sistema inclui warnings se detecção de variável não for conclusiva"
+      ],
+      "contingency_plan": "Usuário pode corrigir variável manualmente no prompt gerado ou informar problema para ajuste no algoritmo de detecção"
+    },
+    {
+      "risk": "Prompt gerado não é bom suficiente ou fica faltando informações",
+      "probability": "medium",
+      "impact": "Usuário precisa regenerar ou ajustar manualmente, perdendo o ganho de produtividade esperado",
+      "mitigation": [
+        "Usuário pode regenerar prompt livremente",
+        "Se primeira abordagem falhar, implementar engenharia de prompt em duas etapas (extrair estrutura → gerar prompt final)",
+        "Iterar em engenharia de prompt baseado em feedback real dos usuários"
+      ],
+      "contingency_plan": "Ajustar engenharia de prompt com base em casos reais, coletar feedback dos usuários para melhorar qualidade"
+    },
+    {
+      "risk": "API GLM fica instável, indisponível ou atinge limite de taxa",
+      "probability": "low",
+      "impact": "Usuário não consegue gerar prompt naquele momento, precisa aguardar ou tentar mais tarde",
+      "mitigation": [
+        "Sistema exibe mensagem clara de erro quando API está indisponível",
+        "Sistema implementa timeout adequado (2 minutos) para não travar interface",
+        "Rate limit é tratado com mensagem orientando usuário a aguardar"
+      ],
+      "contingency_plan": "Usuário aguarda retorno da API ou renovação de créditos, não há workaround técnico para dependência externa"
+    },
+    {
+      "risk": "Análise do projeto MZ falha ou demora muito",
+      "probability": "low",
+      "impact": "Fluxo não pode ser completado, usuário não consegue gerar prompt",
+      "mitigation": [
+        "Validação precoce de estrutura do projeto MZ antes de iniciar análise completa",
+        "Tratamento robusto de erros na leitura de arquivos JSON",
+        "Progress indicators para usuário acompanhar andamento da análise"
+      ],
+      "contingency_plan": "Corrigir estrutura do projeto MZ ou contatar suporte técnico, dependendo do tipo de erro"
+    }
+  ],
+  "acceptance_criteria": [
+    "Usuário consegue fazer upload de arquivo NSD em formato markdown e visualizar lista de cenas disponíveis",
+    "Sistema identifica corretamente a variável de controle da quest para a cena selecionada, sem afetar outras cenas do mesmo mapa",
+    "Prompt gerado contém todas as informações necessárias para implementação: contexto da cena, beats, recursos disponíveis, mapa, variáveis, Event commands e Common Events",
+    "Prompt copiado funciona para gerar uma cena funcional no editor do RPG Maker MZ (validado por usuário)",
+    "Home gamificada é exibida corretamente com dois portais, ícones, animações e cenário ao fundo",
+    "Integração com API GLM funciona estavelmente com autenticação via API Key",
+    "Sistema permite regeneração de prompt sem travar ou perder estado",
+    "Mensagens de erro são claras e acionáveis em caso de falha (API indisponível, arquivo inválido, etc)",
+    "Tempo total de geração de prompt (upload + análise + geração) fica dentro de 1 a 2 minutos para cenas médias",
+    "Logs seguem padrão do projeto packages/electron e incluem contexto suficiente para debug"
+  ],
+  "testing_validation": {
+    "test_types": [
+      "Testes unitários para leitura e validação de arquivos NSD (listagem de cenas, extração de metadados)",
+      "Testes unitários para análise de projeto MZ (leitura de MapInfos.json, database, identificação de variáveis de quest)",
+      "Testes unitários para cliente HTTP GLM (tratamento de resposta, erros, timeout)",
+      "Testes de integração para fluxo principal (upload → digita cena → gera prompt → exibe resultado)",
+      "Testes de integração para chamadas reais à API GLM (com API Key de teste)",
+      "Testes E2E para fluxo completo desde Home gamificada até cópia do prompt gerado",
+      "Testes manuais de validação dos prompts gerados aplicando em cenários reais do RPG Maker MZ",
+      "Testes de performance para garantir tempo de geração dentro de 1 a 2 minutos",
+      "Testes de usabilidade com game designers reais para validar experiência do fluxo"
+    ],
+    "strategy": "TDD (Test-Driven Development) para lógica crítica de análise de MZ, detecção de variáveis de quest e geração de prompts. QA manual guiado por roteiro para validar fluxo completo em ambiente Electron real. Validação exploratória com game designers usando NSDs reais do projeto para identificar problemas práticos e oportunidades de melhoria. Iteração baseada em feedback real dos usuários para ajustar engenharia de prompt e qualidade dos resultados."
+  }
+}
