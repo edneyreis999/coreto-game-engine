@@ -1,0 +1,53 @@
+[
+  null,
+  {
+    "id": 1,
+    "name": "weak_enemy",
+    "battlerName": "",
+    "battlerHue": 0,
+    "params": [10, 0, 5, 5, 0, 0, 5, 5],
+    "exp": 10,
+    "gold": 5,
+    "dropItems": [
+      {"kind": 0, "dataId": 0, "denominator": 1},
+      {"kind": 0, "dataId": 0, "denominator": 1},
+      {"kind": 0, "dataId": 0, "denominator": 1}
+    ],
+    "traits": [],
+    "actions": [
+      {
+        "skillId": 1,
+        "conditionType": 0,
+        "conditionParam1": 0,
+        "conditionParam2": 0,
+        "rating": 5
+      }
+    ],
+    "note": ""
+  },
+  {
+    "id": 2,
+    "name": "strong_enemy",
+    "battlerName": "",
+    "battlerHue": 0,
+    "params": [1000, 0, 100, 50, 0, 0, 10, 10],
+    "exp": 100,
+    "gold": 50,
+    "dropItems": [
+      {"kind": 0, "dataId": 0, "denominator": 1},
+      {"kind": 0, "dataId": 0, "denominator": 1},
+      {"kind": 0, "dataId": 0, "denominator": 1}
+    ],
+    "traits": [],
+    "actions": [
+      {
+        "skillId": 1,
+        "conditionType": 0,
+        "conditionParam1": 0,
+        "conditionParam2": 0,
+        "rating": 5
+      }
+    ],
+    "note": ""
+  }
+]
