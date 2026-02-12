@@ -41,6 +41,7 @@
     "@types/jsdom": "^21.1.7",
     "@types/node": "^22.10.5",
     "@types/seedrandom": "^3.0.8",
+    "fast-check": "^4.5.3",
     "typescript": "^5.9.3"
   }
 }

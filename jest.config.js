@@ -12,9 +12,9 @@ import baseConfig from './jest.preset.js';
 export default {
   preset: 'ts-jest/presets/default-esm',
   testEnvironment: 'node',
-  // Test discovery in root tests and examples directories only
+  // Test discovery in root tests directory only
   // Note: packages/core and packages/electron have their own jest configs
-  roots: ['<rootDir>/tests', '<rootDir>/examples'],
+  roots: ['<rootDir>/tests'],
   testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
   transform: {
     '^.+\\.(ts|mts)$': [

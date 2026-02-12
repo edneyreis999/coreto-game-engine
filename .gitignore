@@ -54,3 +54,5 @@ pnpm-debug.log*
 Thumbs.db
 # Temporary files
 temp/
+
+.zord
