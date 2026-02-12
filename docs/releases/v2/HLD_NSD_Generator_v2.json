@@ -1,0 +1,844 @@
+{
+  "metadata": {
+    "title": "HLD - NSD Generator v2",
+    "version": "0.1",
+    "date": "2026-02-11",
+    "system": "Coreto Game Engine - NSD Generator e Portal Evoluído v2",
+    "author": "Claude Code",
+    "status": "Simplificado (Over-engineering Removido)"
+  },
+  "1_contexto_e_objetivo_tecnico": {
+    "titulo": "Contexto e Objetivo Técnico",
+    "1_1_objetivo": {
+      "titulo": "Objetivo",
+      "conteudo": "Criar uma ferramenta de geração de cenas assistida por IA que analisa projetos RPG Maker MZ, processa documentos NSD (Narrative Structure Documents) em markdown e gera prompts técnicos otimizados para implementação de Event commands e Common Events, integrando ao Portal Electron existente."
+    },
+    "1_2_problema_arquitetural": {
+      "titulo": "Problema Arquitetural",
+      "conteudo": "Designers implementam cenas manualmente no editor do RPG Maker MZ, um processo lento (3 dias por cena) com risco de inconsistência entre NSD documentado e código final, pois desenvolvedores frequentemente implementam variações não documentadas durante o processo."
+    },
+    "1_3_escopo": {
+      "titulo": "Escopo",
+      "incluso": [
+        "Home gamificada estilo Age of Mythology (dois portais: TTK Validation + NSD Generator)",
+        "Upload e parse de arquivos NSD em formato markdown",
+        "Análise de projeto RPG Maker MZ (mapas, database, variáveis de quest)",
+        "Integração com API GLM para geração de prompts técnicos",
+        "Geração de prompts para Event commands e Common Events",
+        "Exibição com botão de copiar e regeneração",
+        "Configuração de API Key GLM via .env"
+      ],
+      "fora_de_escopo_mvp_v2": [
+        "Aplicação automática no projeto (write direto em data/)",
+        "Validação visual ou preview da cena gerada",
+        "Versionamento de prompts gerados",
+        "Comparação automatizada NSD vs implementação"
+      ]
+    }
+  },
+  "2_arquitetura_geral": {
+    "titulo": "Arquitetura Geral",
+    "2_1_visao_de_alto_nivel": {
+      "descricao": "O sistema segue arquitetura Electron existente com Worker Thread para isolamento de operações pesadas.",
+      "arquitetura": "Renderer Process (React UI - Home Gamificada + NSD Generator) → IPC (nsd:start, nsd:progress, nsd:result, nsd:cancel) → Main Process (IPC Handlers + Validation + NSD Orchestrator) → Job Queue/Coordenação → Worker Thread (Node) (NSD Service: Parse + GLM + Prompt Builder) → @coreto/core (Project Analysis) + GLM API (Prompt Generation)"
+    },
+    "2_2_comunicacao": {
+      "pipeline_com_job_queue": "Renderer → IPC → Main → Orchestrator → Worker → Core/GLM",
+      "streaming_de_progresso": "Canais IPC separados para start/progress/result/cancel",
+      "isolamento": "Worker Thread previne bloqueio do Main durante parsing/GLM",
+      "read_only": "@coreto/core permanece agnóstico de Electron",
+      "seguranca": "API GLM no Worker (não no Renderer) protege credenciais"
+    }
+  },
+  "3_componentes_e_responsabilidades": {
+    "titulo": "Componentes e Responsabilidades",
+    "componentes_principais": [
+      {
+        "componente": "NSD Renderer UI",
+        "camada": "Renderer Process",
+        "responsabilidades": "React components: Home gamificada, upload NSD, seleção de cena, exibição prompt, botão copiar/regenerar"
+      },
+      {
+        "componente": "IPC Handlers",
+        "camada": "Main Process",
+        "responsabilidades": "Channels: `nsd:start`, `nsd:progress`, `nsd:result`, `nsd:cancel` com validação Zod"
+      },
+      {
+        "componente": "NSD Orchestrator",
+        "camada": "Main Process",
+        "responsabilidades": "Job queue, gestão de jobId, coordenação de progresso, cancelamento, retry"
+      },
+      {
+        "componente": "NSD Worker Service",
+        "camada": "Worker Thread",
+        "responsabilidades": "Parser de NSD markdown, integração GLM API, chamadas @coreto/core"
+      },
+      {
+        "componente": "NSD Repository",
+        "camada": "Main Process",
+        "responsabilidades": "Persistência de jobs (sqlite), histórico de prompts gerados"
+      },
+      {
+        "componente": "Project Analyzer",
+        "camada": "Core (reuso @coreto/core)",
+        "responsabilidades": "Análise de projeto MZ: mapas, database, variáveis de quest"
+      },
+      {
+        "componente": "GLM Client",
+        "camada": "Worker Thread",
+        "responsabilidades": "Cliente HTTP para API GLM, gerenciamento de API key, rate limiting"
+      },
+      {
+        "componente": "Prompt Builder",
+        "camada": "Worker Thread",
+        "responsabilidades": "Construção de prompt técnico otimizado para Event commands + Common Events"
+      }
+    ],
+    "dependencias_entre_componentes": [
+      "NSD Renderer UI ──IPC──> IPC Handlers",
+      "IPC Handlers ──validação──> NSD Orchestrator",
+      "NSD Orchestrator ──job queue──> NSD Worker Service",
+      "NSD Worker Service ──read-only──> Project Analyzer (@coreto/core)",
+      "NSD Worker Service ──HTTP──> GLM Client",
+      "NSD Worker Service ──compose──> Prompt Builder",
+      "NSD Orchestrator ──persist──> NSD Repository"
+    ]
+  },
+  "4_fluxo_de_requisicoes_e_dados": {
+    "titulo": "Fluxo de Requisições e de Dados",
+    "4_1_fluxo_principal_geracao_prompt_nsd": [
+      "USUÁRIO seleciona projeto RPG Maker MZ → UI exibe Home gamificada",
+      "USUÁRIO clica no portal 'NSD Generator' → UI navega para rota /nsd-generator",
+      "USUÁRIO faz upload de arquivo NSD (markdown) → IPC: nsd:upload { filePath, content }",
+      "WORKER SERVICE processa upload (no Main, apenas roteamento) → Parser extrai: metadados, lista de cenas → Retorna: { sceneList: [{id, name, summary}] }",
+      "USUÁRIO digita nome da cena desejada → UI valida que cena existe no NSD",
+      "USUÁRIO clica 'Gerar Prompt' → IPC: nsd:start { nsdPath, sceneName, projectPath }",
+      "ORCHESTRATOR cria job → Gera jobId único → Persiste no Repository (status: pending) → Retorna jobId para UI",
+      "WORKER SERVICE processa job → Parser: extrai cena do NSD → Project Analyzer: lê mapas/database (via @coreto/core) → Identifica: variável de controle da quest → Prompt Builder: monta prompt técnico → GLM Client: envia prompt → API",
+      "IPC PROGRESS (streaming) → nsd:progress { jobId, stage, percent } → UI atualiza barra de progresso",
+      "GLM CLIENT retorna prompt gerado → IPC: nsd:result { jobId, prompt, metadata } → UI exibe prompt em caixa de texto",
+      "UI exibe prompt em caixa de texto → Botão 'Copiar' → Botão 'Regenerar' (volta ao passo 6) → Repository atualiza status: completed"
+    ],
+    "fluxos_alternativos": {
+      "regeneracao_de_prompt": "Usuário clica 'Regenerar' → Reutiliza mesmo jobId → Nova chamada GLM",
+      "cancelamento": "Usuário clica 'Cancelar' → IPC: nsd:cancel { jobId } → Worker interrompe processamento",
+      "erro_na_glm_api": "Worker captura erro → IPC: nsd:error { jobId, error } → UI exibe mensagem + opção de retry"
+    }
+  },
+  "5_modelo_de_dados": {
+    "titulo": "Modelo de Dados (Alto Nível)",
+    "5_1_dominio_1_nsd_documents": {
+      "titulo": "Domínio 1: NSD Documents (Fonte de Verdade: Upload do Usuário)",
+      "estrutura_nsd_detectada": "Narrative Structure Document (NSD) - Fluxo Visual De Cenas com Checkpoints (0: Resumo Geral, 1: Pré-condições Narrativas, 2: Fluxo Visual Resumido)",
+      "nsd_document": {
+        "id": "hash do conteúdo",
+        "fileName": "ex: 'primeiro-contrato.NSD.fluxo-cenas.md'",
+        "questName": "ex: 'Primeiro Contrato'",
+        "uploadedAt": "Date",
+        "content": "markdown completo",
+        "metadata": {
+          "title": "🎮 Narrative Structure Document (NSD) - Fluxo Visual De Cenas",
+          "status": "completed ou pending",
+          "campaignImportance": "main ou side",
+          "narrativeArc": "ex: 'Chamado à Aventura'",
+          "previousQuest": "opcional",
+          "centralConflict": "string",
+          "globalNarrativeObjective": "string"
+        }
+      },
+      "nsd_checkpoint": {
+        "id": "checkpoint-0, checkpoint-1, checkpoint-2",
+        "type": "general, pré-condições, fluxo-visual",
+        "generalSummary": {
+          "completed": "boolean",
+          "shortPremise": "string",
+          "mainLocations": "array de strings",
+          "mainNPCs": "array de strings"
+        },
+        "prerequisites": {
+          "flags": "array de strings",
+          "limitations": "array de strings",
+          "emotionalState": "opcional"
+        },
+        "visualFlow": {
+          "tree": "estrutura em plaintext",
+          "sceneList": "array de NSDScene"
+        }
+      },
+      "nsd_scene": {
+        "id": "cena-1, cena-2, etc.",
+        "name": "ex: 'Contrato na Taverna'",
+        "expandedPremise": "descrição longa da tabela",
+        "beats": "array de NSDBeat"
+      },
+      "nsd_beat": {
+        "id": "número sequencial na cena",
+        "description": "ex: 'Thorin entra na taverna.'",
+        "control": "player (🎮) ou cutscene (🎬)",
+        "dialogueTree": "árvore de diálogo (opcional)",
+        "systemEvent": "ex: 'Contrato adicionado ao inventário'"
+      }
+    },
+    "5_2_dominio_2_jobs_de_geracao": {
+      "titulo": "Domínio 2: Jobs de Geração (Fonte de Verdade: Repository - SQLite)",
+      "generation_job": {
+        "id": "jobId UUID",
+        "status": "pending, processing, completed, failed, cancelled",
+        "createdAt": "Date",
+        "updatedAt": "Date",
+        "completedAt": "opcional",
+        "request": {
+          "nsdDocumentId": "string",
+          "sceneName": "string",
+          "projectPath": "string"
+        },
+        "result": {
+          "generatedPrompt": "opcional",
+          "errorMessage": "opcional"
+        },
+        "metadata": {
+          "glmModel": "ex: glm-4",
+          "glmTokensUsed": "opcional",
+          "retryCount": "number"
+        }
+      }
+    },
+    "5_3_dominio_3_projeto_rpg_maker_mz": {
+      "titulo": "Domínio 3: Projeto RPG Maker MZ (Fonte de Verdade: @coreto/core - Read-only)",
+      "quest_variable": {
+        "variableId": "ID da variável no sistema do RPG Maker",
+        "name": "nome da variável (ex: Quest 01 Progress)",
+        "type": "progress, state ou flag",
+        "scope": "game ou quest"
+      },
+      "project_analysis": {
+        "projectPath": "string",
+        "analyzedAt": "Date",
+        "questVariables": "array de QuestVariable",
+        "mapCount": "number",
+        "troopCount": "number",
+        "recommendedQuestVariable": "opcional"
+      }
+    }
+  },
+  "6_interfaces_publicas": {
+    "titulo": "Interfaces Públicas",
+    "6_1_interface_ipc": {
+      "titulo": "Interface IPC (Renderer ↔ Main ↔ Worker)",
+      "canais_request_via_ipcRenderer_invoke": [
+        {
+          "canal": "nsd:upload",
+          "descricao": "Upload de documento NSD",
+          "request": "{ source: { path?: string, text?: string }, clientRequestId?: string }",
+          "response": "{ documentId: string, sceneList: NSDScene[], warnings?: string[] }"
+        },
+        {
+          "canal": "nsd:start",
+          "descricao": "Iniciar geração de prompt",
+          "request": "{ documentId: string, sceneId?: string, clientRequestId?: string }",
+          "response": "{ jobId: string, status: pending ou processing }"
+        },
+        {
+          "canal": "nsd:getStatus",
+          "descricao": "Consultar status de job",
+          "request": "{ jobId: string }",
+          "response": "{ jobId: string, status: JobStatus, progress: number, lastMessage: string }"
+        },
+        {
+          "canal": "nsd:listJobs",
+          "descricao": "Listar todos os jobs",
+          "request": "{}",
+          "response": "{ jobs: GenerationJob[] }"
+        },
+        {
+          "canal": "nsd:validate",
+          "descricao": "Validar documento antes de processar",
+          "request": "{ source: { path?: string, text?: string } }",
+          "response": "{ valid: boolean, sceneList: NSDScene[], warnings?: string[] }"
+        },
+        {
+          "canal": "nsd:cancel",
+          "descricao": "Cancelar job em andamento",
+          "request": "{ jobId: string }",
+          "response": "{ success: boolean, message: string }"
+        }
+      ],
+      "canais_event_push_via_webContents_send": [
+        {
+          "canal": "nsd:progress",
+          "descricao": "Progresso streaming durante processamento",
+          "evento": "{ jobId: string, stage: string (parsing, analyzing, generating, post-processing), percent: number (0-100), message: string, sequence: number }"
+        },
+        {
+          "canal": "nsd:result",
+          "descricao": "Resultado final",
+          "evento": "{ jobId: string, prompt: string, metadata: { model: string, usage: { promptTokens: number, completionTokens: number, totalTokens: number }, timings: { totalMs: number, glmApiMs: number }, inputHash: string, configSnapshot: any } }"
+        },
+        {
+          "canal": "nsd:error",
+          "descricao": "Erro com taxonomia definida",
+          "evento": "{ jobId: string, error: string, code: NSDErrorCode, retryable: boolean, details?: any }"
+        }
+      ],
+      "enum_codigos_de_erro": {
+        "parsing_errors": [
+          "NSD_PARSE_ERROR",
+          "NSD_INVALID_FORMAT",
+          "NSD_SCENE_NOT_FOUND"
+        ],
+        "glm_api_errors": [
+          "GLM_AUTH_ERROR",
+          "GLM_RATE_LIMIT",
+          "GLM_TIMEOUT",
+          "GLM_INVALID_RESPONSE",
+          "GLM_NETWORK_ERROR"
+        ],
+        "system_errors": [
+          "WORKER_CRASH",
+          "JOB_NOT_FOUND",
+          "INVALID_PROJECT_PATH",
+          "CONFIGURATION_ERROR"
+        ]
+      }
+    },
+    "6_2_interface_http_glm_api": {
+      "titulo": "Interface HTTP - GLM API",
+      "contrato_http": {
+        "endpoint": "POST https://api.glm.com/v1/chat/completions",
+        "headers": {
+          "Authorization": "Bearer ${GLM_API_KEY}",
+          "Content-Type": "application/json"
+        },
+        "request": {
+          "model": "ex: glm-4",
+          "messages": "Array<{ role: system|user|assistant, content: string }>",
+          "temperature": "0.0 - 2.0 (default: 0.7)",
+          "max_tokens": "max tokens na resposta (default: 4096)",
+          "stream": "streaming de resposta (opcional)",
+          "top_p": "nucleus sampling (opcional)",
+          "presence_penalty": "penalidade por repetição (opcional)",
+          "timeout": "timeout em ms (config)"
+        },
+        "success_response": {
+          "id": "ex: chatcmpl-xxx",
+          "object": "chat.completion",
+          "created": "timestamp Unix",
+          "model": "string",
+          "choices": [
+            {
+              "index": "number",
+              "message": "{ role: assistant, content: string (prompt gerado) }",
+              "finish_reason": "stop, length ou content_filter"
+            }
+          ],
+          "usage": {
+            "prompt_tokens": "number",
+            "completion_tokens": "number",
+            "total_tokens": "number"
+          }
+        },
+        "error_responses": {
+          "error": {
+            "message": "string",
+            "type": "ex: invalid_request_error",
+            "param": "opcional",
+            "code": "ex: invalid_api_key"
+          }
+        }
+      },
+      "tratamento_de_erros_http": {
+        "401_auth_error": { "status_code": 401, "tipo": "Auth Error", "retryable": false, "acao": "API key inválida" },
+        "403_auth_error": { "status_code": 403, "tipo": "Auth Error", "retryable": false, "acao": "API key sem permissão" },
+        "429_rate_limit": { "status_code": 429, "tipo": "Rate Limit", "retryable": true, "acao": "Backoff exponencial" },
+        "500_server_error": { "status_code": "500+", "tipo": "Server Error", "retryable": true, "acao": "Retry com backoff" },
+        "timeout": { "status_code": "Timeout", "tipo": "Network", "retryable": true, "acao": "Retry com backoff" },
+        "network_error": { "status_code": "Network Error", "tipo": "Network", "retryable": true, "acao": "Retry com backoff" }
+      }
+    },
+    "6_3_interface_de_configuracao": {
+      "titulo": "Interface de Configuração (project.config.json)",
+      "estrutura_configuracao_local": {
+        "$schema": "https://coreto.dev/schemas/project-config-v2.json",
+        "configVersion": 2,
+        "version": "2.0",
+        "glm": {
+          "apiKey": "env:GLM_API_KEY",
+          "baseUrl": "https://api.glm.com",
+          "model": "glm-4",
+          "temperature": 0.7,
+          "maxTokens": 4096,
+          "timeout": 30000,
+          "retries": 3,
+          "retryBackoffMs": 1000,
+          "stream": false
+        },
+        "nsd": {
+          "defaultPath": "./docs/Quests",
+          "questVariablePattern": "Quest {id:02d} Progress",
+          "autoDetectVariables": true,
+          "encoding": "utf-8"
+        },
+        "coreto": {
+          "projectId": "project-x",
+          "lastValidated": "2026-02-12T10:30:00Z",
+          "lastOpened": "2026-02-12T10:30:00Z",
+          "lastRunJobId": "uuid-xxx"
+        }
+      },
+      "politicas_de_configuracao": [
+        {
+          "politica": "Segurança",
+          "descricao": "apiKey NUNCA armazenada no arquivo, apenas referência env:VAR_NAME"
+        },
+        {
+          "politica": "Validação",
+          "descricao": "Schema JSON validado na leitura, erro se campos obrigatórios faltarem"
+        },
+        {
+          "politica": "Migração",
+          "descricao": "configVersion permite upgrades automáticos de estrutura"
+        },
+        {
+          "politica": "Snapshot",
+          "descricao": "Config capturada no início de cada job (configSnapshot em metadata) para reprodutibilidade"
+        }
+      ]
+    }
+  },
+  "7_escalabilidade_e_disponibilidade": {
+    "titulo": "Escalabilidade e Disponibilidade",
+    "7_1_estrategias_de_escalabilidade": {
+      "7_1_1_concorrencia_de_jobs": {
+        "arquitetura": "Fila simples com processamento sequencial (1 job por vez)",
+        "justificativa": "Simplifica gestão de estado e cancelamento. Evita sobrecarga de API GLM (rate limiting). Suficiente para MVP v2 (geração de cenas é workflow assíncrono)",
+        "evolucao_futura": "Worker Thread pool para paralelismo (caso necessário). Priority queue (jobs de usuários premium têm precedência)"
+      },
+      "7_1_2_cache_de_prompts": {
+        "decisao": "Sem cache (sempre regenerar prompts via GLM)",
+        "justificativa": "Prompts gerados por IA podem variar entre execuções (temperatura, modelo atualizado). Usuário pode quer regenerar com parâmetros diferentes. Simplifica MVP v2 (evita gestão de cache invalidação)",
+        "evolucao_futura": "Cache opcional habilitado por configuração. Cache com TTL (time-to-live) para invalidação automática"
+      },
+      "7_1_3_persistencia_e_recuperacao": {
+        "padrao": "Jobs persistidos em SQLite (Main Process)",
+        "recuperabilidade": "nsd:listJobs retorna histórico completo. UI pode reconectar após crash e listar jobs anteriores. Jobs com status processing são marcados failed na inicialização"
+      }
+    },
+    "7_2_limites_de_operacao": {
+      "titulo": "Limites de Operação",
+      "limites": [
+        {
+          "limite": "Max jobs na fila",
+          "valor": 100,
+          "justificativa": "Evitar memória infinita"
+        },
+        {
+          "limite": "Max tamanho NSD",
+          "valor": "1MB",
+          "justificativa": "Evitar memory issues no Worker"
+        },
+        {
+          "limite": "Max tempo de job",
+          "valor": "5 minutos",
+          "justificativa": "Timeout + cancelamento automático"
+        },
+        {
+          "limite": "Max retries GLM",
+          "valor": 3,
+          "justificativa": "Backoff exponencial (1s→2s→4s)"
+        }
+      ],
+      "nota_sobre_disponibilidade": "SLAs e metas de disponibilidade (99.9% uptime) não se aplicam a ferramenta pessoal de execução sob demanda"
+    },
+    "7_3_limites_e_rate_limiting": {
+      "titulo": "Limites e Rate Limiting",
+      "glm_api_rate_limits": {
+        "descricao": "Consultar documentação oficial para limits de requisições/minuto",
+        "backoff_exponencial": "Implementar backoff exponencial: 1s → 2s → 4s → 8s (max 30s)",
+        "retry_automatico": "Retry automático apenas para erros retryable: true"
+      },
+      "limites_internos": [
+        {
+          "limite": "Max jobs na fila",
+          "valor": 100,
+          "justificativa": "após, rejeitar novos uploads"
+        },
+        {
+          "limite": "Max tamanho de NSD",
+          "valor": "1MB",
+          "justificativa": "evitar memory issues no Worker"
+        },
+        {
+          "limite": "Max tempo de job",
+          "valor": "5 minutos",
+          "justificativa": "timeout + cancelamento automático"
+        }
+      ]
+    }
+  },
+  "8_seguranca": {
+    "titulo": "Segurança",
+    "8_1_seguranca_de_credenciais": {
+      "titulo": "Segurança de Credenciais",
+      "api_key_glm": {
+        "armazenamento": "Armazenada como variável de ambiente: env:GLM_API_KEY",
+        "nao_gravar_em_arquivo": "NUNCA gravada em arquivo project.config.json (somente referência)",
+        "nunca_expor_em_logs": "NUNCA exposta em logs ou mensagens de erro",
+        "validacao_na_inicializacao": "Validada na inicialização do Worker (erro se não definida)"
+      },
+      "protecao_contra_git_leak": {
+        "referencia_env_var": "project.config.json usa referência env:VAR_NAME (não o valor real)",
+        "gitignore": ".gitignore deve incluir arquivos de config com valores reais",
+        "documentacao_alerta": "Documentação alerta para nunca committar env files com secrets"
+      }
+    },
+    "8_2_seguranca_de_dados": {
+      "titulo": "Segurança de Dados",
+      "contexto_de_uso": "Sistema será usado pelo próprio desenvolvedor (uso pessoal, não multi-tenant)",
+      "tipos_de_dados": [
+        {
+          "tipo": "Conteúdo NSD",
+          "risco": "Baixo",
+          "medida": "Armazenamento local (documentos do usuário)"
+        },
+        {
+          "tipo": "Prompts gerados",
+          "risco": "Baixo",
+          "medida": "Histórico SQLite local (uso pessoal)"
+        },
+        {
+          "tipo": "Caminho do projeto",
+          "risco": "Baixo",
+          "medida": "Read-only, nenhuma escrita em data/"
+        },
+        {
+          "tipo": "API Key GLM",
+          "risco": "Alto (pagamento)",
+          "medida": "Env var isolada, never log"
+        }
+      ],
+      "nota_sobre_dados_sensiveis": "Como é uso pessoal, dados sensíveis são apenas do próprio usuário (não há dados de terceiros)"
+    },
+    "8_3_seguranca_de_comunicacao": {
+      "titulo": "Segurança de Comunicação",
+      "ipc_renderer_main": {
+        "isolamento_nativo": "Electron IPC fornece isolamento nativo (mesmo processo)",
+        "validacao_zod": "Validação Zod em todos os canais (type-check em runtime)",
+        "sanitizacao_de_erros": "Sanitização de erros (não expor paths internos em mensagens ao usuário)"
+      },
+      "http_worker_glm_api": {
+        "https_obrigatorio": "HTTPS obrigatório (já definido)",
+        "timeout_configuravel": "Timeout configurável (previne resource exhaustion)",
+        "headers_sem_credenciais": "Headers sem credenciais em plain text",
+        "user_agent": "User-Agent: coreto-nsd-generator/2.0 (para identificação)"
+      }
+    },
+    "8_4_seguranca_de_execucao": {
+      "titulo": "Segurança de Execução",
+      "worker_thread": {
+        "sandbox_nodejs": "Sandbox Node.js (isolamento de código)",
+        "timeout_maximo": "Timeout máximo: 5 minutos (cancelamento automático)",
+        "memory_limit": "Memory limit: 512MB (evitar OOM no Main Process)",
+        "validacao_entrada": "Validação de entrada (tamanho máximo NSD: 1MB)"
+      },
+      "main_process": {
+        "job_cleanup_periodico": "Job cleanup periódico (remover jobs antigos: >30 dias)",
+        "rate_limiting_interno": "Rate limiting interno (max 100 jobs na fila)",
+        "graceful_shutdown": "Graceful shutdown (aguardar jobs em andamento ao fechar app)"
+      }
+    }
+  },
+  "9_observabilidade": {
+    "titulo": "Observabilidade",
+    "9_1_estrategia_de_logging": {
+      "coerencia_com_v1": "Sistema mantém mesmo formato e padrão de exportação de logs",
+      "niveis_de_log": [
+        {
+          "nivel": "ERROR",
+          "uso": "Falhas que requerem intervenção",
+          "exemplos": "API GLM falhou, parse NSD inválido"
+        },
+        {
+          "nivel": "WARN",
+          "uso": "Problemas recuperáveis",
+          "exemplos": "Retry executado, config com fallback"
+        },
+        {
+          "nivel": "INFO",
+          "uso": "Fluxo normal de negócio",
+          "exemplos": "Job iniciado, prompt gerado"
+        },
+        {
+          "nivel": "DEBUG",
+          "uso": "Detalhes técnicos (desabilitado por padrão)",
+          "exemplos": "Payload IPC, timing GLM"
+        }
+      ],
+      "fontes_de_log": [
+        {
+          "fonte": "main",
+          "descricao": "Processo Main (IPC handlers, Orchestrator)",
+          "schema": "LogEntry { source: main }"
+        },
+        {
+          "fonte": "renderer",
+          "descricao": "Processo Renderer (UI, hooks)",
+          "schema": "LogEntry { source: renderer }"
+        },
+        {
+          "fonte": "worker",
+          "descricao": "Worker Thread (NSD service, GLM client)",
+          "schema": "LogEntry { source: worker }"
+        }
+      ],
+      "estrutura_log_entry": {
+        "timestamp": "ISO 8601",
+        "level": "debug, info, warn, error",
+        "source": "main, renderer, worker",
+        "message": "não-vazio",
+        "meta": "Record<string, unknown> opcional",
+        "stack": "para errors apenas"
+      },
+      "estrutura_log_bundle_export": {
+        "id": "UUID v4",
+        "timestamp": "ISO 8601",
+        "appVersion": "package.json version",
+        "electronVersion": "Electron version",
+        "platform": "darwin, win32, linux",
+        "projectPath": "projeto MZ aberto (opcional)",
+        "logs": {
+          "mainLogs": "array de LogEntry",
+          "rendererLogs": "array de LogEntry",
+          "workerLogs": "array de LogEntry (NOVO para v2)"
+        }
+      },
+      "local_de_export": "reports/application-logs/coreto-nsd-logs-{timestamp}.json",
+      "root": "Monorepo root (../../reports/ a partir de packages/electron/)",
+      "formato": "JSON com indent=2 (pretty-printed)",
+      "trigger": "Botão Export Logs na UI (mesmo padrão v1)"
+    },
+    "9_2_metricas": {
+      "titulo": "Métricas",
+      "descricao": "Métricas essenciais para uso pessoal (debugging + controle de custo)",
+      "metricas": [
+        {
+          "metrica": "nsd_jobs_completed_total",
+          "tipo": "Counter",
+          "descricao": "Jobs completados com sucesso",
+          "justificativa": "Debugging de saúde do sistema"
+        },
+        {
+          "metrica": "nsd_jobs_failed_total",
+          "tipo": "Counter",
+          "descricao": "Jobs falhados (por error code)",
+          "justificativa": "Identificar problemas recorrentes"
+        },
+        {
+          "metrica": "nsd_jobs_cancelled_total",
+          "tipo": "Counter",
+          "descricao": "Jobs cancelados pelo usuário",
+          "justificativa": "Comportamento de uso"
+        },
+        {
+          "metrica": "glm_tokens_used_total",
+          "tipo": "Counter",
+          "descricao": "Tokens consumidos (prompt + completion)",
+          "justificativa": "Controle de custo $"
+        }
+      ],
+      "nota": "Métricas são agregadas localmente para debugging e controle de custo. Não há dashboard em tempo real (uso pessoal)."
+    },
+    "9_3_tracing": {
+      "titulo": "Tracing",
+      "decisao": "Correlation ID simples (jobId) para debugging local",
+      "implementacao": {
+        "correlation_id": "jobId UUID presente em todos os logs de um job",
+        "proposito": "Agrupar logs de um mesmo job para análise post-mortem",
+        "debugging": "Console + export JSON são suficientes (você tem acesso local)"
+      },
+      "nota_sobre_tracing": "Tracing distribuído (OpenTelemetry) não se aplica a execução local. Debugging em tempo real via console é adequado para ferramenta pessoal."
+    }
+  },
+  "10_riscos_arquiteturais_e_mitigacao": {
+    "titulo": "Riscos Arquiteturais e Mitigação",
+    "descricao": "Validado via análise de over-engineering (ferramenta pessoal single-tenant). Riscos consolidados nas categorias essenciais.",
+    "10_1_riscos_de_integracao": [
+      {
+        "risco": "@coreto/core não tem parser NSD",
+        "probabilidade": "Alta",
+        "impacto": "Worker falha ao ler NSD",
+        "mitigacao": "Implementar parser específico no NSD Worker"
+      },
+      {
+        "risco": "GLM API muda contrato",
+        "probabilidade": "Média",
+        "impacto": "Jobs falham",
+        "mitigacao": "Versionar API client isolado"
+      },
+      {
+        "risco": "Worker crash durante job",
+        "probabilidade": "Baixa",
+        "impacto": "Job em limbo",
+        "mitigacao": "Heartbeat + status recovery"
+      }
+    ],
+    "10_2_riscos_de_performance": [
+      {
+        "risco": "Parsing NSD >1MB",
+        "probabilidade": "Média",
+        "impacto": "Worker timeout",
+        "mitigacao": "Limite 1MB + warning UI"
+      },
+      {
+        "risco": "GLM timeout",
+        "probabilidade": "Média",
+        "impacto": "Job falha",
+        "mitigacao": "Timeout 30s + 3 retries"
+      },
+      {
+        "risco": "Main bloqueado",
+        "probabilidade": "Baixa",
+        "impacto": "UI congela",
+        "mitigacao": "Worker para operações pesadas"
+      }
+    ],
+    "10_3_riscos_de_seguranca": [
+      {
+        "risco": "Injeção via NSD malicioso",
+        "probabilidade": "Alta",
+        "impacto": "Execução de código",
+        "mitigacao": "Sandboxing do parser + validação rigorosa"
+      },
+      {
+        "risco": "Vazamento de API Key",
+        "probabilidade": "Alta",
+        "impacto": "Custo indevido",
+        "mitigacao": "Env var only + nunca em logs"
+      }
+    ],
+    "priorizacao_pragmatica": {
+      "descricao": "Priorização pragmática para uso pessoal",
+      "p0_criticos": [
+        "NSD injection",
+        "API Key leak"
+      ],
+      "p1_alta": [
+        "Worker crash"
+      ],
+      "p2_media": [
+        "Parsing NSD >1MB",
+        "GLM timeout",
+        "Main bloqueado"
+      ]
+    }
+  },
+  "11_adrs_associados_e_proximos_passos": {
+    "titulo": "ADRs Associados e Próximos Passos",
+    "11_1_adrs_existentes_que_se_aplicam": [
+      {
+        "adr": "ADR-032",
+        "titulo": "Electron Dev Portal Multi-Tool Platform",
+        "modulo": "UI",
+        "aplicabilidade": "NSD é nova tool no portal multi-tool"
+      },
+      {
+        "adr": "ADR-033",
+        "titulo": "Clean Architecture Electron Package",
+        "modulo": "UI",
+        "aplicabilidade": "NSD deve seguir pattern (domain/, handlers thin adapters)"
+      },
+      {
+        "adr": "ADR-008",
+        "titulo": "Schema Validation Library - Zod",
+        "modulo": "CONFIG",
+        "aplicabilidade": "Canais IPC NSD devem usar Zod para validação"
+      },
+      {
+        "adr": "ADR-021",
+        "titulo": "JSON-Based Configuration Format",
+        "modulo": "CONFIG",
+        "aplicabilidade": "project.config.json para config NSD (glm, nsd namespaces)"
+      },
+      {
+        "adr": "ADR-029",
+        "titulo": "TSyringe DI Container",
+        "modulo": "FOUNDATION",
+        "aplicabilidade": "DI container para registrar use cases NSD"
+      },
+      {
+        "adr": "ADR-032 (FOUNDATION)",
+        "titulo": "Ports and Adapters Layer Contracts",
+        "modulo": "FOUNDATION",
+        "aplicabilidade": "Ports para NSD Service (INSDParser, IGLMClient)"
+      }
+    ],
+    "nota_adrs_existentes": "Estes ADRs estabelecem o fundação arquitetural que o NSD Generator v2 deve seguir. Não há conflitos ou necessidade de ADRs superseded.",
+    "11_2_novos_adrs_necessarios": [
+      {
+        "id_proposto": "ADR-034",
+        "titulo": "Worker Thread Isolation for NSD Operations",
+        "status": "Pendente",
+        "contexto_decisao": "Isolar parsing NSD + chamadas GLM API em Worker Thread para não bloquear Main Process",
+        "trade_offs": "Complexidade de comunicação IPC vs bloqueio de UI"
+      },
+      {
+        "id_proposto": "ADR-035",
+        "titulo": "Sequential Job Queue for NSD Generation",
+        "status": "Pendente",
+        "contexto_decisao": "Fila sequencial (1 job por vez) vs paralela para simplificar gestão de estado e cancelamento",
+        "trade_offs": "Throughput vs simplicidade de gestão de estado"
+      },
+      {
+        "id_proposto": "ADR-036",
+        "titulo": "GLM API Integration vs Alternative Providers",
+        "status": "Pendente",
+        "contexto_decisao": "Integração com API GLM (contrato OpenAI-compatible) vs OpenAI direto, Anthropic Claude, local models",
+        "trade_offs": "Custo, performance, disponibilidade, compliance"
+      }
+    ],
+    "nota_adrs_dominio": "ADRs de domínio específicos (parser NSD markdown, prompt template, single-tenant design) podem ser criados post-MVP conforme necessidade.",
+    "11_3_proximos_passos_priorizados": [
+      {
+        "fase": "Fase 1: Foundation (Semanas 1-2)",
+        "passos": [
+          "Completar HLD (este documento) - Validar consistência e aprovar",
+          "Criar ADR-034 (Worker Thread Isolation) - Definir: Worker Thread vs Main process direto. Trade-offs: complexidade de comunicação IPC vs bloqueio de UI",
+          "Criar ADR-035 (Job Queue Sequential) - Definir: Fila sequencial vs pool de workers paralelos. Trade-offs: throughput vs simplicidade de gestão de estado",
+          "Criar ADR-036 (GLM API Integration) - Definir: GLM API vs alternativos (OpenAI, Anthropic, local models). Trade-offs: custo, performance, disponibilidade, compliance"
+        ]
+      },
+      {
+        "fase": "Fase 2: Implementation Core (Semanas 3-6)",
+        "passos": [
+          "Implementar NSD Orchestrator (Main Process) - Job queue com persistência SQLite. Coordenação de progresso streaming (IPC channels). Cancelamento e retry logic",
+          "Implementar NSD Worker Service (Worker Thread) - Parser de NSD markdown (estrutura de checkpoint). Client GLM API HTTP. Prompt Builder (template técnico). Integração com @coreto/core (Project Analyzer)",
+          "Implementar IPC Handlers (Main Process) - Canais: nsd:upload, nsd:start, nsd:progress, nsd:result, nsd:cancel, nsd:getStatus, nsd:listJobs, nsd:validate. Validação Zod em todos os payloads. Thin adapter pattern (delegar para use cases domain)",
+          "Implementar NSD Renderer UI (Renderer Process) - Home gamificada com portal NSD Generator. Upload de arquivo NSD (drag & drop + file dialog). Seleção de cena (autocomplete baseado no NSD). Exibição de prompt gerado (caixa texto + botão copiar). Barra de progresso streaming (IPC nsd:progress)"
+        ]
+      },
+      {
+        "fase": "Fase 3: Integration & Polish (Semanas 7-8)",
+        "passos": [
+          "Testes E2E (Playwright) - Fluxo completo: upload NSD → gerar prompt → copiar. Cancelamento de job em andamento. Erro de API GLM (retry automático). Validação de NSD inválido",
+          "Testes de Arquitetura (Jest) - Validar Clean Architecture (domain purity, handler thin adapters). Validar import conventions (module aliases). Validar DI registration (use cases NSD registrados)",
+          "Polish UI - Animações de transição (home → NSD generator). Tooltip de ajuda para campos de configuração. Theme dark/light (consistente com TTK Validation). Logs export (botão integrado com v1)"
+        ]
+      },
+      {
+        "fase": "Fase 4: Documentação & Release (Pós-MVP)",
+        "passos": [
+          "Documentação de Uso - Guia de criação de NSD markdown (estrutura esperada). Configuração de API Key GLM (.env). Troubleshooting comum (erros de parsing, timeout GLM)",
+          "Build & Distribuição - Assinar builds macOS (Developer ID). Testar em Windows (Parallels/VM). Release notes (changelog com ADRs implementados)"
+        ]
+      }
+    ],
+    "criterios_sucesso_mvp_v2": [
+      "Usuário consegue fazer upload de NSD markdown válido",
+      "Sistema detecta automaticamente estrutura (checkpoint 0, 1, 2)",
+      "Usuário seleciona cena e gera prompt técnico",
+      "Prompt gerado é copiável e pronto para implementação manual",
+      "Logs exportáveis (coerentes com v1)",
+      "Cancelamento de job funciona corretamente",
+      "Sem crashes em Worker Thread durante operações normais"
+    ]
+  }
+}
