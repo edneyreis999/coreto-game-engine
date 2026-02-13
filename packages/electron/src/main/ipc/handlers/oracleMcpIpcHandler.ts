@@ -172,6 +172,13 @@ export async function handleOracleMcpGeneratePrompt(
 
     getLogger().info(`[OracleMcpIpcHandler] Prompt generated successfully, length: ${prompt.length}`);
 
+    // Log model response for debugging
+    getLogger().info('[Oracle MCP] Model response:', {
+      promptLength: prompt.length,
+      sceneName: validatedInput.sceneName,
+      preview: prompt.slice(0, 200) + '...'
+    });
+
     return {
       prompt,
       timestamp: new Date().toISOString(),
