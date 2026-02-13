@@ -119,25 +119,12 @@ export class ClaudeAgentClient {
    * @throws {Error} When Claude settings cannot be loaded
    */
   async init(): Promise<void> {
-    console.error('[ClaudeAgentClient] init called - authConfig before load:', this.authConfig);
-    console.error('[ClaudeAgentClient] init called - this.initialized before load:', this.initialized);
-
     this.authConfig = await loadClaudeSettings();
-
-    console.error('[ClaudeAgentClient] init called - authConfig after load:', this.authConfig);
-    console.error('[ClaudeAgentClient] init called - this.initialized after load:', this.initialized);
-
-    // Mark as initialized after successfully loading auth config
     this.initialized = true;
 
-    console.error('[ClaudeAgentClient] init called - this.initialized after set:', this.initialized);
-
-    if (!this.initialized) {
-      console.error(`[ClaudeAgentClient] ERROR: authConfig is null/undefined`);
+    if (!this.authConfig) {
       throw new Error('Claude client not initialized');
     }
-
-    console.error('[ClaudeAgentClient] Client initialized successfully');
   }
 
   /**
@@ -162,39 +149,23 @@ export class ClaudeAgentClient {
    * ```
    */
   async generateNsdPrompt(options: GeneratePromptOptions): Promise<string> {
-    console.error(`[ClaudeAgentClient] generateNsdPrompt called with: ${JSON.stringify({
-      hasNsdContent: !!options.nsdContent,
-      nsdContentLength: options.nsdContent?.length || 0,
-      sceneName: options.sceneName,
-      projectPath: options.projectPath,
-      hasQuestVariable: !!options.questVariable
-    })}`);
-
     // Validate input using Zod schema
     const validatedInput = GeneratePromptSchema.parse(options);
-    console.error(`[ClaudeAgentClient] Input validated successfully`);
 
     if (!this.initialized) {
-      console.error(`[ClaudeAgentClient] Initializing client...`);
       await this.init();
-      console.error(`[ClaudeAgentClient] Client initialized`);
     }
 
     if (!this.authConfig) {
-      console.error(`[ClaudeAgentClient] ERROR: authConfig is null/undefined`);
       throw new Error('Claude client not initialized');
     }
 
-    console.error(`[ClaudeAgentClient] Building prompts...`);
     // TODO: Implement actual Claude Agent SDK call
     // For now, return a stub response
     const systemPrompt = this.buildSystemPrompt(validatedInput);
     const userPrompt = this.buildUserPrompt(validatedInput);
 
-    const stubResponse = `STUB: Prompt generation not yet implemented.\n\nSystem: ${systemPrompt.slice(0, 100)}...\n\nUser: ${userPrompt}`;
-
-    console.error(`[ClaudeAgentClient] Returning stub response, length: ${stubResponse.length}`);
-    return stubResponse;
+    return `STUB: Prompt generation not yet implemented.\n\nSystem: ${systemPrompt.slice(0, 100)}...\n\nUser: ${userPrompt}`;
   }
 
   /**

@@ -111,28 +111,13 @@ export async function handleOracleMcpStart(
   payload: unknown
 ): Promise<IPCResult<OracleMcpStartResponse>> {
   return wrapHandler(async () => {
-    getLogger().debug('[OracleMcpIpcHandler] handleOracleMcpStart called');
-
     validatePayload('oracle-mcp:start', payload, OracleMcpStartSchema);
 
     const { port } = payload;
-
-    // Determine server type based on configuration
     const serverType: 'stdio' | 'socket' = port ? 'socket' : 'stdio';
 
-    getLogger().info(
-      `[OracleMcpIpcHandler] MCP server start requested, type: ${serverType}`
-    );
-    getLogger().debug(`[OracleMcpIpcHandler] Starting MCP server, config: ${JSON.stringify({
-      serverType,
-      hasPort: !!port,
-      port: port || 'default (stdio)'
-    })}`);
-
-    // Start MCP server using McpClientService
+    getLogger().info(`[OracleMcpIpcHandler] MCP server start requested, type: ${serverType}`);
     await mcpClientService.start();
-
-    getLogger().info('[OracleMcpIpcHandler] MCP server started successfully');
 
     return {
       success: true,
@@ -168,10 +153,6 @@ export async function handleOracleMcpGeneratePrompt(
   payload: unknown
 ): Promise<IPCResult<GeneratePromptResponse>> {
   return wrapHandler(async () => {
-    getLogger().debug('[OracleMcpIpcHandler] handleOracleMcpGeneratePrompt called');
-
-    // Validate input using Zod schema
-    getLogger().debug('[OracleMcpIpcHandler] Validating payload with GeneratePromptSchema');
     validatePayload(
       'oracle-mcp:generate-prompt',
       payload,
@@ -179,40 +160,15 @@ export async function handleOracleMcpGeneratePrompt(
     );
     const validatedInput = payload as GeneratePromptInput;
 
-    getLogger().info(
-      `[OracleMcpIpcHandler] Generating prompt for scene: ${validatedInput.sceneName}`
-    );
-    getLogger().debug(`[OracleMcpIpcHandler] Validated input: ${JSON.stringify({
-      sceneName: validatedInput.sceneName,
-      projectPath: validatedInput.projectPath,
-      hasQuestVariable: !!validatedInput.questVariable,
-      nsdContentLength: validatedInput.nsdContent.length
-    })}`);
+    getLogger().info(`[OracleMcpIpcHandler] Generating prompt for scene: ${validatedInput.sceneName}`);
 
-    // Call MCP tool via McpClientService
-    getLogger().debug('[OracleMcpIpcHandler] Calling MCP tool: generate_nsd_prompt');
     const result = await mcpClientService.callTool<{ content: Array<{ type: string; text: string }> }>(
       'generate_nsd_prompt',
       validatedInput
     );
 
-    getLogger().debug(`[OracleMcpIpcHandler] MCP response received: ${JSON.stringify({
-      hasContent: !!result.content,
-      contentLength: result.content?.length || 0,
-      resultType: typeof result.content,
-      resultKeys: result.content ? Object.keys(result.content) : 'null',
-    })}`);
-
-    // Extract generated prompt from MCP response
-    // The MCP server returns: { result: { content: [{ type: "text", text: "..." }] }
-    // So we access result.content[0].text (array notation)
+    // Extract prompt from MCP response: { content: [{ type: "text", text: "..." }] }
     const prompt = result.content?.[0]?.text || '';
-
-    getLogger().debug('[OracleMcpIpcHandler] Extracted prompt:', {
-      promptLength: prompt.length,
-      promptPreview: prompt.slice(0, 100) + '...',
-      source: 'result.content[0].text'
-    });
 
     getLogger().info(`[OracleMcpIpcHandler] Prompt generated successfully, length: ${prompt.length}`);
 
@@ -246,35 +202,19 @@ export async function handleOracleMcpHealth(
   payload: unknown
 ): Promise<IPCResult<OracleMcpHealthResponse>> {
   return wrapHandler(async () => {
-    getLogger().debug('[OracleMcpIpcHandler] handleOracleMcpHealth called');
-
     validatePayload('oracle-mcp:health', payload, OracleMcpHealthSchema);
 
-    getLogger().debug('[OracleMcpIpcHandler] Health check requested');
-
-    // Perform health check using McpClientService
-    getLogger().debug('[OracleMcpIpcHandler] Calling mcpClientService.healthCheck()');
     const isHealthy = await mcpClientService.healthCheck();
 
-    getLogger().info(
-      `[OracleMcpIpcHandler] Health check result: ${isHealthy}`
-    );
+    getLogger().info(`[OracleMcpIpcHandler] Health check result: ${isHealthy}`);
 
-    const response = {
+    return {
       healthy: isHealthy,
       message: isHealthy
         ? 'Oracle MCP service is healthy'
         : 'Oracle MCP service is not available',
       timestamp: new Date().toISOString(),
     };
-
-    getLogger().debug(`[OracleMcpIpcHandler] Health check response: ${JSON.stringify({
-      healthy: response.healthy,
-      message: response.message,
-      timestamp: response.timestamp
-    })}`);
-
-    return response;
   });
 }
 
@@ -286,8 +226,5 @@ export async function handleOracleMcpHealth(
  */
 export async function cleanupOracleMcpHandler(): Promise<void> {
   getLogger().info('[OracleMcpIpcHandler] Cleanup requested');
-  getLogger().debug('[OracleMcpIpcHandler] Calling mcpClientService.cleanup()');
-  // McpClientService handles its own cleanup via singleton
   mcpClientService.cleanup();
-  getLogger().info('[OracleMcpIpcHandler] Cleanup completed');
 }

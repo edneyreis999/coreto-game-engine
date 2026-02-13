@@ -99,7 +99,6 @@ export class McpClientService {
   private mcpProcess: ChildProcess | null = null;
   private readonly pendingRequests = new Map<string, PendingRequest>();
   private readonly TIMEOUT_MS = 30_000; // 30 seconds
-  private readonly GRACEFUL_SHUTDOWN_MS = 5_000; // 5 seconds
 
   // Buffer for accumulating stdout data
   private stdoutBuffer = '';
@@ -196,7 +195,6 @@ export class McpClientService {
    */
   private handleStdout(data: Buffer): void {
     const rawData = data.toString();
-    getLogger().debug(`[MCP stdout] Received ${rawData.length} bytes: ${rawData.slice(0, 100)}${rawData.length > 100 ? '...' : ''}`);
 
     // Append new data to buffer
     this.stdoutBuffer += rawData;
@@ -210,12 +208,6 @@ export class McpClientService {
       if (line.trim()) {
         try {
           const response = JSON.parse(line) as JsonRpcResponse;
-          getLogger().debug(`[MCP stdout] Parsed JSON-RPC response: ${JSON.stringify({
-            id: response.id,
-            hasResult: !!response.result,
-            hasError: !!response.error,
-            jsonrpc: response.jsonrpc
-          })}`);
           this.handleResponse(response);
         } catch {
           getLogger().warn(`[MCP stdout] Failed to parse MCP response: ${line}`);
@@ -285,12 +277,6 @@ export class McpClientService {
     };
 
     getLogger().debug(`MCP call: ${toolName} (id: ${requestId})`);
-    getLogger().debug(`[MCP stdin] Sending request: ${JSON.stringify({
-      method: 'tools/call',
-      toolName,
-      hasArgs: !!args,
-      argKeys: args ? Object.keys(args) : []
-    })}`);
 
     return new Promise<T>((resolve, reject) => {
       // Setup timeout
@@ -305,7 +291,6 @@ export class McpClientService {
       // Send request
       try {
         const requestJson = JSON.stringify(request) + '\n';
-        getLogger().debug(`[MCP stdin] Writing ${requestJson.length} bytes to stdin`);
         this.mcpProcess?.stdin?.write(requestJson);
       } catch (error) {
         clearTimeout(timer);
@@ -318,22 +303,14 @@ export class McpClientService {
   /**
    * Performs a health check on the MCP server.
    *
-   * Attempts to call a simple ping/health tool to verify server availability.
-   * Falls back to checking if the process is still running.
+   * Checks if the MCP server process is running.
    *
    * @returns Promise resolving to true if server is healthy, false otherwise
    */
   async healthCheck(): Promise<boolean> {
-    try {
-      // Try to call a simple health check tool
-      await this.callTool('ping', {});
-      return true;
-    } catch {
-      // Fallback: check if process is still running
-      const isRunning = this.mcpProcess !== null && !this.mcpProcess.killed;
-      getLogger().debug(`MCP health check: ${isRunning}`);
-      return isRunning;
-    }
+    const isRunning = this.mcpProcess !== null && !this.mcpProcess.killed;
+    getLogger().debug(`MCP health check: ${isRunning}`);
+    return isRunning;
   }
 
   /**
@@ -352,10 +329,9 @@ export class McpClientService {
   }
 
   /**
-   * Stops the MCP server gracefully.
+   * Stops the MCP server.
    *
-   * Attempts graceful shutdown with timeout, then force kills if necessary.
-   * Clears all pending requests with an error.
+   * Clears all pending requests and kills the process.
    */
   async stop(): Promise<void> {
     if (!this.mcpProcess) {
@@ -363,37 +339,8 @@ export class McpClientService {
     }
 
     getLogger().info('Stopping MCP server');
-
-    // Clear pending requests
     this.rejectAllPendingRequests(new Error('MCP server shutting down'));
-
-    // Attempt graceful shutdown
-    const forceKillTimer = setTimeout(() => {
-      if (this.mcpProcess && !this.mcpProcess.killed) {
-        getLogger().warn('Force killing unresponsive MCP server');
-        this.mcpProcess.kill('SIGKILL');
-      }
-    }, this.GRACEFUL_SHUTDOWN_MS);
-
-    // Send SIGTERM for graceful shutdown
-    this.mcpProcess.kill('SIGTERM');
-
-    // Wait for process to exit
-    await new Promise<void>((resolve) => {
-      if (!this.mcpProcess) {
-        resolve();
-        return;
-      }
-
-      const cleanup = (): void => {
-        clearTimeout(forceKillTimer);
-        this.mcpProcess?.off('exit', cleanup);
-        resolve();
-      };
-
-      this.mcpProcess.on('exit', cleanup);
-    });
-
+    this.mcpProcess.kill();
     this.mcpProcess = null;
     getLogger().info('MCP server stopped');
   }

@@ -37,14 +37,13 @@ export interface GenerateNsdPromptParams {
 }
 
 /**
- * GeneratePromptResponse
+ * _GeneratePromptResponse
  *
  * Response from the oracle-mcp:generate-prompt IPC handler.
- * Documented for reference; actual type comes from IPC handler.
+ * Documented for reference only; prefixed with _ to indicate unused.
  *
  * @see packages/electron/src/main/ipc/handlers/oracleMcpIpcHandler.ts
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface _GeneratePromptResponse {
   /** The generated technical prompt for NSD implementation */
   prompt: string;
@@ -141,49 +140,21 @@ export function useOracleMcpClient(): UseOracleMcpClientResult {
     setIsGenerating(true);
     setError(null);
 
-    console.log('[useOracleMcpClient] generatePrompt called with:', {
-      sceneName: params.sceneName,
-      projectPath: params.projectPath,
-      nsdContentLength: params.nsdContent.length,
-      hasQuestVariable: !!params.questVariable,
-    });
-
     try {
-      // Invoke Oracle MCP API for prompt generation
-      console.log('[useOracleMcpClient] Calling window.coreto.oracleMcp.generatePrompt...');
       const result = await window.coreto.oracleMcp.generatePrompt(params);
 
-      console.log('[useOracleMcpClient] IPC result received:', {
-        success: result.success,
-        hasData: !!result.data,
-        dataType: result.data ? typeof result.data : 'undefined',
-        dataKeys: result.data ? Object.keys(result.data) : 'none',
-        error: result.error,
-      });
-
       if (result.success) {
-        // Prompt generated successfully
-        console.log('[useOracleMcpClient] === RESULT DATA ===');
-        console.log('[useOracleMcpClient] Prompt length:', result.data?.prompt?.length || 0);
-        console.log('[useOracleMcpClient] Prompt preview (first 100 chars):', result.data?.prompt?.slice(0, 100) + '...');
-
-        // Return the prompt text from result.data
         return result.data.prompt;
       } else {
-        // IPC handler returned an error
-        console.error('[useOracleMcpClient] IPC returned error:', result.error);
         setError(createIpcError(result.error));
         throw new Error(result.error.message);
       }
     } catch (err) {
-      // Network or unexpected error
       const error = err instanceof Error ? err : new Error(String(err));
-      console.error('[useOracleMcpClient] Exception caught:', error);
       setError(error);
       throw error;
     } finally {
       setIsGenerating(false);
-      console.log('[useOracleMcpClient] generatePrompt completed, isGenerating:', false);
     }
   }, []);
 

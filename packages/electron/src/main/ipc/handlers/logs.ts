@@ -141,7 +141,7 @@ export async function handleLogsExport(
     const isTest = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined;
     const reportsDir = isTest
       ? path.resolve(process.cwd(), 'reports', 'application-logs')
-      : path.resolve(__dirname, '..', '..', '..', '..', '..', 'reports', 'application-logs');
+      : path.resolve(__dirname, '..', '..', '..', '..', '..', '..', 'reports', 'application-logs');
     const downloadPath = path.join(reportsDir, filename);
 
     // Ensure directory exists
