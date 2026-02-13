@@ -21,3 +21,5 @@ export type { HistoryPanelProps } from './HistoryPanel/HistoryPanel';
 
 export { LogExportButton } from './LogExportButton';
 export type { LogExportButtonProps } from './LogExportButton';
+
+export { OracleMcpTestButton } from './OracleMcpTestButton';
