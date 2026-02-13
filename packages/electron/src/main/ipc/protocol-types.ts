@@ -48,7 +48,10 @@ export type IPCChannel =
   | 'history:export'
   | 'history:delete'
   | 'history:generateId'
-  | 'logs:export';
+  | 'logs:export'
+  | 'oracle-mcp:start'
+  | 'oracle-mcp:generate-prompt'
+  | 'oracle-mcp:health';
 
 /**
  * IPC error structure.

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useMemo } from 'react'
-import { ProjectSelectionPanel, ConfigurationPanel, ExecutionPanel, ResultsPanel, HistoryPanel, LogExportButton } from '@/components'
+import { ProjectSelectionPanel, ConfigurationPanel, ExecutionPanel, ResultsPanel, HistoryPanel, LogExportButton, OracleMcpTestButton } from '@/components'
 import type { ProjectConfigFormData } from '@/components/ConfigurationPanel'
 import type { SimulationConfigData } from '@coreto/electron/domain/services'
 import type { UIProjectConfig } from '@coreto/electron/domain/schemas'
@@ -125,7 +125,10 @@ export default function App(): React.ReactElement {
             <h1>Coreto Dev Portal</h1>
             <p>Time-to-Kill (TTK) Validation System for RPG Maker MZ</p>
           </div>
-          <LogExportButton />
+          <div className="flex items-center gap-3">
+            <OracleMcpTestButton />
+            <LogExportButton />
+          </div>
         </div>
       </header>
       <main className="app-main">

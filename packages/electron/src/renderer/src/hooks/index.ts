@@ -30,3 +30,8 @@ export {
   useConfigurationManager,
   type UseConfigurationManagerReturn,
 } from './useConfigurationManager';
+export {
+  useOracleMcpClient,
+  type GenerateNsdPromptParams,
+  type UseOracleMcpClientResult,
+} from './useOracleMcpClient';

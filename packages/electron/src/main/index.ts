@@ -99,6 +99,7 @@ export function registerAppLifecycleHandlers(): void {
     // TODO: Save window bounds for persistence (task #6)
     simulationController.cleanup();
     closeDatabase();
+    cleanupIpcHandlers(); // Cleanup Oracle MCP and other handlers
   });
 }
 
@@ -114,8 +115,18 @@ export function registerAppLifecycleHandlers(): void {
  *
  * @returns Promise that resolves when the app is ready
  */
+import { loadCredentials } from './credentials.js';
+
 export async function startApp(): Promise<void> {
   await app.whenReady();
+
+  // Load credentials BEFORE initializing DI container
+  // This ensures MCP server has access to required environment variables
+  try {
+    await loadCredentials();
+  } catch (error) {
+    console.error('[ERROR] Failed to load credentials:', error instanceof Error ? error.message : String(error));
+  }
 
   // Initialize DI container BEFORE any logger usage
   setupIpcHandlers(); // This registers both core and main dependencies

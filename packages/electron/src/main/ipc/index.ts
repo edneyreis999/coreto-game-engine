@@ -7,9 +7,9 @@
  * @see packages/electron/src/main/index.ts
  */
 
-import { registerDependencies, clearContainer } from '@coreto/core';
-import { registerHandlers as registerIpcHandlers } from './handlers/index.js';
-import { registerMainDependencies } from '../di/container.js';
+import { registerDependencies } from '@coreto/core';
+import { registerHandlers as registerIpcHandlers, cleanupIpcHandlers } from './handlers/index';
+import { registerMainDependencies } from '../di/container';
 
 /**
  * Sets the main window reference for simulation event forwarding.
@@ -59,8 +59,4 @@ export function setupIpcHandlers(): void {
   registerIpcHandlers();
 }
 
-/**
- * Clear all DI container instances.
- * Useful for testing to ensure clean state between tests.
- */
-export { clearContainer };
+export { cleanupIpcHandlers };

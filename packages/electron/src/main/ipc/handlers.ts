@@ -87,6 +87,12 @@ import { wrapHandler } from './ipc-response.js';
 import { createRecentProjectsRepository } from '../database/repositories/sqlite-recent-projects-repository.js';
 import { handleConfigLoad } from './handlers/config.js';
 import { handleConfigUpdateTrecho, handleConfigDeleteTrecho, handleConfigUpdateGlobalSettings } from './handlers/config.js';
+import {
+  handleOracleMcpStart,
+  handleOracleMcpGeneratePrompt,
+  handleOracleMcpHealth,
+  cleanupOracleMcpHandler
+} from './handlers/oracleMcpIpcHandler.js';
 
 // ============================================================================
 // Progress State Management
@@ -651,6 +657,10 @@ export const IPC_HANDLERS: Record<
   'history:export': getRegistryHandler(HISTORY_IPC_HANDLERS, 'history:export'),
   'history:delete': getRegistryHandler(HISTORY_IPC_HANDLERS, 'history:delete'),
   'history:generateId': getRegistryHandler(HISTORY_IPC_HANDLERS, 'history:generateId'),
+  // Oracle MCP handlers (from oracleMcpIpcHandler.ts)
+  'oracle-mcp:start': handleOracleMcpStart,
+  'oracle-mcp:generate-prompt': handleOracleMcpGeneratePrompt,
+  'oracle-mcp:health': handleOracleMcpHealth,
 };
 
 /**
@@ -661,4 +671,13 @@ export function registerIpcHandlers(): void {
   Object.entries(IPC_HANDLERS).forEach(([channel, handler]) => {
     ipcMain.handle(channel, handler);
   });
+}
+
+/**
+ * Cleans up all IPC handlers before app shutdown.
+ * Called during main process cleanup.
+ */
+export function cleanupIpcHandlers(): void {
+  // Cleanup Oracle MCP handler
+  cleanupOracleMcpHandler();
 }

@@ -76,13 +76,13 @@ export function withAbortSignal<
     payload: unknown
   ) => Promise<unknown>
 >(handler: T): (event: IpcMainInvokeEvent, payload: unknown) => ReturnType<T> {
-  return async (event: IpcMainInvokeEvent, payload: unknown) => {
+  return async (event: IpcMainInvokeEvent, payload: unknown): Promise<unknown> => {
     const controller = new AbortController();
     const signal = controller.signal;
 
     // Abort when renderer is destroyed
     const sender = event.sender;
-    const destroyListener = () => {
+    const destroyListener = (): void => {
       ensureLogger().debug('[AbortSignal] Renderer destroyed, aborting operation');
       controller.abort();
     };

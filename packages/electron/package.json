@@ -30,6 +30,7 @@
   },
   "dependencies": {
     "@coreto/core": "workspace:*",
+    "@coreto/oracle": "workspace:*",
     "@radix-ui/react-slot": "^1.0.2",
     "better-sqlite3": "12.6.2",
     "class-variance-authority": "^0.7.0",

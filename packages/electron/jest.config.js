@@ -60,6 +60,8 @@ export default {
         '^@/(.*)$': '<rootDir>/src/$1',
         '^@tests/(.*)$': '<rootDir>/tests/$1',
         '^@coreto/core$': '<rootDir>/../core/src/index.ts',
+        '^@coreto/oracle$': '<rootDir>/../oracle/src/index.ts',
+        '^@coreto/oracle/(.*)$': '<rootDir>/../oracle/src/$1',
         // Domain layer specific mappings (must come before generic fallback)
         '^@coreto/electron/domain/services$': '<rootDir>/src/domain/services/index.ts',
         '^@coreto/electron/domain/schemas$': '<rootDir>/src/domain/schemas/index.ts',
@@ -139,6 +141,8 @@ export default {
         '^@/(.*)$': '<rootDir>/src/$1',
         '^@tests/(.*)$': '<rootDir>/tests/$1',
         '^@coreto/core$': '<rootDir>/../core/src/index.ts',
+        '^@coreto/oracle$': '<rootDir>/../oracle/src/index.ts',
+        '^@coreto/oracle/(.*)$': '<rootDir>/../oracle/src/$1',
         // Domain layer specific mappings (must come before generic fallback)
         '^@coreto/electron/domain/services$': '<rootDir>/src/domain/services/index.ts',
         '^@coreto/electron/domain/schemas$': '<rootDir>/src/domain/schemas/index.ts',
@@ -163,9 +167,28 @@ export default {
       testEnvironment: 'node',
       maxWorkers: 1, // Run sequentially to avoid database conflicts
       roots: ['<rootDir>/tests'],
-      testMatch: ['**/tests/e2e/**/*.test.ts'],
+      testMatch: ['**/tests/e2e/**/*.test.ts', '**/tests/integration/oracleMcp.e2e.test.ts'],
       setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
       collectCoverageFrom: [],
+      moduleNameMapper: {
+        '^@/(.*)$': '<rootDir>/src/$1',
+        '^@tests/(.*)$': '<rootDir>/tests/$1',
+        '^@coreto/core$': '<rootDir>/../core/src/index.ts',
+        '^@coreto/oracle$': '<rootDir>/../oracle/src/index.ts',
+        '^@coreto/oracle/(.*)$': '<rootDir>/../oracle/src/$1',
+        '^@coreto/electron/domain/services$': '<rootDir>/src/domain/services/index.ts',
+        '^@coreto/electron/domain/schemas$': '<rootDir>/src/domain/schemas/index.ts',
+        '^@coreto/electron/domain/types$': '<rootDir>/src/domain/types/index.ts',
+        '^@coreto/electron/domain/ports$': '<rootDir>/src/domain/ports/index.ts',
+        '^@coreto/electron/domain/use-cases$': '<rootDir>/src/domain/use-cases/index.ts',
+        '^@coreto/electron/domain/repositories$': '<rootDir>/src/domain/repositories/index.ts',
+        '^@coreto/electron/domain/validation$': '<rootDir>/src/domain/validation/index.ts',
+        '^@coreto/electron/domain/mappers$': '<rootDir>/src/domain/mappers/index.ts',
+        '^@coreto/electron/domain$': '<rootDir>/src/domain/index.ts',
+        '^@coreto/electron/(.*)\\.js$': '<rootDir>/src/$1.ts',
+        '^@coreto/electron/(.+)$': '<rootDir>/src/$1.ts',
+        '^(\\.{1,2}/.*)\\.js$': '$1',
+      },
     },
     // Architecture tests
     {

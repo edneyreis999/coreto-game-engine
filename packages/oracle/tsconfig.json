@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "tsBuildInfoFile": "./dist/.tsbuildinfo",
+    "baseUrl": "./src",
+    "paths": {
+      "@coreto/oracle/lib": ["lib/index.ts"],
+      "@coreto/oracle/lib/*": ["lib/*"],
+      "@coreto/oracle/server": ["server/index.ts"],
+      "@coreto/oracle/server/*": ["server/*"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "**/*.spec.ts", "src/**/*.test.ts"]
+}

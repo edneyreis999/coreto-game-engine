@@ -17,6 +17,7 @@ import * as preferences from './preferences.js';
 import * as dialog from './dialog.js';
 import * as history from './history-handlers.js';
 import * as logs from './logs.js';
+import * as oracleMcp from './oracleMcpIpcHandler.js';
 
 // Import external handler registries
 import { CONFIG_IPC_HANDLERS } from '../config-handlers.js';
@@ -87,6 +88,11 @@ export function registerHandlers(): void {
   ipcMain.handle('logs:export', logs.handleLogsExport);
   ipcMain.handle('logs:flushRendererLogs', logs.handleLogsFlushRenderer);
 
+  // Oracle MCP handlers
+  ipcMain.handle('oracle-mcp:start', oracleMcp.handleOracleMcpStart);
+  ipcMain.handle('oracle-mcp:generate-prompt', oracleMcp.handleOracleMcpGeneratePrompt);
+  ipcMain.handle('oracle-mcp:health', oracleMcp.handleOracleMcpHealth);
+
   // History handlers (from registry - for other history operations)
   ipcMain.handle('history:list', getRegistryHandler(HISTORY_IPC_HANDLERS, 'history:list'));
   ipcMain.handle('history:loadReport', getRegistryHandler(HISTORY_IPC_HANDLERS, 'history:loadReport'));
@@ -99,3 +105,9 @@ export function registerHandlers(): void {
  * These are used by history handlers to manage simulation results.
  */
 export { setSimulationResults, clearSimulationResults } from './simulation.js';
+
+/**
+ * Export cleanup function for IPC handlers.
+ * Called during app shutdown to clean up Oracle MCP and other handlers.
+ */
+export { cleanupIpcHandlers } from '../handlers';

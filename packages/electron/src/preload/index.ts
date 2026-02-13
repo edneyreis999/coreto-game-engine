@@ -466,6 +466,80 @@ const historyAPI = {
 };
 
 /**
+ * Oracle MCP API
+ *
+ * Handles Oracle MCP server operations (start, generate-prompt, health).
+ */
+const oracleMcpAPI = {
+  /**
+   * Starts the Oracle MCP server for external connections.
+   * @param port - Optional port for socket mode (defaults to stdio)
+   * @returns Promise resolving to start result with server info
+   *
+   * @example
+   * const response = await window.coreto.oracleMcp.start();
+   * if (response.success) {
+   *   console.log('Server type:', response.data.serverType);
+   * }
+   */
+  start: (port?: number): Promise<
+    IPCResult<{
+      success: boolean;
+      message: string;
+      serverType: 'stdio' | 'socket';
+      timestamp: string;
+    }>
+  > => ipcRenderer.invoke('oracle-mcp:start', { port }),
+
+  /**
+   * Generates a technical prompt for implementing an NSD scene in RPG Maker MZ.
+   * @param params - NSD prompt generation parameters
+   * @returns Promise resolving to generated prompt
+   *
+   * @example
+   * const result = await window.coreto.oracleMcp.generatePrompt({
+   *   nsdContent: '# NSD Content...',
+   *   sceneName: 'Cena 1: Entrada na Taverna',
+   *   projectPath: '/path/to/mz/project',
+   *   questVariable: 'Quest 01 Progress'
+   * });
+   * if (result.success) {
+   *   console.log('Generated prompt:', result.data.prompt);
+   * }
+   */
+  generatePrompt: (params: {
+    nsdContent: string;
+    sceneName: string;
+    projectPath: string;
+    questVariable?: string;
+  }): Promise<
+    IPCResult<{
+      prompt: string;
+      timestamp: string;
+    }>
+  > => ipcRenderer.invoke('oracle-mcp:generate-prompt', params),
+
+  /**
+   * Performs a health check on the Oracle MCP service.
+   * @param timeout - Optional timeout in milliseconds
+   * @returns Promise resolving to health check result
+   *
+   * @example
+   * const result = await window.coreto.oracleMcp.health();
+   * if (result.success && result.data.healthy) {
+   *   console.log('Oracle MCP service is healthy');
+   * }
+   */
+  health: (timeout?: number): Promise<
+    IPCResult<{
+      healthy: boolean;
+      message: string;
+      timestamp: string;
+    }>
+  > => ipcRenderer.invoke('oracle-mcp:health', { timeout }),
+};
+
+/**
  * Logs API
  *
  * Manages application log export (bundle and download).
@@ -558,6 +632,7 @@ const coretoAPI = {
   preferences: preferencesAPI,
   recent: recentAPI,
   logs: logsAPI,
+  oracleMcp: oracleMcpAPI,
 };
 
 /**

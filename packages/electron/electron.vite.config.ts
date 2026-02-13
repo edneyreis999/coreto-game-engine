@@ -37,6 +37,9 @@ const sharedDomainAliases = {
   '@coreto/electron/domain/schemas': resolve(__dirname, 'src/domain/schemas'),
   '@coreto/electron/domain/ports': resolve(__dirname, 'src/domain/ports'),
   '@coreto/electron/domain': resolve(__dirname, 'src/domain'),
+  '@coreto/oracle': resolve(__dirname, '../oracle/src'),
+  '@coreto/oracle/lib': resolve(__dirname, '../oracle/src/lib'),
+  '@coreto/oracle/server': resolve(__dirname, '../oracle/src/server'),
 }
 
 export default defineConfig({
@@ -47,6 +50,7 @@ export default defineConfig({
     },
     build: {
       rollupOptions: {
+        external: ['@coreto/oracle', '@coreto/oracle/*'],
         input: {
           index: resolve(__dirname, 'src/main/index.ts'),
           'workers/simulation.worker': resolve(__dirname, 'src/main/workers/simulation.worker.ts')

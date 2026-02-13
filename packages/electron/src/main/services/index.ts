@@ -9,6 +9,7 @@
 export { SimulationController, simulationController } from './simulation-controller.js';
 export { ReportStorageService, generateSimulationId } from './report-storage.js';
 export { initializeLogCapture, logCapture, logAggregator } from './log-capture.js';
+export { McpClientService, mcpClientService } from './McpClientService.js';
 
 // Type exports
 export type { SimulationSummary, SimulationReport, TrechoSummary } from './types.js';

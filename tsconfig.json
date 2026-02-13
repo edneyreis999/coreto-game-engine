@@ -47,6 +47,8 @@
       "@coreto/core/*": ["./packages/core/src/*"],
       "@coreto/electron": ["./packages/electron/src"],
       "@coreto/electron/*": ["./packages/electron/src/*"],
+      "@coreto/oracle": ["./packages/oracle/src"],
+      "@coreto/oracle/*": ["./packages/oracle/src/*"],
       // Electron renderer path aliases (for Jest from monorepo root)
       "@/hooks/*": ["./packages/electron/src/renderer/src/hooks/*"],
       "@/components/*": ["./packages/electron/src/renderer/src/components/*"],
@@ -69,6 +71,7 @@
   ],
   "references": [
     { "path": "./packages/core" },
-    { "path": "./packages/electron" }
+    { "path": "./packages/electron" },
+    { "path": "./packages/oracle" }
   ]
 }
