@@ -127,63 +127,63 @@ export class McpClientService {
    * @throws Error if server cannot be started
    */
   async start(): Promise<void> {
-  if (this.mcpProcess) {
+    if (this.mcpProcess) {
       getLogger().debug('MCP server already running');
       return;
     }
 
-  const serverPath = this.getMcpServerPath();
-  getLogger().info(`Starting MCP server: ${serverPath}`);
+    const serverPath = this.getMcpServerPath();
+    getLogger().info(`Starting MCP server: ${serverPath}`);
 
-  try {
-    // Explicitly pass required environment variables to child process
-    // Node.js child processes don't inherit process.env automatically
-    const mcpEnv = {
-      ...process.env,
-      ANTHROPIC_AUTH_TOKEN: process.env.ANTHROPIC_AUTH_TOKEN,
-      ANTHROPIC_BASE_URL: process.env.ANTHROPIC_BASE_URL,
-      ANTHROPIC_DEFAULT_SONNET_MODEL: process.env.ANTHROPIC_DEFAULT_SONNET_MODEL,
-    };
+    try {
+      // Explicitly pass required environment variables to child process
+      // Node.js child processes don't inherit process.env automatically
+      const mcpEnv = {
+        ...process.env,
+        ANTHROPIC_AUTH_TOKEN: process.env.ANTHROPIC_AUTH_TOKEN,
+        ANTHROPIC_BASE_URL: process.env.ANTHROPIC_BASE_URL,
+        ANTHROPIC_DEFAULT_SONNET_MODEL: process.env.ANTHROPIC_DEFAULT_SONNET_MODEL,
+      };
 
-    // Spawn MCP server process
-    this.mcpProcess = spawn('node', [serverPath], {
-      stdio: ['pipe', 'pipe', 'pipe'],
-      env: mcpEnv,
-    });
+      // Spawn MCP server process
+      this.mcpProcess = spawn('node', [serverPath], {
+        stdio: ['pipe', 'pipe', 'pipe'],
+        env: mcpEnv,
+      });
 
-    // Setup stdout handling for JSON-RPC responses
-    this.mcpProcess.stdout?.on('data', (data: Buffer) => {
-      this.handleStdout(data);
-    });
+      // Setup stdout handling for JSON-RPC responses
+      this.mcpProcess.stdout?.on('data', (data: Buffer) => {
+        this.handleStdout(data);
+      });
 
-    // Setup stderr handling for error logging
-    this.mcpProcess.stderr?.on('data', (data: Buffer) => {
-      getLogger().error(`[MCP stderr] ${data.toString()}`);
-    });
+      // Setup stderr handling for debug logging (use debug level, not error)
+      this.mcpProcess.stderr?.on('data', (data: Buffer) => {
+        getLogger().debug(`[MCP] ${data.toString()}`);
+      });
 
-    // Setup error handling
-    this.mcpProcess.on('error', (error) => {
-      getLogger().error(`MCP process error: ${error.message}`);
-      this.rejectAllPendingRequests(error);
+      // Setup error handling
+      this.mcpProcess.on('error', (error) => {
+        getLogger().error(`MCP process error: ${error.message}`);
+        this.rejectAllPendingRequests(error);
+        this.mcpProcess = null;
+      });
+
+      // Setup exit handling
+      this.mcpProcess.on('exit', (code, signal) => {
+        const exitMsg = signal ? `via signal ${signal}` : `with code ${code}`;
+        getLogger().info(`MCP server exited ${exitMsg}`);
+        this.rejectAllPendingRequests(new Error(`MCP server exited ${exitMsg}`));
+        this.mcpProcess = null;
+      });
+
+      // Wait a bit for server to initialize
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      getLogger().info('MCP server started successfully');
+    } catch (error) {
       this.mcpProcess = null;
-    });
-
-    // Setup exit handling
-    this.mcpProcess.on('exit', (code, signal) => {
-      const exitMsg = signal ? `via signal ${signal}` : `with code ${code}`;
-      getLogger().info(`MCP server exited ${exitMsg}`);
-      this.rejectAllPendingRequests(new Error(`MCP server exited ${exitMsg}`));
-      this.mcpProcess = null;
-    });
-
-    // Wait a bit for server to initialize
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    getLogger().info('MCP server started successfully');
-  } catch (error) {
-    this.mcpProcess = null;
-    throw new Error(`Failed to start MCP server: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`Failed to start MCP server: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
-}
 
   /**
    * Handles stdout data from MCP server.
