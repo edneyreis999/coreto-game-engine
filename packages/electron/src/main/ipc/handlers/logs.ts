@@ -24,7 +24,7 @@ import { logAggregator } from '../../services/log-capture.js';
 /**
  * Response format for logs:export handler.
  *
- * Success response includes the download path and stats.
+ * Success response includes download path and stats.
  * Error response includes error code and message.
  */
 export interface LogsExportResponse {
@@ -41,7 +41,7 @@ export interface LogsExportResponse {
 /**
  * Handler: logs:flushRendererLogs
  *
- * Receives renderer process logs via IPC and stores them in the aggregator.
+ * Receives renderer process logs via IPC and stores them in aggregator.
  * Called by renderer before export to ensure logs are included in bundle.
  *
  * Flow:
@@ -52,7 +52,7 @@ export interface LogsExportResponse {
  *
  * Error Handling:
  * - Invalid schema returns error with validation details
- * - Sanitization failures are logged but don't block the operation
+ * - Sanitization failures are logged but don't block operation
  *
  * @returns IPCResult<void> on success
  */
@@ -141,7 +141,7 @@ export async function handleLogsExport(
     const isTest = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined;
     const reportsDir = isTest
       ? path.resolve(process.cwd(), 'reports', 'application-logs')
-      : path.resolve(__dirname, '..', '..', '..', '..', '..', '..', 'reports', 'application-logs');
+      : path.resolve(__dirname, '..', '..', '..', '..', '..', 'reports', 'application-logs');
     const downloadPath = path.join(reportsDir, filename);
 
     // Ensure directory exists
