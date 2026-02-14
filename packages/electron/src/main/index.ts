@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { app, BrowserWindow, shell, utilityProcess, type UtilityProcess } from 'electron';
 import path from 'node:path';
-import { setupIpcHandlers, setMainWindowReference } from './ipc/index.js';
+import { setupIpcHandlers, setMainWindowReference, cleanupIpcHandlers } from './ipc/index.js';
 import { initDatabase, closeDatabase, setDatabasePath } from './database/index.js';
 import { simulationController, initializeLogCapture } from './services/index.js';
 import { createWindowConfig, getWindowUrl } from './window-config.js';
