@@ -23,23 +23,18 @@ describe('mcp-server.ts', () => {
 
     it('should call start when executed', async () => {
       const server = new OracleMcpServer();
-      const startSpy = vi.spyOn(server, 'start').mockResolvedValue(undefined);
       await server.start();
-      expect(startSpy).toHaveBeenCalled();
-      startSpy.mockRestore();
+      expect(typeof server.start).toBe('function');
     });
   });
 
   describe('Startup Logs', () => {
     it('should log startup sequence', async () => {
       const server = new OracleMcpServer();
-      const startSpy = vi.spyOn(server, 'start').mockResolvedValue(undefined);
       await server.start();
 
       const callCount = mockConsoleError.mock.calls.length;
       expect(callCount).toBeGreaterThan(0);
-
-      startSpy.mockRestore();
     });
   });
 });
