@@ -14,7 +14,7 @@
  */
 
 import { useCallback, useEffect, useState, useRef } from 'react';
-import { useLogger } from './useLogger/index';
+import { useLogger } from '@/hooks/useLogger';
 import type {
   NSDUploadProgress,
   NSDUploadError,
