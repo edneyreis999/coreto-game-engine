@@ -362,6 +362,7 @@ export const NsdUpload: FC<NsdUploadProps> = ({
 
   /**
    * Handles file selection and validation
+   * Automatically triggers upload after validation passes.
    */
   const handleFileSelection = useCallback((file: File) => {
     logger.info('File selected for upload', { fileName: file.name, fileSize: file.size });
@@ -376,16 +377,23 @@ export const NsdUpload: FC<NsdUploadProps> = ({
       return;
     }
 
-    // Clear error and set file
+    // Clear error, set file, and auto-start upload
     setError(null);
     setSelectedFile(file);
-  }, [maxFileSize, acceptedExtensions, logger, onUploadError]);
+
+    // Auto-start upload immediately after file selection
+    // Pass the file directly to avoid async state issues
+    handleUpload(file);
+  }, [maxFileSize, acceptedExtensions, logger, onUploadError, handleUpload]);
 
   /**
    * Handles file upload
+   * @param fileToUpload - Optional file parameter (uses selectedFile state if not provided)
    */
-  const handleUpload = useCallback(async () => {
-    if (!selectedFile || isUploading) {
+  const handleUpload = useCallback(async (fileToUpload?: File) => {
+    const file = fileToUpload || selectedFile;
+
+    if (!file || isUploading) {
       return;
     }
 
@@ -393,7 +401,7 @@ export const NsdUpload: FC<NsdUploadProps> = ({
     setError(null);
 
     try {
-      logger.info('Starting file upload', { fileName: selectedFile.name });
+      logger.info('Starting file upload', { fileName: file.name });
 
       // Stage 1: Reading file
       setProgress({ percent: 10, stage: 'validating', message: 'Reading file...' });
@@ -410,7 +418,7 @@ export const NsdUpload: FC<NsdUploadProps> = ({
           reject(new Error('Failed to read file'));
         };
 
-        reader.readAsText(selectedFile);
+        reader.readAsText(file);
       });
 
       const content = await reader;
@@ -445,10 +453,10 @@ export const NsdUpload: FC<NsdUploadProps> = ({
       // Complete
       setProgress({ percent: 100, stage: 'complete', message: 'Upload complete!' });
 
-      logger.info('File upload successful', { fileName: selectedFile.name });
+      logger.info('File upload successful', { fileName: file.name });
 
       // Call success callback
-      onUploadSuccess?.(selectedFile, content);
+      onUploadSuccess?.(file, content);
 
       // Reset after delay
       setTimeout(() => {
@@ -463,7 +471,7 @@ export const NsdUpload: FC<NsdUploadProps> = ({
       setProgress({ percent: 0, stage: 'error', message: '' });
       setIsUploading(false);
 
-      logger.error('File upload failed', { fileName: selectedFile.name, error: errorMessage });
+      logger.error('File upload failed', { fileName: file.name, error: errorMessage });
       onUploadError?.(errorMessage);
     }
   }, [selectedFile, isUploading, logger, onUploadSuccess, onUploadError]);
@@ -605,18 +613,11 @@ export const NsdUpload: FC<NsdUploadProps> = ({
               )}
             </div>
 
-            {/* Upload Button */}
+            {/* Upload status (upload starts automatically) */}
             {!isUploading && progress.stage === 'idle' && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleUpload();
-                }}
-                className="px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors font-medium text-sm"
-              >
-                Upload NSD File
-              </button>
+              <div className="text-xs text-muted-foreground">
+                Upload will start automatically...
+              </div>
             )}
           </div>
         )}
