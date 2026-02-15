@@ -14,7 +14,6 @@
 
 import { type FC, useEffect } from 'react';
 import { FileCode } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
 
 import { cn } from '@/lib/utils';
 import { useLogger } from '@/hooks/useLogger';
@@ -52,8 +51,6 @@ export const NSDGeneratorPlaceholder: FC<NSDGeneratorPlaceholderProps> = ({
   className,
 }) => {
   const logger = useLogger();
-  const location = useLocation();
-  const projectPath = location.state?.projectPath as string | undefined;
 
   // Log component mount
   useEffect(() => {
@@ -75,7 +72,7 @@ export const NSDGeneratorPlaceholder: FC<NSDGeneratorPlaceholderProps> = ({
     >
       {/* Back Button */}
       <div className="absolute left-6 top-6">
-        <BackButton projectPath={projectPath} />
+        <BackButton />
       </div>
 
       {/* Icon */}

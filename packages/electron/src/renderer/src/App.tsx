@@ -2,13 +2,15 @@ import React, { useEffect, useCallback } from 'react'
 import { HashRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import { ProjectSelectionPanel, Home, TTKValidationFlow, NSDGeneratorPlaceholder, LogExportButton, OracleMcpTestButton } from '@/components'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useLogger } from '@/hooks'
+import { ProjectProvider } from '@/contexts/ProjectContext'
 
 /**
  * Root App Component
  *
  * This is the main React component for the Coreto Dev Portal.
- * Now using React Router for SPA navigation with HashRouter.
+ * Now using React Router for SPA navigation with HashRouter and React Context for global state.
  *
  * Routes:
  * - / → ProjectSelectionPage (project selection)
@@ -18,13 +20,15 @@ import { useLogger } from '@/hooks'
  *
  * Features:
  * - HashRouter for file:// protocol compatibility
+ * - ProjectProvider for global project state sharing across routes
  * - Toaster from sonner for toast notifications
  * - useLogger for router initialization and route change logging
  * - Global header with action buttons
  *
  * Architecture Note:
- * - App() component wraps content with HashRouter
+ * - App() component wraps with ProjectProvider and HashRouter
  * - AppContent() component uses useNavigate() (must be inside HashRouter)
+ * - All components using useProject() share the same global state
  */
 
 /**
@@ -62,12 +66,14 @@ function AppContent(): React.ReactElement {
   /**
    * Handles project selection and navigates to Home page.
    * Called by ProjectSelectionPanel when a valid project is selected.
-   * Passes projectPath via router state so Home component can access it.
+   *
+   * Note: Project state is now managed globally via React Context (ProjectProvider).
+   * No need to pass projectPath via router state anymore.
    */
   const handleProjectSelected = useCallback(
     (projectPath: string) => {
       logger.info('Project selected, navigating to Home', { projectPath })
-      navigate('/home', { state: { projectPath } })
+      navigate('/home')
     },
     [logger, navigate]
   )
@@ -134,13 +140,22 @@ function AppContent(): React.ReactElement {
 /**
  * Root App Component
  *
- * Wraps AppContent with HashRouter.
- * useNavigate() must be called inside HashRouter, so it's used in AppContent.
+ * Wraps AppContent with ErrorBoundary, ProjectProvider, and HashRouter.
+ * - ErrorBoundary catches React errors and prevents white screen of death
+ * - ProjectProvider enables global project state sharing across all components
+ * - HashRouter enables SPA navigation with file:// protocol compatibility
+ * - useNavigate() must be called inside HashRouter, so it's used in AppContent
+ *
+ * @see docs/tecnical-debit/001-useproject-global-state.md
  */
 export default function App(): React.ReactElement {
   return (
-    <HashRouter>
-      <AppContent />
-    </HashRouter>
+    <ErrorBoundary>
+      <ProjectProvider>
+        <HashRouter>
+          <AppContent />
+        </HashRouter>
+      </ProjectProvider>
+    </ErrorBoundary>
   )
 }

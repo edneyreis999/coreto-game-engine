@@ -10,16 +10,21 @@
  * - PortalButton components for navigation
  * - Age of Mythology theme (amber-900/orange-900 gradients)
  * - useLogger hook for page lifecycle logging
+ * - useProject hook for accessing global project state
+ *
+ * Note: Project state is managed globally via React Context.
+ * No need to pass state via router navigation anymore.
  *
  * @see Task 06
+ * @see docs/tecnical-debit/001-useproject-global-state.md
  */
 
 import { type FC, useEffect } from 'react';
 import { Sword, FileText } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
 
 import { cn } from '@/lib/utils';
 import { useLogger } from '@/hooks/useLogger';
+import { useProject } from '@/hooks/useProject';
 import { PortalButton } from './PortalButton';
 
 // ============================================================================
@@ -57,10 +62,10 @@ export interface HomeProps {
  */
 export const Home: FC<HomeProps> = ({ className }) => {
   const logger = useLogger();
-  const location = useLocation();
+  const { projectInfo } = useProject();
 
-  // Read project path from router state (passed from App.tsx when project selected)
-  const projectPath = location.state?.projectPath as string | undefined;
+  // Get project path from global state (via React Context)
+  const projectPath = projectInfo?.path;
 
   // Log mount event
   useEffect(() => {
@@ -70,12 +75,6 @@ export const Home: FC<HomeProps> = ({ className }) => {
       logger.info('Home page unmounted');
     };
   }, [logger, projectPath]);
-
-  /**
-   * Navigation state for passing project context to child routes.
-   * This allows TTKValidationFlow to auto-detect the selected project.
-   */
-  const navigationState = projectPath ? { projectPath } : undefined;
 
   return (
     <div
@@ -116,7 +115,6 @@ export const Home: FC<HomeProps> = ({ className }) => {
               description="Battle time validation system for RPG Maker MZ"
               icon={<Sword className="h-8 w-8" />}
               route="/ttk"
-              state={navigationState}
             />
           </div>
 
@@ -127,7 +125,6 @@ export const Home: FC<HomeProps> = ({ className }) => {
               description="Generate LLM-powered scene implementations"
               icon={<FileText className="h-8 w-8" />}
               route="/nsd"
-              state={navigationState}
             />
           </div>
         </div>

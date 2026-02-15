@@ -1,10 +1,10 @@
 import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { ConfigurationPanel, ExecutionPanel, ResultsPanel, HistoryPanel, BackButton } from '@/components'
 import type { ProjectConfigFormData } from '@/components/ConfigurationPanel'
 import type { SimulationConfigData } from '@coreto/electron/domain/services'
 import type { UIProjectConfig } from '@coreto/electron/domain/schemas'
-import { useLogger, useConfigSave } from '@/hooks'
+import { useLogger, useConfigSave, useProject } from '@/hooks'
 import { mapSimulationReportToReportData } from '@coreto/electron/domain/mappers'
 import { mapToSimulationConfig } from '@coreto/electron/domain/services'
 
@@ -31,9 +31,8 @@ import { mapToSimulationConfig } from '@coreto/electron/domain/services'
 export function TTKValidationFlow(): React.ReactElement {
   const logger = useLogger()
   const navigate = useNavigate()
-  const location = useLocation()
+  const { projectInfo } = useProject()
   const { saveConfig } = useConfigSave()
-  const [selectedProjectPath, setSelectedProjectPath] = useState<string | null>(null)
   const [loadedConfig, setLoadedConfig] = useState<UIProjectConfig | null>(null)
   const [simulationCompleted, setSimulationCompleted] = useState<boolean>(false)
   const [historicalReport, setHistoricalReport] = useState<import('@coreto/electron/domain/types').ReportData | null>(null)
@@ -42,60 +41,34 @@ export function TTKValidationFlow(): React.ReactElement {
   const projectPathRef = useRef<string | null>(null)
 
   /**
-   * Initialize project path from router state on mount.
-   * This allows the component to auto-detect a project selected in the Home page.
-   * Router state is passed via PortalButton when navigating from Home.
+   * Load config when project path changes from global state.
+   * Reacts to project changes from context (e.g., switching projects).
+   * Project state is managed globally via React Context (useProject).
    */
   useEffect(() => {
-    const projectPathFromState = location.state?.projectPath as string | undefined
-    if (projectPathFromState && !selectedProjectPath) {
-      logger.info('Auto-loading project from router state', { projectPath: projectPathFromState })
-      setSelectedProjectPath(projectPathFromState)
-      projectPathRef.current = projectPathFromState
+    const projectPathFromContext = projectInfo?.path ?? null
 
-      // Auto-load saved trechos from SQLite when project is loaded from router state
-      window.coreto.config.load(projectPathFromState).then((response) => {
-        if (response.success && response.data && projectPathRef.current === projectPathFromState) {
+    // Only reload if project path actually changed
+    if (projectPathFromContext && projectPathFromContext !== projectPathRef.current) {
+      logger.info('Project path changed from global state', { projectPath: projectPathFromContext })
+      projectPathRef.current = projectPathFromContext
+
+      // Auto-load saved trechos from SQLite when project changes
+      window.coreto.config.load(projectPathFromContext).then((response) => {
+        if (response.success && response.data && projectPathRef.current === projectPathFromContext) {
           setLoadedConfig(response.data)
-          logger.info('Auto-loaded config from router state', { projectPath: projectPathFromState })
+          logger.info('Auto-loaded config from global state', { projectPath: projectPathFromContext })
         }
       }).catch((error) => {
-        logger.error('Failed to load config from router state:', error)
+        logger.error('Failed to load config from global state:', error)
       })
-    }
-  }, [location.state, selectedProjectPath, logger])
-
-  /**
-   * Handle project selection (removed - projects must be selected via home screen).
-   * This handler is kept for potential future use but should not be called.
-   */
-  const handleProjectSelected = useCallback(async (projectPath: string): Promise<void> => {
-    // Only reset if project actually changed
-    if (projectPath !== selectedProjectPath) {
-      setSelectedProjectPath(projectPath)
-      projectPathRef.current = projectPath
-
-      // Reset simulation config when project changes
+    } else if (!projectPathFromContext) {
+      // Clear config when no project is selected
       setLoadedConfig(null)
-      setSimulationCompleted(false)
-
-      // Auto-load saved trechos from SQLite (Task 11)
-      try {
-        const response = await window.coreto.config.load(projectPath)
-
-        // Race condition guard: ensure project hasn't changed during async load (D011-RACE)
-        if (projectPathRef.current === projectPath) {
-          if (response.success && response.data) {
-            setLoadedConfig(response.data)
-          }
-        }
-      } catch (error) {
-        // Graceful error handling: null if load fails
-        logger?.error('Failed to load config:', error)
-        setLoadedConfig(null)
-      }
+      projectPathRef.current = null
     }
-  }, [selectedProjectPath, logger])
+  }, [projectInfo?.path, logger])
+
 
   const handleConfigSaved = useCallback(async (config: ProjectConfigFormData): Promise<void> => {
     const result = await saveConfig({ config, logger })
@@ -116,7 +89,7 @@ export function TTKValidationFlow(): React.ReactElement {
 
   // Convert loaded config to SimulationConfigData for ExecutionPanel
   const simulationConfig = useMemo(() => {
-    if (!loadedConfig) return null
+    if (!loadedConfig || !projectInfo?.path) return null
 
     const trechosForSim = loadedConfig.trechos.map((t) => ({
       id: t.id,
@@ -125,12 +98,12 @@ export function TTKValidationFlow(): React.ReactElement {
     }))
 
     return mapToSimulationConfig(
-      selectedProjectPath ?? '',
-      selectedProjectPath ?? '',
+      projectInfo.path,
+      projectInfo.path,
       trechosForSim,
       loadedConfig.globalSettings ?? { seed: 12345 }
     )
-  }, [loadedConfig, selectedProjectPath])
+  }, [loadedConfig, projectInfo?.path])
 
   const handleSimulationComplete = (_result: unknown): void => {
     // Show Results Panel after simulation completes
@@ -159,7 +132,7 @@ export function TTKValidationFlow(): React.ReactElement {
   return (
     <div className="flex flex-col gap-6">
       {/* Show error if no project is selected */}
-      {!selectedProjectPath && (
+      {!projectInfo?.path && (
         <div className="flex flex-col items-center justify-center p-12 bg-red-50 border border-red-200 rounded-lg dark:bg-red-950 dark:border-red-800">
           <h2 className="text-xl font-semibold text-red-800 dark:text-red-200 mb-2">
             No Project Selected
@@ -177,13 +150,13 @@ export function TTKValidationFlow(): React.ReactElement {
       )}
 
       {/* Only show TTK panels if project is selected */}
-      {selectedProjectPath && (
+      {projectInfo?.path && (
         <>
           <div className="flex items-center">
-            <BackButton projectPath={selectedProjectPath} />
+            <BackButton />
           </div>
           <ConfigurationPanel
-            projectPath={selectedProjectPath}
+            projectPath={projectInfo.path}
             initialTrechos={loadedConfig?.trechos ?? []}
             onConfigSaved={handleConfigSaved}
           />
@@ -197,7 +170,7 @@ export function TTKValidationFlow(): React.ReactElement {
             <ResultsPanel isVisible={true} currentData={historicalReport} />
           )}
           <HistoryPanel
-            projectPath={selectedProjectPath}
+            projectPath={projectInfo.path}
             simulationCompleted={simulationCompleted}
             onLoadReport={handleLoadReport}
           />

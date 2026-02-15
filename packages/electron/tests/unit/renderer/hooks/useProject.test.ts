@@ -4,8 +4,10 @@
  * Tests for the useProject custom hook.
  */
 
+import React from 'react'
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { useProject } from '@/hooks/useProject'
+import { ProjectProvider } from '@/contexts/ProjectContext'
 import { createMinimalCoretoMock } from '@/tests/helpers/mocks/coreto-mock.factory'
 
 
@@ -18,6 +20,17 @@ const MOCK_TROOPS_COUNT = 10;
 const MOCK_CLASSES_COUNT = 5;
 const MOCK_ENEMIES_COUNT = 15;
 
+// ============================================================================
+// Test Wrapper
+// ============================================================================
+
+/**
+ * Wrapper component that provides ProjectProvider for tests.
+ */
+function wrapper({ children }: { children: React.ReactNode }): React.ReactElement {
+  return React.createElement(ProjectProvider, null, children)
+}
+
 describe('useProject', () => {
   describe('initial state', () => {
     it('should return initial idle state', () => {
@@ -28,7 +41,7 @@ describe('useProject', () => {
         writable: true,
       })
 
-      const { result } = renderHook(() => useProject())
+      const { result } = renderHook(() => useProject(), { wrapper })
 
       expect(result.current.projectInfo).toBeNull()
       expect(result.current.validation.status).toBe('idle')
@@ -64,7 +77,7 @@ describe('useProject', () => {
         writable: true,
       })
 
-      const { result } = renderHook(() => useProject())
+      const { result } = renderHook(() => useProject(), { wrapper })
 
       await act(async () => {
         await result.current.openProject('/path/to/project')
@@ -97,7 +110,7 @@ describe('useProject', () => {
         writable: true,
       })
 
-      const { result } = renderHook(() => useProject())
+      const { result } = renderHook(() => useProject(), { wrapper })
 
       await act(async () => {
         await result.current.openProject('/path/to/project')
@@ -143,7 +156,7 @@ describe('useProject', () => {
           writable: true,
         })
 
-        const { result } = renderHook(() => useProject())
+        const { result } = renderHook(() => useProject(), { wrapper })
 
         await act(async () => {
           await result.current.openProject('/path/to/project')
@@ -182,7 +195,7 @@ describe('useProject', () => {
         writable: true,
       })
 
-      const { result } = renderHook(() => useProject())
+      const { result } = renderHook(() => useProject(), { wrapper })
 
       act(() => {
         result.current.openProject('/path/to/project')
@@ -246,7 +259,7 @@ describe('useProject', () => {
         writable: true,
       })
 
-      const { result } = renderHook(() => useProject())
+      const { result } = renderHook(() => useProject(), { wrapper })
 
       await act(async () => {
         await result.current.validateProject('/path/to/project')
@@ -282,7 +295,7 @@ describe('useProject', () => {
         writable: true,
       })
 
-      const { result } = renderHook(() => useProject())
+      const { result } = renderHook(() => useProject(), { wrapper })
 
       await act(async () => {
         await result.current.openProject('/path/to/project')
