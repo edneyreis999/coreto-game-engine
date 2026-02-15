@@ -36,6 +36,8 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "lucide-react": "^0.294.0",
+    "react-router-dom": "^7.13.0",
+    "sonner": "^2.0.7",
     "tailwind-merge": "^2.1.0",
     "tsyringe": "^4.8.0",
     "uuid": "^11.0.0"
@@ -51,6 +53,7 @@
     "@types/node": "^22.10.5",
     "@types/react": "^18.2.45",
     "@types/react-dom": "^18.2.18",
+    "@types/react-router-dom": "^5.3.3",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.16",
     "chance": "^1.1.13",

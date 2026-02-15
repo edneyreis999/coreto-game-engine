@@ -40,6 +40,7 @@ const sharedDomainAliases = {
   '@coreto/oracle': resolve(__dirname, '../oracle/src'),
   '@coreto/oracle/lib': resolve(__dirname, '../oracle/src/lib'),
   '@coreto/oracle/server': resolve(__dirname, '../oracle/src/server'),
+  '@coreto/electron/assets': resolve(__dirname, 'src/assets'),
 }
 
 export default defineConfig({
