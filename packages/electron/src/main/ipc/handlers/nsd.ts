@@ -12,7 +12,7 @@
  */
 
 import type { IpcMainInvokeEvent } from 'electron';
-import { UtilityProcess } from 'electron';
+import { utilityProcess } from 'electron';
 import { join } from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { v4 as uuidv4 } from 'uuid';
@@ -226,8 +226,8 @@ export async function nsdUploadHandler(
 
     logger.info(`[IPC] Spawning NSD worker: parseId=${parseId}, correlationId=${correlationId}`);
 
-    // 4. Spawn NSD worker via UtilityProcess.fork()
-    const worker = UtilityProcess.fork(WORKER_PATH, [], {
+    // 4. Spawn NSD worker via utilityProcess.fork()
+    const worker = utilityProcess.fork(WORKER_PATH, [], {
       env: process.env,
     });
 
