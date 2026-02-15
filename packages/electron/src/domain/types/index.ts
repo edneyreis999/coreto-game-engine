@@ -74,5 +74,19 @@ export type {
   LogSource,
 } from './logs.js';
 
+export type {
+  // NSD Upload Types
+  NSDUploadRequest,
+  NSDUploadResponse,
+  NSDUploadProgress,
+  NSDUploadError,
+  NSDUploadStage,
+  // NSD Entity DTOs
+  NSDDocumentDTO,
+  NSDSceneDTO,
+  NSDMetadata,
+  NSDValidationError,
+} from './nsd-types.js';
+
 // Note: Worker communication types (ProgressStage, ProgressPayload, ErrorPayload, SimulationResultPayload)
 // have been moved to main/workers/protocol-types.ts as they are infrastructure concerns.
