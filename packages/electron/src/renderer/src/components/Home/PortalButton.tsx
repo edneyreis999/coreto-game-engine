@@ -49,6 +49,12 @@ export interface PortalButtonProps {
   route: string;
 
   /**
+   * Optional state to pass via router navigation.
+   * Used to preserve project context across route changes.
+   */
+  state?: Record<string, unknown>;
+
+  /**
    * Additional CSS class names for styling.
    */
   className?: string;
@@ -83,6 +89,7 @@ export const PortalButton: FC<PortalButtonProps> = ({
   description,
   icon,
   route,
+  state,
   className,
 }) => {
   const logger = useLogger();
@@ -90,13 +97,13 @@ export const PortalButton: FC<PortalButtonProps> = ({
 
   /**
    * Handles button click events.
-   * Logs the click and navigates to the specified route.
+   * Logs the click and navigates to the specified route with optional state.
    */
   const handleClick = useCallback(() => {
-    logger.info('Portal button clicked', { title, route });
-    logger.info('Navigating to route', { route });
-    navigate(route);
-  }, [logger, navigate, title, route]);
+    logger.info('Portal button clicked', { title, route, state });
+    logger.info('Navigating to route', { route, state });
+    navigate(route, { state });
+  }, [logger, navigate, title, route, state]);
 
   return (
     <button

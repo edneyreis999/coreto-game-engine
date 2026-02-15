@@ -93,6 +93,10 @@ if (!rootElement) {
   throw new Error('Failed to find the root element. React app cannot mount.');
 }
 
+// Log React app initialization
+const appInitEntry = createLogEntry('info', 'React app initialized in main.tsx (HashRouter is in App.tsx)');
+logBuffer.push(appInitEntry);
+
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <ErrorBoundary>

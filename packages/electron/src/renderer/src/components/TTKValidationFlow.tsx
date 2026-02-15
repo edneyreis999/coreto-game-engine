@@ -1,5 +1,6 @@
-import React, { useState, useCallback, useRef, useMemo } from 'react'
-import { ProjectSelectionPanel, ConfigurationPanel, ExecutionPanel, ResultsPanel, HistoryPanel } from '@/components'
+import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { ConfigurationPanel, ExecutionPanel, ResultsPanel, HistoryPanel, BackButton } from '@/components'
 import type { ProjectConfigFormData } from '@/components/ConfigurationPanel'
 import type { SimulationConfigData } from '@coreto/electron/domain/services'
 import type { UIProjectConfig } from '@coreto/electron/domain/schemas'
@@ -29,6 +30,8 @@ import { mapToSimulationConfig } from '@coreto/electron/domain/services'
 
 export function TTKValidationFlow(): React.ReactElement {
   const logger = useLogger()
+  const navigate = useNavigate()
+  const location = useLocation()
   const { saveConfig } = useConfigSave()
   const [selectedProjectPath, setSelectedProjectPath] = useState<string | null>(null)
   const [loadedConfig, setLoadedConfig] = useState<UIProjectConfig | null>(null)
@@ -38,6 +41,34 @@ export function TTKValidationFlow(): React.ReactElement {
   // Ref to track the latest project path for race condition detection (Task 11)
   const projectPathRef = useRef<string | null>(null)
 
+  /**
+   * Initialize project path from router state on mount.
+   * This allows the component to auto-detect a project selected in the Home page.
+   * Router state is passed via PortalButton when navigating from Home.
+   */
+  useEffect(() => {
+    const projectPathFromState = location.state?.projectPath as string | undefined
+    if (projectPathFromState && !selectedProjectPath) {
+      logger.info('Auto-loading project from router state', { projectPath: projectPathFromState })
+      setSelectedProjectPath(projectPathFromState)
+      projectPathRef.current = projectPathFromState
+
+      // Auto-load saved trechos from SQLite when project is loaded from router state
+      window.coreto.config.load(projectPathFromState).then((response) => {
+        if (response.success && response.data && projectPathRef.current === projectPathFromState) {
+          setLoadedConfig(response.data)
+          logger.info('Auto-loaded config from router state', { projectPath: projectPathFromState })
+        }
+      }).catch((error) => {
+        logger.error('Failed to load config from router state:', error)
+      })
+    }
+  }, [location.state, selectedProjectPath, logger])
+
+  /**
+   * Handle project selection (removed - projects must be selected via home screen).
+   * This handler is kept for potential future use but should not be called.
+   */
   const handleProjectSelected = useCallback(async (projectPath: string): Promise<void> => {
     // Only reset if project actually changed
     if (projectPath !== selectedProjectPath) {
@@ -127,29 +158,50 @@ export function TTKValidationFlow(): React.ReactElement {
 
   return (
     <div className="flex flex-col gap-6">
-      <ProjectSelectionPanel onProjectSelected={handleProjectSelected} />
+      {/* Show error if no project is selected */}
+      {!selectedProjectPath && (
+        <div className="flex flex-col items-center justify-center p-12 bg-red-50 border border-red-200 rounded-lg dark:bg-red-950 dark:border-red-800">
+          <h2 className="text-xl font-semibold text-red-800 dark:text-red-200 mb-2">
+            No Project Selected
+          </h2>
+          <p className="text-red-600 dark:text-red-300 mb-6 text-center">
+            Please select a project from the home screen before accessing TTK Validation.
+          </p>
+          <button
+            onClick={() => navigate('/home')}
+            className="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+          >
+            Go to Home
+          </button>
+        </div>
+      )}
+
+      {/* Only show TTK panels if project is selected */}
       {selectedProjectPath && (
-        <ConfigurationPanel
-          projectPath={selectedProjectPath}
-          initialTrechos={loadedConfig?.trechos ?? []}
-          onConfigSaved={handleConfigSaved}
-        />
-      )}
-      {simulationConfig && (
-        <ExecutionPanel
-          config={simulationConfig}
-          onSimulationComplete={handleSimulationComplete}
-        />
-      )}
-      {simulationCompleted && (
-        <ResultsPanel isVisible={true} currentData={historicalReport} />
-      )}
-      {selectedProjectPath && (
-        <HistoryPanel
-          projectPath={selectedProjectPath}
-          simulationCompleted={simulationCompleted}
-          onLoadReport={handleLoadReport}
-        />
+        <>
+          <div className="flex items-center">
+            <BackButton projectPath={selectedProjectPath} />
+          </div>
+          <ConfigurationPanel
+            projectPath={selectedProjectPath}
+            initialTrechos={loadedConfig?.trechos ?? []}
+            onConfigSaved={handleConfigSaved}
+          />
+          {simulationConfig && (
+            <ExecutionPanel
+              config={simulationConfig}
+              onSimulationComplete={handleSimulationComplete}
+            />
+          )}
+          {simulationCompleted && (
+            <ResultsPanel isVisible={true} currentData={historicalReport} />
+          )}
+          <HistoryPanel
+            projectPath={selectedProjectPath}
+            simulationCompleted={simulationCompleted}
+            onLoadReport={handleLoadReport}
+          />
+        </>
       )}
     </div>
   )

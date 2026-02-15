@@ -7,6 +7,9 @@
 export { ProjectSelectionPanel } from './ProjectSelectionPanel';
 export type { ProjectSelectionPanelProps } from './ProjectSelectionPanel';
 
+export { BackButton } from './BackButton';
+export type { BackButtonProps } from './BackButton';
+
 export { ConfigurationPanel } from './ConfigurationPanel';
 export type { ConfigurationPanelProps } from './ConfigurationPanel';
 
@@ -28,6 +31,9 @@ export { TTKValidationFlow } from './TTKValidationFlow';
 
 export { Home } from './Home';
 export type { HomeProps } from './Home';
+
+export { PortalButton } from './Home/PortalButton';
+export type { PortalButtonProps } from './Home/PortalButton';
 
 export { NSDGeneratorPlaceholder } from './NSDGeneratorPlaceholder';
 export type { NSDGeneratorPlaceholderProps } from './NSDGeneratorPlaceholder';

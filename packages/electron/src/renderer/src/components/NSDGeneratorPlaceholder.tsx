@@ -14,9 +14,11 @@
 
 import { type FC, useEffect } from 'react';
 import { FileCode } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 
 import { cn } from '@/lib/utils';
 import { useLogger } from '@/hooks/useLogger';
+import { BackButton } from './BackButton';
 
 // ============================================================================
 // Component Props
@@ -50,6 +52,8 @@ export const NSDGeneratorPlaceholder: FC<NSDGeneratorPlaceholderProps> = ({
   className,
 }) => {
   const logger = useLogger();
+  const location = useLocation();
+  const projectPath = location.state?.projectPath as string | undefined;
 
   // Log component mount
   useEffect(() => {
@@ -63,12 +67,17 @@ export const NSDGeneratorPlaceholder: FC<NSDGeneratorPlaceholderProps> = ({
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-center gap-4',
+        'relative flex flex-col items-center justify-center gap-4',
         'py-16 px-6',
         'text-center',
         className
       )}
     >
+      {/* Back Button */}
+      <div className="absolute left-6 top-6">
+        <BackButton projectPath={projectPath} />
+      </div>
+
       {/* Icon */}
       <div className="text-muted-foreground/50">
         <FileCode className="h-12 w-12" />

@@ -16,6 +16,7 @@
 
 import { type FC, useEffect } from 'react';
 import { Sword, FileText } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 
 import { cn } from '@/lib/utils';
 import { useLogger } from '@/hooks/useLogger';
@@ -29,11 +30,6 @@ import { PortalButton } from './PortalButton';
  * Props for Home component.
  */
 export interface HomeProps {
-  /**
-   * Current project path (from router state/context).
-   */
-  projectPath?: string;
-
   /**
    * Additional CSS class names for styling.
    */
@@ -53,11 +49,18 @@ export interface HomeProps {
  * - Age of Mythology theme with amber/orange gradients
  * - Structured logging for page lifecycle events
  *
+ * Reads project path from router state (location.state.projectPath)
+ * which is passed from App.tsx when a project is selected.
+ *
  * @example
- * <Home projectPath="/path/to/project" />
+ * <Home />
  */
-export const Home: FC<HomeProps> = ({ projectPath, className }) => {
+export const Home: FC<HomeProps> = ({ className }) => {
   const logger = useLogger();
+  const location = useLocation();
+
+  // Read project path from router state (passed from App.tsx when project selected)
+  const projectPath = location.state?.projectPath as string | undefined;
 
   // Log mount event
   useEffect(() => {
@@ -67,6 +70,12 @@ export const Home: FC<HomeProps> = ({ projectPath, className }) => {
       logger.info('Home page unmounted');
     };
   }, [logger, projectPath]);
+
+  /**
+   * Navigation state for passing project context to child routes.
+   * This allows TTKValidationFlow to auto-detect the selected project.
+   */
+  const navigationState = projectPath ? { projectPath } : undefined;
 
   return (
     <div
@@ -106,7 +115,8 @@ export const Home: FC<HomeProps> = ({ projectPath, className }) => {
               title="TTK Validation"
               description="Battle time validation system for RPG Maker MZ"
               icon={<Sword className="h-8 w-8" />}
-              route="/validation"
+              route="/ttk"
+              state={navigationState}
             />
           </div>
 
@@ -116,7 +126,8 @@ export const Home: FC<HomeProps> = ({ projectPath, className }) => {
               title="NSD Generator"
               description="Generate LLM-powered scene implementations"
               icon={<FileText className="h-8 w-8" />}
-              route="/nsd-generator"
+              route="/nsd"
+              state={navigationState}
             />
           </div>
         </div>

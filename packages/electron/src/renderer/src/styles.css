@@ -73,3 +73,93 @@
     @apply bg-background text-foreground;
   }
 }
+
+/**
+ * Age of Mythology Theme Styles
+ *
+ * Fantasy-themed UI components for the Home page navigation.
+ * Features amber/orange gradients, hover animations, and mythological styling.
+ *
+ * @see FDD-Home-Gamificada.md styling requirements
+ */
+
+@layer components {
+  /**
+   * Home Container
+   *
+   * Fantasy gradient background for the main Home page container.
+   * Creates an immersive Age of Mythology atmosphere with warm amber tones.
+   *
+   * Features:
+   * - Full viewport height layout
+   * - Amber to orange gradient (fantasy theme)
+   * - Dark mode support with deeper amber tones
+   *
+   * Usage: Applied to the root container div of Home component
+   */
+  .home-container {
+    @apply flex flex-col min-h-screen w-full;
+    @apply bg-gradient-to-br from-amber-900 via-orange-900 to-amber-800;
+    @apply dark:from-amber-950 dark:via-orange-950 dark:to-amber-900;
+  }
+
+  /**
+   * Portal Button
+   *
+   * Themed navigation button for Home page portals (TTK, NSD Generator).
+   * Features Age of Mythology styling with interactive hover effects.
+   *
+   * Features:
+   * - Amber/orange gradient background
+   * - Scale animation on hover (105%)
+   * - Glow shadow effect on hover
+   * - Smooth transitions (300ms)
+   * - Dark mode support
+   * - Accessibility: focus ring with offset
+   *
+   * Usage: Applied to PortalButton component root element
+   */
+  .portal-button {
+    @apply group relative flex flex-col items-center justify-center;
+    @apply p-8 rounded-lg;
+    @apply w-full h-full min-h-[200px];
+
+    /* Age of Mythology theme gradient */
+    @apply bg-gradient-to-br from-amber-900 via-orange-900 to-amber-800;
+    @apply dark:from-amber-950 dark:via-orange-950 dark:to-amber-900;
+
+    /* Border styling */
+    @apply border-2 border-amber-700;
+    @apply dark:border-amber-800;
+
+    /* Hover animations */
+    @apply hover:scale-105;
+    @apply hover:shadow-lg;
+    @apply hover:shadow-amber-900/50;
+    @apply hover:from-amber-800 hover:via-orange-800 hover:to-amber-700;
+    @apply dark:hover:shadow-amber-950/50;
+    @apply dark:hover:from-amber-900 dark:hover:via-orange-900 dark:hover:to-amber-800;
+
+    /* Transitions */
+    @apply transition-all duration-300 ease-in-out;
+
+    /* Text styling */
+    @apply text-amber-50;
+
+    /* Focus styles for accessibility */
+    @apply focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2;
+    @apply focus:ring-offset-gray-900;
+  }
+
+  /**
+   * Optional: Background texture overlay for fantasy effect
+   *
+   * Adds a subtle texture pattern to enhance the mythological theme.
+   * Can be applied as an additional class to home-container or portal-button.
+   *
+   * Usage: Add this class alongside .home-container for enhanced visual effect
+   */
+  .fantasy-texture {
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23d97706' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+}
