@@ -19,12 +19,22 @@ import type {
   ProgressPayload,
   ErrorPayload,
   SimulationResultPayload,
+  // NSD Types
+  NSDUploadResponse,
+  NSDUploadProgress,
+  NSDUploadError,
   // Logs Types
   LogEntry,
 } from '@coreto/electron/domain/types';
 
 // Import UIProjectConfig for config load
 import type { UIProjectConfig } from '@coreto/electron/domain/schemas';
+
+// NSD Channel Constants
+const NSD_CHANNELS = {
+  PROGRESS: 'nsd:upload:progress',
+  ERROR: 'nsd:upload:error',
+};
 
 /**
  * Preload Script - IPC Bridge
@@ -223,6 +233,91 @@ const simulationAPI = {
     seed?: number;
     maxTurns?: number;
   }): Promise<IPCResult<SimulationResult>> => ipcRenderer.invoke('simulation:run', config),
+};
+
+/**
+ * NSD (Narrative Scene Document) API
+ *
+ * Handles NSD document upload, parsing, and validation.
+ * Uses Event Streaming Pattern for real-time updates.
+ *
+ * @see planos/005-run-ttk-electron/TECHSPEC.md Section 2.1
+ */
+const nsdAPI = {
+  /**
+   * Event Listeners (Event Streaming Pattern)
+   *
+   * These listeners provide real-time updates from the NSD processing
+   * via IPC events. Each listener returns a cleanup function that must
+   * be called to remove the listener and prevent memory leaks.
+   */
+
+  /**
+   * Subscribes to NSD upload progress updates.
+   * @param callback - Called with progress payload on each update
+   * @returns Cleanup function to remove listener
+   *
+   * @example
+   * const cleanup = window.coreto.nsd.onProgress((payload) => {
+   *   console.log(`Progress: ${payload.percent}% - ${payload.stage}`);
+   * });
+   * // Call cleanup() when done to prevent memory leaks
+   */
+  onProgress: (callback: (progress: NSDUploadProgress) => void): (() => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, payload: NSDUploadProgress): void => {
+      callback(payload);
+    };
+    ipcRenderer.on(NSD_CHANNELS.PROGRESS, listener);
+
+    return () => {
+      ipcRenderer.removeListener(NSD_CHANNELS.PROGRESS, listener);
+    };
+  },
+
+  /**
+   * Subscribes to NSD upload error events.
+   * @param callback - Called with error payload on failure
+   * @returns Cleanup function to remove listener
+   *
+   * @example
+   * const cleanup = window.coreto.nsd.onError((error) => {
+   *   console.error('NSD upload failed:', error.message);
+   * });
+   * // Call cleanup() when done to prevent memory leaks
+   */
+  onError: (callback: (error: NSDUploadError) => void): (() => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, error: NSDUploadError): void => {
+      callback(error);
+    };
+    ipcRenderer.on(NSD_CHANNELS.ERROR, listener);
+
+    return () => {
+      ipcRenderer.removeListener(NSD_CHANNELS.ERROR, listener);
+    };
+  },
+
+  /**
+   * Uploads an NSD document for parsing and scene extraction.
+   * Returns immediately with documentId. Results come via onComplete event.
+   *
+   * @param source - NSD document source (file path or text content)
+   * @returns Promise resolving to upload response with documentId
+   *
+   * @example
+   * const response = await window.coreto.nsd.upload({
+   *   path: '/path/to/quest-01.md'
+   * });
+   * if (response.success) {
+   *   console.log('Document ID:', response.data.documentId);
+   * }
+   *
+   * @example
+   * const response = await window.coreto.nsd.upload({
+   *   text: '# Quest 01: The Tavern Contract\n\n## Scene 1...'
+   * });
+   */
+  upload: (source: { path?: string, text?: string }): Promise<IPCResult<NSDUploadResponse>> =>
+    ipcRenderer.invoke('nsd:upload', { source }),
 };
 
 /**
@@ -602,6 +697,10 @@ const logsAPI = {
  * await window.coreto.simulation.start({ projectPath });
  * window.coreto.simulation.onProgress((progress) => { ... });
  *
+ * // NSD document upload
+ * await window.coreto.nsd.upload({ path: '/path/to/quest.md' });
+ * window.coreto.nsd.onProgress((progress) => { ... });
+ *
  * // Configuration management
  * await window.coreto.config.save(projectPath, config);
  *
@@ -626,6 +725,7 @@ const logsAPI = {
 const coretoAPI = {
   project: projectAPI,
   simulation: simulationAPI,
+  nsd: nsdAPI,
   config: configAPI,
   data: dataAPI,
   history: historyAPI,
