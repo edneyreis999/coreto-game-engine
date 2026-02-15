@@ -15,6 +15,17 @@ import '@testing-library/jest-dom'
 // Import CoretoAPI type for proper mock typing
 import type { CoretoAPI } from '../src/renderer/src/types/preload'
 
+// Polyfill TextEncoder for react-router-dom (requires in Jest/jsdom environment)
+import { TextEncoder, TextDecoder } from 'util';
+
+Object.defineProperty(global, 'TextEncoder', {
+  value: TextEncoder,
+});
+
+Object.defineProperty(global, 'TextDecoder', {
+  value: TextDecoder,
+});
+
 // Set NODE_ENV to test for all tests
 process.env.NODE_ENV = 'test';
 
