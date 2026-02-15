@@ -1,7 +1,7 @@
 import React, { useEffect, useCallback } from 'react'
 import { HashRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom'
 import { Toaster } from 'sonner'
-import { ProjectSelectionPanel, Home, TTKValidationFlow, NSDGeneratorPlaceholder, LogExportButton, OracleMcpTestButton } from '@/components'
+import { ProjectSelectionPanel, Home, TTKValidationFlow, NSDGenerator, LogExportButton, OracleMcpTestButton } from '@/components'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useLogger } from '@/hooks'
 import { ProjectProvider } from '@/contexts/ProjectContext'
@@ -16,7 +16,7 @@ import { ProjectProvider } from '@/contexts/ProjectContext'
  * - / → ProjectSelectionPage (project selection)
  * - /home → HomePage (main navigation portal)
  * - /ttk → TTKValidationFlow (complete TTK validation workflow)
- * - /nsd → NSDGeneratorPlaceholder (placeholder for Sprint 2)
+ * - /nsd → NSDGenerator (NSD upload and scene extraction)
  *
  * Features:
  * - HashRouter for file:// protocol compatibility
@@ -113,8 +113,8 @@ function AppContent(): React.ReactElement {
           {/* Route: TTK Validation Flow (complete workflow) */}
           <Route path="/ttk" element={<TTKValidationFlow />} />
 
-          {/* Route: NSD Generator Placeholder (Sprint 2) */}
-          <Route path="/nsd" element={<NSDGeneratorPlaceholder />} />
+          {/* Route: NSD Generator (NSD upload and scene extraction) */}
+          <Route path="/nsd" element={<NSDGenerator />} />
         </Routes>
       </main>
 
