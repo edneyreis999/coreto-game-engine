@@ -358,33 +358,7 @@ export const NsdUpload: FC<NsdUploadProps> = ({
 
     // Reset input value so same file can be selected again
     e.target.value = '';
-  }, []);
-
-  /**
-   * Handles file selection and validation
-   * Automatically triggers upload after validation passes.
-   */
-  const handleFileSelection = useCallback((file: File) => {
-    logger.info('File selected for upload', { fileName: file.name, fileSize: file.size });
-
-    // Validate file
-    const validation = validateFile(file, maxFileSize, acceptedExtensions);
-
-    if (!validation.isValid) {
-      setError(validation.error ?? 'Invalid file');
-      logger.warn('File validation failed', { fileName: file.name, error: validation.error });
-      onUploadError?.(validation.error ?? 'Invalid file');
-      return;
-    }
-
-    // Clear error, set file, and auto-start upload
-    setError(null);
-    setSelectedFile(file);
-
-    // Auto-start upload immediately after file selection
-    // Pass the file directly to avoid async state issues
-    handleUpload(file);
-  }, [maxFileSize, acceptedExtensions, logger, onUploadError, handleUpload]);
+  }, [handleFileSelection]);
 
   /**
    * Handles file upload
@@ -475,6 +449,32 @@ export const NsdUpload: FC<NsdUploadProps> = ({
       onUploadError?.(errorMessage);
     }
   }, [selectedFile, isUploading, logger, onUploadSuccess, onUploadError]);
+
+  /**
+   * Handles file selection and validation
+   * Automatically triggers upload after validation passes.
+   */
+  const handleFileSelection = useCallback((file: File) => {
+    logger.info('File selected for upload', { fileName: file.name, fileSize: file.size });
+
+    // Validate file
+    const validation = validateFile(file, maxFileSize, acceptedExtensions);
+
+    if (!validation.isValid) {
+      setError(validation.error ?? 'Invalid file');
+      logger.warn('File validation failed', { fileName: file.name, error: validation.error });
+      onUploadError?.(validation.error ?? 'Invalid file');
+      return;
+    }
+
+    // Clear error, set file, and auto-start upload
+    setError(null);
+    setSelectedFile(file);
+
+    // Auto-start upload immediately after file selection
+    // Pass the file directly to avoid async state issues
+    handleUpload(file);
+  }, [maxFileSize, acceptedExtensions, logger, onUploadError, handleUpload]);
 
   /**
    * Clears the selected file
