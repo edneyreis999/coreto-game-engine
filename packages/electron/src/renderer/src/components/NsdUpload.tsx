@@ -330,7 +330,7 @@ export const NsdUpload: FC<NsdUploadProps> = ({
     // Handle first file
     const file = files[0];
     handleFileSelection(file);
-  }, [disabled, isUploading]);
+  }, [disabled, isUploading]); // No need to include handleFileSelection - it's now stable
 
   /**
    * Handles file selection from picker
@@ -358,7 +358,7 @@ export const NsdUpload: FC<NsdUploadProps> = ({
 
     // Reset input value so same file can be selected again
     e.target.value = '';
-  }, [handleFileSelection]);
+  }, []); // Empty deps - handleFileSelection is now stable
 
   /**
    * Handles file upload
@@ -452,7 +452,7 @@ export const NsdUpload: FC<NsdUploadProps> = ({
 
   /**
    * Handles file selection and validation
-   * Automatically triggers upload after validation passes.
+   * Sets the selected file state - upload is triggered automatically via useEffect.
    */
   const handleFileSelection = useCallback((file: File) => {
     logger.info('File selected for upload', { fileName: file.name, fileSize: file.size });
@@ -467,14 +467,23 @@ export const NsdUpload: FC<NsdUploadProps> = ({
       return;
     }
 
-    // Clear error, set file, and auto-start upload
+    // Clear error and set file - upload will be triggered automatically by useEffect
     setError(null);
     setSelectedFile(file);
+  }, [maxFileSize, acceptedExtensions, logger, onUploadError]);
 
-    // Auto-start upload immediately after file selection
-    // Pass the file directly to avoid async state issues
-    handleUpload(file);
-  }, [maxFileSize, acceptedExtensions, logger, onUploadError, handleUpload]);
+  /**
+   * Auto-start upload when a file is selected.
+   * This useEffect avoids circular dependency between handleFileSelection and handleUpload.
+   */
+  useEffect(() => {
+    // Only trigger upload if we have a valid file and aren't already uploading
+    if (selectedFile && !isUploading) {
+      handleUpload(selectedFile);
+    }
+    // NOTE: We intentionally exclude handleUpload from dependencies to avoid re-triggering
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedFile]); // Only watch selectedFile changes
 
   /**
    * Clears the selected file
