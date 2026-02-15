@@ -25,10 +25,9 @@
  * - validating: 90-100%
  */
 
-import { injectable, inject } from 'tsyringe';
 import type { ILogger } from '@coreto/core';
 import type { NSDScene } from '@coreto/electron/domain/entities';
-import { ILoggerToken } from '../di/tokens.js';
+import { ConsoleLogger } from '@coreto/core';
 
 // Placeholder import for NsdParserService (will be implemented in Task 11)
 // This is a forward reference - the service will be created later
@@ -153,6 +152,9 @@ export class NSDParseError extends Error {
  * - Handles errors with structured error codes
  * - Logs all operations via ILogger
  *
+ * Note: This service uses manual constructor injection instead of decorators
+ * to work with esbuild's limited decorator support in worker processes.
+ *
  * @example
  * ```typescript
  * const service = new NsdWorkerService(logger);
@@ -164,20 +166,21 @@ export class NSDParseError extends Error {
  * );
  * ```
  */
-@injectable()
 export class NsdWorkerService {
   /**
-   * Logger instance injected via DI.
+   * Logger instance.
+   * Uses ConsoleLogger as fallback in worker context.
    */
   private readonly logger: ILogger;
 
   /**
    * Creates a new NsdWorkerService instance.
    *
-   * @param logger - Logger instance injected via DI
+   * @param logger - Optional logger instance (defaults to ConsoleLogger)
    */
-  constructor(@inject(ILoggerToken) logger: ILogger) {
-    this.logger = logger;
+  constructor(logger?: ILogger) {
+    // Use provided logger or fallback to ConsoleLogger for worker context
+    this.logger = logger || new ConsoleLogger();
   }
 
   /**

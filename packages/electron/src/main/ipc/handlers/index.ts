@@ -18,6 +18,7 @@ import * as dialog from './dialog.js';
 import * as history from './history-handlers.js';
 import * as logs from './logs.js';
 import * as oracleMcp from './oracleMcpIpcHandler.js';
+import * as nsd from './nsd.js';
 
 // Import external handler registries
 import { CONFIG_IPC_HANDLERS } from '../config-handlers.js';
@@ -92,6 +93,9 @@ export function registerHandlers(): void {
   ipcMain.handle('oracle-mcp:start', oracleMcp.handleOracleMcpStart);
   ipcMain.handle('oracle-mcp:generate-prompt', oracleMcp.handleOracleMcpGeneratePrompt);
   ipcMain.handle('oracle-mcp:health', oracleMcp.handleOracleMcpHealth);
+
+  // NSD handlers
+  ipcMain.handle('nsd:upload', nsd.nsdUploadHandler);
 
   // History handlers (from registry - for other history operations)
   ipcMain.handle('history:list', getRegistryHandler(HISTORY_IPC_HANDLERS, 'history:list'));

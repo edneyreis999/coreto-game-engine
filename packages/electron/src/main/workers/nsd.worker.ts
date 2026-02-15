@@ -139,7 +139,7 @@ async function handleNsdParse(params: NsdParseParams): Promise<void> {
     const nsdService = childContainer.resolve(NsdWorkerService);
 
     // 4. Create progress callback to forward progress to main process
-    const progressCallback = (stage: NsdProgressStage, percent: number) => {
+    const progressCallback = (stage: NsdProgressStage, percent: number): void => {
       sendProgress({
         id: params.id,
         correlationId: params.correlationId,
