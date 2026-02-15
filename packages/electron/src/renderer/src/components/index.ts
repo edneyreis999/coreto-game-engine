@@ -37,3 +37,9 @@ export type { PortalButtonProps } from './Home/PortalButton';
 
 export { NSDGeneratorPlaceholder } from './NSDGeneratorPlaceholder';
 export type { NSDGeneratorPlaceholderProps } from './NSDGeneratorPlaceholder';
+
+export { SceneList } from './SceneList';
+export type { SceneListProps } from './SceneList';
+
+export { NsdUpload } from './NsdUpload';
+export type { NsdUploadProps } from './NsdUpload';

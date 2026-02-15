@@ -316,8 +316,12 @@ const nsdAPI = {
    *   text: '# Quest 01: The Tavern Contract\n\n## Scene 1...'
    * });
    */
-  upload: (source: { path?: string, text?: string }): Promise<IPCResult<NSDUploadResponse>> =>
-    ipcRenderer.invoke('nsd:upload', { source }),
+  upload: (source: { path?: string, text?: string }): Promise<IPCResult<NSDUploadResponse>> => {
+    // Generate correlation ID for tracking this upload operation
+    const { v4: uuidv4 } = require('uuid');
+    const correlationId = uuidv4();
+    return ipcRenderer.invoke('nsd:upload', { source, correlationId });
+  },
 };
 
 /**

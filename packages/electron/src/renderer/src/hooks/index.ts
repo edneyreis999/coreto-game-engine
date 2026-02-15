@@ -35,3 +35,9 @@ export {
   type GenerateNsdPromptParams,
   type UseOracleMcpClientResult,
 } from './useOracleMcpClient';
+export {
+  useNsdUpload,
+  type UseNsdUploadReturn,
+  type NsdUploadSource,
+  type NsdUploadProgress,
+} from './useNsdUpload';
