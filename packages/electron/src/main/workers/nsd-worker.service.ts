@@ -29,10 +29,8 @@ import type { ILogger } from '@coreto/core';
 import type { NSDScene } from '@coreto/electron/domain/entities';
 import { ConsoleLogger } from '@coreto/core';
 
-// Placeholder import for NsdParserService (will be implemented in Task 11)
-// This is a forward reference - the service will be created later
-// @ts-expect-error - NsdParserService will be implemented in Task 11
-import type { NsdParserService } from '../services/nsd-parser.service.js';
+// Import NsdParserService for AI-powered scene extraction
+import { NsdParserService } from '../services/nsd-parser.service.js';
 
 // =============================================================================
 // Error Codes
@@ -339,52 +337,65 @@ export class NsdWorkerService {
   /**
    * Delegates parsing to NsdParserService.
    *
-   * TODO: Task 11 - This is a placeholder that will be implemented
-   * when NsdParserService is created. For now, returns empty array.
+   * Creates an instance of NsdParserService and delegates scene extraction.
+   * Uses AI-powered parsing with regex fallback.
    *
    * @param content - NSD markdown content
    * @param fileName - Original filename
    * @param correlationId - Optional correlation ID
-   * @returns Promise resolving to parsed data (placeholder)
+   * @returns Promise resolving to array of NSDScene entities
    */
   private async delegateToParserService(
     content: string,
     fileName: string,
     correlationId?: string
-    // TODO: Replace with actual NsdParserService return type when implemented
-  ): Promise<unknown> {
-    // Placeholder implementation
-    // Task 11 will implement actual NsdParserService delegation
-    this.logger.debug('Delegating to NsdParserService (placeholder)', {
+  ): Promise<NSDScene[]> {
+    this.logger.debug('Delegating to NsdParserService', {
       fileName,
       correlationId,
     });
 
-    // Simulate async parsing operation
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    try {
+      // Create parser service instance
+      // Note: Using manual injection since decorators may not work in worker context
+      const parserService = new NsdParserService(this.logger);
 
-    // Return placeholder data
-    return [];
+      // Delegate scene parsing to NsdParserService
+      const scenes = await parserService.parseScenes(
+        content,
+        undefined, // Progress updates handled by worker service
+        correlationId
+      );
+
+      return scenes;
+    } catch (error) {
+      this.logger.error('NsdParserService delegation failed', {
+        fileName,
+        correlationId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
   }
 
   /**
    * Extracts NSDScene entities from parsed data.
    *
-   * TODO: Task 11 - This is a placeholder that will be implemented
-   * when NsdParserService is created.
+   * Since NsdParserService now returns NSDScene[] directly,
+   * this method simply returns the parsed scenes.
    *
-   * @param parsedData - Data returned from parser service
+   * @param parsedData - Data returned from parser service (NSDScene[])
    * @param correlationId - Optional correlation ID
-   * @returns Array of NSDScene entities (placeholder)
+   * @returns Array of NSDScene entities
    */
-  private extractScenes(parsedData: unknown, correlationId?: string): NSDScene[] {
-    // Placeholder implementation
-    // Task 11 will implement actual scene extraction
-    this.logger.debug('Extracting scenes from parsed data (placeholder)', {
+  private extractScenes(parsedData: NSDScene[], correlationId?: string): NSDScene[] {
+    this.logger.debug('Extracting scenes from parsed data', {
       correlationId,
+      sceneCount: parsedData?.length || 0,
     });
 
-    return [];
+    // NsdParserService now returns NSDScene[] directly
+    return parsedData || [];
   }
 
   /**

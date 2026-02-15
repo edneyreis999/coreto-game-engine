@@ -20,7 +20,7 @@
  * @trace NSD-GEN-002
  */
 
-import { ValidationError } from '@coreto/core/errors';
+import { ValidationError } from '@coreto/core';
 import { NSDScene } from './nsd-scene.entity.js';
 
 /**
