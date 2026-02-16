@@ -796,7 +796,7 @@ const testAnalyzeAPI = {
    *   console.log('Scene file:', result.data.sceneFile);
    * }
    */
-  prepareDirectory: (params: {
+  prepareDirectory: async (params: {
     nsdPath: string;
     sceneText: string;
     sceneFile: string;
@@ -807,7 +807,34 @@ const testAnalyzeAPI = {
       nsdFile: string;
       sceneFile: string;
     }>
-  > => ipcRenderer.invoke('test-analyze:prepare-directory', params),
+  > => {
+    console.log('[Preload:testAnalyze] prepareDirectory called with', {
+      nsdPath: params.nsdPath,
+      sceneFile: params.sceneFile,
+      sceneTextLength: params.sceneText?.length || 0,
+      exportDir: params.exportDir || '(default)',
+    });
+    try {
+      const result = await ipcRenderer.invoke('test-analyze:prepare-directory', params);
+      console.log('[Preload:testAnalyze] prepareDirectory result', {
+        success: result.success,
+        hasData: !!result.data,
+        hasError: !!result.error,
+        data: result.data,
+        error: result.error,
+      });
+      return result;
+    } catch (error) {
+      console.error('[Preload:testAnalyze] prepareDirectory IPC invoke failed', {
+        error: error instanceof Error ? {
+          name: error.name,
+          message: error.message,
+          stack: error.stack,
+        } : error,
+      });
+      throw error;
+    }
+  },
 };
 
 // ============================================================================

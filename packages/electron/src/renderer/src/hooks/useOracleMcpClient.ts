@@ -287,24 +287,55 @@ export function useOracleMcpClient(): UseOracleMcpClientResult {
     };
     timestamp: string;
   }> => {
+    console.log('[useOracleMcpClient] testAnalyzeProject called', {
+      testDirectory: params.testDirectory,
+      model: params.model,
+    });
+
     setIsTestAnalyzing(true);
     setError(null);
 
     try {
+      console.log('[useOracleMcpClient] Calling window.coreto.oracleMcp.testAnalyzeProject');
+
       const result = await window.coreto.oracleMcp.testAnalyzeProject(params);
 
+      console.log('[useOracleMcpClient] testAnalyzeProject result', {
+        success: result.success,
+        hasData: !!result.data,
+        hasError: !!result.error,
+        data: result.data,
+        error: result.error,
+      });
+
       if (result.success) {
+        console.log('[useOracleMcpClient] ✓ Test analysis successful', {
+          outputPath: result.data.outputPath,
+          jsonFile: result.data.files.json,
+          markdownFile: result.data.files.markdown,
+        });
         return result.data;
       } else {
+        console.error('[useOracleMcpClient] ✗ Test analysis failed', {
+          error: result.error,
+        });
         setError(createIpcError(result.error));
         throw new Error(result.error.message);
       }
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
+      console.error('[useOracleMcpClient] ✗ Exception caught', {
+        error: {
+          name: error.name,
+          message: error.message,
+          stack: error.stack,
+        },
+      });
       setError(error);
       throw error;
     } finally {
       setIsTestAnalyzing(false);
+      console.log('[useOracleMcpClient] testAnalyzeProject finished');
     }
   }, []);
 

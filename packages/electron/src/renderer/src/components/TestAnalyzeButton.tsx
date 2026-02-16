@@ -22,6 +22,7 @@
 import { type FC, useCallback, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useOracleMcpClient } from '@/hooks/useOracleMcpClient';
+import { useLogger } from '@/hooks/useLogger';
 import { cn } from '@/lib/utils';
 
 // ============================================================================
@@ -91,6 +92,7 @@ export const TestAnalyzeButton: FC<TestAnalyzeButtonProps> = ({
   onTestError,
 }) => {
   const { testAnalyzeProject, isTestAnalyzing } = useOracleMcpClient();
+  const logger = useLogger();
 
   // State for feedback messages
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -101,13 +103,24 @@ export const TestAnalyzeButton: FC<TestAnalyzeButtonProps> = ({
    * Creates test directory with required files and calls the test endpoint.
    */
   const handleClick = useCallback(async () => {
+    logger.info('[TestAnalyzeButton] ========== CLICK START ==========');
+
     // Reset previous state
     setSuccessMessage(null);
     setErrorMessage(null);
 
     try {
+      // Log initial config
+      logger.info('[TestAnalyzeButton] Fixed config', {
+        nsdPath: FIXED_CONFIG.nsdPath,
+        sceneFile: FIXED_CONFIG.sceneFile,
+        projectPath: FIXED_CONFIG.projectPath,
+      });
+
       // Step 1: Prepare test directory with NSD and scene files
-      const prepareResult = await (window as unknown as {
+      logger.info('[TestAnalyzeButton] Step 1: Calling prepareDirectory IPC');
+
+      const coretoAPI = (window as unknown as {
         coreto?: {
           testAnalyze?: {
             prepareDirectory: (params: {
@@ -128,20 +141,55 @@ export const TestAnalyzeButton: FC<TestAnalyzeButtonProps> = ({
             }>;
           };
         };
-      }).coreto?.testAnalyze?.prepareDirectory({
+      }).coreto;
+
+      logger.info('[TestAnalyzeButton] window.coreto available?', {
+        available: !!coretoAPI,
+        testAnalyze: !!coretoAPI?.testAnalyze,
+        prepareDirectory: typeof coretoAPI?.testAnalyze?.prepareDirectory,
+      });
+
+      const prepareResult = await coretoAPI?.testAnalyze?.prepareDirectory({
         nsdPath: FIXED_CONFIG.nsdPath,
         sceneText: FIXED_CONFIG.sceneText,
         sceneFile: FIXED_CONFIG.sceneFile,
       });
 
+      logger.info('[TestAnalyzeButton] prepareDirectory result', {
+        success: prepareResult?.success,
+        hasData: !!prepareResult?.data,
+        hasError: !!prepareResult?.error,
+        errorMessage: prepareResult?.error?.message,
+        data: prepareResult?.data,
+      });
+
       if (!prepareResult?.success || !prepareResult.data) {
-        throw new Error(prepareResult?.error?.message ?? 'Failed to prepare test directory');
+        const errorMsg = prepareResult?.error?.message ?? 'Failed to prepare test directory (unknown reason)';
+        logger.error('[TestAnalyzeButton] prepareDirectory failed', {
+          success: prepareResult?.success,
+          hasData: !!prepareResult?.data,
+          error: prepareResult?.error,
+        });
+        throw new Error(errorMsg);
       }
 
+      logger.info('[TestAnalyzeButton] ✓ Directory prepared successfully', {
+        testDirectory: prepareResult.data.testDirectory,
+        nsdFile: prepareResult.data.nsdFile,
+        sceneFile: prepareResult.data.sceneFile,
+      });
+
       // Step 2: Call test-analyze-project endpoint
+      logger.info('[TestAnalyzeButton] Step 2: Calling testAnalyzeProject');
       const result = await testAnalyzeProject({
         testDirectory: prepareResult.data.testDirectory,
         model: 'glm-4.7',
+      });
+
+      logger.info('[TestAnalyzeButton] ✓ Test analysis completed', {
+        outputPath: result.outputPath,
+        jsonFile: result.files.json,
+        markdownFile: result.files.markdown,
       });
 
       // Step 3: Show success message
@@ -158,6 +206,14 @@ export const TestAnalyzeButton: FC<TestAnalyzeButtonProps> = ({
       }, 10000);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to run test analysis';
+      logger.error('[TestAnalyzeButton] ✗ Error caught', {
+        message,
+        error: error instanceof Error ? {
+          name: error.name,
+          message: error.message,
+          stack: error.stack,
+        } : error,
+      });
       setErrorMessage(message);
       onTestError?.(message);
 
@@ -166,7 +222,9 @@ export const TestAnalyzeButton: FC<TestAnalyzeButtonProps> = ({
         setErrorMessage(null);
       }, 10000);
     }
-  }, [testAnalyzeProject, onTestSuccess, onTestError]);
+
+    logger.info('[TestAnalyzeButton] ========== CLICK END ==========');
+  }, [testAnalyzeProject, onTestSuccess, onTestError, logger]);
 
   /**
    * Clears success message.

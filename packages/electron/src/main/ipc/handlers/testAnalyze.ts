@@ -71,18 +71,26 @@ export async function handlePrepareTestDirectory(
   payload: unknown
 ): Promise<IPCResult<PrepareTestDirectoryResponse>> {
   return wrapHandler(async () => {
-    const params = payload as PrepareTestDirectoryParams;
     const logger = getLogger();
 
-    logger.info('[TestAnalyze] Preparing test directory', {
+    // Log 1: Handler entry
+    logger.info('[TestAnalyze] ========== PREPARE DIRECTORY START ==========');
+    logger.info('[TestAnalyze] Step 1: Parsing payload');
+
+    const params = payload as PrepareTestDirectoryParams;
+    logger.info('[TestAnalyze] Payload parsed successfully', {
       nsdPath: params.nsdPath,
       sceneFile: params.sceneFile,
+      sceneTextLength: params.sceneText?.length || 0,
+      exportDir: params.exportDir || '(default)',
     });
 
     // Step 1: Determine export directory
+    logger.info('[TestAnalyze] Step 2: Determining export directory');
     let exportDir: string;
     if (params.exportDir) {
       exportDir = params.exportDir;
+      logger.info('[TestAnalyze] Using provided export directory', { exportDir });
     } else {
       // Use the same directory as "Export Logs" + /analyze_project
       const isTest = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined;
@@ -90,22 +98,72 @@ export async function handlePrepareTestDirectory(
         ? path.resolve(process.cwd(), 'reports', 'application-logs')
         : path.resolve(process.cwd(), 'reports', 'application-logs');
       exportDir = path.join(reportsDir, 'analyze_project');
+      logger.info('[TestAnalyze] Using default export directory', {
+        isTest,
+        reportsDir,
+        exportDir
+      });
     }
 
     // Step 2: Create export directory
-    await fs.promises.mkdir(exportDir, { recursive: true });
-    logger.info(`[TestAnalyze] Created export directory: ${exportDir}`);
+    logger.info('[TestAnalyze] Step 3: Creating export directory', { exportDir });
+    try {
+      await fs.promises.mkdir(exportDir, { recursive: true });
+      logger.info('[TestAnalyze] ✓ Directory created successfully');
+    } catch (error) {
+      logger.error('[TestAnalyze] ✗ Failed to create directory', {
+        error: error instanceof Error ? error.message : String(error)
+      });
+      throw error;
+    }
 
     // Step 3: Copy NSD file to export directory
+    logger.info('[TestAnalyze] Step 4: Copying NSD file', {
+      source: params.nsdPath
+    });
     const nsdFileName = path.basename(params.nsdPath);
     const nsdDestPath = path.join(exportDir, nsdFileName);
-    await fs.promises.copyFile(params.nsdPath, nsdDestPath);
-    logger.info(`[TestAnalyze] Copied NSD file to: ${nsdDestPath}`);
+    logger.info('[TestAnalyze] NSD destination path', { nsdDestPath });
+
+    try {
+      // Check if source file exists
+      await fs.promises.access(params.nsdPath, fs.constants.R_OK);
+      logger.info('[TestAnalyze] ✓ Source NSD file exists and is readable');
+
+      await fs.promises.copyFile(params.nsdPath, nsdDestPath);
+      logger.info('[TestAnalyze] ✓ NSD file copied successfully');
+    } catch (error) {
+      logger.error('[TestAnalyze] ✗ Failed to copy NSD file', {
+        error: error instanceof Error ? error.message : String(error),
+        code: (error as NodeJS.ErrnoException).code
+      });
+      throw error;
+    }
 
     // Step 4: Create scene markdown file
+    logger.info('[TestAnalyze] Step 5: Creating scene file', {
+      sceneFile: params.sceneFile
+    });
     const sceneDestPath = path.join(exportDir, params.sceneFile);
-    await fs.promises.writeFile(sceneDestPath, params.sceneText, 'utf-8');
-    logger.info(`[TestAnalyze] Created scene file: ${sceneDestPath}`);
+    logger.info('[TestAnalyze] Scene destination path', { sceneDestPath });
+
+    try {
+      await fs.promises.writeFile(sceneDestPath, params.sceneText, 'utf-8');
+      logger.info('[TestAnalyze] ✓ Scene file created successfully');
+    } catch (error) {
+      logger.error('[TestAnalyze] ✗ Failed to create scene file', {
+        error: error instanceof Error ? error.message : String(error)
+      });
+      throw error;
+    }
+
+    // Success summary
+    logger.info('[TestAnalyze] ========== PREPARE DIRECTORY SUCCESS ==========');
+    logger.info('[TestAnalyze] Returning test directory info', {
+      testDirectory: exportDir,
+      nsdFile: nsdDestPath,
+      sceneFile: sceneDestPath,
+    });
 
     return {
       testDirectory: exportDir,
