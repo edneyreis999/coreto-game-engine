@@ -360,4 +360,133 @@ describe('SceneList', () => {
       expect(screen.getByText('Scene Without Summary')).toBeInTheDocument();
     });
   });
+
+  describe('Scene Selection', () => {
+    it('renders without selection props', () => {
+      const { container } = render(<SceneList scenes={mockScenes} loading={false} />);
+
+      // Should render all scenes without errors
+      expect(screen.getByText('Tavern Meeting')).toBeInTheDocument();
+      expect(screen.getByText('Bard Conversation')).toBeInTheDocument();
+      expect(screen.getByText('Throne Room')).toBeInTheDocument();
+
+      // Should not show any selected state
+      const checkIcons = container.querySelectorAll('[data-lucide="check"]');
+      expect(checkIcons.length).toBe(0);
+    });
+
+    it('passes selectedSceneId to SceneItem', () => {
+      const { container } = render(
+        <SceneList scenes={mockScenes} loading={false} selectedSceneId={mockScenes[1].id} />
+      );
+
+      // Expand second scene to see selection state
+      const secondSceneButton = screen.getByText('Bard Conversation').closest('button');
+      if (!secondSceneButton) throw new Error('Scene button not found');
+
+      fireEvent.click(secondSceneButton);
+
+      // Should show the expanded region
+      const expandedRegion = container.querySelector('[role="region"]');
+      expect(expandedRegion).toBeInTheDocument();
+
+      // Should show "Selected" button text
+      expect(screen.getByText('Selected')).toBeInTheDocument();
+    });
+
+    it('calls onSceneSelect when Select button is clicked', () => {
+      const handleSelect = jest.fn();
+      const { container } = render(
+        <SceneList scenes={mockScenes} loading={false} onSceneSelect={handleSelect} />
+      );
+
+      // Expand first scene
+      const firstSceneButton = screen.getByText('Tavern Meeting').closest('button');
+      if (!firstSceneButton) throw new Error('Scene button not found');
+      fireEvent.click(firstSceneButton);
+
+      // Find and click the Select button
+      const selectButton = screen.getByText('Select Scene');
+      fireEvent.click(selectButton);
+
+      expect(handleSelect).toHaveBeenCalledTimes(1);
+      expect(handleSelect).toHaveBeenCalledWith(mockScenes[0]);
+    });
+
+    it('shows Check icon when scene is selected', () => {
+      const { container } = render(
+        <SceneList scenes={mockScenes} loading={false} selectedSceneId={mockScenes[1].id} />
+      );
+
+      // The check icon should be visible for the selected scene
+      // Check icon appears as an SVG with lucide-check class
+      const checkIcon = container.querySelector('.lucide-check');
+      expect(checkIcon).toBeInTheDocument();
+    });
+
+    it('applies border-primary class when selected', () => {
+      const { container } = render(
+        <SceneList scenes={mockScenes} loading={false} selectedSceneId={mockScenes[1].id} />
+      );
+
+      // Find all scene items (divs with border classes)
+      const sceneItems = container.querySelectorAll('.border-primary');
+      expect(sceneItems.length).toBeGreaterThan(0);
+    });
+
+    it('Select button click calls onSceneSelect with correct scene', () => {
+      const handleSelect = jest.fn();
+      const { container } = render(
+        <SceneList scenes={mockScenes} loading={false} onSceneSelect={handleSelect} />
+      );
+
+      // Expand third scene
+      const thirdSceneButton = screen.getByText('Throne Room').closest('button');
+      if (!thirdSceneButton) throw new Error('Scene button not found');
+      fireEvent.click(thirdSceneButton);
+
+      // Click the Select button in expanded content
+      const selectButton = screen.getByText('Select Scene');
+      fireEvent.click(selectButton);
+
+      expect(handleSelect).toHaveBeenCalledTimes(1);
+      expect(handleSelect).toHaveBeenCalledWith(mockScenes[2]);
+      expect(handleSelect).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Throne Room',
+          sceneNumber: 3,
+        })
+      );
+    });
+
+    it('shows "Selected" button text when scene is selected', () => {
+      const { container } = render(
+        <SceneList
+          scenes={mockScenes}
+          loading={false}
+          selectedSceneId={mockScenes[0].id}
+          onSceneSelect={jest.fn()}
+        />
+      );
+
+      // Expand first scene
+      const firstSceneButton = screen.getByText('Tavern Meeting').closest('button');
+      if (!firstSceneButton) throw new Error('Scene button not found');
+      fireEvent.click(firstSceneButton);
+
+      // Should show "Selected" instead of "Select Scene"
+      expect(screen.getByText('Selected')).toBeInTheDocument();
+      expect(screen.queryByText('Select Scene')).not.toBeInTheDocument();
+    });
+
+    it('applies bg-primary/5 class when selected', () => {
+      const { container } = render(
+        <SceneList scenes={mockScenes} loading={false} selectedSceneId={mockScenes[0].id} />
+      );
+
+      // Find the selected scene container
+      const selectedScene = container.querySelector('.bg-primary\\/5');
+      expect(selectedScene).toBeInTheDocument();
+    });
+  });
 });

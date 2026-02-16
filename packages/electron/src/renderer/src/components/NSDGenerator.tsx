@@ -30,6 +30,7 @@ import {
   type FC,
   useCallback,
   useMemo,
+  useState,
 } from 'react';
 import {
   FileCode,
@@ -44,6 +45,7 @@ import { useNsdUpload, type NsdUploadSource } from '@/hooks/useNsdUpload';
 import { NsdUpload } from '@/components/NsdUpload';
 import { SceneList } from '@/components/SceneList';
 import { BackButton } from '@/components/BackButton';
+import type { NSDSceneDTO } from '@coreto/electron/domain/types';
 
 // ============================================================================
 // Type Definitions
@@ -245,6 +247,9 @@ export const NSDGenerator: FC<NSDGeneratorProps> = ({ className }) => {
     error,
   } = useNsdUpload();
 
+  // Selected scene state
+  const [selectedScene, setSelectedScene] = useState<NSDSceneDTO | null>(null);
+
   /**
    * Handle file upload success from NsdUpload component.
    * Triggers the NSD parsing workflow via useNsdUpload hook.
@@ -298,6 +303,20 @@ export const NSDGenerator: FC<NSDGeneratorProps> = ({ className }) => {
     // Trigger a new upload to clear error state
     logger.info('Error dismissed by user');
   }, [logger]);
+
+  /**
+   * Handle generate prompt button click.
+   */
+  const handleGeneratePrompt = useCallback(() => {
+    logger.info('Generate Prompt clicked', { scene: selectedScene });
+  }, [logger, selectedScene]);
+
+  /**
+   * Handle clear selection button click.
+   */
+  const handleClearSelection = useCallback(() => {
+    setSelectedScene(null);
+  }, []);
 
   /**
    * Component lifecycle logging.
@@ -416,8 +435,84 @@ export const NSDGenerator: FC<NSDGeneratorProps> = ({ className }) => {
           <SceneList
             scenes={scenes}
             loading={isUploading}
-            onSceneClick={(scene) => logger.debug('Scene clicked', { sceneId: scene.id })}
+            selectedSceneId={selectedScene?.id}
+            onSceneSelect={setSelectedScene}
           />
+        </section>
+      )}
+
+      {/* Selected Scene Section */}
+      {selectedScene && (
+        <section
+          aria-labelledby="selected-scene-section-title"
+          className="flex flex-col gap-4 mt-4"
+        >
+          <h2 id="selected-scene-section-title" className="text-lg font-semibold text-foreground">
+            Selected Scene
+          </h2>
+
+          <div
+            className={cn(
+              'p-4 rounded-md border',
+              'bg-background',
+              'space-y-3'
+            )}
+          >
+            {/* Scene Title */}
+            <div>
+              <h3 className="text-base font-semibold text-foreground">
+                {selectedScene.title}
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                Scene {selectedScene.sceneNumber}
+              </p>
+            </div>
+
+            {/* Scene Summary (if available) */}
+            {selectedScene.summary && (
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  {selectedScene.summary}
+                </p>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-3 pt-2">
+              {/* Generate Prompt Button */}
+              <button
+                type="button"
+                onClick={handleGeneratePrompt}
+                disabled={!selectedScene}
+                className={cn(
+                  'px-4 py-2 rounded-md',
+                  'bg-primary text-primary-foreground',
+                  'hover:bg-primary/90',
+                  'disabled:opacity-50 disabled:cursor-not-allowed',
+                  'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+                  'transition-colors',
+                  'font-medium text-sm'
+                )}
+              >
+                Generate Prompt
+              </button>
+
+              {/* Clear Selection Button (Ghost Variant) */}
+              <button
+                type="button"
+                onClick={handleClearSelection}
+                className={cn(
+                  'px-4 py-2 rounded-md',
+                  'hover:bg-accent hover:text-accent-foreground',
+                  'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+                  'transition-colors',
+                  'font-medium text-sm'
+                )}
+              >
+                Clear Selection
+              </button>
+            </div>
+          </div>
         </section>
       )}
 
