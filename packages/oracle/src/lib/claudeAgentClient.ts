@@ -10,6 +10,8 @@
 
 import { loadClaudeSettings, type ClaudeAuthConfig } from './auth.js';
 import { z } from 'zod';
+import * as fs from 'fs';
+import * as path from 'path';
 
 /**
  * GeneratePromptOptions - Input parameters for NSD prompt generation.
@@ -1125,8 +1127,6 @@ Extraia todas as cenas narrativas deste documento NSD seguindo o formato JSON es
    * @returns AvailableResources object with file lists
    */
   private listAvailableResources(projectPath: string, warnings: string[]): AvailableResources {
-    const fs = require('fs');
-    const path = require('path');
 
     const resources: AvailableResources = {
       sprites: [],
