@@ -101,7 +101,11 @@ export function registerHandlers(): void {
   ipcMain.handle('nsd:upload', nsd.nsdUploadHandler);
 
   // Test Analyze handlers
+  console.log('[IPC Registry] Registering test-analyze:prepare-directory handler');
+  console.log('[IPC Registry] testAnalyze module keys:', Object.keys(testAnalyze));
+  console.log('[IPC Registry] handlePrepareTestDirectory exists:', typeof testAnalyze.handlePrepareTestDirectory);
   ipcMain.handle('test-analyze:prepare-directory', testAnalyze.handlePrepareTestDirectory);
+  console.log('[IPC Registry] ✓ test-analyze:prepare-directory registered successfully');
 
   // History handlers (from registry - for other history operations)
   ipcMain.handle('history:list', getRegistryHandler(HISTORY_IPC_HANDLERS, 'history:list'));
