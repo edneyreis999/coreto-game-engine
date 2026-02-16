@@ -28,16 +28,32 @@
 import type { ILogger } from '@coreto/core';
 import { ConsoleLogger } from '@coreto/core';
 
-// LOG 4: Before importing NSDScene (which imports main/di/container)
-console.log('[NSD-WORKER-LOG-004] About to import NSDScene from @coreto/electron/domain/entities...');
+// =============================================================================
+// Plain Old JavaScript Objects (POJOs) for Worker Context
+// =============================================================================
 
-import { NSDScene } from '@coreto/electron/domain/entities';
+/**
+ * Plain scene data structure for worker context.
+ * Does NOT import NSDScene entity to avoid better-sqlite3 dependency chain.
+ *
+ * Worker returns this POJO, main process converts to NSDScene entity.
+ */
+interface PlainScene {
+  /** Scene title */
+  title: string;
+  /** Scene content */
+  content: string;
+  /** Scene number */
+  sceneNumber: number;
+  /** Optional summary */
+  summary?: string;
+}
 
-// LOG 5: After importing NSDScene
-console.log('[NSD-WORKER-LOG-005] NSDScene imported successfully!');
-
-// Import NsdParserService for AI-powered scene extraction
-import { NsdParserService } from '../services/nsd-parser.service.js';
+/**
+ * Result from parsing operations in worker.
+ * Array of PlainScene POJOs that can be safely serialized via IPC.
+ */
+type PlainSceneResult = PlainScene[];
 
 // =============================================================================
 // Error Codes
@@ -221,7 +237,7 @@ export class NsdWorkerService {
     fileName: string,
     onProgress?: NSDProgressCallback,
     correlationId?: string
-  ): Promise<NSDScene[]> {
+  ): Promise<PlainSceneResult> {
     const logContext = {
       fileName,
       correlationId,
@@ -342,80 +358,32 @@ export class NsdWorkerService {
   }
 
   /**
-   * Delegates parsing to NsdParserService.
+   * Delegates parsing to regex-based extraction.
    *
-   * Creates an instance of NsdParserService and delegates scene extraction.
-   * Uses AI-powered parsing with regex fallback.
-   *
-   * IMPORTANT: In UtilityProcess worker context, we skip AI parsing entirely
-   * because Electron APIs (like app.getAppPath()) are not available.
-   * We use regex-based parsing directly as a workaround.
+   * Worker uses ONLY regex-based parsing to avoid any dependencies
+   * that might require better-sqlite3 or other native modules.
    *
    * @param content - NSD markdown content
    * @param fileName - Original filename
    * @param correlationId - Optional correlation ID
-   * @returns Promise resolving to array of NSDScene entities
+   * @returns Promise resolving to array of PlainScene POJOs
    */
   private async delegateToParserService(
     content: string,
     fileName: string,
     correlationId?: string
-  ): Promise<NSDScene[]> {
-    // LOG 6: delegateToParserService called
-    console.log('[NSD-WORKER-LOG-006] delegateToParserService called', { fileName, correlationId });
-
-    this.logger.debug('Delegating to NsdParserService', {
+  ): Promise<PlainSceneResult> {
+    this.logger.info('Using regex-only parsing (no AI, no NsdParserService)', {
       fileName,
       correlationId,
     });
 
-    try {
-      // Check if we're in a UtilityProcess worker context
-      // UtilityProcess doesn't have access to Electron APIs like app.getAppPath()
-      // which McpClientService requires, so we skip AI parsing in workers
-      const isWorkerContext = typeof process !== 'undefined' &&
-                              process.type === 'utility';
+    // Use regex-based parsing directly (no AI in worker context)
+    const parsedScenes = this.extractScenesWithRegex(content, correlationId);
 
-      // LOG 7: Context detection result
-      console.log('[NSD-WORKER-LOG-007] Context detection', {
-        isWorkerContext,
-        processType: typeof process !== 'undefined' ? process.type : 'process undefined',
-        processTitle: typeof process !== 'undefined' ? process.title : 'N/A'
-      });
-
-      if (isWorkerContext) {
-        this.logger.info('Running in UtilityProcess context, using regex-only parsing (no AI)', {
-          correlationId,
-        });
-
-        // Use regex-based parsing directly (no AI in worker context)
-        const parsedScenes = this.extractScenesWithRegex(content, correlationId);
-
-        // Convert to NSDScene entities
-        const scenes = this.convertToSceneEntities(parsedScenes, correlationId);
-        return scenes;
-      }
-
-      // Create parser service instance for main process context
-      // Note: Using manual injection since decorators may not work in worker context
-      const parserService = new NsdParserService(this.logger);
-
-      // Delegate scene parsing to NsdParserService (with AI support)
-      const scenes = await parserService.parseScenes(
-        content,
-        undefined, // Progress updates handled by worker service
-        correlationId
-      );
-
-      return scenes;
-    } catch (error) {
-      this.logger.error('NsdParserService delegation failed', {
-        fileName,
-        correlationId,
-        error: error instanceof Error ? error.message : String(error),
-      });
-      throw error;
-    }
+    // Convert to PlainScene POJOs
+    const scenes = this.convertToSceneEntities(parsedScenes, correlationId);
+    return scenes;
   }
 
   /**
@@ -508,81 +476,90 @@ export class NsdWorkerService {
   }
 
   /**
-   * Converts parsed scenes to NSDScene entities.
+   * Converts parsed scenes to PlainScene POJOs.
    *
-   * Creates NSDScene entities from parsed scene data with proper
-   * validation and scene numbering.
+   * Creates PlainScene objects from parsed scene data.
+   * Worker context uses PlainScene to avoid NSDScene entity dependency chain.
    *
    * @param parsedScenes - Array of parsed scenes
    * @param correlationId - Optional correlation ID
-   * @returns Array of NSDScene entities
+   * @returns Array of PlainScene POJOs
    */
   private convertToSceneEntities(
     parsedScenes: Array<{ title: string; content: string; summary?: string }>,
     correlationId?: string
-  ): NSDScene[] {
-    this.logger.debug('Converting parsed scenes to NSDScene entities', {
+  ): PlainSceneResult {
+    this.logger.debug('Converting parsed scenes to PlainScene POJOs', {
       correlationId,
       parsedCount: parsedScenes.length,
     });
 
-    const scenes: NSDScene[] = [];
+    const scenes: PlainScene[] = [];
 
     for (let i = 0; i < parsedScenes.length; i++) {
       const parsed = parsedScenes[i];
       const sceneNumber = i + 1;
 
-      try {
-        const scene = NSDScene.create(
-          parsed.title,
-          parsed.content,
-          sceneNumber,
-          correlationId,
-          parsed.summary
-        );
-        scenes.push(scene);
-      } catch (error) {
-        this.logger.warn('Failed to create NSDScene entity, skipping', {
+      // Validate scene data before adding
+      if (!parsed.title || parsed.title.trim().length === 0) {
+        this.logger.warn('Scene has invalid title, skipping', {
           correlationId,
           sceneNumber,
           title: parsed.title,
-          error: error instanceof Error ? error.message : String(error),
         });
-        // Continue with next scene
+        continue;
       }
+
+      // Create PlainScene POJO (no NSDScene.create() call)
+      scenes.push({
+        title: parsed.title.trim(),
+        content: parsed.content,
+        sceneNumber,
+        summary: parsed.summary,
+      });
     }
 
     return scenes;
   }
 
   /**
-   * Extracts NSDScene entities from parsed data.
+   * Extracts PlainScene POJOs from parsed data.
    *
-   * Since NsdParserService now returns NSDScene[] directly,
-   * this method simply returns the parsed scenes.
+   * Converts parser output to PlainScene POJOs for worker context.
    *
-   * @param parsedData - Data returned from parser service (NSDScene[])
+   * @param parsedData - Data returned from parser service
    * @param correlationId - Optional correlation ID
-   * @returns Array of NSDScene entities
+   * @returns Array of PlainScene POJOs
    */
-  private extractScenes(parsedData: NSDScene[], correlationId?: string): NSDScene[] {
+  private extractScenes(parsedData: unknown, correlationId?: string): PlainSceneResult {
     this.logger.debug('Extracting scenes from parsed data', {
       correlationId,
-      sceneCount: parsedData?.length || 0,
+      sceneCount: Array.isArray(parsedData) ? parsedData.length : 0,
     });
 
-    // NsdParserService now returns NSDScene[] directly
-    return parsedData || [];
+    // Handle different parser output formats
+    if (Array.isArray(parsedData)) {
+      // NsdParserService might return array of scenes
+      return parsedData.map((item: unknown, index: number) => ({
+        title: typeof item === 'object' && item !== null && 'title' in item ? String(item.title) : `Scene ${index + 1}`,
+        content: typeof item === 'object' && item !== null && 'content' in item ? String(item.content) : '',
+        sceneNumber: index + 1,
+        summary: typeof item === 'object' && item !== null && 'summary' in item ? String(item.summary || '') : undefined,
+      }));
+    }
+
+    // Fallback: return empty array
+    return [];
   }
 
   /**
    * Validates extracted scenes.
    *
-   * @param scenes - Scenes to validate
+   * @param scenes - PlainScene POJOs to validate
    * @param correlationId - Optional correlation ID
    * @throws {NSDParseError} With VALIDATION_ERROR code if validation fails
    */
-  private validateScenes(scenes: NSDScene[], correlationId?: string): void {
+  private validateScenes(scenes: PlainScene[], correlationId?: string): void {
     if (!scenes || scenes.length === 0) {
       this.logger.warn('No scenes extracted from NSD document', { correlationId });
       // This is a warning, not an error - empty scene list is valid
@@ -591,12 +568,12 @@ export class NsdWorkerService {
 
     // Validate each scene has required properties
     for (const scene of scenes) {
-      if (!scene.id || !scene.title || !scene.content) {
+      if (!scene.title || !scene.content) {
         throw new NSDParseError(
           'Extracted scene is missing required properties',
           NSD_ERROR_CODES.VALIDATION_ERROR,
           correlationId,
-          { sceneId: scene?.id }
+          { sceneTitle: scene?.title }
         );
       }
 
@@ -605,7 +582,7 @@ export class NsdWorkerService {
           `Scene has invalid number: ${scene.sceneNumber}`,
           NSD_ERROR_CODES.VALIDATION_ERROR,
           correlationId,
-          { sceneId: scene.id, sceneNumber: scene.sceneNumber }
+          { sceneTitle: scene.title, sceneNumber: scene.sceneNumber }
         );
       }
     }

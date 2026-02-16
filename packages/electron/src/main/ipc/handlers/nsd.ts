@@ -36,6 +36,9 @@ import type {
 } from '../../workers/nsd-worker-protocol.js';
 import type { NSDUploadResponse } from '@coreto/electron/domain/types';
 
+// Import NSDScene for conversion in main process
+import { NSDScene } from '@coreto/electron/domain/entities';
+
 // ============================================================================
 // Constants
 // ============================================================================
@@ -63,6 +66,51 @@ const WORKER_TIMEOUT = 5 * 60 * 1000;
  * Resolved relative to the compiled output directory.
  */
 const WORKER_PATH = join(__dirname, '../../workers/nsd.worker.js');
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * PlainScene POJO from worker context.
+ * Worker returns these to avoid NSDScene entity dependency chain.
+ */
+interface PlainScene {
+  title: string;
+  content: string;
+  sceneNumber: number;
+  summary?: string;
+}
+
+/**
+ * Converts PlainScene POJOs from worker to NSDScene entities.
+ * Main process creates entities after worker returns results.
+ *
+ * @param plainScenes - PlainScene POJOs from worker
+ * @param correlationId - Optional correlation ID for logging
+ * @returns Array of NSDScene entities
+ */
+function convertToNSDScenes(plainScenes: PlainScene[], correlationId?: string): NSDScene[] {
+  const scenes: NSDScene[] = [];
+
+  for (const plain of plainScenes) {
+    try {
+      const scene = NSDScene.create(
+        plain.title,
+        plain.content,
+        plain.sceneNumber,
+        correlationId,
+        plain.summary
+      );
+      scenes.push(scene);
+    } catch (error) {
+      // Log and skip invalid scenes
+      console.warn(`[IPC] Failed to create NSDScene for scene ${plain.sceneNumber}:`, error);
+    }
+  }
+
+  return scenes;
+}
 
 // ============================================================================
 // Response Types
@@ -267,11 +315,14 @@ export async function nsdUploadHandler(
               `[IPC] NSD parsing completed: parseId=${parseId}, scenes=${resultPayload.scenes.length}, duration=${resultPayload.duration}ms`
             );
 
+            // Convert PlainScene[] from worker to NSDScene[] entities
+            const plainScenes = resultPayload.scenes as unknown as PlainScene[];
+            const scenes = convertToNSDScenes(plainScenes, correlationId);
+
             // Map worker result to IPC response format
-            // TODO: Map scenes array to NSDSceneDTO[] when worker returns proper types
             const response: NSDUploadResponse = {
               documentId: resultPayload.id, // Use worker-generated ID
-              sceneList: resultPayload.scenes as NSDScene[], // Type assertion until worker types are finalized
+              sceneList: scenes as NSDScene[],
               warnings: resultPayload.warnings,
             };
 
