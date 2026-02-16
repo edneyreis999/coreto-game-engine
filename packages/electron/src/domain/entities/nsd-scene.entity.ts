@@ -181,6 +181,34 @@ export class NSDScene {
   }
 
   /**
+   * Factory method to create a new NSDScene entity from a DTO.
+   *
+   * This is the preferred method for creating entities from external data sources
+   * (e.g., API responses, database records, or test fakes). Uses the existing
+   * validation logic from the create() method.
+   *
+   * @param dto - Data Transfer Object containing scene data
+   * @param correlationId - Optional correlation ID for logging/tracking
+   * @returns New NSDScene instance
+   * @throws DomainError with code NSD_SCENE_VALIDATION_ERROR if validation fails
+   *
+   * @example
+   * ```typescript
+   * const dto = NSDSceneDTOFakeBuilder.anEntity().build();
+   * const scene = NSDScene.fromDTO(dto);
+   * ```
+   */
+  static fromDTO(dto: NSDSceneDTO, correlationId?: string): NSDScene {
+    return NSDScene.create(
+      dto.title,
+      dto.content,
+      dto.sceneNumber,
+      correlationId,
+      dto.summary
+    );
+  }
+
+  /**
    * Returns a new NSDScene instance with the updated title.
    *
    * Creates a clone of this scene with a different title while

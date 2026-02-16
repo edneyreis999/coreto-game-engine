@@ -11,28 +11,23 @@ import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { randomUUID } from 'node:crypto';
 import { DomainError } from '@coreto/core';
 import { NSDScene } from '@/domain/entities/nsd-scene.entity';
+import { NSDSceneDTOFakeBuilder } from '../../../fakes/NSDSceneDTOFakeBuilder.js';
 import type { NSDSceneDTO } from '@/domain/types/nsd-types';
 
-// NOTE: Using literal objects for now.
-// TODO: Switch to NSDSceneDTOFakeBuilder once generated (see parallel task).
-// Example:
-// import { NSDSceneDTOFakeBuilder } from '@tests/fakes/builders/dto';
-//
-// const validDTO = NSDSceneDTOFakeBuilder.create()
-//   .withValidDefaults()
-//   .build();
-
 describe('NSDScene Entity', () => {
-  describe('Factory Method: create()', () => {
+  describe('Factory Method: create() and fromDTO()', () => {
     describe('Valid Inputs', () => {
-      it('should create scene with all required fields', () => {
-        // Arrange & Act
-        const scene = NSDScene.create(
-          'Tavern Meeting',
-          'The hero enters the dimly lit tavern. The keeper waves from behind the bar.',
-          1,
-          'correlation-123'
-        );
+      it('should create scene with all required fields using fromDTO', () => {
+        // Arrange - Use FakeBuilder pattern
+        const dto = NSDSceneDTOFakeBuilder.anEntity()
+          .withTitle('Tavern Meeting')
+          .withContent('The hero enters the dimly lit tavern. The keeper waves from behind the bar.')
+          .withSceneNumber(1)
+          .withoutSummary()
+          .build();
+
+        // Act
+        const scene = NSDScene.fromDTO(dto, 'correlation-123');
 
         // Assert
         expect(scene).toBeInstanceOf(NSDScene);
@@ -44,18 +39,37 @@ describe('NSDScene Entity', () => {
         expect(scene.summary).toBeUndefined();
       });
 
-      it('should create scene with optional summary', () => {
-        // Arrange & Act
-        const scene = NSDScene.create(
-          'Tavern Meeting',
-          'The hero enters the tavern.',
-          1,
-          'correlation-123',
-          'Introduction to quest giver and initial contract offer'
-        );
+      it('should create scene with optional summary using fromDTO', () => {
+        // Arrange - Use FakeBuilder pattern
+        const dto = NSDSceneDTOFakeBuilder.anEntity()
+          .withTitle('Tavern Meeting')
+          .withContent('The hero enters the tavern.')
+          .withSceneNumber(1)
+          .withSummary('Introduction to quest giver and initial contract offer')
+          .build();
+
+        // Act
+        const scene = NSDScene.fromDTO(dto, 'correlation-123');
 
         // Assert
         expect(scene.summary).toBe('Introduction to quest giver and initial contract offer');
+      });
+
+      it('should create scene using direct create() method (legacy)', () => {
+        // Arrange & Act - Direct create() for backward compatibility testing
+        const scene = NSDScene.create(
+          'Tavern Meeting',
+          'The hero enters the dimly lit tavern. The keeper waves from behind the bar.',
+          1,
+          'correlation-123'
+        );
+
+        // Assert
+        expect(scene).toBeInstanceOf(NSDScene);
+        expect(scene.title).toBe('Tavern Meeting');
+        expect(scene.content).toBe('The hero enters the dimly lit tavern. The keeper waves from behind the bar.');
+        expect(scene.sceneNumber).toBe(1);
+        expect(scene.summary).toBeUndefined();
       });
 
       it('should trim whitespace from title', () => {
@@ -87,9 +101,17 @@ describe('NSDScene Entity', () => {
       });
 
       it('should generate unique UUID for each scene', () => {
-        // Arrange & Act
-        const scene1 = NSDScene.create('Scene 1', 'Content 1', 1);
-        const scene2 = NSDScene.create('Scene 2', 'Content 2', 2);
+        // Arrange - Use FakeBuilder to create multiple DTOs
+        const dtos = NSDSceneDTOFakeBuilder.theEntities(2)
+          .withTitle((index) => `Scene ${index + 1}`)
+          .withContent((index) => `Content ${index + 1}`)
+          .withSceneNumber((index) => index + 1)
+          .withoutSummary()
+          .build() as NSDSceneDTO[];
+
+        // Act
+        const scene1 = NSDScene.fromDTO(dtos[0]);
+        const scene2 = NSDScene.fromDTO(dtos[1]);
 
         // Assert
         expect(scene1.id).not.toBe(scene2.id);
@@ -909,12 +931,16 @@ He gestures to an empty table in the corner.`;
       expect(scene.summary).toBe('   ');
     });
 
-    it('should handle rapid entity creation', () => {
-      // Arrange & Act
-      const scenes = [];
-      for (let i = 0; i < 100; i++) {
-        scenes.push(NSDScene.create(`Scene ${i}`, `Content ${i}`, i + 1));
-      }
+    it('should handle rapid entity creation using FakeBuilder', () => {
+      // Arrange & Act - Use FakeBuilder for efficient bulk creation
+      const dtos = NSDSceneDTOFakeBuilder.theEntities(100)
+        .withTitle((index) => `Scene ${index}`)
+        .withContent((index) => `Content ${index}`)
+        .withSceneNumber((index) => index + 1)
+        .withoutSummary()
+        .build() as NSDSceneDTO[];
+
+      const scenes = dtos.map(dto => NSDScene.fromDTO(dto));
 
       // Assert
       expect(scenes).toHaveLength(100);
@@ -939,32 +965,40 @@ He gestures to an empty table in the corner.`;
 
   describe('Integration with Domain Types', () => {
     it('should produce DTO compatible with NSDSceneDTO interface', () => {
-      // Arrange
-      const scene = NSDScene.create('Scene', 'Content', 1, undefined, 'Summary');
-      const dto = scene.toDTO();
+      // Arrange - Use FakeBuilder pattern
+      const dto = NSDSceneDTOFakeBuilder.anEntity()
+        .withTitle('Scene')
+        .withContent('Content')
+        .withSceneNumber(1)
+        .withSummary('Summary')
+        .build();
+
+      const scene = NSDScene.fromDTO(dto);
+      const resultDto = scene.toDTO();
 
       // Act & Assert - TypeScript type checking ensures compatibility
       // This test verifies runtime structure matches the interface
-      expect(dto).toHaveProperty('id');
-      expect(dto).toHaveProperty('title');
-      expect(dto).toHaveProperty('content');
-      expect(dto).toHaveProperty('sceneNumber');
-      expect(dto).toHaveProperty('summary');
+      expect(resultDto).toHaveProperty('id');
+      expect(resultDto).toHaveProperty('title');
+      expect(resultDto).toHaveProperty('content');
+      expect(resultDto).toHaveProperty('sceneNumber');
+      expect(resultDto).toHaveProperty('summary');
     });
 
     it('should maintain round-trip consistency through DTO', () => {
-      // Arrange
-      const originalScene = NSDScene.create('Scene', 'Content', 1, undefined, 'Summary');
+      // Arrange - Use FakeBuilder pattern
+      const originalDto = NSDSceneDTOFakeBuilder.anEntity()
+        .withTitle('Scene')
+        .withContent('Content')
+        .withSceneNumber(1)
+        .withSummary('Summary')
+        .build();
+
+      const originalScene = NSDScene.fromDTO(originalDto);
       const dto = originalScene.toDTO();
 
-      // Act - Create new scene from DTO values
-      const recreatedScene = NSDScene.create(
-        dto.title,
-        dto.content,
-        dto.sceneNumber,
-        undefined,
-        dto.summary
-      );
+      // Act - Create new scene from DTO using fromDTO
+      const recreatedScene = NSDScene.fromDTO(dto);
 
       // Assert - Values match (but IDs differ as new UUID is generated)
       expect(recreatedScene.title).toBe(originalScene.title);
