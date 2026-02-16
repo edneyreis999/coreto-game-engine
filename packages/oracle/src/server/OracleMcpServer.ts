@@ -81,6 +81,7 @@ export class OracleMcpServer {
             description: 'Extrai cenas narrativas de um documento NSD em formato Coreto',
             inputSchema: ExtractScenesSchema.extend({
               nsdContent: ExtractScenesSchema.shape.nsdContent.describe('Conteúdo completo do NSD em formato markdown Coreto'),
+              model: ExtractScenesSchema.shape.model.optional().describe('Modelo Z.ai para extração (opcional: glm-4.7, glm-4.5-air, glm-4-flash)'),
             }).shape,
           },
         ],
@@ -139,9 +140,28 @@ export class OracleMcpServer {
 
         // Type assertion for args since they come from MCP as Record<string, unknown>
         const nsdContent = String(args?.nsdContent || '');
+        const model = args?.model !== undefined ? String(args.model) : undefined;
 
-        const extractOptions = { nsdContent };
+        console.error('[OracleMcpServer] extract_scenes called with:', {
+          contentLength: nsdContent.length,
+          model: model || 'default (glm-4.7)',
+        });
+
+        const extractOptions: {
+          nsdContent: string;
+          model?: string;
+        } = { nsdContent };
+
+        if (model !== undefined) {
+          extractOptions.model = model;
+        }
+
         const result = await this.client.extractScenes(extractOptions);
+
+        console.error('[OracleMcpServer] extract_scenes result:', {
+          totalScenes: result.totalScenes,
+          sceneTitles: result.scenes.map(s => s.title),
+        });
 
         const response = {
           content: [

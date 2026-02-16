@@ -103,9 +103,11 @@ export interface ExtractScenesResult {
  * ExtractScenesOptions - Input parameters for NSD scene extraction.
  *
  * - nsdContent: The full NSD document content in markdown format
+ * - model: Optional model override for testing (glm-4.7, glm-4.5-air, glm-4-flash)
  */
 export interface ExtractScenesOptions {
   nsdContent: string;
+  model?: string;
 }
 
 /**
@@ -113,6 +115,7 @@ export interface ExtractScenesOptions {
  *
  * Validates parameters required for NSD scene extraction:
  * - nsdContent: The full NSD document content in markdown format
+ * - model: Optional model override for testing (glm-4.7, glm-4.5-air, glm-4-flash)
  */
 export const ExtractScenesSchema = z.object({
   nsdContent: z
@@ -122,6 +125,7 @@ export const ExtractScenesSchema = z.object({
     })
     .min(1, 'nsdContent cannot be empty')
     .max(2 * 1024 * 1024, 'nsdContent cannot exceed 2MB'), // 2MB limit for scene extraction
+  model: z.string().optional(),
 });
 
 /**
@@ -256,7 +260,7 @@ export class ClaudeAgentClient {
 
     // Create AbortController for timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 second timeout for scene extraction
 
     let response: Response;
     try {
@@ -272,8 +276,8 @@ export class ClaudeAgentClient {
       });
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
-        console.error('[generateNsdPrompt] ✗ Request timeout after 25 seconds');
-        throw new Error('Request timeout after 25 seconds - Z.ai API did not respond');
+        console.error('[generateNsdPrompt] ✗ Request timeout after 90 seconds');
+        throw new Error('Request timeout after 90 seconds - Z.ai API did not respond');
       }
       throw error;
     } finally {
@@ -339,8 +343,9 @@ export class ClaudeAgentClient {
    * ```
    */
   async extractScenes(options: ExtractScenesOptions): Promise<ExtractScenesResult> {
-    // Validate input using Zod schema
-    ExtractScenesSchema.parse(options);
+    // Validate input using Zod schema (without model field for base validation)
+    const { model: modelOverride, ...baseOptions } = options;
+    ExtractScenesSchema.parse(baseOptions);
 
     if (!this.initialized) {
       await this.init();
@@ -350,6 +355,16 @@ export class ClaudeAgentClient {
       throw new Error('Claude client not initialized');
     }
 
+    // Use custom model if provided, otherwise use default from config
+    const model = modelOverride || this.authConfig.model;
+
+    console.error('[extractScenes] Starting extraction with model:', {
+      model,
+      modelOverride: modelOverride || 'none',
+      contentLength: options.nsdContent.length,
+      baseUrl: this.authConfig.baseUrl,
+    });
+
     const maxRetries = 3;
     let lastError: Error | null = null;
 
@@ -357,7 +372,7 @@ export class ClaudeAgentClient {
       try {
         console.error(`[extractScenes] Attempt ${attempt}/${maxRetries}`);
 
-        const result = await this.callClaudeForExtraction(options.nsdContent);
+        const result = await this.callClaudeForExtraction(options.nsdContent, model);
 
         // Validate response structure
         if (!result || !result.scenes || !Array.isArray(result.scenes)) {
@@ -400,11 +415,14 @@ export class ClaudeAgentClient {
   /**
    * Calls Claude API to extract scenes from NSD content.
    *
+   * Uses Anthropic-compatible endpoint (/api/anthropic/v1/messages) like generateNsdPrompt.
+   *
    * @param nsdContent - NSD markdown content
+   * @param model - Model to use for extraction (e.g., glm-4.5-air, glm-4.7)
    * @returns Promise resolving to extracted scenes result
    * @throws {Error} When API call fails or returns invalid response
    */
-  private async callClaudeForExtraction(nsdContent: string): Promise<ExtractScenesResult> {
+  private async callClaudeForExtraction(nsdContent: string, model: string): Promise<ExtractScenesResult> {
     if (!this.authConfig) {
       throw new Error('Claude client not initialized');
     }
@@ -412,61 +430,89 @@ export class ClaudeAgentClient {
     const systemPrompt = this.buildSceneExtractionSystemPrompt();
     const userPrompt = this.buildSceneExtractionUserPrompt(nsdContent);
 
-    // Z.ai uses OpenAI-compatible endpoint: /api/paas/v4/chat/completions
-    // Documentation: https://docs.z.ai/api-reference/llm/chat-completion
-    const apiUrl = new URL('/api/paas/v4/chat/completions', this.authConfig.baseUrl);
+    // Use Anthropic-compatible endpoint (same as generateNsdPrompt)
+    // Z.ai endpoint: /api/anthropic/v1/messages
+    const apiUrl = new URL('/api/anthropic/v1/messages', this.authConfig.baseUrl);
 
     const requestBody = {
-      model: this.authConfig.model,
+      model,
+      max_tokens: 8192,
+      system: systemPrompt,
       messages: [
         {
-          role: 'system',
-          content: systemPrompt
-        },
-        {
           role: 'user',
-          content: userPrompt
-        }
+          content: userPrompt,
+        },
       ],
-      temperature: 0.3,
-      max_tokens: 8192,
-      response_format: { type: 'json_object' } // Force JSON response
     };
 
-    console.error('[extractScenes] Calling Z.ai API (OpenAI-compatible format)...', {
-      model: this.authConfig.model,
+    console.error('[extractScenes] Calling Z.ai Anthropic-compatible API...', {
+      endpoint: apiUrl.toString(),
+      model,
+      systemPromptLength: systemPrompt.length,
+      userPromptLength: userPrompt.length,
       contentLength: nsdContent.length,
-      endpoint: apiUrl.toString()
     });
 
-    const response = await fetch(apiUrl.toString(), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.authConfig.authToken}`,
-      },
-      body: JSON.stringify(requestBody),
-    });
+    // Create AbortController for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 second timeout for scene extraction
+
+    let response: Response;
+    try {
+      response = await fetch(apiUrl.toString(), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': this.authConfig.authToken,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.error('[extractScenes] ✗ Request timeout after 90 seconds');
+        throw new Error('Request timeout after 90 seconds - Z.ai API did not respond');
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error('[extractScenes] ✗ API error:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorText,
+      });
       throw new Error(`Z.ai API error: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
     const data = await response.json();
 
-    // OpenAI-compatible format: { choices: [{ message: { content: "..." } }] }
-    if (!data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
-      throw new Error('Invalid API response: missing choices array');
+    // Anthropic format: { content: [{ type: 'text', text: '...' }] }
+    if (!data.content || !Array.isArray(data.content) || data.content.length === 0) {
+      console.error('[extractScenes] ✗ Invalid response structure:', data);
+      throw new Error('Invalid API response: missing content array');
     }
 
-    // Extract text from the first choice's message
-    const textContent = data.choices[0]?.message?.content;
-    if (!textContent || typeof textContent !== 'string') {
-      throw new Error('Invalid API response: missing message content');
+    // Extract text from the first content block
+    const textBlock = data.content.find((block: unknown) => {
+      return typeof block === 'object' && block !== null && 'type' in block && block.type === 'text';
+    });
+
+    if (!textBlock || typeof textBlock.text !== 'string') {
+      console.error('[extractScenes] ✗ No text block found in response');
+      throw new Error('Invalid API response: missing text content');
     }
 
-    console.error('[extractScenes] Raw response length:', textContent.length);
+    const textContent = textBlock.text;
+    console.error('[extractScenes] ✓ Raw response received:', {
+      length: textContent.length,
+      preview: textContent.slice(0, 100) + '...',
+    });
 
     // Parse JSON response
     let parsedResponse: ExtractScenesResult;
@@ -491,7 +537,18 @@ export class ClaudeAgentClient {
 
       parsedResponse = JSON.parse(cleanedJson);
 
+      // Validate parsed response structure
+      if (!parsedResponse.scenes || !Array.isArray(parsedResponse.scenes)) {
+        throw new Error('Invalid JSON structure: missing scenes array');
+      }
+
+      console.error('[extractScenes] ✓ JSON parsed successfully:', {
+        totalScenes: parsedResponse.scenes.length,
+        sceneTitles: parsedResponse.scenes.map((s: SceneData) => s.title),
+      });
+
     } catch (parseError) {
+      console.error('[extractScenes] ✗ JSON parse error:', parseError);
       throw new Error(
         `Failed to parse JSON response: ${parseError instanceof Error ? parseError.message : String(parseError)}`
       );

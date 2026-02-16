@@ -424,12 +424,14 @@ export class NsdParserService {
       this.logger.debug('Calling extract_scenes via MCP server', {
         correlationId,
         contentLength: content.length,
+        model: 'glm-4.7', // Faster model for extraction (handles 8 scenes better)
       });
 
       // Call Oracle MCP server extract_scenes tool with timeout
       const mcpResponse = await Promise.race([
         this.mcpClient.callTool<{ content: Array<{ type: string; text: string }> }>('extract_scenes', {
           nsdContent: content,
+          model: 'glm-4.7', // Faster model for extraction (handles 8 scenes better)
         }),
         this.createTimeoutPromise(this.AI_TIMEOUT_MS),
       ]);
