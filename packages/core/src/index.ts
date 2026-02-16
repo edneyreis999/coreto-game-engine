@@ -97,6 +97,7 @@ export type {
 
 export {
   registerDependencies,
+  registerWorkerDependencies,
   clearContainer,
   resolve,
   container,

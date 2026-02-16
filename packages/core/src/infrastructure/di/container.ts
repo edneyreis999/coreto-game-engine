@@ -151,6 +151,29 @@ export function registerDependencies(): void {
 }
 
 /**
+ * Register worker-specific dependencies in the DI container.
+ * Lightweight version for UtilityProcess worker contexts.
+ *
+ * Implementations registered:
+ * - ConsoleLogger (ILogger implementation) - ONLY service workers need
+ *
+ * Workers run in constrained UtilityProcess environment and cannot handle:
+ * - Native Node.js modules (better-sqlite3)
+ * - Heavy browser emulators (jsdom)
+ * - File system access (NodeFileSystem, RmmzDataLoader)
+ *
+ * @see packages/electron/src/main/workers/nsd.worker.ts
+ */
+export function registerWorkerDependencies(): void {
+  // Logger: ConsoleLogger implementation registered as singleton
+  // This is the ONLY service workers need
+  tsyringeContainer.registerSingleton<ILogger>(ILoggerToken, ConsoleLogger);
+
+  const logger = tsyringeContainer.resolve<ILogger>(coerceToken(ILoggerToken));
+  logger.info('[DI] Worker dependencies registered (lightweight mode)');
+}
+
+/**
  * Clear all instances from the container.
  * Useful for testing to ensure clean state between tests.
  */

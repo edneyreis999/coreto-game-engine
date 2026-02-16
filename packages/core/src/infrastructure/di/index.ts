@@ -6,6 +6,7 @@
 
 export {
   registerDependencies,
+  registerWorkerDependencies,
   clearContainer,
   resolve,
   container,

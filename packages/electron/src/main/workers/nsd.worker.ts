@@ -13,7 +13,7 @@
 import 'reflect-metadata';
 import { parentPort } from 'electron';
 import { container } from 'tsyringe';
-import { registerDependencies } from '@coreto/core';
+import { registerWorkerDependencies } from '@coreto/core';
 
 // LOG 1: Worker entry point reached
 console.log('[NSD-WORKER-LOG-001] Worker entry point - starting imports...');
@@ -54,12 +54,17 @@ if (!parentPort) {
 }
 
 /**
- * Setup DI container with @coreto/core dependencies.
- * Called once on worker startup.
+ * Setup DI container with worker-specific dependencies.
+ * Uses lightweight registration to avoid UtilityProcess incompatibilities.
+ *
+ * Workers only need ConsoleLogger - they cannot handle:
+ * - Native Node.js modules (better-sqlite3)
+ * - Heavy browser emulators (jsdom, JsdomHeadlessRuntime)
+ * - File system access (NodeFileSystem, RmmzDataLoader)
  */
 function setupContainer(): void {
-  logger.info('Setting up DI container');
-  registerDependencies();
+  logger.info('Setting up lightweight DI container for worker');
+  registerWorkerDependencies();
 }
 
 /**
