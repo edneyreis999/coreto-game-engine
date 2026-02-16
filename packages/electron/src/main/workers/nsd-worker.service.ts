@@ -38,7 +38,7 @@ import { ConsoleLogger } from '@coreto/core';
  *
  * Worker returns this POJO, main process converts to NSDScene entity.
  */
-interface PlainScene {
+export interface PlainScene {
   /** Scene title */
   title: string;
   /** Scene content */
@@ -53,7 +53,7 @@ interface PlainScene {
  * Result from parsing operations in worker.
  * Array of PlainScene POJOs that can be safely serialized via IPC.
  */
-type PlainSceneResult = PlainScene[];
+export type PlainSceneResult = PlainScene[];
 
 // =============================================================================
 // Error Codes

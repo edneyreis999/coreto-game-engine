@@ -54,8 +54,7 @@ export default defineConfig({
         external: ['@coreto/oracle', '@coreto/oracle/*'],
         input: {
           index: resolve(__dirname, 'src/main/index.ts'),
-          'workers/simulation.worker': resolve(__dirname, 'src/main/workers/simulation.worker.ts'),
-          'workers/nsd.worker': resolve(__dirname, 'src/main/workers/nsd.worker.ts')
+          'workers/simulation.worker': resolve(__dirname, 'src/main/workers/simulation.worker.ts')
         },
         output: {
           entryFileNames: '[name].js',

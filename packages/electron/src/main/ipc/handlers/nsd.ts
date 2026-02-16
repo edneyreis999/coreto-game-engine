@@ -2,18 +2,16 @@
  * NSD (Narrative Scene Document) IPC Handlers
  *
  * Handlers for NSD document upload and parsing operations.
- * Delegates business logic to NSD worker process via UtilityProcess.
+ * Processes NSD documents directly in main thread using NsdWorkerService.
  *
  * Architecture:
- * Renderer (React) → Main (IPC Handler) → UtilityProcess (NSD Worker) → NSD Parsing
+ * Renderer (React) → Main (IPC Handler) → NsdWorkerService → Regex Parsing
  *
- * @see packages/electron/src/main/workers/nsd.worker.ts
+ * @see packages/electron/src/main/workers/nsd-worker.service.ts
  * @see packages/electron/src/main/ipc/nsd-schemas.ts
  */
 
 import type { IpcMainInvokeEvent } from 'electron';
-import { utilityProcess } from 'electron';
-import { join } from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { v4 as uuidv4 } from 'uuid';
 import type { ILogger } from '@coreto/core';
@@ -24,20 +22,11 @@ import type { NSDUploadPayload } from '../nsd-schemas.js';
 import { NSDUploadPayloadSchema } from '../nsd-schemas.js';
 import { wrapHandler } from '../ipc-response.js';
 import { ILoggerToken } from '../../di/tokens.js';
-import type {
-  MainToNsdWorkerMessage,
-  NsdWorkerToMainMessage,
-  NsdParseParams,
-} from '../../workers/nsd-worker-types.js';
-import type {
-  NsdProgressPayload,
-  NsdResultPayload,
-  NsdErrorPayload,
-} from '../../workers/nsd-worker-protocol.js';
 import type { NSDUploadResponse } from '@coreto/electron/domain/types';
 
-// Import NSDScene for conversion in main process
+// Import NSDScene and service for main thread processing
 import { NSDScene } from '@coreto/electron/domain/entities';
+import { NsdWorkerService, type PlainScene, type NSDProgressStage } from '../../workers/nsd-worker.service.js';
 
 // ============================================================================
 // Constants
@@ -55,38 +44,15 @@ const MAX_FILE_SIZE = 1024 * 1024; // 1MB in bytes
  */
 const ALLOWED_EXTENSION = '.md';
 
-/**
- * Worker timeout in milliseconds (5 minutes).
- * Prevents runaway worker processes from hanging indefinitely.
- */
-const WORKER_TIMEOUT = 5 * 60 * 1000;
-
-/**
- * Path to the NSD worker script.
- * Resolved relative to the compiled output directory.
- */
-const WORKER_PATH = join(__dirname, '../../workers/nsd.worker.js');
-
 // ============================================================================
 // Helper Functions
 // ============================================================================
 
 /**
- * PlainScene POJO from worker context.
- * Worker returns these to avoid NSDScene entity dependency chain.
- */
-interface PlainScene {
-  title: string;
-  content: string;
-  sceneNumber: number;
-  summary?: string;
-}
-
-/**
- * Converts PlainScene POJOs from worker to NSDScene entities.
- * Main process creates entities after worker returns results.
+ * Converts PlainScene POJOs from parsing result to NSDScene entities.
+ * Main process creates entities after parsing completes.
  *
- * @param plainScenes - PlainScene POJOs from worker
+ * @param plainScenes - PlainScene POJOs from NsdWorkerService
  * @param correlationId - Optional correlation ID for logging
  * @returns Array of NSDScene entities
  */
@@ -179,25 +145,21 @@ function validateFileSize(fileSize: number): void {
  * Uploads and parses an NSD (Narrative Scene Document) markdown file.
  * Supports two input modes: file path (from file dialog) or direct text (paste).
  *
- * Processing Flow:
+ * Processing Flow (Main Thread):
  * 1. Validate payload using Zod schema
  * 2. If source.path: read file, validate extension (.md), validate size (1MB)
  * 3. If source.text: use text directly
  * 4. Generate correlationId for tracking
- * 5. Spawn NSD worker via UtilityProcess.fork()
- * 6. Send message to worker: { type: 'nsd:parse', id, correlationId, content, fileName }
- * 7. Listen for worker messages:
- *    - nsd:progress: forward to renderer via event
- *    - nsd:result: resolve promise with scenes
- *    - nsd:error: reject promise with error
- * 8. Map worker results to IPC response
+ * 5. Parse NSD content using NsdWorkerService (regex-based, no AI)
+ * 6. Forward progress events to renderer
+ * 7. Convert PlainScene[] to NSDScene[] entities
+ * 8. Return IPC response with scenes
  *
  * Error Handling:
  * - Invalid payload: Returns error immediately
  * - Wrong extension: Returns user-friendly error
  * - File too large: Returns error with size limit
- * - Worker crash: Timeout error
- * - Parse error: Forwards worker error message
+ * - Parse error: Returns error with details
  *
  * @param event - IPC invoke event (used for sending progress events)
  * @param payload - NSD upload payload with source and correlationId
@@ -270,122 +232,53 @@ export async function nsdUploadHandler(
 
     // 3. Generate correlation ID for tracking (UUID v4)
     const correlationId = requestCorrelationId || uuidv4();
-    const parseId = uuidv4(); // Unique ID for this parse operation
+    const documentId = uuidv4(); // Unique ID for this document
+    const startTime = Date.now();
 
-    logger.info(`[IPC] Spawning NSD worker: parseId=${parseId}, correlationId=${correlationId}`);
+    logger.info(`[IPC] Starting NSD parsing in main thread: documentId=${documentId}, correlationId=${correlationId}`);
 
-    // 4. Spawn NSD worker via utilityProcess.fork()
-    const worker = utilityProcess.fork(WORKER_PATH, [], {
-      env: process.env,
-    });
+    // 4. Create NsdWorkerService instance
+    const nsdService = new NsdWorkerService(logger);
 
-    // 5. Set up worker communication and timeout
-    const workerPromise = new Promise<NSDUploadResponse>((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        logger.error(`[IPC] NSD worker timeout: parseId=${parseId}`);
-        worker.kill();
-        reject(new Error('NSD parsing timed out. The document may be too complex or the worker crashed.'));
-      }, WORKER_TIMEOUT);
+    // 5. Progress callback to forward events to renderer
+    const progressCallback = (stage: NSDProgressStage, percent: number): void => {
+      logger.debug(`[IPC] NSD parsing progress: ${stage} (${percent}%)`);
 
-      // 6. Listen for worker messages
-      worker.on('message', (message: NsdWorkerToMainMessage) => {
-        switch (message.type) {
-          case 'nsd:progress': {
-            // Forward progress to renderer via event
-            const progressPayload: NsdProgressPayload = message.payload;
-            logger.debug(
-              `[IPC] NSD progress: ${progressPayload.stage} (${progressPayload.percent}%)`
-            );
-
-            // Send progress event to renderer
-            event.sender.send('nsd:upload:progress', {
-              stage: progressPayload.stage,
-              percent: progressPayload.percent,
-              correlationId,
-            });
-            break;
-          }
-
-          case 'nsd:result': {
-            // Worker completed successfully - resolve promise
-            clearTimeout(timeout);
-            const resultPayload: NsdResultPayload = message.payload;
-
-            logger.info(
-              `[IPC] NSD parsing completed: parseId=${parseId}, scenes=${resultPayload.scenes.length}, duration=${resultPayload.duration}ms`
-            );
-
-            // Convert PlainScene[] from worker to NSDScene[] entities
-            const plainScenes = resultPayload.scenes as unknown as PlainScene[];
-            const scenes = convertToNSDScenes(plainScenes, correlationId);
-
-            // Map worker result to IPC response format
-            const response: NSDUploadResponse = {
-              documentId: resultPayload.id, // Use worker-generated ID
-              sceneList: scenes as NSDScene[],
-              warnings: resultPayload.warnings,
-            };
-
-            resolve(response);
-            break;
-          }
-
-          case 'nsd:error': {
-            // Worker failed - reject promise with error
-            clearTimeout(timeout);
-            const errorPayload: NsdErrorPayload = message.payload;
-
-            logger.error(
-              `[IPC] NSD parsing failed: parseId=${parseId}, code=${errorPayload.code}, message=${errorPayload.message}`
-            );
-
-            reject(new Error(`${errorPayload.code}: ${errorPayload.message}`));
-            break;
-          }
-
-          default: {
-            // Type exhaustiveness check
-            const _exhaustive: never = message;
-            logger.warn(`[IPC] Unknown worker message type: ${String(_exhaustive)}`);
-          }
-        }
+      // Send progress event to renderer
+      event.sender.send('nsd:upload:progress', {
+        stage,
+        percent,
+        correlationId,
       });
+    };
 
-      // Handle worker crashes
-      worker.on('exit', (code) => {
-        if (code !== 0 && code !== null) {
-          clearTimeout(timeout);
-          logger.error(`[IPC] NSD worker exited with code: ${code}`);
-          reject(new Error(`NSD worker process exited unexpectedly with code ${code}`));
-        }
-      });
-    });
-
-    // 7. Send parse request to worker
-    const parseParams: NsdParseParams = {
-      id: parseId,
-      correlationId,
+    // 6. Parse NSD content (regex-based, no AI)
+    const plainScenes = await nsdService.parseNSD(
       content,
       fileName,
+      progressCallback,
+      correlationId
+    );
+
+    const duration = Date.now() - startTime;
+
+    logger.info(
+      `[IPC] NSD parsing completed: documentId=${documentId}, scenes=${plainScenes.length}, duration=${duration}ms`
+    );
+
+    // 7. Convert PlainScene[] to NSDScene[] entities
+    const scenes = convertToNSDScenes(plainScenes, correlationId);
+
+    // 8. Build response
+    const response: NSDUploadResponse = {
+      documentId,
+      sceneList: scenes as NSDScene[],
+      warnings: [], // TODO: Collect warnings during parsing if needed
     };
 
-    const workerMessage: MainToNsdWorkerMessage = {
-      type: 'nsd:parse',
-      payload: parseParams,
-    };
+    logger.info(`[IPC] NSD upload completed successfully: documentId=${documentId}`);
 
-    worker.postMessage(workerMessage);
-    logger.debug(`[IPC] Sent nsd:parse message to worker: parseId=${parseId}`);
-
-    // 8. Wait for worker result
-    const result = await workerPromise;
-
-    // 9. Clean up worker process
-    worker.kill();
-
-    logger.info(`[IPC] NSD upload completed successfully: documentId=${result.documentId}`);
-
-    return result;
+    return response;
   });
 }
 
