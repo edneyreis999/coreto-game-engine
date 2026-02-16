@@ -9,6 +9,7 @@ import React from 'react';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import { SceneList } from '@/components/SceneList';
 import type { NSDSceneDTO } from '@coreto/electron/domain/types';
+import { NSDSceneDTOFakeBuilder } from '../../../fakes/NSDSceneDTOFakeBuilder.js';
 
 // Mock useLogger hook
 jest.mock('@/hooks/useLogger', () => ({
@@ -22,28 +23,21 @@ jest.mock('@/hooks/useLogger', () => ({
 
 describe('SceneList', () => {
   // Mock scene data for testing
-  const mockScenes: NSDSceneDTO[] = [
-    {
-      id: 'scene-1',
-      title: 'Tavern Meeting',
-      sceneNumber: 1,
-      content: 'The hero enters the dimly lit tavern. Smoke hangs in the air as the keeper waves from behind the bar.',
-      summary: 'Introduction to quest giver',
-    },
-    {
-      id: 'scene-2',
-      title: 'Bard Conversation',
-      sceneNumber: 2,
-      content: 'An elderly bard sits in the corner, strumming a lute. She looks up as you approach.',
-      summary: 'Learning about the artifact',
-    },
-    {
-      id: 'scene-3',
-      title: 'Throne Room',
-      sceneNumber: 3,
-      content: 'The throne room is empty except for a single figure on the throne. The king awaits your report.',
-    },
-  ];
+  const mockScenes: NSDSceneDTO[] = NSDSceneDTOFakeBuilder.theEntities(3)
+    .withId((index) => `scene-${index + 1}`)
+    .withTitle((index) => ['Tavern Meeting', 'Bard Conversation', 'Throne Room'][index]!)
+    .withSceneNumber((index) => index + 1)
+    .withContent((index) => [
+      'The hero enters the dimly lit tavern. Smoke hangs in the air as the keeper waves from behind the bar.',
+      'An elderly bard sits in the corner, strumming a lute. She looks up as you approach.',
+      'The throne room is empty except for a single figure on the throne. The king awaits your report.',
+    ][index]!)
+    .withSummary((index) => [
+      'Introduction to quest giver',
+      'Learning about the artifact',
+      undefined,
+    ][index]!)
+    .build() as NSDSceneDTO[];
 
   describe('Empty State', () => {
     it('should render empty state when no scenes are provided', () => {
@@ -332,12 +326,13 @@ describe('SceneList', () => {
 
   describe('Long Content Handling', () => {
     it('should truncate content preview for long scenes', () => {
-      const longScene: NSDSceneDTO = {
-        id: 'scene-long',
-        title: 'Long Scene',
-        sceneNumber: 1,
-        content: 'A'.repeat(300), // 300 characters
-      };
+      const longScene: NSDSceneDTO = NSDSceneDTOFakeBuilder.anEntity()
+        .withId('scene-long')
+        .withTitle('Long Scene')
+        .withSceneNumber(1)
+        .withLongContent(300)
+        .withoutSummary()
+        .build() as NSDSceneDTO;
 
       render(<SceneList scenes={[longScene]} loading={false} />);
 
@@ -352,12 +347,13 @@ describe('SceneList', () => {
 
   describe('Scene Without Summary', () => {
     it('should render scenes without summary', () => {
-      const sceneWithoutSummary: NSDSceneDTO = {
-        id: 'scene-no-summary',
-        title: 'Scene Without Summary',
-        sceneNumber: 1,
-        content: 'This scene has no summary.',
-      };
+      const sceneWithoutSummary: NSDSceneDTO = NSDSceneDTOFakeBuilder.anEntity()
+        .withId('scene-no-summary')
+        .withTitle('Scene Without Summary')
+        .withSceneNumber(1)
+        .withContent('This scene has no summary.')
+        .withoutSummary()
+        .build() as NSDSceneDTO;
 
       render(<SceneList scenes={[sceneWithoutSummary]} loading={false} />);
 

@@ -24,3 +24,4 @@ export { TrechoFakeBuilder } from './TrechoFakeBuilder.js';
 export { BattleResultFakeBuilder } from './BattleResultFakeBuilder.js';
 export { LogBundleFakeBuilder, logBundleFake } from './LogBundleFakeBuilder.js';
 export { LogEntryFakeBuilder, logEntryFake } from './LogEntryFakeBuilder.js';
+export { NSDSceneDTOFakeBuilder } from './NSDSceneDTOFakeBuilder.js';

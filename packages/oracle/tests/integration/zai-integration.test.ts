@@ -7,7 +7,8 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { ClaudeAgentClient, type GeneratePromptOptions } from '@coreto/oracle';
+import { ClaudeAgentClient } from '@coreto/oracle';
+import { GeneratePromptOptionsFakeBuilder } from '../fakes/GeneratePromptOptionsFakeBuilder.js';
 
 describe('Z.ai Integration', () => {
   let client: ClaudeAgentClient;
@@ -36,8 +37,8 @@ describe('Z.ai Integration', () => {
   });
 
   it('should generate NSD prompt', { timeout: 30000 }, async () => {
-    const testOptions: GeneratePromptOptions = {
-      nsdContent: `# NSD de Teste
+    const testOptions = new GeneratePromptOptionsFakeBuilder()
+      .withNsdContent(`# NSD de Teste
 
 ## Cena Olá Mundo
 
@@ -47,11 +48,11 @@ Esta é uma cena de teste simples para validar a integração com Z.ai.
 1. Jogador entra na cena
 2. Mensagem exibida
 3. Jogador pode mover-se
-`,
-      sceneName: 'Cena Olá Mundo',
-      projectPath: '/tmp/test-project',
-      questVariable: 'Test Quest Progress',
-    };
+`)
+      .withSceneName('Cena Olá Mundo')
+      .withProjectPath('/tmp/test-project')
+      .withQuestVariable('Test Quest Progress')
+      .build();
 
     const result = await client.generateNsdPrompt(testOptions);
 
