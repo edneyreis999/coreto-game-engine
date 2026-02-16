@@ -13,7 +13,13 @@
  * @see packages/electron/src/main/database/migrations.ts
  */
 
+// LOG 13: database/index.ts loaded - CRITICAL POINT
+console.log('[NSD-WORKER-LOG-013] database/index.ts - ABOUT TO IMPORT BETTER-SQLITE3!');
+
 import Database from 'better-sqlite3';
+
+// LOG 14: better-sqlite3 import attempted
+console.log('[NSD-WORKER-LOG-014] better-sqlite3 import completed (or failed if native module not supported in UtilityProcess)!');
 import { z } from 'zod';
 
 import {

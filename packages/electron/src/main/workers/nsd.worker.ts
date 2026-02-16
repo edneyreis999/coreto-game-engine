@@ -14,6 +14,10 @@ import 'reflect-metadata';
 import { parentPort } from 'electron';
 import { container } from 'tsyringe';
 import { registerDependencies } from '@coreto/core';
+
+// LOG 1: Worker entry point reached
+console.log('[NSD-WORKER-LOG-001] Worker entry point - starting imports...');
+
 import type {
   MainToNsdWorkerMessage,
   NsdWorkerToMainMessage,
@@ -21,7 +25,14 @@ import type {
 } from './nsd-worker-types.js';
 import type { NsdProgressPayload, NsdProgressStage } from './nsd-worker-protocol.js';
 import { mapNsdErrorToUserMessage } from './nsd-error-mapper.js';
+
+// LOG 2: Before importing NsdWorkerService (which imports NSDScene)
+console.log('[NSD-WORKER-LOG-002] About to import NsdWorkerService...');
+
 import { NsdWorkerService } from './nsd-worker.service.js';
+
+// LOG 3: After importing NsdWorkerService
+console.log('[NSD-WORKER-LOG-003] NsdWorkerService imported successfully!');
 
 /**
  * Simple logger for worker process.

@@ -21,9 +21,15 @@ import { DomainError } from '@coreto/core';
 import type { ILogger } from '@coreto/core';
 import type { NSDSceneDTO } from '../types/nsd-types.js';
 
+// LOG 8: NSDScene entity file loaded
+console.log('[NSD-WORKER-LOG-008] NSDScene entity file - starting imports...');
+
 // Lazy logger initialization to avoid DI issues
 let logger: ILogger | null = null;
 function ensureLogger(): ILogger {
+  // LOG 9: ensureLogger called
+  console.log('[NSD-WORKER-LOG-009] ensureLogger called - about to require main/di/container.js...');
+
   if (!logger) {
     // Import dynamically to avoid circular dependencies
     const { getLogger } = require('../../main/di/container.js');

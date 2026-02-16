@@ -27,7 +27,14 @@
 
 import type { ILogger } from '@coreto/core';
 import { ConsoleLogger } from '@coreto/core';
+
+// LOG 4: Before importing NSDScene (which imports main/di/container)
+console.log('[NSD-WORKER-LOG-004] About to import NSDScene from @coreto/electron/domain/entities...');
+
 import { NSDScene } from '@coreto/electron/domain/entities';
+
+// LOG 5: After importing NSDScene
+console.log('[NSD-WORKER-LOG-005] NSDScene imported successfully!');
 
 // Import NsdParserService for AI-powered scene extraction
 import { NsdParserService } from '../services/nsd-parser.service.js';
@@ -354,6 +361,9 @@ export class NsdWorkerService {
     fileName: string,
     correlationId?: string
   ): Promise<NSDScene[]> {
+    // LOG 6: delegateToParserService called
+    console.log('[NSD-WORKER-LOG-006] delegateToParserService called', { fileName, correlationId });
+
     this.logger.debug('Delegating to NsdParserService', {
       fileName,
       correlationId,
@@ -365,6 +375,13 @@ export class NsdWorkerService {
       // which McpClientService requires, so we skip AI parsing in workers
       const isWorkerContext = typeof process !== 'undefined' &&
                               process.type === 'utility';
+
+      // LOG 7: Context detection result
+      console.log('[NSD-WORKER-LOG-007] Context detection', {
+        isWorkerContext,
+        processType: typeof process !== 'undefined' ? process.type : 'process undefined',
+        processTitle: typeof process !== 'undefined' ? process.title : 'N/A'
+      });
 
       if (isWorkerContext) {
         this.logger.info('Running in UtilityProcess context, using regex-only parsing (no AI)', {

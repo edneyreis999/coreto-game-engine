@@ -5,13 +5,23 @@
  * Uses TSyringe container with token-based registration.
  */
 
+// LOG 10: main/di/container.ts loaded
+console.log('[NSD-WORKER-LOG-010] main/di/container.ts - starting imports...');
+
 import { container } from 'tsyringe';
 import type { ILogger } from '@coreto/core';
 import { ConsoleLogger } from '../services/ConsoleLogger.js';
+
+// LOG 11: Before importing adapters (which may import database)
+console.log('[NSD-WORKER-LOG-011] About to import adapters/index.js...');
+
 import { createProjectValidator } from '../adapters/index.js';
 import { createGameDataLoader } from '../adapters/index.js';
 import { createSQLiteConfigStorage } from '../adapters/index.js';
 import { createSQLiteConfigLoader } from '../adapters/index.js';
+
+// LOG 12: After importing adapters
+console.log('[NSD-WORKER-LOG-012] Adapters imported successfully!');
 import type { IProjectValidator, IGameDataLoader, IConfigStorage, IReportBuilder } from '@coreto/electron/domain/ports';
 import { NodeFileSystem, RmmzDataLoader, IConfigLoaderToken } from '@coreto/core';
 import { createSimulationReportBuilder } from '@coreto/electron/domain/use-cases';
