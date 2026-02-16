@@ -18,7 +18,7 @@ describe('Z.ai Integration', () => {
     await client.init();
   });
 
-  it('should pass health check', async () => {
+  it('should verify Z.ai health check endpoint returns correct status', async () => {
     const result = await client.healthCheck();
 
     console.log('[Health Check Result]', {
@@ -36,7 +36,7 @@ describe('Z.ai Integration', () => {
     }
   });
 
-  it('should generate NSD prompt', { timeout: 30000 }, async () => {
+  it('should generate NSD prompt with correct structure and content', { timeout: 30000 }, async () => {
     const testOptions = new GeneratePromptOptionsFakeBuilder()
       .withNsdContent(`# NSD de Teste
 
@@ -67,7 +67,7 @@ Esta é uma cena de teste simples para validar a integração com Z.ai.
     expect(result.toLowerCase()).toContain('olá mundo' || 'hello world');
   });
 
-  it('should extract scenes from NSD', { timeout: 30000 }, async () => {
+  it('should extract multiple scenes from NSD document with correct metadata', { timeout: 30000 }, async () => {
     const nsdContent = `# NSD Test
 
 ## Scene Structure
