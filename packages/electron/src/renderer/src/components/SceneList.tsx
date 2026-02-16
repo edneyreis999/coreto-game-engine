@@ -22,6 +22,7 @@ import {
   ChevronRight,
   Loader2,
   Inbox,
+  Check,
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -112,13 +113,17 @@ const SceneItem: FC<SceneItemProps> = ({
     return scene.content.length > 150 ? preview + '...' : preview;
   }, [scene.content]);
 
+  // Check if this scene is selected
+  const isSelected = selectedSceneId === scene.id;
+
   return (
     <div
       className={cn(
         'border border-border rounded-md overflow-hidden',
         'transition-all duration-200',
         'hover:border-border/80',
-        isExpanded && 'border-primary/50'
+        isExpanded && 'border-primary/50',
+        isSelected && 'border-primary bg-primary/5'
       )}
     >
       {/* Scene Header */}
@@ -161,6 +166,11 @@ const SceneItem: FC<SceneItemProps> = ({
             >
               Scene {scene.sceneNumber}
             </span>
+
+            {/* Check icon when selected */}
+            {isSelected && (
+              <Check className="h-4 w-4 text-primary flex-shrink-0" />
+            )}
 
             {/* Scene Title */}
             <h3 className="text-sm font-semibold text-foreground truncate">
@@ -216,6 +226,24 @@ const SceneItem: FC<SceneItemProps> = ({
             <span className="text-xs text-muted-foreground/50 font-mono">
               ID: {scene.id}
             </span>
+          </div>
+
+          {/* Select Scene Button */}
+          <div className="mt-4">
+            <button
+              type="button"
+              onClick={() => onSceneSelect?.(scene)}
+              className={cn(
+                'w-full px-4 py-2 rounded-md text-sm font-medium',
+                'transition-colors duration-150',
+                'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-inset',
+                isSelected
+                  ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                  : 'bg-background border border-border hover:bg-accent'
+              )}
+            >
+              {isSelected ? 'Selected' : 'Select Scene'}
+            </button>
           </div>
         </div>
       )}
