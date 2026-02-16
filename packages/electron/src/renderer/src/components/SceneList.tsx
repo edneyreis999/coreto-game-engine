@@ -51,6 +51,16 @@ export interface SceneListProps {
   onSceneClick?: (scene: NSDSceneDTO) => void;
 
   /**
+   * Optional ID of the currently selected scene.
+   */
+  selectedSceneId?: string;
+
+  /**
+   * Optional callback when a scene is selected.
+   */
+  onSceneSelect?: (scene: NSDSceneDTO) => void;
+
+  /**
    * Additional CSS class names for styling.
    */
   className?: string;
@@ -68,6 +78,8 @@ interface SceneItemProps {
   isExpanded: boolean;
   onToggle: () => void;
   onClick?: () => void;
+  selectedSceneId?: string;
+  onSceneSelect?: (scene: NSDSceneDTO) => void;
 }
 
 /**
@@ -81,6 +93,8 @@ const SceneItem: FC<SceneItemProps> = ({
   isExpanded,
   onToggle,
   onClick,
+  selectedSceneId,
+  onSceneSelect,
 }) => {
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
@@ -294,6 +308,8 @@ export const SceneList: FC<SceneListProps> = ({
   scenes,
   loading = false,
   onSceneClick,
+  selectedSceneId,
+  onSceneSelect,
   className,
 }) => {
   // Track which scene is currently expanded (only one at a time - accordion behavior)
@@ -368,6 +384,8 @@ export const SceneList: FC<SceneListProps> = ({
                 isExpanded={expandedSceneId === scene.id}
                 onToggle={() => handleToggleScene(scene.id)}
                 onClick={() => handleSceneClick(scene)}
+                selectedSceneId={selectedSceneId}
+                onSceneSelect={onSceneSelect}
               />
             ))}
           </div>
