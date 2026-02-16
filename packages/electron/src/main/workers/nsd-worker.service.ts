@@ -26,8 +26,8 @@
  */
 
 import type { ILogger } from '@coreto/core';
-import type { NSDScene } from '@coreto/electron/domain/entities';
 import { ConsoleLogger } from '@coreto/core';
+import { NSDScene } from '@coreto/electron/domain/entities';
 
 // Import NsdParserService for AI-powered scene extraction
 import { NsdParserService } from '../services/nsd-parser.service.js';
@@ -340,6 +340,10 @@ export class NsdWorkerService {
    * Creates an instance of NsdParserService and delegates scene extraction.
    * Uses AI-powered parsing with regex fallback.
    *
+   * IMPORTANT: In UtilityProcess worker context, we skip AI parsing entirely
+   * because Electron APIs (like app.getAppPath()) are not available.
+   * We use regex-based parsing directly as a workaround.
+   *
    * @param content - NSD markdown content
    * @param fileName - Original filename
    * @param correlationId - Optional correlation ID
@@ -356,11 +360,30 @@ export class NsdWorkerService {
     });
 
     try {
-      // Create parser service instance
+      // Check if we're in a UtilityProcess worker context
+      // UtilityProcess doesn't have access to Electron APIs like app.getAppPath()
+      // which McpClientService requires, so we skip AI parsing in workers
+      const isWorkerContext = typeof process !== 'undefined' &&
+                              process.type === 'utility';
+
+      if (isWorkerContext) {
+        this.logger.info('Running in UtilityProcess context, using regex-only parsing (no AI)', {
+          correlationId,
+        });
+
+        // Use regex-based parsing directly (no AI in worker context)
+        const parsedScenes = this.extractScenesWithRegex(content, correlationId);
+
+        // Convert to NSDScene entities
+        const scenes = this.convertToSceneEntities(parsedScenes, correlationId);
+        return scenes;
+      }
+
+      // Create parser service instance for main process context
       // Note: Using manual injection since decorators may not work in worker context
       const parserService = new NsdParserService(this.logger);
 
-      // Delegate scene parsing to NsdParserService
+      // Delegate scene parsing to NsdParserService (with AI support)
       const scenes = await parserService.parseScenes(
         content,
         undefined, // Progress updates handled by worker service
@@ -376,6 +399,143 @@ export class NsdWorkerService {
       });
       throw error;
     }
+  }
+
+  /**
+   * Extracts scenes from NSD content using regex parsing.
+   *
+   * Fallback method when AI parsing fails or is unavailable.
+   * Splits content by markdown headers and extracts title and content.
+   *
+   * @param content - NSD markdown content
+   * @param correlationId - Optional correlation ID
+   * @returns Array of parsed scenes
+   */
+  private extractScenesWithRegex(
+    content: string,
+    correlationId?: string
+  ): Array<{ title: string; content: string; summary?: string }> {
+    this.logger.debug('Starting regex-based scene extraction', {
+      correlationId,
+    });
+
+    const scenes: Array<{ title: string; content: string; summary?: string }> = [];
+
+    // Split content by ## headers (scene-level headings)
+    // Matches: ## Scene 1: Title or ## Title
+    const lines = content.split('\n');
+    let currentScene: { title: string; content: string; summary?: string } | null = null;
+    let currentContent: string[] = [];
+
+    for (const line of lines) {
+      const sceneMatch = line.match(/^##\s+(.+)$/);
+
+      if (sceneMatch) {
+        // Save previous scene if exists
+        if (currentScene) {
+          currentScene.content = currentContent.join('\n').trim();
+          scenes.push(currentScene);
+        }
+
+        // Start new scene
+        const title = sceneMatch[1].trim();
+        currentScene = {
+          title,
+          content: '',
+        };
+        currentContent = [];
+      } else if (currentScene) {
+        // Add line to current scene content
+        // Skip empty lines at start of content
+        if (currentContent.length > 0 || line.trim() !== '') {
+          currentContent.push(line);
+        }
+      }
+    }
+
+    // Save last scene
+    if (currentScene) {
+      currentScene.content = currentContent.join('\n').trim();
+      scenes.push(currentScene);
+    }
+
+    // If no scenes found with ## headers, try alternative patterns
+    if (scenes.length === 0) {
+      this.logger.warn('No ## headers found, attempting alternative parsing', {
+        correlationId,
+      });
+
+      // Try splitting by # headers (document-level)
+      const docHeaders = content.split(/^#\s+.+$/m);
+      if (docHeaders.length > 1) {
+        // Use content after first # header as single scene
+        scenes.push({
+          title: 'Main Scene',
+          content: docHeaders.slice(1).join('\n').trim(),
+        });
+      } else {
+        // Last resort: treat entire content as single scene
+        scenes.push({
+          title: 'Untitled Scene',
+          content: content.trim(),
+        });
+      }
+    }
+
+    this.logger.debug('Regex extraction completed', {
+      correlationId,
+      sceneCount: scenes.length,
+    });
+
+    return scenes;
+  }
+
+  /**
+   * Converts parsed scenes to NSDScene entities.
+   *
+   * Creates NSDScene entities from parsed scene data with proper
+   * validation and scene numbering.
+   *
+   * @param parsedScenes - Array of parsed scenes
+   * @param correlationId - Optional correlation ID
+   * @returns Array of NSDScene entities
+   */
+  private convertToSceneEntities(
+    parsedScenes: Array<{ title: string; content: string; summary?: string }>,
+    correlationId?: string
+  ): NSDScene[] {
+    this.logger.debug('Converting parsed scenes to NSDScene entities', {
+      correlationId,
+      parsedCount: parsedScenes.length,
+    });
+
+    const scenes: NSDScene[] = [];
+
+    for (let i = 0; i < parsedScenes.length; i++) {
+      const parsed = parsedScenes[i];
+      const sceneNumber = i + 1;
+
+      try {
+        const scene = NSDScene.create(
+          parsed.title,
+          parsed.content,
+          sceneNumber,
+          correlationId,
+          parsed.summary
+        );
+        scenes.push(scene);
+      } catch (error) {
+        this.logger.warn('Failed to create NSDScene entity, skipping', {
+          correlationId,
+          sceneNumber,
+          title: parsed.title,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        // Continue with next scene
+      }
+    }
+
+    return scenes;
   }
 
   /**
