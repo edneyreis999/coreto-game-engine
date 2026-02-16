@@ -35,9 +35,6 @@ export type { HomeProps } from './Home';
 export { PortalButton } from './Home/PortalButton';
 export type { PortalButtonProps } from './Home/PortalButton';
 
-export { NSDGeneratorPlaceholder } from './NSDGeneratorPlaceholder';
-export type { NSDGeneratorPlaceholderProps } from './NSDGeneratorPlaceholder';
-
 export { NSDGenerator } from './NSDGenerator';
 export type { NSDGeneratorProps } from './NSDGenerator';
 

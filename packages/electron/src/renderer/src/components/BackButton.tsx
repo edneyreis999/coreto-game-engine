@@ -56,7 +56,7 @@ export interface BackButtonProps {
  * for predictable behavior regardless of navigation history.
  *
  * @example
- * // In TTKValidationFlow or NSDGeneratorPlaceholder
+ * // In TTKValidationFlow or NSDGenerator
  * <BackButton />
  *
  * Note: Project state is managed globally via React Context.
