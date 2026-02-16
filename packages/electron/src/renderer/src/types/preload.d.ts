@@ -572,6 +572,75 @@ interface OracleMcpAPI {
     projectPath: string;
     questVariable?: string;
   }): Promise<IPCResult<AnalyzeProjectResponse>>;
+
+  /**
+   * Tests the project analyzer with a specific directory and model.
+   * @param params - Test parameters (test directory, model selection)
+   * @returns Promise resolving to test execution results with output file paths
+   *
+   * @example
+   * const result = await window.coreto.oracleMcp.testAnalyzeProject({
+   *   testDirectory: '/path/to/test/outputs',
+   *   model: 'glm-4.7'
+   * });
+   * if (result.success) {
+   *   console.log('Analysis completed:', result.data.outputPath);
+   *   console.log('JSON output:', result.data.files.json);
+   *   console.log('Markdown output:', result.data.files.markdown);
+   * }
+   */
+  testAnalyzeProject(params: {
+    testDirectory: string;
+    model: 'glm-4.7' | 'glm-4.5-air' | 'glm-4-flash';
+  }): Promise<
+    IPCResult<{
+      success: boolean;
+      outputPath: string;
+      files: {
+        json: string;
+        markdown: string;
+      };
+      timestamp: string;
+    }>
+  >;
+}
+
+/**
+ * Test Analyze API
+ *
+ * Handles test directory preparation for project analysis.
+ */
+interface TestAnalyzeAPI {
+  /**
+   * Prepares test directory with NSD and scene files.
+   * Creates export directory, copies NSD file, and creates scene file.
+   * @param params - Test directory preparation parameters
+   * @returns Promise resolving to test directory paths
+   *
+   * @example
+   * const result = await window.coreto.testAnalyze.prepareDirectory({
+   *   nsdPath: '/path/to/nsd.md',
+   *   sceneText: 'Scene content here',
+   *   sceneFile: 'scene.md'
+   * });
+   * if (result.success) {
+   *   console.log('Test directory:', result.data.testDirectory);
+   *   console.log('NSD file:', result.data.nsdFile);
+   *   console.log('Scene file:', result.data.sceneFile);
+   * }
+   */
+  prepareDirectory(params: {
+    nsdPath: string;
+    sceneText: string;
+    sceneFile: string;
+    exportDir?: string;
+  }): Promise<
+    IPCResult<{
+      testDirectory: string;
+      nsdFile: string;
+      sceneFile: string;
+    }>
+  >;
 }
 
 /**
@@ -614,6 +683,8 @@ interface CoretoAPI {
   logs: LogsAPI;
   /** Oracle MCP server operations */
   oracleMcp: OracleMcpAPI;
+  /** Test analyze operations */
+  testAnalyze: TestAnalyzeAPI;
 }
 
 // ============================================================================
@@ -665,7 +736,7 @@ declare global {
 }
 
 // Export API interfaces for use in components
-export type { ElectronAPI, CoretoAPI, OracleMcpAPI };
+export type { ElectronAPI, CoretoAPI, OracleMcpAPI, TestAnalyzeAPI };
 
 // Note: Domain types should be imported directly from @coreto/electron/domain/types
 // This avoids re-export chains and makes dependencies explicit
