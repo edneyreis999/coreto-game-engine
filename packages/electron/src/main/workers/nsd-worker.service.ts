@@ -26,7 +26,6 @@
  */
 
 import type { ILogger } from '@coreto/core';
-import { ConsoleLogger } from '@coreto/core';
 
 // =============================================================================
 // Plain Old JavaScript Objects (POJOs) for Worker Context
@@ -190,18 +189,17 @@ export class NSDParseError extends Error {
 export class NsdWorkerService {
   /**
    * Logger instance.
-   * Uses ConsoleLogger as fallback in worker context.
+   * Required dependency for all operations.
    */
   private readonly logger: ILogger;
 
   /**
    * Creates a new NsdWorkerService instance.
    *
-   * @param logger - Optional logger instance (defaults to ConsoleLogger)
+   * @param logger - Logger instance (required)
    */
-  constructor(logger?: ILogger) {
-    // Use provided logger or fallback to ConsoleLogger for worker context
-    this.logger = logger || new ConsoleLogger();
+  constructor(logger: ILogger) {
+    this.logger = logger;
   }
 
   /**

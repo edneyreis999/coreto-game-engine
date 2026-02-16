@@ -37,9 +37,16 @@ export const OracleMcpStartSchema = z.object({
 });
 
 /**
- * Zod schema for validating oracle-mcp:generate-prompt payload.
- * Note: GeneratePromptSchema is imported from @coreto/oracle
+ * Extended schema for oracle-mcp:generate-prompt with optional model override.
+ * Extends the base GeneratePromptSchema with model selection for testing.
  */
+export const GeneratePromptWithModelSchema = GeneratePromptSchema.extend({
+  /**
+   * Optional model override for testing.
+   * Allows test button to use faster/cheaper models.
+   */
+  model: z.enum(['glm-4.7', 'glm-4.5-air', 'glm-4-flash']).optional(),
+});
 
 /**
  * Zod schema for validating oracle-mcp:health payload.
@@ -156,26 +163,35 @@ export async function handleOracleMcpGeneratePrompt(
     validatePayload(
       'oracle-mcp:generate-prompt',
       payload,
-      GeneratePromptSchema
+      GeneratePromptWithModelSchema
     );
-    const validatedInput = payload as GeneratePromptInput;
 
-    getLogger().info(`[OracleMcpIpcHandler] Generating prompt for scene: ${validatedInput.sceneName}`);
+    const validatedInput = payload as GeneratePromptInput & { model?: string };
+
+    getLogger().info(`[OracleMcpIpcHandler] Generating prompt for scene: ${validatedInput.sceneName}`, {
+      modelOverride: validatedInput.model || 'default',
+    });
+
+    // Extract model override if present, remove from payload sent to MCP
+    const { model, ...mcpPayload } = validatedInput;
 
     const result = await mcpClientService.callTool<{ content: Array<{ type: string; text: string }> }>(
       'generate_nsd_prompt',
-      validatedInput
+      model ? { ...mcpPayload, model } : mcpPayload
     );
 
     // Extract prompt from MCP response: { content: [{ type: "text", text: "..." }] }
     const prompt = result.content?.[0]?.text || '';
 
-    getLogger().info(`[OracleMcpIpcHandler] Prompt generated successfully, length: ${prompt.length}`);
+    getLogger().info(`[OracleMcpIpcHandler] Prompt generated successfully, length: ${prompt.length}`, {
+      model: model || 'default',
+    });
 
     // Log model response for debugging
     getLogger().info('[Oracle MCP] Model response:', {
       promptLength: prompt.length,
       sceneName: validatedInput.sceneName,
+      model: model || 'default',
       preview: prompt.slice(0, 200) + '...'
     });
 

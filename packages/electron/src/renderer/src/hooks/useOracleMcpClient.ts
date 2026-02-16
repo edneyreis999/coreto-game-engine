@@ -34,6 +34,13 @@ export interface GenerateNsdPromptParams {
 
   /** Optional quest variable identifier for scene */
   questVariable?: string;
+
+  /**
+   * Optional model override for testing.
+   * Uses 'glm-4.5-air' (faster/cheaper) for test button.
+   * Default: uses configured model from settings.
+   */
+  model?: 'glm-4.7' | 'glm-4.5-air' | 'glm-4-flash';
 }
 
 /**

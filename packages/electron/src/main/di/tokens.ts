@@ -13,3 +13,4 @@ export const IProjectValidatorToken = Symbol.for('IProjectValidator');
 export const IGameDataLoaderToken = Symbol.for('IGameDataLoader');
 export const IConfigStorageToken = Symbol.for('IConfigStorage');
 export const IReportBuilderToken = Symbol.for('IReportBuilder');
+export const INsdParserServiceToken = Symbol.for('INsdParserService');

@@ -14,7 +14,11 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import { ClaudeAgentClient, GeneratePromptSchema } from '../lib/claudeAgentClient.js';
+import {
+  ClaudeAgentClient,
+  GeneratePromptSchema,
+  ExtractScenesSchema,
+} from '../lib/claudeAgentClient.js';
 
 /**
  * OracleMcpServer implements the Model Context Protocol server for Oracle.
@@ -72,6 +76,13 @@ export class OracleMcpServer {
               questVariable: GeneratePromptSchema.shape.questVariable.optional().describe('Variável de controle da quest (opcional)'),
             }).shape,
           },
+          {
+            name: 'extract_scenes',
+            description: 'Extrai cenas narrativas de um documento NSD em formato Coreto',
+            inputSchema: ExtractScenesSchema.extend({
+              nsdContent: ExtractScenesSchema.shape.nsdContent.describe('Conteúdo completo do NSD em formato markdown Coreto'),
+            }).shape,
+          },
         ],
       };
     });
@@ -87,8 +98,15 @@ export class OracleMcpServer {
         const nsdContent = String(args?.nsdContent || '');
         const sceneName = String(args?.sceneName || '');
         const projectPath = String(args?.projectPath || '');
+        const model = args?.model !== undefined ? String(args.model) : undefined;
 
-        const promptOptions: { nsdContent: string; sceneName: string; projectPath: string; questVariable?: string } = {
+        const promptOptions: {
+          nsdContent: string;
+          sceneName: string;
+          projectPath: string;
+          questVariable?: string;
+          model?: string;
+        } = {
           nsdContent,
           sceneName,
           projectPath,
@@ -98,6 +116,10 @@ export class OracleMcpServer {
           promptOptions.questVariable = String(args.questVariable);
         }
 
+        if (model !== undefined) {
+          promptOptions.model = model;
+        }
+
         const generatedPrompt = await this.client.generateNsdPrompt(promptOptions);
 
         const response = {
@@ -105,6 +127,27 @@ export class OracleMcpServer {
             {
               type: 'text',
               text: generatedPrompt,
+            },
+          ],
+        };
+
+        return response;
+      }
+
+      if (name === 'extract_scenes') {
+        await this.client.init();
+
+        // Type assertion for args since they come from MCP as Record<string, unknown>
+        const nsdContent = String(args?.nsdContent || '');
+
+        const extractOptions = { nsdContent };
+        const result = await this.client.extractScenes(extractOptions);
+
+        const response = {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result),
             },
           ],
         };

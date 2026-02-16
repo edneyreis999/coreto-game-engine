@@ -18,12 +18,14 @@ import { z } from 'zod';
  * - sceneName: Name of scene to generate a prompt for
  * - projectPath: Path to RPG Maker MZ project
  * - questVariable: Optional quest variable identifier for scene
+ * - model: Optional model override for testing (glm-4.7, glm-4.5-air, glm-4-flash)
  */
 export interface GeneratePromptOptions {
   nsdContent: string;
   sceneName: string;
   projectPath: string;
   questVariable?: string;
+  model?: string;
 }
 
 /**
@@ -72,6 +74,60 @@ export const GeneratePromptSchema = z.object({
  * Ensures TypeScript types stay in sync with Zod validation.
  */
 export type GeneratePromptInput = z.infer<typeof GeneratePromptSchema>;
+
+/**
+ * SceneData represents a single extracted scene from NSD.
+ *
+ * - title: Scene heading/title
+ * - content: Full scene content including beats and descriptions
+ * - summary: Optional brief summary of the scene
+ */
+export interface SceneData {
+  title: string;
+  content: string;
+  summary?: string;
+}
+
+/**
+ * ExtractScenesResult represents the response from scene extraction.
+ *
+ * - scenes: Array of extracted scenes
+ * - totalScenes: Total number of scenes found
+ */
+export interface ExtractScenesResult {
+  scenes: SceneData[];
+  totalScenes: number;
+}
+
+/**
+ * ExtractScenesOptions - Input parameters for NSD scene extraction.
+ *
+ * - nsdContent: The full NSD document content in markdown format
+ */
+export interface ExtractScenesOptions {
+  nsdContent: string;
+}
+
+/**
+ * ExtractScenesSchema - Zod schema for scene extraction validation.
+ *
+ * Validates parameters required for NSD scene extraction:
+ * - nsdContent: The full NSD document content in markdown format
+ */
+export const ExtractScenesSchema = z.object({
+  nsdContent: z
+    .string({
+      required_error: 'nsdContent is required',
+      invalid_type_error: 'nsdContent must be a string',
+    })
+    .min(1, 'nsdContent cannot be empty')
+    .max(2 * 1024 * 1024, 'nsdContent cannot exceed 2MB'), // 2MB limit for scene extraction
+});
+
+/**
+ * Type inference from ExtractScenesSchema.
+ */
+export type ExtractScenesInput = z.infer<typeof ExtractScenesSchema>;
 
 /**
  * HealthCheckResult represents the health check response.
@@ -149,8 +205,9 @@ export class ClaudeAgentClient {
    * ```
    */
   async generateNsdPrompt(options: GeneratePromptOptions): Promise<string> {
-    // Validate input using Zod schema
-    const validatedInput = GeneratePromptSchema.parse(options);
+    // Validate input using Zod schema (without model field for base validation)
+    const { model: modelOverride, ...baseOptions } = options;
+    const validatedInput = GeneratePromptSchema.parse(baseOptions);
 
     if (!this.initialized) {
       await this.init();
@@ -160,12 +217,363 @@ export class ClaudeAgentClient {
       throw new Error('Claude client not initialized');
     }
 
-    // TODO: Implement actual Claude Agent SDK call
-    // For now, return a stub response
+    // Use custom model if provided, otherwise use default from config
+    const model = modelOverride || this.authConfig.model;
+
     const systemPrompt = this.buildSystemPrompt(validatedInput);
     const userPrompt = this.buildUserPrompt(validatedInput);
 
-    return `STUB: Prompt generation not yet implemented.\n\nSystem: ${systemPrompt.slice(0, 100)}...\n\nUser: ${userPrompt}`;
+    console.error('[generateNsdPrompt] Calling Z.ai Anthropic-compatible API...', {
+      model,
+      baseUrl: this.authConfig.baseUrl,
+      sceneName: validatedInput.sceneName,
+      nsdContentLength: validatedInput.nsdContent.length,
+      modelOverride: modelOverride || 'none',
+    });
+
+    // Z.ai Anthropic-compatible endpoint: /api/anthropic/v1/messages
+    // Documentation: https://docs.z.ai/scenario-example/develop-tools/claude
+    const apiUrl = new URL('/api/anthropic/v1/messages', this.authConfig.baseUrl);
+
+    const requestBody = {
+      model,
+      max_tokens: 8192,
+      system: systemPrompt,
+      messages: [
+        {
+          role: 'user',
+          content: userPrompt,
+        },
+      ],
+    };
+
+    console.error('[generateNsdPrompt] Request payload:', {
+      endpoint: apiUrl.toString(),
+      model,
+      systemPromptLength: systemPrompt.length,
+      userPromptLength: userPrompt.length,
+    });
+
+    // Create AbortController for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout
+
+    let response: Response;
+    try {
+      response = await fetch(apiUrl.toString(), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': this.authConfig.authToken,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.error('[generateNsdPrompt] ✗ Request timeout after 25 seconds');
+        throw new Error('Request timeout after 25 seconds - Z.ai API did not respond');
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[generateNsdPrompt] ✗ API error:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorText,
+      });
+      throw new Error(`Z.ai API error: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+
+    const data = await response.json();
+
+    // Anthropic format: { content: [{ type: 'text', text: '...' }] }
+    if (!data.content || !Array.isArray(data.content) || data.content.length === 0) {
+      console.error('[generateNsdPrompt] ✗ Invalid response structure:', data);
+      throw new Error('Invalid API response: missing content array');
+    }
+
+    // Extract text from the first content block
+    const textBlock = data.content.find((block: unknown) => {
+      return typeof block === 'object' && block !== null && 'type' in block && block.type === 'text';
+    });
+
+    if (!textBlock || typeof textBlock.text !== 'string') {
+      console.error('[generateNsdPrompt] ✗ No text block found in response');
+      throw new Error('Invalid API response: missing text content');
+    }
+
+    const prompt = textBlock.text;
+    console.error('[generateNsdPrompt] ✓ Prompt generated successfully', {
+      responseLength: prompt.length,
+      preview: prompt.slice(0, 200) + '...',
+    });
+
+    return prompt;
+  }
+
+  /**
+   * Extracts narrative scenes from NSD markdown content using Claude AI.
+   *
+   * This method validates input, constructs the extraction prompt,
+   * and calls Claude to identify and extract scenes from the NSD.
+   *
+   * Implements retry logic (up to 3 attempts) if JSON response is invalid.
+   *
+   * @param options - Input parameters for scene extraction
+   * @returns Promise resolving to extracted scenes result
+   * @throws {Error} When input validation fails or extraction errors occur
+   *
+   * @example
+   * ```typescript
+   * const result = await client.extractScenes({
+   *   nsdContent: nsdFileContent
+   * });
+   * console.log(`Found ${result.totalScenes} scenes`);
+   * result.scenes.forEach(scene => console.log(scene.title));
+   * ```
+   */
+  async extractScenes(options: ExtractScenesOptions): Promise<ExtractScenesResult> {
+    // Validate input using Zod schema
+    ExtractScenesSchema.parse(options);
+
+    if (!this.initialized) {
+      await this.init();
+    }
+
+    if (!this.authConfig) {
+      throw new Error('Claude client not initialized');
+    }
+
+    const maxRetries = 3;
+    let lastError: Error | null = null;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.error(`[extractScenes] Attempt ${attempt}/${maxRetries}`);
+
+        const result = await this.callClaudeForExtraction(options.nsdContent);
+
+        // Validate response structure
+        if (!result || !result.scenes || !Array.isArray(result.scenes)) {
+          throw new Error('Invalid response structure: missing or invalid scenes array');
+        }
+
+        if (result.scenes.length === 0) {
+          throw new Error('No scenes found in response');
+        }
+
+        // Validate each scene has required fields
+        for (const scene of result.scenes) {
+          if (!scene.title || !scene.content) {
+            throw new Error('Invalid scene: missing title or content');
+          }
+        }
+
+        console.error(`[extractScenes] ✓ Success: ${result.scenes.length} scenes extracted`);
+        return result;
+
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        console.error(`[extractScenes] ✗ Attempt ${attempt} failed:`, lastError.message);
+
+        if (attempt < maxRetries) {
+          // Wait before retry (exponential backoff: 1s, 2s, 4s)
+          const delayMs = Math.pow(2, attempt - 1) * 1000;
+          console.error(`[extractScenes] Retrying in ${delayMs}ms...`);
+          await this.sleep(delayMs);
+        }
+      }
+    }
+
+    // All retries failed
+    throw new Error(
+      `Failed to extract scenes after ${maxRetries} attempts. Last error: ${lastError?.message || 'Unknown error'}`
+    );
+  }
+
+  /**
+   * Calls Claude API to extract scenes from NSD content.
+   *
+   * @param nsdContent - NSD markdown content
+   * @returns Promise resolving to extracted scenes result
+   * @throws {Error} When API call fails or returns invalid response
+   */
+  private async callClaudeForExtraction(nsdContent: string): Promise<ExtractScenesResult> {
+    if (!this.authConfig) {
+      throw new Error('Claude client not initialized');
+    }
+
+    const systemPrompt = this.buildSceneExtractionSystemPrompt();
+    const userPrompt = this.buildSceneExtractionUserPrompt(nsdContent);
+
+    // Z.ai uses OpenAI-compatible endpoint: /api/paas/v4/chat/completions
+    // Documentation: https://docs.z.ai/api-reference/llm/chat-completion
+    const apiUrl = new URL('/api/paas/v4/chat/completions', this.authConfig.baseUrl);
+
+    const requestBody = {
+      model: this.authConfig.model,
+      messages: [
+        {
+          role: 'system',
+          content: systemPrompt
+        },
+        {
+          role: 'user',
+          content: userPrompt
+        }
+      ],
+      temperature: 0.3,
+      max_tokens: 8192,
+      response_format: { type: 'json_object' } // Force JSON response
+    };
+
+    console.error('[extractScenes] Calling Z.ai API (OpenAI-compatible format)...', {
+      model: this.authConfig.model,
+      contentLength: nsdContent.length,
+      endpoint: apiUrl.toString()
+    });
+
+    const response = await fetch(apiUrl.toString(), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.authConfig.authToken}`,
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Z.ai API error: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+
+    const data = await response.json();
+
+    // OpenAI-compatible format: { choices: [{ message: { content: "..." } }] }
+    if (!data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
+      throw new Error('Invalid API response: missing choices array');
+    }
+
+    // Extract text from the first choice's message
+    const textContent = data.choices[0]?.message?.content;
+    if (!textContent || typeof textContent !== 'string') {
+      throw new Error('Invalid API response: missing message content');
+    }
+
+    console.error('[extractScenes] Raw response length:', textContent.length);
+
+    // Parse JSON response
+    let parsedResponse: ExtractScenesResult;
+    try {
+      // Clean up response - remove markdown code blocks if present
+      let cleanedJson = textContent.trim();
+
+      // Remove ```json and ``` markers if present
+      if (cleanedJson.startsWith('```json')) {
+        cleanedJson = cleanedJson.slice(7);
+      } else if (cleanedJson.startsWith('```')) {
+        cleanedJson = cleanedJson.slice(3);
+      }
+
+      if (cleanedJson.endsWith('```')) {
+        cleanedJson = cleanedJson.slice(0, -3);
+      }
+
+      cleanedJson = cleanedJson.trim();
+
+      console.error('[extractScenes] Cleaned JSON preview:', cleanedJson.slice(0, 200));
+
+      parsedResponse = JSON.parse(cleanedJson);
+
+    } catch (parseError) {
+      throw new Error(
+        `Failed to parse JSON response: ${parseError instanceof Error ? parseError.message : String(parseError)}`
+      );
+    }
+
+    return parsedResponse;
+  }
+
+  /**
+   * Builds system prompt for scene extraction.
+   *
+   * Forces JSON output format with strict schema validation.
+   */
+  private buildSceneExtractionSystemPrompt(): string {
+    return `Você é um especialista em analisar documentos NSD (Narrative Scene Document) do Coreto e extrair cenas narrativas.
+
+## Sua Tarefa
+
+Analise o documento NSD fornecido e extraia TODAS as cenas narrativas presentes.
+
+## Formato de Resposta OBRIGATÓRIO
+
+Você deve responder APENAS com um JSON válido, sem nenhum texto adicional. O JSON deve seguir exatamente esta estrutura:
+
+\`\`\`json
+{
+  "scenes": [
+    {
+      "title": "Cena 1 – Título da Cena",
+      "content": "Conteúdo completo da cena incluindo todos os beats, diálogos e descrições",
+      "summary": "Resumo breve e opcional da cena"
+    }
+  ],
+  "totalScenes": 1
+}
+\`\`\`
+
+## Regras de Extração
+
+1. **Identificação de Cenas**: Procure por cabeçalhos de nível 4 (####) que seguem o padrão "#### Cena N – Título"
+2. **Conteúdo da Cena**: Inclua todo o conteúdo desde o cabeçho da cena até o próximo cabeçalho de cena ou fim do documento
+3. **Título**: Use exatamente o texto do cabeçalho (ex: "Cena 1 – Pesadelo Premonitório")
+4. **Sumário**: Crie um resumo conciso (máximo 100 caracteres) capturando a essência da cena
+5. **Numeração**: O campo "totalScenes" deve refletir o número total de cenas encontradas
+
+## Formato NSD Coreto
+
+Cenas são definidas com cabeçalhos nível 4:
+- #### Cena 1 – Título da Cena
+- #### Cena 2 – Outro Título
+- etc.
+
+## CRÍTICO
+
+- Responda APENAS com JSON válido
+- Não inclua texto fora do JSON
+- Se o NSD não tiver cenas, retorne: {"scenes":[],"totalScenes":0}
+- O JSON deve ser parseável por JSON.parse()`;
+  }
+
+  /**
+   * Builds user prompt for scene extraction.
+   *
+   * @param nsdContent - NSD markdown content
+   * @returns User prompt string
+   */
+  private buildSceneExtractionUserPrompt(nsdContent: string): string {
+    return `## Documento NSD
+
+${nsdContent}
+
+Extraia todas as cenas narrativas deste documento NSD seguindo o formato JSON especificado no system prompt. Lembre-se: responda APENAS com o JSON, sem nenhum texto adicional.`;
+  }
+
+  /**
+   * Sleep utility for retry delays.
+   *
+   * @param ms - Milliseconds to sleep
+   * @returns Promise that resolves after delay
+   */
+  private sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 
   /**
@@ -185,12 +593,87 @@ export class ClaudeAgentClient {
    * ```
    */
   async healthCheck(): Promise<HealthCheckResult> {
-    // TODO: Implement health check after resolving SDK type issues
-    return {
-      healthy: false,
-      message: 'Health check not yet implemented - SDK type compatibility issues',
-      timestamp: new Date().toISOString(),
-    };
+    try {
+      // Initialize client if not already initialized
+      if (!this.initialized) {
+        await this.init();
+      }
+
+      if (!this.authConfig) {
+        return {
+          healthy: false,
+          message: 'Claude client not initialized - auth config missing',
+          timestamp: new Date().toISOString(),
+        };
+      }
+
+      // Test API connectivity with a minimal request
+      const apiUrl = new URL('/api/anthropic/v1/messages', this.authConfig.baseUrl);
+
+      console.error('[healthCheck] Testing Z.ai API connectivity...', {
+        baseUrl: this.authConfig.baseUrl,
+        model: this.authConfig.model,
+      });
+
+      const response = await fetch(apiUrl.toString(), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': this.authConfig.authToken,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: this.authConfig.model,
+          max_tokens: 10,
+          messages: [
+            {
+              role: 'user',
+              content: 'OK',
+            },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[healthCheck] ✗ API health check failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorText,
+        });
+        return {
+          healthy: false,
+          message: `API health check failed: ${response.status} ${response.statusText}`,
+          timestamp: new Date().toISOString(),
+        };
+      }
+
+      const data = await response.json();
+
+      if (data.content && Array.isArray(data.content) && data.content.length > 0) {
+        console.error('[healthCheck] ✓ API is healthy and responsive');
+        return {
+          healthy: true,
+          message: `Claude Agent SDK connection OK (model: ${this.authConfig.model})`,
+          timestamp: new Date().toISOString(),
+        };
+      }
+
+      return {
+        healthy: false,
+        message: 'API returned unexpected response structure',
+        timestamp: new Date().toISOString(),
+      };
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('[healthCheck] ✗ Health check error:', errorMessage);
+      return {
+        healthy: false,
+        message: `Health check error: ${errorMessage}`,
+        timestamp: new Date().toISOString(),
+      };
+    }
   }
 
   /**

@@ -2,12 +2,13 @@
  * NSD (Narrative Scene Document) IPC Handlers
  *
  * Handlers for NSD document upload and parsing operations.
- * Processes NSD documents directly in main thread using NsdWorkerService.
+ * Processes NSD documents directly in main thread using NsdParserService.
  *
  * Architecture:
- * Renderer (React) → Main (IPC Handler) → NsdWorkerService → Regex Parsing
+ * Renderer (React) → Main (IPC Handler) → NsdParserService → Oracle MCP → Claude AI
+ *                                                            → Regex Fallback
  *
- * @see packages/electron/src/main/workers/nsd-worker.service.ts
+ * @see packages/electron/src/main/services/nsd-parser.service.ts
  * @see packages/electron/src/main/ipc/nsd-schemas.ts
  */
 
@@ -21,12 +22,12 @@ import type { IPCResult } from '../protocol-types.js';
 import type { NSDUploadPayload } from '../nsd-schemas.js';
 import { NSDUploadPayloadSchema } from '../nsd-schemas.js';
 import { wrapHandler } from '../ipc-response.js';
-import { ILoggerToken } from '../../di/tokens.js';
+import { ILoggerToken, INsdParserServiceToken } from '../../di/tokens.js';
+import { resolve as resolveDI } from '../../di/container.js';
 import type { NSDUploadResponse } from '@coreto/electron/domain/types';
 
-// Import NSDScene and service for main thread processing
-import { NSDScene } from '@coreto/electron/domain/entities';
-import { NsdWorkerService, type PlainScene, type NSDProgressStage } from '../../workers/nsd-worker.service.js';
+// Import NSD parser service for main thread processing (AI-powered)
+import { NsdParserService, type NSDProgressCallback } from '../../services/nsd-parser.service.js';
 
 // ============================================================================
 // Constants
@@ -47,36 +48,6 @@ const ALLOWED_EXTENSION = '.md';
 // ============================================================================
 // Helper Functions
 // ============================================================================
-
-/**
- * Converts PlainScene POJOs from parsing result to NSDScene entities.
- * Main process creates entities after parsing completes.
- *
- * @param plainScenes - PlainScene POJOs from NsdWorkerService
- * @param correlationId - Optional correlation ID for logging
- * @returns Array of NSDScene entities
- */
-function convertToNSDScenes(plainScenes: PlainScene[], correlationId?: string): NSDScene[] {
-  const scenes: NSDScene[] = [];
-
-  for (const plain of plainScenes) {
-    try {
-      const scene = NSDScene.create(
-        plain.title,
-        plain.content,
-        plain.sceneNumber,
-        correlationId,
-        plain.summary
-      );
-      scenes.push(scene);
-    } catch (error) {
-      // Log and skip invalid scenes
-      console.warn(`[IPC] Failed to create NSDScene for scene ${plain.sceneNumber}:`, error);
-    }
-  }
-
-  return scenes;
-}
 
 // ============================================================================
 // Response Types
@@ -150,10 +121,9 @@ function validateFileSize(fileSize: number): void {
  * 2. If source.path: read file, validate extension (.md), validate size (1MB)
  * 3. If source.text: use text directly
  * 4. Generate correlationId for tracking
- * 5. Parse NSD content using NsdWorkerService (regex-based, no AI)
+ * 5. Parse NSD content using NsdParserService (AI-powered via Oracle MCP)
  * 6. Forward progress events to renderer
- * 7. Convert PlainScene[] to NSDScene[] entities
- * 8. Return IPC response with scenes
+ * 7. Return IPC response with NSDScene[] entities
  *
  * Error Handling:
  * - Invalid payload: Returns error immediately
@@ -237,11 +207,11 @@ export async function nsdUploadHandler(
 
     logger.info(`[IPC] Starting NSD parsing in main thread: documentId=${documentId}, correlationId=${correlationId}`);
 
-    // 4. Create NsdWorkerService instance
-    const nsdService = new NsdWorkerService(logger);
+    // 4. Resolve NsdParserService from DI container (main thread, AI-powered)
+    const nsdService = resolveDI<NsdParserService>(INsdParserServiceToken);
 
     // 5. Progress callback to forward events to renderer
-    const progressCallback = (stage: NSDProgressStage, percent: number): void => {
+    const progressCallback: NSDProgressCallback = (stage, percent) => {
       logger.debug(`[IPC] NSD parsing progress: ${stage} (${percent}%)`);
 
       // Send progress event to renderer
@@ -252,10 +222,9 @@ export async function nsdUploadHandler(
       });
     };
 
-    // 6. Parse NSD content (regex-based, no AI)
-    const plainScenes = await nsdService.parseNSD(
+    // 6. Parse NSD content (AI-powered via Oracle MCP, with regex fallback)
+    const scenes = await nsdService.parseScenes(
       content,
-      fileName,
       progressCallback,
       correlationId
     );
@@ -263,16 +232,13 @@ export async function nsdUploadHandler(
     const duration = Date.now() - startTime;
 
     logger.info(
-      `[IPC] NSD parsing completed: documentId=${documentId}, scenes=${plainScenes.length}, duration=${duration}ms`
+      `[IPC] NSD parsing completed: documentId=${documentId}, scenes=${scenes.length}, duration=${duration}ms`
     );
 
-    // 7. Convert PlainScene[] to NSDScene[] entities
-    const scenes = convertToNSDScenes(plainScenes, correlationId);
-
-    // 8. Build response
+    // 7. Build response
     const response: NSDUploadResponse = {
       documentId,
-      sceneList: scenes as NSDScene[],
+      sceneList: scenes,
       warnings: [], // TODO: Collect warnings during parsing if needed
     };
 

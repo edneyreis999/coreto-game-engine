@@ -15,6 +15,7 @@ export function OracleMcpTestButton(): React.ReactElement {
         nsdContent: '# NSD de Teste\n\n## Cena Olá Mundo\nEsta é uma cena de teste para validar a integração MCP.',
         sceneName: 'Cena Olá Mundo',
         projectPath: '/tmp/test-project',
+        model: 'glm-4.5-air', // Faster/cheaper model for testing
       })
     } catch (err) {
       console.error('[Oracle MCP Test] Error:', err)

@@ -26,6 +26,7 @@ import type { IProjectValidator, IGameDataLoader, IConfigStorage, IReportBuilder
 import { NodeFileSystem, RmmzDataLoader, IConfigLoaderToken } from '@coreto/core';
 import { createSimulationReportBuilder } from '@coreto/electron/domain/use-cases';
 import { getDatabase } from '../database/index.js';
+import { NsdParserService } from '../services/nsd-parser.service.js';
 
 // Import tokens
 import {
@@ -34,6 +35,7 @@ import {
   IGameDataLoaderToken,
   IConfigStorageToken,
   IReportBuilderToken,
+  INsdParserServiceToken,
 } from './tokens.js';
 
 /**
@@ -46,6 +48,7 @@ import {
  * - IConfigStorage: SQLite config storage adapter
  * - IConfigLoader: SQLite config loader adapter (bridges core and electron)
  * - IReportBuilder: Simulation report builder use case
+ * - INsdParserService: NSD parser service with AI integration (runs in main thread)
  */
 export function registerMainDependencies(): void {
   // ILogger - using ConsoleLogger
@@ -94,6 +97,14 @@ export function registerMainDependencies(): void {
   container.register<IReportBuilder>(IReportBuilderToken as unknown as string, {
     useFactory: () => {
       return createSimulationReportBuilder();
+    },
+  });
+
+  // INsdParserService - factory function (main thread, AI-powered NSD parsing)
+  container.register(INsdParserServiceToken as unknown as string, {
+    useFactory: () => {
+      const logger = getLogger();
+      return new NsdParserService(logger);
     },
   });
 }

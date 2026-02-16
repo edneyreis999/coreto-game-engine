@@ -2,15 +2,17 @@
  * NSD Parser Service
  *
  * Service for parsing NSD (Narrative Scene Document) markdown content
- * and extracting scene data using GLM AI integration via MCP client.
+ * and extracting scene data using AI integration via MCP client.
  *
  * Features:
- * - AI-powered scene extraction using GLM model via MCP
- * - Regex-based fallback when AI parsing fails
+ * - AI-only scene extraction using Oracle MCP server
  * - 30-second timeout for AI calls
  * - Progress callbacks during parsing stages
  * - Structured error handling with clear error codes
  * - Logging via ILogger (never console.log)
+ *
+ * **Note:** This implementation uses AI-only extraction. If AI parsing fails,
+ * an error is thrown explicitly - there is no regex fallback.
  *
  * @see docs/planos/006-mcp-client-integration/tasks/11_task.md
  *
@@ -137,33 +139,6 @@ export class NSDParseError extends Error {
 }
 
 // =============================================================================
-// AI Parsing Types
-// =============================================================================
-
-/**
- * Response structure from AI scene extraction.
- */
-interface AISceneExtractionResponse {
-  /**
-   * Array of extracted scenes from the AI.
-   */
-  scenes: Array<{
-    /**
-     * Scene title.
-     */
-    title: string;
-    /**
-     * Scene content.
-     */
-    content: string;
-    /**
-     * Optional scene summary.
-     */
-    summary?: string;
-  }>;
-}
-
-// =============================================================================
 // Regex Parser Types
 // =============================================================================
 
@@ -267,13 +242,16 @@ export class NsdParserService {
   }
 
   /**
-   * Parses NSD document content and extracts scene data.
+   * Parses NSD document content and extracts scene data using AI only.
    *
    * This method orchestrates the complete NSD parsing flow:
    * 1. Validates input content (reading stage: 0-20%)
-   * 2. Attempts AI-powered scene extraction (parsing stage: 20-60%)
-   * 3. Falls back to regex parsing if AI fails (extracting stage: 60-90%)
+   * 2. Extracts scenes using AI via Oracle MCP (parsing stage: 20-60%)
+   * 3. Reports extraction progress (extracting stage: 60-90%)
    * 4. Validates extracted scenes (validating stage: 90-100%)
+   *
+   * **Note:** This implementation uses AI-only extraction. If AI parsing fails,
+   * an error is thrown explicitly - there is no regex fallback.
    *
    * @param content - NSD markdown content to parse
    * @param onProgress - Optional progress callback (stage, percent) => void
@@ -317,69 +295,39 @@ export class NsdParserService {
         }
       );
 
-      // Stage 2: Parsing (20-60%) - Attempt AI-powered extraction
+      // Stage 2: Parsing (20-60%) - AI-powered scene extraction ONLY
       let parsedScenes: ParsedScene[];
-      let aiUsed = false;
 
-      try {
-        await this.executeStage(
-          NSD_PROGRESS_STAGES.PARSING,
-          20,
-          60,
-          onProgress,
-          async () => {
-            this.logger.debug('Attempting AI-powered scene extraction', {
-              correlationId,
-            });
-            parsedScenes = await this.extractScenesWithAI(content, correlationId);
-            aiUsed = true;
-            this.logger.debug('AI scene extraction completed', {
-              correlationId,
-              sceneCount: parsedScenes.length,
-            });
-          }
-        );
-      } catch (error) {
-        this.logger.warn('AI extraction failed, falling back to regex parser', {
-          correlationId,
-          error: error instanceof Error ? error.message : String(error),
-        });
+      await this.executeStage(
+        NSD_PROGRESS_STAGES.PARSING,
+        20,
+        60,
+        onProgress,
+        async () => {
+          this.logger.debug('Attempting AI-powered scene extraction', {
+            correlationId,
+          });
+          parsedScenes = await this.extractScenesWithAI(content, correlationId);
+          this.logger.debug('AI scene extraction completed', {
+            correlationId,
+            sceneCount: parsedScenes.length,
+          });
+        }
+      );
 
-        // Stage 3: Extracting (60-90%) - Use regex fallback
-        await this.executeStage(
-          NSD_PROGRESS_STAGES.EXTRACTING,
-          60,
-          90,
-          onProgress,
-          async () => {
-            this.logger.debug('Using regex-based scene extraction', {
-              correlationId,
-            });
-            parsedScenes = this.extractScenesWithRegex(content, correlationId);
-            this.logger.debug('Regex scene extraction completed', {
-              correlationId,
-              sceneCount: parsedScenes.length,
-            });
-          }
-        );
-      }
-
-      // If AI succeeded, still need extracting stage for progress reporting
-      if (aiUsed) {
-        await this.executeStage(
-          NSD_PROGRESS_STAGES.EXTRACTING,
-          60,
-          90,
-          onProgress,
-          async () => {
-            // Already extracted in parsing stage
-            this.logger.debug('Scene data extraction completed', {
-              correlationId,
-              sceneCount: parsedScenes.length,
-            });
-          }
-        );
-      }
+      // Stage 3: Extracting (60-90%) - Progress reporting
+      await this.executeStage(
+        NSD_PROGRESS_STAGES.EXTRACTING,
+        60,
+        90,
+        onProgress,
+        async () => {
+          this.logger.debug('Scene data extraction completed', {
+            correlationId,
+            sceneCount: parsedScenes.length,
+          });
+        }
+      );
 
       // Stage 4: Validating (90-100%) - Convert to NSDScene entities
       let scenes: NSDScene[];
@@ -401,7 +349,7 @@ export class NsdParserService {
       this.logger.info('NSD scene parsing completed successfully', {
         ...logContext,
         sceneCount: scenes.length,
-        method: aiUsed ? 'AI' : 'regex',
+        method: 'AI',
       });
 
       return scenes;
@@ -447,7 +395,8 @@ export class NsdParserService {
   /**
    * Extracts scenes from NSD content using AI via MCP client.
    *
-   * Sends the NSD content to GLM AI model and requests scene extraction.
+   * Sends the NSD content to Oracle MCP server which uses Claude AI
+   * to identify and extract scenes following Coreto project format.
    * Implements 30-second timeout for AI calls.
    *
    * @param content - NSD markdown content
@@ -467,21 +416,67 @@ export class NsdParserService {
         await this.mcpClient.start();
       }
 
-      // Prepare AI prompt for scene extraction
-      const prompt = this.buildAIPrompt(content);
-
-      this.logger.debug('Sending content to GLM AI for scene extraction', {
+      this.logger.debug('Sending content to Oracle MCP for scene extraction', {
         correlationId,
         contentLength: content.length,
       });
 
-      // Call GLM AI via MCP client with timeout
-      const response = await Promise.race([
-        this.mcpClient.callTool<AISceneExtractionResponse>('glm_chat', {
-          prompt,
+      this.logger.debug('Calling extract_scenes via MCP server', {
+        correlationId,
+        contentLength: content.length,
+      });
+
+      // Call Oracle MCP server extract_scenes tool with timeout
+      const mcpResponse = await Promise.race([
+        this.mcpClient.callTool<{ content: Array<{ type: string; text: string }> }>('extract_scenes', {
+          nsdContent: content,
         }),
         this.createTimeoutPromise(this.AI_TIMEOUT_MS),
       ]);
+
+      // DEBUG: Log raw MCP response to confirm format
+      this.logger.error('[DEBUG] Raw MCP response from extract_scenes:', {
+        correlationId,
+        mcpResponse,
+        responseType: typeof mcpResponse,
+        hasContent: !!mcpResponse?.content,
+        contentLength: mcpResponse?.content?.length,
+        firstContentType: mcpResponse?.content?.[0]?.type,
+        firstContentTextLength: mcpResponse?.content?.[0]?.text?.length,
+        firstContentTextPreview: mcpResponse?.content?.[0]?.text?.slice(0, 200),
+      });
+
+      // Extract JSON string from MCP response format: { content: [{ type: 'text', text: '{...}' }] }
+      const jsonString = mcpResponse?.content?.[0]?.text || '{}';
+
+      this.logger.error('[DEBUG] Extracted JSON string from MCP response:', {
+        correlationId,
+        jsonStringLength: jsonString.length,
+        jsonStringPreview: jsonString.slice(0, 200),
+      });
+
+      let response: { scenes: Array<{ title: string; content: string; summary?: string }> };
+      try {
+        response = JSON.parse(jsonString) as { scenes: Array<{ title: string; content: string; summary?: string }> };
+      } catch (parseError) {
+        this.logger.error('[DEBUG] Failed to parse JSON from MCP response', {
+          correlationId,
+          parseError: parseError instanceof Error ? parseError.message : String(parseError),
+          jsonString,
+        });
+        throw new NSDParseError(
+          `Failed to parse JSON from MCP response: ${parseError instanceof Error ? parseError.message : String(parseError)}`,
+          NSD_ERROR_CODES.PARSE_ERROR,
+          correlationId,
+          { mcpResponse, jsonString }
+        );
+      }
+
+      this.logger.error('[DEBUG] Parsed response successfully:', {
+        correlationId,
+        sceneCount: response.scenes?.length,
+        firstSceneTitle: response.scenes?.[0]?.title,
+      });
 
       // Validate AI response structure
       if (!response || !response.scenes || !Array.isArray(response.scenes)) {
@@ -499,6 +494,11 @@ export class NsdParserService {
         content: scene.content || '',
         summary: scene.summary,
       }));
+
+      this.logger.debug('AI scene extraction completed', {
+        correlationId,
+        sceneCount: parsedScenes.length,
+      });
 
       return parsedScenes;
     } catch (error) {
@@ -518,129 +518,6 @@ export class NsdParserService {
     }
   }
 
-  /**
-   * Builds the AI prompt for scene extraction.
-   *
-   * Creates a structured prompt that instructs the AI to extract
-   * scenes from NSD markdown content.
-   *
-   * @param content - NSD markdown content
-   * @returns Formatted AI prompt
-   */
-  private buildAIPrompt(content: string): string {
-    return `Extract all narrative scenes from the following NSD (Narrative Scene Document) markdown content.
-
-For each scene, provide:
-1. title: The scene heading/title
-2. content: The full narrative content of the scene
-3. summary: A brief summary of the scene's purpose (optional)
-
-Return the result as a JSON object with this structure:
-{
-  "scenes": [
-    {
-      "title": "Scene Title",
-      "content": "Full scene content...",
-      "summary": "Brief summary (optional)"
-    }
-  ]
-}
-
-NSD Content:
-${content}
-
-Respond ONLY with valid JSON, no additional text.`;
-  }
-
-  /**
-   * Extracts scenes from NSD content using regex parsing.
-   *
-   * Fallback method when AI parsing fails. Splits content by
-   * markdown headers and extracts title and content for each scene.
-   *
-   * @param content - NSD markdown content
-   * @param correlationId - Optional correlation ID
-   * @returns Array of parsed scenes
-   */
-  private extractScenesWithRegex(
-    content: string,
-    correlationId?: string
-  ): ParsedScene[] {
-    this.logger.debug('Starting regex-based scene extraction', {
-      correlationId,
-    });
-
-    const scenes: ParsedScene[] = [];
-
-    // Split content by ## headers (scene-level headings)
-    // Matches: ## Scene 1: Title or ## Title
-    const lines = content.split('\n');
-    let currentScene: ParsedScene | null = null;
-    let currentContent: string[] = [];
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const sceneMatch = line.match(/^##\s+(.+)$/);
-
-      if (sceneMatch) {
-        // Save previous scene if exists
-        if (currentScene) {
-          currentScene.content = currentContent.join('\n').trim();
-          scenes.push(currentScene);
-        }
-
-        // Start new scene
-        const title = sceneMatch[1].trim();
-        currentScene = {
-          title,
-          content: '',
-        };
-        currentContent = [];
-      } else if (currentScene) {
-        // Add line to current scene content
-        // Skip empty lines at start of content
-        if (currentContent.length > 0 || line.trim() !== '') {
-          currentContent.push(line);
-        }
-      }
-    }
-
-    // Save last scene
-    if (currentScene) {
-      currentScene.content = currentContent.join('\n').trim();
-      scenes.push(currentScene);
-    }
-
-    // If no scenes found with ## headers, try alternative patterns
-    if (scenes.length === 0) {
-      this.logger.warn('No ## headers found, attempting alternative parsing', {
-        correlationId,
-      });
-
-      // Try splitting by # headers (document-level)
-      const docHeaders = content.split(/^#\s+.+$/m);
-      if (docHeaders.length > 1) {
-        // Use content after first # header as single scene
-        scenes.push({
-          title: 'Main Scene',
-          content: docHeaders.slice(1).join('\n').trim(),
-        });
-      } else {
-        // Last resort: treat entire content as single scene
-        scenes.push({
-          title: 'Untitled Scene',
-          content: content.trim(),
-        });
-      }
-    }
-
-    this.logger.debug('Regex extraction completed', {
-      correlationId,
-      sceneCount: scenes.length,
-    });
-
-    return scenes;
-  }
 
   /**
    * Converts parsed scenes to NSDScene entities.
