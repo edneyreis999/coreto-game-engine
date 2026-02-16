@@ -94,3 +94,73 @@ export interface HistoryEntry {
   summary: SimulationSummary;
   hasReport: boolean;
 }
+
+// ============================================================================
+// Oracle MCP - Project Analyzer DTOs
+// ============================================================================
+
+/**
+ * Quest variable information from CommonEvents.json analysis.
+ */
+export interface QuestVariableInfo {
+  variableId: number;
+  name: string;
+  type: 'game_progress' | 'state_tracking' | 'counter' | 'flag';
+  scope: 'global' | 'scene_specific';
+}
+
+/**
+ * Available resources in the MZ project.
+ */
+export interface AvailableResources {
+  sprites: string[];
+  pictures: string[];
+  bgm: string[];
+  me: string[];
+  se: string[];
+  battlebacks: string[];
+}
+
+/**
+ * Analysis result from MZ project structure inspection.
+ */
+export interface ProjectAnalysis {
+  projectPath: string;
+  analyzedAt: string; // ISO 8601 timestamp
+  questVariables: QuestVariableInfo[];
+  mapCount: number;
+  troopCount: number;
+  availableResources: AvailableResources;
+  recommendedQuestVariable?: QuestVariableInfo;
+  recommendedMapId?: number;
+  warnings: string[];
+}
+
+/**
+ * Response type for oracle-mcp:analyze-project endpoint.
+ * Contains structured JSON analysis and human-readable markdown.
+ */
+export interface AnalyzeProjectResponse {
+  analysis: ProjectAnalysis;
+  markdown: string;
+  timestamp: string; // ISO 8601 timestamp
+}
+
+/**
+ * File paths generated during test analysis.
+ */
+export interface TestAnalysisFiles {
+  json: string; // Relative path to JSON output
+  markdown: string; // Relative path to Markdown output
+}
+
+/**
+ * Response type for oracle-mcp:test-analyze-project endpoint.
+ * Contains test execution results and output file locations.
+ */
+export interface TestAnalyzeProjectResponse {
+  success: boolean;
+  outputPath: string;
+  files: TestAnalysisFiles;
+  timestamp: string; // ISO 8601 timestamp
+}

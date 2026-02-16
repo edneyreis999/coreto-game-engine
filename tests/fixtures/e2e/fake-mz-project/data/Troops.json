@@ -1,0 +1,112 @@
+[
+  null,
+  {
+    "id": 1,
+    "name": "Slime*2",
+    "members": [
+      { "enemyId": 1, "x": 400, "y": 400, "hidden": false },
+      { "enemyId": 1, "x": 500, "y": 350, "hidden": false }
+    ],
+    "pages": [
+      {
+        "conditions": {
+          "actorHp": 50,
+          "actorHpValid": false,
+          "actorId": 1,
+          "actorValid": false,
+          "enemyHp": 50,
+          "enemyHpValid": false,
+          "enemyIndex": 0,
+          "enemyValid": false,
+          "switchId": 1,
+          "switchValid": false,
+          "turnA": 0,
+          "turnB": 0,
+          "turnEnding": false,
+          "turnValid": false,
+          "variablesValid": false
+        },
+        "list": [
+          {
+            "code": 0,
+            "indent": 0,
+            "parameters": []
+          }
+        ],
+        "span": 0
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "name": "Goblin Patrol",
+    "members": [
+      { "enemyId": 2, "x": 300, "y": 400, "hidden": false }
+    ],
+    "pages": [
+      {
+        "conditions": {
+          "actorHp": 50,
+          "actorHpValid": false,
+          "actorId": 1,
+          "actorValid": false,
+          "enemyHp": 50,
+          "enemyHpValid": false,
+          "enemyIndex": 0,
+          "enemyValid": false,
+          "switchId": 1,
+          "switchValid": false,
+          "turnA": 0,
+          "turnB": 0,
+          "turnEnding": false,
+          "turnValid": false,
+          "variablesValid": false
+        },
+        "list": [
+          {
+            "code": 0,
+            "indent": 0,
+            "parameters": []
+          }
+        ],
+        "span": 0
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "name": "Boss Battle",
+    "members": [
+      { "enemyId": 3, "x": 400, "y": 450, "hidden": false }
+    ],
+    "pages": [
+      {
+        "conditions": {
+          "actorHp": 50,
+          "actorHpValid": false,
+          "actorId": 1,
+          "actorValid": false,
+          "enemyHp": 50,
+          "enemyHpValid": false,
+          "enemyIndex": 0,
+          "enemyValid": false,
+          "switchId": 1,
+          "switchValid": false,
+          "turnA": 0,
+          "turnB": 0,
+          "turnEnding": false,
+          "turnValid": false,
+          "variablesValid": false
+        },
+        "list": [
+          {
+            "code": 0,
+            "indent": 0,
+            "parameters": []
+          }
+        ],
+        "span": 0
+      }
+    ]
+  }
+]

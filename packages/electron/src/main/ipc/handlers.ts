@@ -91,6 +91,8 @@ import {
   handleOracleMcpStart,
   handleOracleMcpGeneratePrompt,
   handleOracleMcpHealth,
+  handleOracleMcpAnalyzeProject,
+  handleOracleMcpTestAnalyzeProject,
   cleanupOracleMcpHandler
 } from './handlers/oracleMcpIpcHandler.js';
 
@@ -661,6 +663,8 @@ export const IPC_HANDLERS: Record<
   'oracle-mcp:start': handleOracleMcpStart,
   'oracle-mcp:generate-prompt': handleOracleMcpGeneratePrompt,
   'oracle-mcp:health': handleOracleMcpHealth,
+  'oracle-mcp:analyze-project': handleOracleMcpAnalyzeProject,
+  'oracle-mcp:test-analyze-project': handleOracleMcpTestAnalyzeProject,
 };
 
 /**

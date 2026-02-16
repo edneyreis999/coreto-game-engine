@@ -1,0 +1,39 @@
+[
+  null,
+  {
+    "id": 1,
+    "name": "Tavern",
+    "parentId": 0,
+    "scrollX": 0,
+    "scrollY": 0,
+    "order": 1,
+    "expanded": false
+  },
+  {
+    "id": 2,
+    "name": "World Map",
+    "parentId": 0,
+    "scrollX": 0,
+    "scrollY": 0,
+    "order": 2,
+    "expanded": false
+  },
+  {
+    "id": 3,
+    "name": "Forest",
+    "parentId": 2,
+    "scrollX": 0,
+    "scrollY": 0,
+    "order": 3,
+    "expanded": false
+  },
+  {
+    "id": 4,
+    "name": "Castle Interior",
+    "parentId": 0,
+    "scrollX": 0,
+    "scrollY": 0,
+    "order": 4,
+    "expanded": false
+  }
+]

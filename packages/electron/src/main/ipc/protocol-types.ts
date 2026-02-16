@@ -52,7 +52,10 @@ export type IPCChannel =
   | 'oracle-mcp:start'
   | 'oracle-mcp:generate-prompt'
   | 'oracle-mcp:health'
-  | 'nsd:upload';
+  | 'oracle-mcp:analyze-project'
+  | 'oracle-mcp:test-analyze-project'
+  | 'nsd:upload'
+  | 'test-analyze:prepare-directory';
 
 /**
  * IPC error structure.

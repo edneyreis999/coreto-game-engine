@@ -134,6 +134,150 @@ export const ExtractScenesSchema = z.object({
 export type ExtractScenesInput = z.infer<typeof ExtractScenesSchema>;
 
 /**
+ * AnalyzeProjectOptions - Input parameters for project analysis.
+ *
+ * - nsdContent: Optional NSD document content for context
+ * - sceneName: Optional scene name for context
+ * - projectPath: Path to RPG Maker MZ project
+ * - questVariable: Optional quest variable for detection verification
+ */
+export interface AnalyzeProjectOptions {
+  nsdContent?: string;
+  sceneName?: string;
+  projectPath: string;
+  questVariable?: string;
+}
+
+/**
+ * AnalyzeProjectSchema - Zod schema for project analysis validation.
+ *
+ * Validates parameters required for MZ project analysis:
+ * - projectPath: Path to RPG Maker MZ project
+ * - nsdContent: Optional NSD document content
+ * - sceneName: Optional scene name
+ * - questVariable: Optional quest variable identifier
+ */
+export const AnalyzeProjectSchema = z.object({
+  nsdContent: z.string().optional(),
+  sceneName: z.string().optional(),
+  projectPath: z
+    .string({
+      required_error: 'projectPath is required',
+      invalid_type_error: 'projectPath must be a string',
+    })
+    .min(1, 'projectPath cannot be empty')
+    .refine(
+      (path) => !path.includes('..'),
+      'projectPath must not contain path traversal sequences (..)'
+    ),
+  questVariable: z.string().optional(),
+});
+
+/**
+ * Type inference from AnalyzeProjectSchema.
+ */
+export type AnalyzeProjectInput = z.infer<typeof AnalyzeProjectSchema>;
+
+/**
+ * QuestVariable represents a detected quest variable from CommonEvents.
+ *
+ * - variableId: Variable ID in System.json
+ * - name: Variable name
+ * - type: Quest variable type (progress, state, status)
+ * - scope: Scope of the quest variable (global, local)
+ */
+export interface QuestVariable {
+  variableId: number;
+  name: string;
+  type: 'progress' | 'state' | 'status' | 'unknown';
+  scope: 'global' | 'local';
+}
+
+/**
+ * AvailableResources represents the project's resource inventory.
+ *
+ * - sprites: Character sprite files
+ * - pictures: Picture files
+ * - bgm: Background music files
+ * - me: Music effects files
+ * - se: Sound effects files
+ * - battlebacks: Battle background files
+ */
+export interface AvailableResources {
+  sprites: string[];
+  pictures: string[];
+  bgm: string[];
+  me: string[];
+  se: string[];
+  battlebacks: string[];
+}
+
+/**
+ * AnalyzeProjectResult represents the project analysis response.
+ *
+ * - projectPath: Path to the analyzed project
+ * - analyzedAt: ISO timestamp of analysis
+ * - questVariables: Detected quest variables from CommonEvents
+ * - mapCount: Total number of maps in the project
+ * - troopCount: Total number of troops in the project
+ * - availableResources: Resource inventory
+ * - recommendedQuestVariable: Recommended quest variable based on detection
+ * - recommendedMapId: Recommended map ID for scene implementation
+ * - warnings: List of warnings (low confidence detections, missing files, etc.)
+ * - markdown: Human-readable markdown report
+ */
+export interface AnalyzeProjectResult {
+  projectPath: string;
+  analyzedAt: string;
+  questVariables: QuestVariable[];
+  mapCount: number;
+  troopCount: number;
+  availableResources: AvailableResources;
+  recommendedQuestVariable?: QuestVariable;
+  recommendedMapId?: number;
+  warnings: string[];
+  markdown: string;
+}
+
+/**
+ * CommonEventData represents a single Common Event from CommonEvents.json.
+ *
+ * - id: Unique Common Event ID (1-based)
+ * - name: Common Event name
+ * - trigger: Trigger condition (0=none, 1=autorun, 2=parallel, 3=call)
+ * - switchId: Switch ID for trigger condition
+ * - list: Event command list
+ */
+export interface CommonEventData {
+  id: number;
+  name: string;
+  trigger: number;
+  switchId: number;
+  list: unknown[];
+}
+
+/**
+ * MapInfoData represents a single map info from MapInfos.json.
+ *
+ * - id: Unique Map ID (1-based)
+ * - name: Map display name
+ * - parentId: Parent map ID (0 for none)
+ * - order: Display order in editor
+ * - expanded: Expanded state in editor
+ * - scrollX: Scroll X position
+ * - scrollY: Scroll Y position
+ */
+export interface MapInfoData {
+  id: number;
+  name: string;
+  parentId: number;
+  order: number;
+  expanded: boolean;
+  scrollX: number;
+  scrollY: number;
+}
+
+/**
  * HealthCheckResult represents the health check response.
  *
  * - healthy: true if the Claude Agent SDK connection is valid
@@ -631,6 +775,510 @@ Extraia todas as cenas narrativas deste documento NSD seguindo o formato JSON es
    */
   private sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Analyzes an RPG Maker MZ project structure and resources.
+   *
+   * This method performs read-only analysis of the project:
+   * - Validates projectPath exists
+   * - Reads data/System.json for switches and variables
+   * - Reads data/CommonEvents.json for quest variable detection
+   * - Reads data/MapInfos.json for map count
+   * - Reads data/Troops.json for troop count
+   * - Lists resources: img/characters/, img/pictures/, audio/bgm/, audio/me/, audio/se/
+   * - Generates structured JSON + Markdown report
+   *
+   * @param options - Input parameters for project analysis
+   * @returns Promise resolving to analysis result with JSON and Markdown
+   * @throws {Error} When project path is invalid or files cannot be read
+   *
+   * @example
+   * ```typescript
+   * const result = await client.analyzeProject({
+   *   projectPath: '/path/to/mz/project'
+   * });
+   * console.log(`Found ${result.mapCount} maps`);
+   * console.log(result.markdown);
+   * ```
+   */
+  async analyzeProject(options: AnalyzeProjectOptions): Promise<AnalyzeProjectResult> {
+    // Validate input using Zod schema
+    const validatedInput = AnalyzeProjectSchema.parse(options);
+
+    console.error('[analyzeProject] Starting analysis...', {
+      projectPath: validatedInput.projectPath,
+      hasNsdContent: !!validatedInput.nsdContent,
+      hasSceneName: !!validatedInput.sceneName,
+      hasQuestVariable: !!validatedInput.questVariable,
+    });
+
+    const warnings: string[] = [];
+    const dataPath = (path: string) => `${validatedInput.projectPath}/data/${path}`;
+
+    // Validate project path exists
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      if (!fs.existsSync(validatedInput.projectPath)) {
+        throw new Error(`Project path does not exist: ${validatedInput.projectPath}`);
+      }
+
+      const projectDataPath = path.join(validatedInput.projectPath, 'data');
+      if (!fs.existsSync(projectDataPath)) {
+        throw new Error(`Project data directory does not exist: ${projectDataPath}`);
+      }
+
+      console.error('[analyzeProject] Project path validated');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('[analyzeProject] ✗ Project validation failed:', message);
+      throw new Error(`Project validation failed: ${message}`);
+    }
+
+    // Read System.json for switches and variables
+    let systemData: { switches?: string[]; variables?: string[]; gameTitle?: string; versionId?: number } = {};
+    try {
+      const fs = await import('fs');
+      const systemJsonPath = dataPath('System.json');
+      const systemContent = fs.readFileSync(systemJsonPath, 'utf-8');
+      systemData = JSON.parse(systemContent);
+      console.error('[analyzeProject] ✓ System.json loaded', {
+        switchesCount: systemData.switches?.length || 0,
+        variablesCount: systemData.variables?.length || 0,
+        gameTitle: systemData.gameTitle || 'Unknown',
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      warnings.push(`Failed to read System.json: ${message}`);
+      console.error('[analyzeProject] ✗ System.json error:', message);
+    }
+
+    // Read CommonEvents.json for quest variable detection
+    let commonEvents: CommonEventData[] = [];
+    try {
+      const fs = await import('fs');
+      const commonEventsPath = dataPath('CommonEvents.json');
+      const commonEventsContent = fs.readFileSync(commonEventsPath, 'utf-8');
+      const parsed = JSON.parse(commonEventsContent);
+      commonEvents = parsed.filter((item: unknown) => item !== null);
+      console.error('[analyzeProject] ✓ CommonEvents.json loaded', {
+        count: commonEvents.length,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      warnings.push(`Failed to read CommonEvents.json: ${message}`);
+      console.error('[analyzeProject] ✗ CommonEvents.json error:', message);
+    }
+
+    // Read MapInfos.json for map count
+    let mapCount = 0;
+    let mapInfos: MapInfoData[] = [];
+    try {
+      const fs = await import('fs');
+      const mapInfosPath = dataPath('MapInfos.json');
+      const mapInfosContent = fs.readFileSync(mapInfosPath, 'utf-8');
+      const parsed = JSON.parse(mapInfosContent);
+      mapInfos = parsed.filter((item: unknown) => item !== null);
+      mapCount = mapInfos.length;
+      console.error('[analyzeProject] ✓ MapInfos.json loaded', {
+        mapCount,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      warnings.push(`Failed to read MapInfos.json: ${message}`);
+      console.error('[analyzeProject] ✗ MapInfos.json error:', message);
+    }
+
+    // Read Troops.json for troop count
+    let troopCount = 0;
+    try {
+      const fs = await import('fs');
+      const troopsPath = dataPath('Troops.json');
+      const troopsContent = fs.readFileSync(troopsPath, 'utf-8');
+      const parsed = JSON.parse(troopsContent);
+      const troops = parsed.filter((item: unknown) => item !== null);
+      troopCount = troops.length;
+      console.error('[analyzeProject] ✓ Troops.json loaded', {
+        troopCount,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      warnings.push(`Failed to read Troops.json: ${message}`);
+      console.error('[analyzeProject] ✗ Troops.json error:', message);
+    }
+
+    // Detect quest variables from CommonEvents
+    const questVariables = this.detectQuestVariables(
+      commonEvents,
+      systemData.variables || [],
+      warnings
+    );
+
+    console.error('[analyzeProject] Quest variable detection', {
+      detectedCount: questVariables.length,
+      questVariables: questVariables.map(v => ({ id: v.variableId, name: v.name, type: v.type })),
+    });
+
+    // List available resources
+    const availableResources = this.listAvailableResources(validatedInput.projectPath, warnings);
+
+    console.error('[analyzeProject] Resource inventory', {
+      sprites: availableResources.sprites.length,
+      pictures: availableResources.pictures.length,
+      bgm: availableResources.bgm.length,
+      me: availableResources.me.length,
+      se: availableResources.se.length,
+      battlebacks: availableResources.battlebacks.length,
+    });
+
+    // Determine recommended quest variable
+    let recommendedQuestVariable: QuestVariable | undefined;
+    if (validatedInput.questVariable) {
+      // User provided a specific quest variable
+      const matchedVariable = questVariables.find(
+        v => v.name.toLowerCase().includes(validatedInput.questVariable!.toLowerCase())
+      );
+      if (matchedVariable) {
+        recommendedQuestVariable = matchedVariable;
+      } else {
+        warnings.push(`Specified quest variable "${validatedInput.questVariable}" not found in detected variables`);
+      }
+    } else if (questVariables.length > 0) {
+      // Auto-select first progress variable
+      recommendedQuestVariable = questVariables.find(v => v.type === 'progress') || questVariables[0];
+    }
+
+    // Determine recommended map ID (use first available map)
+    let recommendedMapId: number | undefined;
+    if (mapInfos.length > 0) {
+      // Use the first map as default
+      recommendedMapId = mapInfos[0]?.id;
+    }
+
+    // Generate markdown report
+    const nsdContext: { hasNsdContent: boolean; sceneName?: string } = {
+      hasNsdContent: !!validatedInput.nsdContent,
+    };
+    if (validatedInput.sceneName) {
+      nsdContext.sceneName = validatedInput.sceneName;
+    }
+
+    // Build markdown generation parameters
+    const markdownParams: {
+      projectPath: string;
+      gameTitle: string;
+      analyzedAt: string;
+      questVariables: QuestVariable[];
+      mapCount: number;
+      troopCount: number;
+      availableResources: AvailableResources;
+      warnings: string[];
+      nsdContext: { hasNsdContent: boolean; sceneName?: string };
+      recommendedQuestVariable?: QuestVariable;
+      recommendedMapId?: number;
+    } = {
+      projectPath: validatedInput.projectPath,
+      gameTitle: systemData.gameTitle || 'Unknown',
+      analyzedAt: new Date().toISOString(),
+      questVariables,
+      mapCount,
+      troopCount,
+      availableResources,
+      warnings,
+      nsdContext,
+    };
+
+    // Add optional fields if present
+    if (recommendedQuestVariable) {
+      markdownParams.recommendedQuestVariable = recommendedQuestVariable;
+    }
+    if (recommendedMapId) {
+      markdownParams.recommendedMapId = recommendedMapId;
+    }
+
+    const markdown = this.generateAnalysisMarkdown(markdownParams);
+
+    const result: AnalyzeProjectResult = {
+      projectPath: validatedInput.projectPath,
+      analyzedAt: new Date().toISOString(),
+      questVariables,
+      mapCount,
+      troopCount,
+      availableResources,
+      warnings,
+      markdown,
+    };
+
+    // Only add optional fields if they have values
+    if (recommendedQuestVariable) {
+      result.recommendedQuestVariable = recommendedQuestVariable;
+    }
+    if (recommendedMapId) {
+      result.recommendedMapId = recommendedMapId;
+    }
+
+    console.error('[analyzeProject] ✓ Analysis complete', {
+      questVariablesCount: questVariables.length,
+      warningsCount: warnings.length,
+      markdownLength: markdown.length,
+    });
+
+    return result;
+  }
+
+  /**
+   * Detects quest variables from CommonEvents by name pattern matching.
+   *
+   * Searches for patterns like "Quest XX Progress/State/Status" in CommonEvent names
+   * and correlates with variable names from System.json.
+   *
+   * @param commonEvents - Array of CommonEvent data
+   * @param variableNames - Array of variable names from System.json
+   * @param warnings - Array to collect low confidence warnings
+   * @returns Array of detected quest variables
+   */
+  private detectQuestVariables(
+    commonEvents: CommonEventData[],
+    variableNames: string[],
+    warnings: string[]
+  ): QuestVariable[] {
+    const questVariables: QuestVariable[] = [];
+    const questPatterns = [
+      /quest\s*\d+/i,
+      /quest\s*\w+/i,
+      /misssão\s*\d+/i,
+      /mission\s*\d+/i,
+    ];
+
+    // Find CommonEvents with "quest" in name
+    const questCommonEvents = commonEvents.filter(ce =>
+      questPatterns.some(pattern => pattern.test(ce.name))
+    );
+
+    console.error('[detectQuestVariables] CommonEvents with quest patterns:', {
+      totalCommonEvents: commonEvents.length,
+      questCommonEvents: questCommonEvents.length,
+      names: questCommonEvents.map(ce => ce.name),
+    });
+
+    // Extract variable references from CommonEvent commands
+    const variableIds = new Set<number>();
+    for (const ce of questCommonEvents) {
+      // Look for variable references in event commands
+      // Command code 122 = Control Variables
+      for (const cmd of ce.list) {
+        if (typeof cmd === 'object' && cmd !== null && 'code' in cmd) {
+          const cmdObj = cmd as Record<string, unknown>;
+          if (cmdObj.code === 122 && Array.isArray(cmdObj.parameters)) {
+            // parameters[0] = start variable ID
+            const varId = cmdObj.parameters[0];
+            if (typeof varId === 'number' && varId > 0) {
+              variableIds.add(varId);
+            }
+          }
+        }
+      }
+    }
+
+    // Create QuestVariable entries
+    for (const varId of variableIds) {
+      const varName = variableNames[varId] || `Variable ${varId}`;
+
+      // Determine type based on name patterns
+      let type: QuestVariable['type'] = 'unknown';
+      if (/progress|progresso/i.test(varName)) {
+        type = 'progress';
+      } else if (/state|estado|status/i.test(varName)) {
+        type = 'state';
+      } else if (/status/i.test(varName)) {
+        type = 'status';
+      }
+
+      questVariables.push({
+        variableId: varId,
+        name: varName,
+        type,
+        scope: 'global', // RMMZ variables are global by default
+      });
+    }
+
+    // Check confidence level
+    if (questCommonEvents.length > 0 && questVariables.length === 0) {
+      warnings.push(
+        `Found ${questCommonEvents.length} CommonEvents with quest-related names, but no quest variables were detected. ` +
+        'Quest variable detection confidence: LOW (<90%). ' +
+        'Candidates: ' + questCommonEvents.map(ce => ce.name).join(', ')
+      );
+    }
+
+    return questVariables;
+  }
+
+  /**
+   * Lists available resources in the MZ project.
+   *
+   * Scans resource directories for available assets.
+   *
+   * @param projectPath - Path to MZ project
+   * @param warnings - Array to collect warnings
+   * @returns AvailableResources object with file lists
+   */
+  private listAvailableResources(projectPath: string, warnings: string[]): AvailableResources {
+    const fs = require('fs');
+    const path = require('path');
+
+    const resources: AvailableResources = {
+      sprites: [],
+      pictures: [],
+      bgm: [],
+      me: [],
+      se: [],
+      battlebacks: [],
+    };
+
+    const listFiles = (dir: string, targetArray: string[], resourceType: string) => {
+      const fullPath = path.join(projectPath, dir);
+      try {
+        if (fs.existsSync(fullPath)) {
+          const files = fs.readdirSync(fullPath);
+          for (const file of files) {
+            if (file.endsWith('.png') || file.endsWith('.jpg') || file.endsWith('.ogg') || file.endsWith('.m4a')) {
+              targetArray.push(file);
+            }
+          }
+          console.error(`[listAvailableResources] ✓ ${resourceType}:`, { count: targetArray.length });
+        } else {
+          warnings.push(`Resource directory not found: ${dir}`);
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        warnings.push(`Failed to read ${dir}: ${message}`);
+      }
+    };
+
+    listFiles('img/characters', resources.sprites, 'Sprites');
+    listFiles('img/pictures', resources.pictures, 'Pictures');
+    listFiles('audio/bgm', resources.bgm, 'BGM');
+    listFiles('audio/me', resources.me, 'ME');
+    listFiles('audio/se', resources.se, 'SE');
+    listFiles('img/battlebacks1', resources.battlebacks, 'Battlebacks');
+
+    return resources;
+  }
+
+  /**
+   * Generates human-readable markdown analysis report.
+   *
+   * @param analysisData - All analysis data
+   * @returns Formatted markdown report
+   */
+  private generateAnalysisMarkdown(analysisData: {
+    projectPath: string;
+    gameTitle: string;
+    analyzedAt: string;
+    questVariables: QuestVariable[];
+    mapCount: number;
+    troopCount: number;
+    availableResources: AvailableResources;
+    recommendedQuestVariable?: QuestVariable;
+    recommendedMapId?: number;
+    warnings: string[];
+    nsdContext: { hasNsdContent: boolean; sceneName?: string };
+  }): string {
+    const lines: string[] = [];
+
+    lines.push('# RPG Maker MZ Project Analysis');
+    lines.push('');
+    lines.push(`**Project:** ${analysisData.gameTitle}`);
+    lines.push(`**Path:** \`${analysisData.projectPath}\``);
+    lines.push(`**Analyzed:** ${new Date(analysisData.analyzedAt).toLocaleString('pt-BR')}`);
+    lines.push('');
+
+    // NSD Context
+    if (analysisData.nsdContext.hasNsdContent) {
+      lines.push('## NSD Context');
+      lines.push('');
+      if (analysisData.nsdContext.sceneName) {
+        lines.push(`**Scene:** ${analysisData.nsdContext.sceneName}`);
+      }
+      lines.push('NSD document provided for context.');
+      lines.push('');
+    }
+
+    // Quest Variables
+    lines.push('## Quest Variables');
+    lines.push('');
+    if (analysisData.questVariables.length > 0) {
+      lines.push('| Variable ID | Name | Type | Scope |');
+      lines.push('|-------------|------|------|-------|');
+      for (const qv of analysisData.questVariables) {
+        lines.push(`| ${qv.variableId} | ${qv.name} | ${qv.type} | ${qv.scope} |`);
+      }
+      lines.push('');
+
+      if (analysisData.recommendedQuestVariable) {
+        lines.push(`**Recommended:** Variable ${analysisData.recommendedQuestVariable.variableId} (${analysisData.recommendedQuestVariable.name})`);
+        lines.push('');
+      }
+    } else {
+      lines.push('*No quest variables detected*');
+      lines.push('');
+    }
+
+    // Maps and Troops
+    lines.push('## Project Structure');
+    lines.push('');
+    lines.push(`- **Maps:** ${analysisData.mapCount}`);
+    lines.push(`- **Troops:** ${analysisData.troopCount}`);
+    if (analysisData.recommendedMapId) {
+      lines.push(`- **Recommended Map ID:** ${analysisData.recommendedMapId}`);
+    }
+    lines.push('');
+
+    // Resources
+    lines.push('## Available Resources');
+    lines.push('');
+    lines.push('### Sprites (img/characters/)');
+    lines.push('');
+    lines.push(`Total: ${analysisData.availableResources.sprites.length}`);
+    if (analysisData.availableResources.sprites.length > 0) {
+      lines.push(analysisData.availableResources.sprites.slice(0, 10).join(', '));
+      if (analysisData.availableResources.sprites.length > 10) {
+        lines.push(`... and ${analysisData.availableResources.sprites.length - 10} more`);
+      }
+    }
+    lines.push('');
+
+    lines.push('### Pictures (img/pictures/)');
+    lines.push('');
+    lines.push(`Total: ${analysisData.availableResources.pictures.length}`);
+    if (analysisData.availableResources.pictures.length > 0) {
+      lines.push(analysisData.availableResources.pictures.slice(0, 10).join(', '));
+      if (analysisData.availableResources.pictures.length > 10) {
+        lines.push(`... and ${analysisData.availableResources.pictures.length - 10} more`);
+      }
+    }
+    lines.push('');
+
+    lines.push('### Audio');
+    lines.push('');
+    lines.push(`- **BGM:** ${analysisData.availableResources.bgm.length} files`);
+    lines.push(`- **ME:** ${analysisData.availableResources.me.length} files`);
+    lines.push(`- **SE:** ${analysisData.availableResources.se.length} files`);
+    lines.push('');
+
+    // Warnings
+    if (analysisData.warnings.length > 0) {
+      lines.push('## Warnings');
+      lines.push('');
+      for (const warning of analysisData.warnings) {
+        lines.push(`- ⚠️ ${warning}`);
+      }
+      lines.push('');
+    }
+
+    return lines.join('\n');
   }
 
   /**

@@ -1,7 +1,7 @@
 import React, { useEffect, useCallback } from 'react'
 import { HashRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom'
 import { Toaster } from 'sonner'
-import { ProjectSelectionPanel, Home, TTKValidationFlow, NSDGenerator, LogExportButton, OracleMcpTestButton } from '@/components'
+import { ProjectSelectionPanel, Home, TTKValidationFlow, NSDGenerator, LogExportButton, OracleMcpTestButton, TestAnalyzeButton } from '@/components'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useLogger } from '@/hooks'
 import { ProjectProvider } from '@/contexts/ProjectContext'
@@ -89,6 +89,7 @@ function AppContent(): React.ReactElement {
           </div>
           <div className="flex items-center gap-3">
             <OracleMcpTestButton />
+            <TestAnalyzeButton />
             <LogExportButton />
           </div>
         </div>

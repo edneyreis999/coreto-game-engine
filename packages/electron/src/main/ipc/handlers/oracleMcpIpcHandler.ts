@@ -59,6 +59,35 @@ export const OracleMcpHealthSchema = z.object({
 });
 
 /**
+ * Extended schema for oracle-mcp:analyze-project.
+ * Extends GeneratePromptSchema to inherit path traversal validation.
+ * Adds optional questVariable parameter for targeted analysis.
+ */
+export const AnalyzeProjectSchema = GeneratePromptSchema.extend({
+  /**
+   * Optional quest variable name to analyze specific quest state.
+   * If not provided, system will attempt to detect quest variable automatically.
+   */
+  questVariable: z.string().optional(),
+});
+
+/**
+ * Schema for oracle-mcp:test-analyze-project endpoint.
+ * Validates test directory and model selection for local testing.
+ */
+export const TestAnalyzeProjectSchema = z.object({
+  /**
+   * Directory path where test outputs will be saved.
+   * Must be an absolute path (validated for path traversal).
+   */
+  testDirectory: z.string().min(1),
+  /**
+   * AI model to use for test analysis.
+   */
+  model: z.enum(['glm-4.7', 'glm-4.5-air', 'glm-4-flash']),
+});
+
+/**
  * Type for oracle-mcp:start response
  */
 export interface OracleMcpStartResponse {
@@ -84,6 +113,18 @@ export interface OracleMcpHealthResponse {
   message: string;
   timestamp: string;
 }
+
+/**
+ * Type for oracle-mcp:analyze-project response.
+ * Import from domain types to ensure type consistency across IPC boundary.
+ */
+export type { AnalyzeProjectResponse } from '../../../domain/types/ipc-types.js';
+
+/**
+ * Type for oracle-mcp:test-analyze-project response.
+ * Import from domain types to ensure type consistency across IPC boundary.
+ */
+export type { TestAnalyzeProjectResponse } from '../../../domain/types/ipc-types.js';
 
 /**
  * Validates an IPC payload against its Zod schema.
@@ -238,6 +279,96 @@ export async function handleOracleMcpHealth(
         : 'Oracle MCP service is not available',
       timestamp: new Date().toISOString(),
     };
+  });
+}
+
+/**
+ * Handler: oracle-mcp:analyze-project
+ *
+ * Analyzes an RPG Maker MZ project structure and resources.
+ * Validates input using Zod schema and delegates to MCP server via McpClientService.
+ *
+ * @param _event - IPC event (unused)
+ * @param payload - Project analysis parameters (NSD content, scene name, project path, optional quest variable)
+ * @returns Promise resolving to project analysis with structured data and markdown report
+ *
+ * @example
+ * ```typescript
+ * const result = await handleOracleMcpAnalyzeProject(event, {
+ *   nsdContent: '# NSD Content...',
+ *   sceneName: 'Cena 1: Entrada na Taverna',
+ *   projectPath: '/path/to/mz/project',
+ *   questVariable: 'Quest 01 Progress'
+ * });
+ * ```
+ */
+export async function handleOracleMcpAnalyzeProject(
+  _event: IpcMainInvokeEvent,
+  payload: unknown
+): Promise<IPCResult<AnalyzeProjectResponse>> {
+  return wrapHandler(async () => {
+    validatePayload('oracle-mcp:analyze-project', payload, AnalyzeProjectSchema);
+
+    getLogger().info('[OracleMcpIpcHandler] Project analysis requested', {
+      projectPath: (payload as { projectPath: string }).projectPath,
+      sceneName: (payload as { sceneName: string }).sceneName,
+    });
+
+    const result = await mcpClientService.callTool<AnalyzeProjectResponse>(
+      'analyze_project',
+      payload
+    );
+
+    getLogger().info('[OracleMcpIpcHandler] Project analysis completed', {
+      analysisTimestamp: result.timestamp,
+      questVariablesFound: result.analysis.questVariables.length,
+    });
+
+    return result;
+  });
+}
+
+/**
+ * Handler: oracle-mcp:test-analyze-project
+ *
+ * Tests the project analyzer with a specific directory and model.
+ * Validates input using Zod schema and delegates to MCP server via McpClientService.
+ *
+ * @param _event - IPC event (unused)
+ * @param payload - Test parameters (test directory, model selection)
+ * @returns Promise resolving to test execution results with output file paths
+ *
+ * @example
+ * ```typescript
+ * const result = await handleOracleMcpTestAnalyzeProject(event, {
+ *   testDirectory: '/path/to/test/outputs',
+ *   model: 'glm-4.7'
+ * });
+ * ```
+ */
+export async function handleOracleMcpTestAnalyzeProject(
+  _event: IpcMainInvokeEvent,
+  payload: unknown
+): Promise<IPCResult<TestAnalyzeProjectResponse>> {
+  return wrapHandler(async () => {
+    validatePayload('oracle-mcp:test-analyze-project', payload, TestAnalyzeProjectSchema);
+
+    getLogger().info('[OracleMcpIpcHandler] Test project analysis requested', {
+      testDirectory: (payload as { testDirectory: string }).testDirectory,
+      model: (payload as { model: string }).model,
+    });
+
+    const result = await mcpClientService.callTool<TestAnalyzeProjectResponse>(
+      'test_analyze_project',
+      payload
+    );
+
+    getLogger().info('[OracleMcpIpcHandler] Test project analysis completed', {
+      success: result.success,
+      outputPath: result.outputPath,
+    });
+
+    return result;
   });
 }
 

@@ -1,0 +1,367 @@
+{
+  "gameTitle": "Test Game",
+  "locale": "en_US",
+  "partyMembers": [1],
+  "testBattlers": [
+    { "actorId": 1, "level": 1, "equips": [0, 0, 0, 0, 0] }
+  ],
+  "testTroopId": 1,
+  "elements": ["", "Physical"],
+  "skillTypes": ["", "Magic"],
+  "weaponTypes": ["", "Sword"],
+  "armorTypes": ["", "Armor"],
+  "equipTypes": ["", "Weapon"],
+  "switches": ["", "Quest 01 Started", "Quest 01 Completed", "Scene 1 Active"],
+  "variables": ["", "Quest 01 Progress", "Quest 01 State", "Hero Level", "Scene Flag"],
+  "terms": {
+    "basic": [
+      "Level",
+      "Level Up",
+      "HP",
+      "MP",
+      "TP",
+      "EXP",
+      "EXP.",
+      "货币单位",
+      "HP.",
+      "MP.",
+      "TP."
+    ],
+    "params": ["最大HP", "最大MP", "物理攻击", "魔法攻击", "物理防御", "魔法防御", "敏捷", "运气"],
+    "commands": [
+      "战斗",
+      "逃跑",
+      "攻击",
+      "防御",
+      "物品",
+      "技能",
+      "装备",
+      "状态判定",
+      "队形",
+      "存档",
+      "游戏结束",
+      "选项"
+    ],
+    "etypes": ["一般", "特殊", "物理"],
+    "messages": [
+      "The party of %1 received %2 %3!",
+      "%1 received %2 %3!",
+      "%1 received %2 %3!",
+      "Missing %1!",
+      "%1 received %2 damage!",
+      "CRITICAL!",
+      "%1 received %2 damage!",
+      "DODGE!",
+      "%1 received %2 damage!",
+      "EVAPORATED!",
+      "%1 missed!",
+      "%1 missed!",
+      "The enemy is watching!",
+      "%1 is no longer confused.",
+      "%1 fell asleep!",
+      "%1 is asleep.",
+      "%1 woke up!",
+      "%1 is paralyzed!",
+      "%1 can't move!",
+      "%1 recovered from paralysis!",
+      "%1 was poisoned!",
+      "%1 is poisoned.",
+      "%1 recovered from poison!",
+      "%1 was stunned!",
+      "%1 is stunned.",
+      "%1 recovered from being stunned!",
+      "%1 was weakened!",
+      "%1 is weakened.",
+      "%1 recovered from being weakened!",
+      "%1 was silenced!",
+      "%1 is silenced.",
+      "%1 recovered from being silenced!",
+      "%1 got a buff!",
+      "%1's MAX HP rose!",
+      "%1's MAX MP rose!",
+      "%1's ATTACK rose!",
+      "%1's DEFENSE rose!",
+      "%1's MAGIC ATTACK rose!",
+      "%1's MAGIC DEFENSE rose!",
+      "%1's AGILITY rose!",
+      "%1's LUCK rose!",
+      "%1's buff wore off!",
+      "%1's ATTACK returned to normal!",
+      "%1's DEFENSE returned to normal!",
+      "%1's MAGIC ATTACK returned to normal!",
+      "%1's MAGIC DEFENSE returned to normal!",
+      "%1's AGILITY returned to normal!",
+      "%1's LUCK returned to normal!",
+      "%1 received 0 damage!",
+      "The foes were defeated!",
+      "Victory!",
+      "Defeated!",
+      "You obtained %1 %2!",
+      "You obtained %1 gold!",
+      "Game Over",
+      "You obtained %1!",
+      "You cannot carry any more %1s.",
+      "You obtained %1 %2!",
+      "Use of %1 failed!",
+      "It's not effective...",
+      "Wait, don't do it!",
+      "%1 is already equipped.",
+      "MISS!",
+      "ABSORBED!",
+      "BLOCKED!",
+      "NULLIFIED!"
+    ]
+  },
+  "system": {
+    "armorTypes": [1],
+    "battleBgm": {
+      "name": "Battle1",
+      "pan": 0,
+      "pitch": 100,
+      "volume": 90
+    },
+    "battleEndMe": {
+      "name": "Victory",
+      "pan": 0,
+      "pitch": 100,
+      "volume": 80
+    },
+    "battleback1Name": "World1",
+    "battleback2Name": "World1",
+    "bgs": null,
+    "cancelSe": {
+      "name": "Cancel",
+      "pan": 0,
+      "pitch": 100,
+      "volume": 80
+    },
+    "chooseSe": {
+      "name": "OK",
+      "pan": 0,
+      "pitch": 100,
+      "volume": 90
+    },
+    "currencyUnit": "G",
+    "cursorSe": {
+      "name": "Cursor1",
+      "pan": 0,
+      "pitch": 100,
+      "volume": 90
+    },
+    "editMapId": 1,
+    "equipTypes": [1],
+    "gameTitle": "Test Game",
+    "locale": "en_US",
+    "magicReflectSe": {
+      "name": "Evasion",
+      "pan": 0,
+      "pitch": 100,
+      "volume": 90
+    },
+    "menuBg": null,
+    "menuBgm": null,
+    "menuSe": null,
+    "saveBgm": null,
+    "ship": {
+      "battleBgm": null,
+      "characterIndex": 0,
+      "characterName": "Ship",
+      "collisionType": "ship",
+      "damageSe": {
+        "name": "Evasion",
+        "pan": 0,
+        "pitch": 100,
+        "volume": 80
+      },
+      "embarkSe": {
+        "name": "Ship",
+        "pan": 0,
+        "pitch": 100,
+        "volume": 90
+      },
+      "mapId": 0,
+      "x": 0,
+      "y": 0
+    },
+    "skipping": false,
+    "sounds": [
+      {
+        "name": "Cursor1",
+        "pan": 0,
+        "pitch": 100,
+        "volume": 90
+      },
+      {
+        "name": "Decision1",
+        "pan": 0,
+        "pitch": 100,
+        "volume": 90
+      },
+      {
+        "name": "Cancel1",
+        "pan": 0,
+        "pitch": 100,
+        "volume": 90
+      },
+      {
+        "name": "Book1",
+        "pan": 0,
+        "pitch": 100,
+        "volume": 90
+      },
+      {
+        "name": "Shop1",
+        "pan": 0,
+        "pitch": 100,
+        "volume": 90
+      },
+      {
+        "name": "UseItem1",
+        "pan": 0,
+        "pitch": 100,
+        "volume": 90
+      },
+      {
+        "name": "Evasion1",
+        "pan": 0,
+        "pitch": 100,
+        "volume": 90
+      },
+      {
+        "name": "EnemyAttack1",
+        "pan": 0,
+        "pitch": 100,
+        "volume": 90
+      },
+      {
+        "name": "EnemyDamage1",
+        "pan": 0,
+        "pitch": 100,
+        "volume": 90
+      },
+      {
+        "name": "EnemyCollapse1",
+        "pan": 0,
+        "pitch": 100,
+        "volume": 90
+      },
+      {
+        "name": "ActorDamage1",
+        "pan": 0,
+        "pitch": 100,
+        "volume": 90
+      },
+      {
+        "name": "ActorCollapse1",
+        "pan": 0,
+        "pitch": 100,
+        "volume": 90
+      },
+      {
+        "name": "Recovery1",
+        "pan": 0,
+        "pitch": 100,
+        "volume": 90
+      },
+      {
+        "name": "Miss1",
+        "pan": 0,
+        "pitch": 100,
+        "volume": 90
+      },
+      {
+        "name": "Evasion2",
+        "pan": 0,
+        "pitch": 100,
+        "volume": 90
+      },
+      {
+        "name": "MagicEvasion1",
+        "pan": 0,
+        "pitch": 100,
+        "volume": 90
+      },
+      {
+        "name": "MagicReflect1",
+        "pan": 0,
+        "pitch": 100,
+        "volume": 90
+      },
+      {
+        "name": "Counter1",
+        "pan": 0,
+        "pitch": 100,
+        "volume": 90
+      },
+      {
+        "name": "Attack1",
+        "pan": 0,
+        "pitch": 100,
+        "volume": 90
+      },
+      {
+        "name": "Skill1",
+        "pan": 0,
+        "pitch": 100,
+        "volume": 90
+      },
+      {
+        "name": "Item1",
+        "pan": 0,
+        "pitch": 100,
+        "volume": 90
+      },
+      {
+        "name": "Escape1",
+        "pan": 0,
+        "pitch": 100,
+        "volume": 90
+      }
+    ],
+    "start": {
+      "mapId": 1,
+      "x": 5,
+      "y": 5,
+      "direction": 2
+    },
+    "titleBgm": {
+      "name": "Theme1",
+      "pan": 0,
+      "pitch": 100,
+      "volume": 90
+    },
+    "vehicle": {
+      "battleBgm": null,
+      "characterIndex": 0,
+      "characterName": "Boat",
+      "collisionType": "ship",
+      "damageSe": {
+        "name": "Evasion",
+        "pan": 0,
+        "pitch": 100,
+        "volume": 80
+      },
+      "embarkSe": {
+        "name": "Boat",
+        "pan": 0,
+        "pitch": 100,
+        "volume": 90
+      },
+      "mapId": 0,
+      "x": 0,
+      "y": 0
+    },
+    "windowTone": {
+      "r": 0,
+      "g": 0,
+      "b": 0
+    },
+    "weaponTypes": [1],
+    "elements": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+  },
+  "screenHeight": 640,
+  "screenWidth": 896,
+  "title1Name": "Greenland",
+  "title2Name": "Greenland",
+  "versionId": 20000000
+}
