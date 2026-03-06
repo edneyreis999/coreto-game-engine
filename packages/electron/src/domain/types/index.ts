@@ -64,6 +64,13 @@ export type {
   RecentProject,
   UserPreferences,
   HistoryEntry,
+  // Oracle MCP - Project Analyzer Types
+  QuestVariableInfo,
+  AvailableResources,
+  ProjectAnalysis,
+  AnalyzeProjectResponse,
+  TestAnalysisFiles,
+  TestAnalyzeProjectResponse,
 } from './ipc-types.js';
 
 export type {

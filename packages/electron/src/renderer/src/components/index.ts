@@ -27,6 +27,9 @@ export type { LogExportButtonProps } from './LogExportButton';
 
 export { OracleMcpTestButton } from './OracleMcpTestButton';
 
+export { TestAnalyzeButton } from './TestAnalyzeButton';
+export type { TestAnalyzeButtonProps } from './TestAnalyzeButton';
+
 export { TTKValidationFlow } from './TTKValidationFlow';
 
 export { Home } from './Home';

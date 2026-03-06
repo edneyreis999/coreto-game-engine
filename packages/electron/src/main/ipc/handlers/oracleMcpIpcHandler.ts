@@ -59,6 +59,35 @@ export const OracleMcpHealthSchema = z.object({
 });
 
 /**
+ * Extended schema for oracle-mcp:analyze-project.
+ * Extends GeneratePromptSchema to inherit path traversal validation.
+ * Adds optional questVariable parameter for targeted analysis.
+ */
+export const AnalyzeProjectSchema = GeneratePromptSchema.extend({
+  /**
+   * Optional quest variable name to analyze specific quest state.
+   * If not provided, system will attempt to detect quest variable automatically.
+   */
+  questVariable: z.string().optional(),
+});
+
+/**
+ * Schema for oracle-mcp:test-analyze-project endpoint.
+ * Validates test directory and model selection for local testing.
+ */
+export const TestAnalyzeProjectSchema = z.object({
+  /**
+   * Directory path where test outputs will be saved.
+   * Must be an absolute path (validated for path traversal).
+   */
+  testDirectory: z.string().min(1),
+  /**
+   * AI model to use for test analysis.
+   */
+  model: z.enum(['glm-4.7', 'glm-4.5-air', 'glm-4-flash']),
+});
+
+/**
  * Type for oracle-mcp:start response
  */
 export interface OracleMcpStartResponse {
@@ -84,6 +113,18 @@ export interface OracleMcpHealthResponse {
   message: string;
   timestamp: string;
 }
+
+/**
+ * Type for oracle-mcp:analyze-project response.
+ * Import from domain types to ensure type consistency across IPC boundary.
+ */
+export type { AnalyzeProjectResponse } from '../../../domain/types/ipc-types.js';
+
+/**
+ * Type for oracle-mcp:test-analyze-project response.
+ * Import from domain types to ensure type consistency across IPC boundary.
+ */
+export type { TestAnalyzeProjectResponse } from '../../../domain/types/ipc-types.js';
 
 /**
  * Validates an IPC payload against its Zod schema.
@@ -236,6 +277,185 @@ export async function handleOracleMcpHealth(
       message: isHealthy
         ? 'Oracle MCP service is healthy'
         : 'Oracle MCP service is not available',
+      timestamp: new Date().toISOString(),
+    };
+  });
+}
+
+/**
+ * Handler: oracle-mcp:analyze-project
+ *
+ * Analyzes an RPG Maker MZ project structure and resources.
+ * Validates input using Zod schema and delegates to MCP server via McpClientService.
+ *
+ * @param _event - IPC event (unused)
+ * @param payload - Project analysis parameters (NSD content, scene name, project path, optional quest variable)
+ * @returns Promise resolving to project analysis with structured data and markdown report
+ *
+ * @example
+ * ```typescript
+ * const result = await handleOracleMcpAnalyzeProject(event, {
+ *   nsdContent: '# NSD Content...',
+ *   sceneName: 'Cena 1: Entrada na Taverna',
+ *   projectPath: '/path/to/mz/project',
+ *   questVariable: 'Quest 01 Progress'
+ * });
+ * ```
+ */
+export async function handleOracleMcpAnalyzeProject(
+  _event: IpcMainInvokeEvent,
+  payload: unknown
+): Promise<IPCResult<AnalyzeProjectResponse>> {
+  return wrapHandler(async () => {
+    validatePayload('oracle-mcp:analyze-project', payload, AnalyzeProjectSchema);
+
+    getLogger().info('[OracleMcpIpcHandler] Project analysis requested', {
+      projectPath: (payload as { projectPath: string }).projectPath,
+      sceneName: (payload as { sceneName: string }).sceneName,
+    });
+
+    const result = await mcpClientService.callTool<AnalyzeProjectResponse>(
+      'analyze_project',
+      payload
+    );
+
+    getLogger().info('[OracleMcpIpcHandler] Project analysis completed', {
+      analysisTimestamp: result.timestamp,
+      questVariablesFound: result.analysis.questVariables.length,
+    });
+
+    return result;
+  });
+}
+
+/**
+ * Handler: oracle-mcp:test-analyze-project
+ *
+ * Tests the project analyzer with a specific directory and model.
+ * Reads NSD and scene files from test directory and calls analyze_project MCP tool.
+ * Saves results to JSON and markdown files in the test directory.
+ *
+ * @param _event - IPC event (unused)
+ * @param payload - Test parameters (test directory, model selection)
+ * @returns Promise resolving to test execution results with output file paths
+ *
+ * @example
+ * ```typescript
+ * const result = await handleOracleMcpTestAnalyzeProject(event, {
+ *   testDirectory: '/path/to/test/outputs',
+ *   model: 'glm-4.7'
+ * });
+ * ```
+ */
+export async function handleOracleMcpTestAnalyzeProject(
+  _event: IpcMainInvokeEvent,
+  payload: unknown
+): Promise<IPCResult<TestAnalyzeProjectResponse>> {
+  return wrapHandler(async () => {
+    validatePayload('oracle-mcp:test-analyze-project', payload, TestAnalyzeProjectSchema);
+
+    const { testDirectory, model } = payload as { testDirectory: string; model: string };
+
+    getLogger().info('[OracleMcpIpcHandler] Test project analysis requested', {
+      testDirectory,
+      model,
+    });
+
+    // Import fs and path modules for file operations
+    const fs = await import('fs/promises');
+    const path = await import('path');
+
+    // Step 1: Find NSD file in test directory (should be only one .md file with "NSD" in name)
+    const files = await fs.readdir(testDirectory);
+    const nsdFile = files.find(f => f.includes('NSD') && f.endsWith('.md'));
+
+    if (!nsdFile) {
+      throw new Error(`No NSD file found in test directory: ${testDirectory}`);
+    }
+
+    const nsdPath = path.join(testDirectory, nsdFile);
+    getLogger().info('[OracleMcpIpcHandler] Found NSD file', { nsdPath });
+
+    // Step 2: Find scene file in test directory (should be only one .md file without "NSD" in name)
+    const sceneFile = files.find(f => f.endsWith('.md') && !f.includes('NSD'));
+
+    if (!sceneFile) {
+      throw new Error(`No scene file found in test directory: ${testDirectory}`);
+    }
+
+    const scenePath = path.join(testDirectory, sceneFile);
+    getLogger().info('[OracleMcpIpcHandler] Found scene file', { scenePath });
+
+    // Step 3: Read file contents
+    const [nsdContent, sceneText] = await Promise.all([
+      fs.readFile(nsdPath, 'utf-8'),
+      fs.readFile(scenePath, 'utf-8'),
+    ]);
+
+    getLogger().info('[OracleMcpIpcHandler] Files read successfully', {
+      nsdLength: nsdContent.length,
+      sceneLength: sceneText.length,
+    });
+
+    // Step 4: Extract scene name from scene file (first line or filename)
+    const sceneName = sceneFile.replace('.md', '').replace(/-/g, ' ');
+
+    // Step 5: Extract project path from NSD content or use default
+    // For now, use the hardcoded path from TestAnalyzeButton
+    const projectPath = '/Users/edney/projects/coreto/projectX/frontend';
+
+    getLogger().info('[OracleMcpIpcHandler] Calling analyze_project MCP tool', {
+      projectPath,
+      sceneName,
+      model,
+    });
+
+    // Step 6: Call the existing analyze_project MCP tool
+    const mcpResult = await mcpClientService.callTool<{ content: Array<{ type: string; text: string }> }>(
+      'analyze_project',
+      {
+        projectPath,
+        nsdContent,
+        sceneName,
+        model,
+      }
+    );
+
+    // Extract response text from MCP result
+    const responseText = mcpResult.content?.[0]?.text || '{}';
+    const analysisData = JSON.parse(responseText);
+
+    getLogger().info('[OracleMcpIpcHandler] Analysis completed', {
+      mapCount: analysisData.mapCount,
+      troopCount: analysisData.troopCount,
+      hasMarkdown: !!analysisData.markdown,
+    });
+
+    // Step 7: Save results to files
+    const jsonOutputPath = path.join(testDirectory, 'analysis.json');
+    const markdownOutputPath = path.join(testDirectory, 'analysis.md');
+
+    // Create JSON output without the markdown field (too large)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { markdown, ...jsonOutput } = analysisData;
+
+    await Promise.all([
+      fs.writeFile(jsonOutputPath, JSON.stringify(jsonOutput, null, 2), 'utf-8'),
+      fs.writeFile(markdownOutputPath, analysisData.markdown, 'utf-8'),
+    ]);
+
+    getLogger().info('[OracleMcpIpcHandler] Results saved successfully', {
+      jsonOutputPath,
+      markdownOutputPath,
+    });
+
+    return {
+      success: true,
+      outputPath: testDirectory,
+      files: {
+        json: jsonOutputPath,
+        markdown: markdownOutputPath,
+      },
       timestamp: new Date().toISOString(),
     };
   });

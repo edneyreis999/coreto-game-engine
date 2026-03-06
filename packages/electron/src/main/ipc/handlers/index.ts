@@ -19,6 +19,7 @@ import * as history from './history-handlers.js';
 import * as logs from './logs.js';
 import * as oracleMcp from './oracleMcpIpcHandler.js';
 import * as nsd from './nsd.js';
+import * as testAnalyze from './testAnalyze.js';
 
 // Import external handler registries
 import { CONFIG_IPC_HANDLERS } from '../config-handlers.js';
@@ -93,9 +94,18 @@ export function registerHandlers(): void {
   ipcMain.handle('oracle-mcp:start', oracleMcp.handleOracleMcpStart);
   ipcMain.handle('oracle-mcp:generate-prompt', oracleMcp.handleOracleMcpGeneratePrompt);
   ipcMain.handle('oracle-mcp:health', oracleMcp.handleOracleMcpHealth);
+  ipcMain.handle('oracle-mcp:analyze-project', oracleMcp.handleOracleMcpAnalyzeProject);
+  ipcMain.handle('oracle-mcp:test-analyze-project', oracleMcp.handleOracleMcpTestAnalyzeProject);
 
   // NSD handlers
   ipcMain.handle('nsd:upload', nsd.nsdUploadHandler);
+
+  // Test Analyze handlers
+  console.log('[IPC Registry] Registering test-analyze:prepare-directory handler');
+  console.log('[IPC Registry] testAnalyze module keys:', Object.keys(testAnalyze));
+  console.log('[IPC Registry] handlePrepareTestDirectory exists:', typeof testAnalyze.handlePrepareTestDirectory);
+  ipcMain.handle('test-analyze:prepare-directory', testAnalyze.handlePrepareTestDirectory);
+  console.log('[IPC Registry] ✓ test-analyze:prepare-directory registered successfully');
 
   // History handlers (from registry - for other history operations)
   ipcMain.handle('history:list', getRegistryHandler(HISTORY_IPC_HANDLERS, 'history:list'));

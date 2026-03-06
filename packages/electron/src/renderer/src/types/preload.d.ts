@@ -40,6 +40,8 @@ import type {
   SimulationResultPayload,
   // Log Types
   LogEntry,
+  // Oracle MCP - Project Analyzer Types
+  AnalyzeProjectResponse,
 } from '@coreto/electron/domain/types';
 
 // Import SimulationConfigData from domain services
@@ -475,6 +477,173 @@ interface LogsAPI {
 }
 
 /**
+ * Oracle MCP API Interface
+ *
+ * Handles Oracle MCP server operations (start, generate-prompt, health, analyze-project).
+ */
+interface OracleMcpAPI {
+  /**
+   * Starts the Oracle MCP server for external connections.
+   * @param port - Optional port for socket mode (defaults to stdio)
+   * @returns Promise resolving to start result with server info
+   *
+   * @example
+   * const response = await window.coreto.oracleMcp.start();
+   * if (response.success) {
+   *   console.log('Server type:', response.data.serverType);
+   * }
+   */
+  start(port?: number): Promise<
+    IPCResult<{
+      success: boolean;
+      message: string;
+      serverType: 'stdio' | 'socket';
+      timestamp: string;
+    }>
+  >;
+
+  /**
+   * Generates a technical prompt for implementing an NSD scene in RPG Maker MZ.
+   * @param params - NSD prompt generation parameters
+   * @returns Promise resolving to generated prompt
+   *
+   * @example
+   * const result = await window.coreto.oracleMcp.generatePrompt({
+   *   nsdContent: '# NSD Content...',
+   *   sceneName: 'Cena 1: Entrada na Taverna',
+   *   projectPath: '/path/to/mz/project',
+   *   questVariable: 'Quest 01 Progress'
+   * });
+   * if (result.success) {
+   *   console.log('Generated prompt:', result.data.prompt);
+   * }
+   */
+  generatePrompt(params: {
+    nsdContent: string;
+    sceneName: string;
+    projectPath: string;
+    questVariable?: string;
+  }): Promise<
+    IPCResult<{
+      prompt: string;
+      timestamp: string;
+    }>
+  >;
+
+  /**
+   * Performs a health check on the Oracle MCP service.
+   * @param timeout - Optional timeout in milliseconds
+   * @returns Promise resolving to health check result
+   *
+   * @example
+   * const result = await window.coreto.oracleMcp.health();
+   * if (result.success && result.data.healthy) {
+   *   console.log('Oracle MCP service is healthy');
+   * }
+   */
+  health(timeout?: number): Promise<
+    IPCResult<{
+      healthy: boolean;
+      message: string;
+      timestamp: string;
+    }>
+  >;
+
+  /**
+   * Analyzes an RPG Maker MZ project structure and resources.
+   * @param params - Project analysis parameters (NSD content, scene name, project path, optional quest variable)
+   * @returns Promise resolving to project analysis with structured data and markdown report
+   *
+   * @example
+   * const result = await window.coreto.oracleMcp.analyzeProject({
+   *   nsdContent: '# NSD Content...',
+   *   sceneName: 'Cena 1: Entrada na Taverna',
+   *   projectPath: '/path/to/mz/project',
+   *   questVariable: 'Quest 01 Progress'
+   * });
+   * if (result.success) {
+   *   console.log('Analysis:', result.data.analysis);
+   *   console.log('Markdown:', result.data.markdown);
+   * }
+   */
+  analyzeProject(params: {
+    nsdContent: string;
+    sceneName: string;
+    projectPath: string;
+    questVariable?: string;
+  }): Promise<IPCResult<AnalyzeProjectResponse>>;
+
+  /**
+   * Tests the project analyzer with a specific directory and model.
+   * @param params - Test parameters (test directory, model selection)
+   * @returns Promise resolving to test execution results with output file paths
+   *
+   * @example
+   * const result = await window.coreto.oracleMcp.testAnalyzeProject({
+   *   testDirectory: '/path/to/test/outputs',
+   *   model: 'glm-4.7'
+   * });
+   * if (result.success) {
+   *   console.log('Analysis completed:', result.data.outputPath);
+   *   console.log('JSON output:', result.data.files.json);
+   *   console.log('Markdown output:', result.data.files.markdown);
+   * }
+   */
+  testAnalyzeProject(params: {
+    testDirectory: string;
+    model: 'glm-4.7' | 'glm-4.5-air' | 'glm-4-flash';
+  }): Promise<
+    IPCResult<{
+      success: boolean;
+      outputPath: string;
+      files: {
+        json: string;
+        markdown: string;
+      };
+      timestamp: string;
+    }>
+  >;
+}
+
+/**
+ * Test Analyze API
+ *
+ * Handles test directory preparation for project analysis.
+ */
+interface TestAnalyzeAPI {
+  /**
+   * Prepares test directory with NSD and scene files.
+   * Creates export directory, copies NSD file, and creates scene file.
+   * @param params - Test directory preparation parameters
+   * @returns Promise resolving to test directory paths
+   *
+   * @example
+   * const result = await window.coreto.testAnalyze.prepareDirectory({
+   *   nsdPath: '/path/to/nsd.md',
+   *   sceneText: 'Scene content here',
+   *   sceneFile: 'scene.md'
+   * });
+   * if (result.success) {
+   *   console.log('Test directory:', result.data.testDirectory);
+   *   console.log('NSD file:', result.data.nsdFile);
+   *   console.log('Scene file:', result.data.sceneFile);
+   * }
+   */
+  prepareDirectory(params: {
+    nsdPath: string;
+    sceneText: string;
+    sceneFile: string;
+    exportDir?: string;
+  }): Promise<
+    IPCResult<{
+      testDirectory: string;
+      nsdFile: string;
+      sceneFile: string;
+    }>
+  >;
+}
+
+/**
  * Response format for logs:export handler.
  *
  * Success response includes download path and log statistics.
@@ -512,6 +681,10 @@ interface CoretoAPI {
   recent: RecentAPI;
   /** Log export functionality */
   logs: LogsAPI;
+  /** Oracle MCP server operations */
+  oracleMcp: OracleMcpAPI;
+  /** Test analyze operations */
+  testAnalyze: TestAnalyzeAPI;
 }
 
 // ============================================================================
@@ -563,7 +736,7 @@ declare global {
 }
 
 // Export API interfaces for use in components
-export type { ElectronAPI, CoretoAPI };
+export type { ElectronAPI, CoretoAPI, OracleMcpAPI, TestAnalyzeAPI };
 
 // Note: Domain types should be imported directly from @coreto/electron/domain/types
 // This avoids re-export chains and makes dependencies explicit

@@ -170,6 +170,10 @@ export default {
       testMatch: ['**/tests/e2e/**/*.test.ts', '**/tests/integration/oracleMcp.e2e.test.ts'],
       setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
       collectCoverageFrom: [],
+      transformIgnorePatterns: [
+        'node_modules/(?!(ts-jest))',
+        '<rootDir>/../oracle',
+      ],
       moduleNameMapper: {
         '^@/(.*)$': '<rootDir>/src/$1',
         '^@tests/(.*)$': '<rootDir>/tests/$1',

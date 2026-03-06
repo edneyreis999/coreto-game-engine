@@ -34,7 +34,6 @@ import {
 } from 'react';
 import {
   FileCode,
-  Loader2,
   AlertCircle,
   CheckCircle2,
 } from 'lucide-react';
@@ -42,6 +41,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useLogger } from '@/hooks/useLogger';
 import { useNsdUpload, type NsdUploadSource } from '@/hooks/useNsdUpload';
+import { useOracleMcpClient } from '@/hooks/useOracleMcpClient';
 import { NsdUpload } from '@/components/NsdUpload';
 import { SceneList } from '@/components/SceneList';
 import { BackButton } from '@/components/BackButton';

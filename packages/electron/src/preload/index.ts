@@ -636,6 +636,95 @@ const oracleMcpAPI = {
       timestamp: string;
     }>
   > => ipcRenderer.invoke('oracle-mcp:health', { timeout }),
+
+  /**
+   * Analyzes an RPG Maker MZ project structure and resources.
+   * @param params - Project analysis parameters (NSD content, scene name, project path, optional quest variable)
+   * @returns Promise resolving to project analysis with structured data and markdown report
+   *
+   * @example
+   * const result = await window.coreto.oracleMcp.analyzeProject({
+   *   nsdContent: '# NSD Content...',
+   *   sceneName: 'Cena 1: Entrada na Taverna',
+   *   projectPath: '/path/to/mz/project',
+   *   questVariable: 'Quest 01 Progress'
+   * });
+   * if (result.success) {
+   *   console.log('Analysis:', result.data.analysis);
+   *   console.log('Markdown:', result.data.markdown);
+   * }
+   */
+  analyzeProject: (params: {
+    nsdContent: string;
+    sceneName: string;
+    projectPath: string;
+    questVariable?: string;
+  }): Promise<
+    IPCResult<{
+      analysis: {
+        projectPath: string;
+        analyzedAt: string;
+        questVariables: Array<{
+          variableId: number;
+          name: string;
+          type: string;
+          scope: string;
+        }>;
+        mapCount: number;
+        troopCount: number;
+        availableResources: {
+          sprites: string[];
+          pictures: string[];
+          bgm: string[];
+          me: string[];
+          se: string[];
+          battlebacks: string[];
+        };
+        recommendedQuestVariable?: {
+          variableId: number;
+          name: string;
+          type: string;
+          scope: string;
+        };
+        recommendedMapId?: number;
+        warnings: string[];
+      };
+      markdown: string;
+      timestamp: string;
+    }>
+  > => ipcRenderer.invoke('oracle-mcp:analyze-project', params),
+
+  /**
+   * Tests the project analyzer with a specific directory and model.
+   * Expects test directory to contain NSD and scene files pre-configured.
+   * @param params - Test parameters (test directory, model selection)
+   * @returns Promise resolving to test execution results with output file paths
+   *
+   * @example
+   * const result = await window.coreto.oracleMcp.testAnalyzeProject({
+   *   testDirectory: '/path/to/test/outputs',
+   *   model: 'glm-4.7'
+   * });
+   * if (result.success) {
+   *   console.log('Analysis completed:', result.data.outputPath);
+   *   console.log('JSON output:', result.data.files.json);
+   *   console.log('Markdown output:', result.data.files.markdown);
+   * }
+   */
+  testAnalyzeProject: (params: {
+    testDirectory: string;
+    model: 'glm-4.7' | 'glm-4.5-air' | 'glm-4-flash';
+  }): Promise<
+    IPCResult<{
+      success: boolean;
+      outputPath: string;
+      files: {
+        json: string;
+        markdown: string;
+      };
+      timestamp: string;
+    }>
+  > => ipcRenderer.invoke('oracle-mcp:test-analyze-project', params),
 };
 
 /**
@@ -681,6 +770,71 @@ const logsAPI = {
     totalCount: number;
   }>> =>
     ipcRenderer.invoke('logs:export', undefined),
+};
+
+/**
+ * Test Analyze API
+ *
+ * Handles test directory preparation for project analysis.
+ */
+const testAnalyzeAPI = {
+  /**
+   * Prepares test directory with NSD and scene files.
+   * Creates export directory, copies NSD file, and creates scene file.
+   * @param params - Test directory preparation parameters
+   * @returns Promise resolving to test directory paths
+   *
+   * @example
+   * const result = await window.coreto.testAnalyze.prepareDirectory({
+   *   nsdPath: '/path/to/nsd.md',
+   *   sceneText: 'Scene content here',
+   *   sceneFile: 'scene.md'
+   * });
+   * if (result.success) {
+   *   console.log('Test directory:', result.data.testDirectory);
+   *   console.log('NSD file:', result.data.nsdFile);
+   *   console.log('Scene file:', result.data.sceneFile);
+   * }
+   */
+  prepareDirectory: async (params: {
+    nsdPath: string;
+    sceneText: string;
+    sceneFile: string;
+    exportDir?: string;
+  }): Promise<
+    IPCResult<{
+      testDirectory: string;
+      nsdFile: string;
+      sceneFile: string;
+    }>
+  > => {
+    console.log('[Preload:testAnalyze] prepareDirectory called with', {
+      nsdPath: params.nsdPath,
+      sceneFile: params.sceneFile,
+      sceneTextLength: params.sceneText?.length || 0,
+      exportDir: params.exportDir || '(default)',
+    });
+    try {
+      const result = await ipcRenderer.invoke('test-analyze:prepare-directory', params);
+      console.log('[Preload:testAnalyze] prepareDirectory result', {
+        success: result.success,
+        hasData: !!result.data,
+        hasError: !!result.error,
+        data: result.data,
+        error: result.error,
+      });
+      return result;
+    } catch (error) {
+      console.error('[Preload:testAnalyze] prepareDirectory IPC invoke failed', {
+        error: error instanceof Error ? {
+          name: error.name,
+          message: error.message,
+          stack: error.stack,
+        } : error,
+      });
+      throw error;
+    }
+  },
 };
 
 // ============================================================================
@@ -737,6 +891,7 @@ const coretoAPI = {
   recent: recentAPI,
   logs: logsAPI,
   oracleMcp: oracleMcpAPI,
+  testAnalyze: testAnalyzeAPI,
 };
 
 /**

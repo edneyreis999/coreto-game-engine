@@ -18,6 +18,7 @@ import {
   ClaudeAgentClient,
   GeneratePromptSchema,
   ExtractScenesSchema,
+  AnalyzeProjectSchema,
 } from '../lib/claudeAgentClient.js';
 
 /**
@@ -82,6 +83,16 @@ export class OracleMcpServer {
             inputSchema: ExtractScenesSchema.extend({
               nsdContent: ExtractScenesSchema.shape.nsdContent.describe('Conteúdo completo do NSD em formato markdown Coreto'),
               model: ExtractScenesSchema.shape.model.optional().describe('Modelo Z.ai para extração (opcional: glm-4.7, glm-4.5-air, glm-4-flash)'),
+            }).shape,
+          },
+          {
+            name: 'analyze_project',
+            description: 'Analisa a estrutura de um projeto RPG Maker MZ, detectando variáveis de quest, mapas e recursos disponíveis',
+            inputSchema: AnalyzeProjectSchema.extend({
+              projectPath: AnalyzeProjectSchema.shape.projectPath.describe('Caminho do projeto RPG Maker MZ'),
+              nsdContent: AnalyzeProjectSchema.shape.nsdContent.optional().describe('Conteúdo do NSD para contexto (opcional)'),
+              sceneName: AnalyzeProjectSchema.shape.sceneName.optional().describe('Nome da cena para contexto (opcional)'),
+              questVariable: AnalyzeProjectSchema.shape.questVariable.optional().describe('Variável de quest específica para verificar (opcional)'),
             }).shape,
           },
         ],
@@ -161,6 +172,62 @@ export class OracleMcpServer {
         console.error('[OracleMcpServer] extract_scenes result:', {
           totalScenes: result.totalScenes,
           sceneTitles: result.scenes.map(s => s.title),
+        });
+
+        const response = {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result),
+            },
+          ],
+        };
+
+        return response;
+      }
+
+      if (name === 'analyze_project') {
+        // No need to init for analyze_project - it's read-only filesystem operations
+
+        // Type assertion for args since they come from MCP as Record<string, unknown>
+        const projectPath = String(args?.projectPath || '');
+        const nsdContent = args?.nsdContent !== undefined ? String(args.nsdContent) : undefined;
+        const sceneName = args?.sceneName !== undefined ? String(args.sceneName) : undefined;
+        const questVariable = args?.questVariable !== undefined ? String(args.questVariable) : undefined;
+
+        console.error('[OracleMcpServer] analyze_project called with:', {
+          projectPath,
+          hasNsdContent: !!nsdContent,
+          hasSceneName: !!sceneName,
+          hasQuestVariable: !!questVariable,
+        });
+
+        const analyzeOptions: {
+          projectPath: string;
+          nsdContent?: string;
+          sceneName?: string;
+          questVariable?: string;
+        } = { projectPath };
+
+        if (nsdContent !== undefined) {
+          analyzeOptions.nsdContent = nsdContent;
+        }
+
+        if (sceneName !== undefined) {
+          analyzeOptions.sceneName = sceneName;
+        }
+
+        if (questVariable !== undefined) {
+          analyzeOptions.questVariable = questVariable;
+        }
+
+        const result = await this.client.analyzeProject(analyzeOptions);
+
+        console.error('[OracleMcpServer] analyze_project result:', {
+          mapCount: result.mapCount,
+          troopCount: result.troopCount,
+          questVariablesDetected: result.questVariables.length,
+          warningsCount: result.warnings.length,
         });
 
         const response = {
